@@ -121,6 +121,7 @@
 | `NOTIFICATION_DELIVERY_VIEW` | NOTIFICATIONS | Read | ALL | — | — | — | — | — | — | — |
 | `NOTIFICATION_DELIVERY_MANAGE` | NOTIFICATIONS | Write | ALL | — | — | — | — | — | — | — |
 | `LAYOUT_PERSONALIZE` | DASHBOARDS | Write | — | OWN | OWN | — | — | — | OWN | — |
+| `DASHBOARD_DESIGN` | DASHBOARDS | Write | — | ALL | — | — | — | — | — | — |
 | `REPORT_COMPOSE` | REPORTS | Write | — | OWN | OWN | — | — | — | OWN | — |
 | `REPORT_EXPORT` | REPORTS | Read | — | ALL | DEPT | OWN | ASSIGNED | — | ALL | — |
 | `ACTIVITY_VIEW` | ACTIVITY | Read | — | ALL | DEPT | OWN | ASSIGNED | — | ALL | ENTITY |

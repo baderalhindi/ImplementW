@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest';
 
+import { designFieldsFixture, FIELD } from '@/test/portfolioInsightFixtures.ts';
+
 import { type Visual } from './designApi.ts';
+import { dateKeyText, formatDayNumber } from './fields.ts';
 import {
   autoTitle,
   drillPath,
@@ -122,5 +125,47 @@ describe('no white space (18 Nov 2026)', () => {
   test('a visual removed leaves no hole', () => {
     const three = packed([box(12, 2), box(12, 2), box(12, 2)]);
     expect(packed(three.filter((_, index) => index !== 1)).map((v) => v.layoutRow)).toEqual([0, 2]);
+  });
+});
+
+describe('lines and figures over time (more fields contract)', () => {
+  const fields = designFieldsFixture().fields;
+
+  test('a line needs the catalogue: none without it, the published history by period with it', () => {
+    expect(newVisual('LINE', [])).toBeNull();
+    expect(newVisual('LINE', [], fields)).toMatchObject({
+      visualType: 'LINE',
+      measures: [],
+      groupBy: 'NONE',
+      values: [{ field: FIELD.HISTORY_ACTUAL_PERCENT, aggregation: 'AVERAGE' }],
+      groupField: FIELD.HISTORY_PERIOD_START,
+      groupDateUnit: 'MONTH',
+    });
+  });
+
+  test('a line over time becomes a column chart with its period, and a card falls back to the Portfolio figures', () => {
+    const line = newVisual('LINE', [], fields);
+    if (line === null) {
+      throw new Error('no line');
+    }
+    expect(withType(line, 'COLUMN', fields)).toMatchObject({
+      visualType: 'COLUMN',
+      groupField: FIELD.HISTORY_PERIOD_START,
+      groupDateUnit: 'MONTH',
+    });
+    expect(withType(line, 'CARD', fields)).toMatchObject({
+      visualType: 'CARD',
+      measures: ['PROJECTS'],
+      values: null,
+      groupField: null,
+      groupDateUnit: null,
+    });
+  });
+
+  test('day numbers and month keys read as Gregorian dates in both languages', () => {
+    expect(formatDayNumber(20515, 'en')).toBe('3 Mar 2026');
+    expect(formatDayNumber(20515, 'ar')).toMatch(/2026/);
+    expect(dateKeyText('2026-03', 'MONTH', 'en')).toBe('Mar 2026');
+    expect(dateKeyText('2026', 'YEAR', 'en')).toBe('2026');
   });
 });

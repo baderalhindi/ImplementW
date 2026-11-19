@@ -8561,3 +8561,70 @@ tr[data-flagged='true'] {
 .designer-data__add {
   align-self: flex-start;
 }
+
+/* A designed line chart (TASK-112, more fields): each series in its own colour and line style, over groups that run left to right. */
+.line-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.line-chart__chart {
+  max-inline-size: none;
+  overflow: visible;
+}
+
+.line-chart__line {
+  fill: none;
+  stroke: var(--chart-color);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.line-chart__point {
+  fill: var(--chart-color);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.line-chart__point:hover {
+  r: 6px;
+}
+
+/* "over time" beside a source of published history in the Data panel. */
+.designer-data__over-time {
+  flex: none;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-info-surface);
+  color: var(--color-info);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* A date grouping and its Year/Month select, side by side. */
+.designer-data__group-by {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.designer-data__group-by > .field__input:first-child {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.designer-data__unit.field__input {
+  flex: none;
+  inline-size: 7rem;
+}
+
+.designer__type:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.designer__type:disabled:hover {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface);
+}

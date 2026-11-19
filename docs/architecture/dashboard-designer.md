@@ -38,5 +38,5 @@ The Portfolio dashboard should be changeable "like Power BI": the business adds 
 ## Open
 
 - Two Portfolio Managers saving at the same moment: the later save wins (no `If-Match`); one design-wide version can be added if the business needs it.
-- The OpenAPI snapshot and integration tests for the four endpoints are part of round 8's deferred CI step.
-- `docs/architecture/shipped-permission-matrix.md` does not list the portfolio insight permissions of 5 Nov nor `DASHBOARD_DESIGN`; to be brought up to date with the RACI matrix.
+- The OpenAPI snapshot (`docs/api/openapi.v1.json`) covers the five endpoints, and `PMPlatform.Tests.Integration.Project.PortfolioDesignTests` runs them (19 Nov 2026 CI step).
+- `docs/architecture/shipped-permission-matrix.md` lists `DASHBOARD_DESIGN` (R02, ALL) but not the portfolio insight permissions of 5 Nov; to be brought up to date with the RACI matrix.

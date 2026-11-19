@@ -9539,7 +9539,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
 
-                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'SECTION')");
+                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'SECTION', 'LINE')");
                         });
                 });
 

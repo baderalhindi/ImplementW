@@ -31,7 +31,15 @@ const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const DESIGNER = '/dashboards/design';
 const DASHBOARD = '/dashboards?dashboard=PORTFOLIO';
-const AGGREGATIONS: readonly string[] = ['COUNT', 'SUM', 'AVERAGE', 'MIN', 'MAX'];
+const AGGREGATIONS: readonly string[] = [
+  'COUNT',
+  'SUM',
+  'AVERAGE',
+  'MIN',
+  'MAX',
+  'COUNT_TRUE',
+  'SHARE_TRUE',
+];
 
 const FIELDS = designFieldsFixture().fields;
 
@@ -53,6 +61,15 @@ function descriptor(key: string) {
 function fieldName(key: string): string {
   const { projectionCode, fieldCode } = descriptor(key);
   return en(`dashboards.designer.field.${projectionCode.replace('.', '_')}.${fieldCode}`);
+}
+
+/**
+ * A field tick's accessible name: the field's name, then its type's word ("Actual progress%"), and nothing else, so "Actual progress" does not
+ * also match "Actual progress over time".
+ */
+function fieldNamePattern(key: string): RegExp {
+  const typeWord = en(`dashboards.designer.fieldType.${descriptor(key).type}`);
+  return new RegExp(`^${escaped(fieldName(key))}\\s*(${escaped(typeWord)})?$`);
 }
 
 /** A source's English name: dashboards.designer.fieldSource.<PROJECTION_CODE with "." → "_">. */
@@ -125,15 +142,20 @@ const session = () => sessionFor(['R02']);
 /** The settings pane of the selected visual, where the Data panel is. */
 const settings = () => screen.getByRole('region', { name: en('dashboards.designer.properties') });
 
-/** Places a new visual from the gallery; the designer selects it, so its settings open. */
+/** Places a new visual from the gallery; the designer selects it, so its settings open. A line's tile waits for the fields. */
 async function addVisual(user: ReturnType<typeof userEvent.setup>, type: VisualType) {
   await screen.findByRole('heading', { level: 1, name: en('dashboards.designer.title') });
-  await user.click(screen.getByRole('button', { name: en(`dashboards.designer.type.${type}`) }));
+  const tile = await waitFor(() => {
+    const button = screen.getByRole('button', { name: en(`dashboards.designer.type.${type}`) });
+    expect(button.hasAttribute('disabled')).toBe(false);
+    return button;
+  });
+  await user.click(tile);
 }
 
 /** A field's tick in the Data panel: a checkbox where the visual takes several values, a radio where it takes one. */
 function fieldControl(key: string): HTMLInputElement {
-  const name = new RegExp(escaped(fieldName(key)));
+  const name = fieldNamePattern(key);
   const pane = within(settings());
   const control = pane.queryByRole('checkbox', { name }) ?? pane.getByRole('radio', { name });
   if (!(control instanceof HTMLInputElement)) {
@@ -244,7 +266,7 @@ describe('the Data panel', () => {
     await waitFor(() => {
       expect(
         within(settings()).queryByRole('checkbox', {
-          name: new RegExp(escaped(fieldName(FIELD.OPEN_RISKS))),
+          name: fieldNamePattern(FIELD.OPEN_RISKS),
         }),
       ).toBeNull();
     });
@@ -506,5 +528,264 @@ describe('a saved data visual', () => {
     const card = present(screen.getByText(cardTitle).closest('section'), 'The card');
     expect(plain(card.textContent)).toContain('7');
     expect(plain(card.textContent)).not.toContain(en('common.money.sar', { amount: '7' }));
+  });
+});
+
+describe('more fields: yes/no, dates and figures over time', () => {
+  const groupBySelect = () =>
+    within(settings()).getByRole('combobox', { name: en('dashboards.designer.groupByLabel') });
+
+  /** Adds a filter on `key` and ticks the value whose words are `word`. */
+  async function addFilterTick(
+    user: ReturnType<typeof userEvent.setup>,
+    key: string,
+    word: string,
+  ) {
+    const pane = within(settings());
+    const selectsBefore = pane.getAllByRole('combobox');
+    await user.click(pane.getByRole('button', { name: en('dashboards.designer.addFilter') }));
+    const picker = await waitFor(() =>
+      present(
+        within(settings())
+          .getAllByRole('combobox')
+          .find((select) => !selectsBefore.includes(select)),
+        'The new filter’s field select',
+      ),
+    );
+    await selectField(user, picker, key);
+    await user.click(
+      await waitFor(() =>
+        within(settings()).getByRole('checkbox', { name: new RegExp(`^${escaped(word)}$`) }),
+      ),
+    );
+  }
+
+  test('a yes/no field counts or shares its yeses, a gauge its share, and filters by Yes or No', async () => {
+    const api = designerApi();
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await addVisual(user, 'BAR');
+    await chooseField(user, FIELD.IS_STRATEGIC);
+    await previewed(api, { values: [{ field: FIELD.IS_STRATEGIC, aggregation: 'COUNT' }] });
+
+    const calculation = await waitFor(() =>
+      present(aggregationSelects()[0], 'A calculation select'),
+    );
+    expect(optionValues(calculation)).toEqual(['COUNT', 'COUNT_TRUE', 'SHARE_TRUE']);
+    await user.selectOptions(calculation, 'COUNT_TRUE');
+    await previewed(api, { values: [{ field: FIELD.IS_STRATEGIC, aggregation: 'COUNT_TRUE' }] });
+    await user.selectOptions(present(aggregationSelects()[0]), 'SHARE_TRUE');
+    await previewed(api, { values: [{ field: FIELD.IS_STRATEGIC, aggregation: 'SHARE_TRUE' }] });
+
+    await addFilterTick(user, FIELD.IS_STRATEGIC, en('dashboards.designer.yes'));
+    await previewed(api, { filters: [{ field: FIELD.IS_STRATEGIC, values: ['TRUE'] }] });
+
+    // A gauge draws a yes/no field as its share only.
+    await addVisual(user, 'GAUGE');
+    await chooseField(user, FIELD.IS_STRATEGIC);
+    await previewed(api, {
+      visualType: 'GAUGE',
+      values: [{ field: FIELD.IS_STRATEGIC, aggregation: 'SHARE_TRUE' }],
+    });
+  });
+
+  test('grouping by a date field sends its unit, by month then by year; a date filter ticks years', async () => {
+    const api = designerApi();
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await addVisual(user, 'BAR');
+    await chooseField(user, FIELD.ACTUAL_EXPENDITURE);
+
+    await selectField(user, groupBySelect(), FIELD.PLANNED_END_DATE);
+    await previewed(api, {
+      groupBy: 'NONE',
+      groupField: FIELD.PLANNED_END_DATE,
+      groupDateUnit: 'MONTH',
+    });
+
+    const unit = within(settings()).getByRole('combobox', {
+      name: en('dashboards.designer.dateUnitLabel'),
+    });
+    expect(optionValues(unit as HTMLSelectElement)).toEqual(['YEAR', 'MONTH']);
+    await user.selectOptions(unit, 'YEAR');
+    await previewed(api, { groupField: FIELD.PLANNED_END_DATE, groupDateUnit: 'YEAR' });
+
+    // A status field takes no unit.
+    await selectField(user, groupBySelect(), FIELD.OVERALL_HEALTH);
+    await previewed(api, { groupField: FIELD.OVERALL_HEALTH });
+    expect(lastPreviewed(api)?.groupDateUnit ?? null).toBeNull();
+
+    const year = String(new Date().getUTCFullYear());
+    await addFilterTick(user, FIELD.PLANNED_END_DATE, year);
+    await previewed(api, { filters: [{ field: FIELD.PLANNED_END_DATE, values: [year] }] });
+  });
+
+  test('a line from the gallery draws the published history, grouped by the period’s end by month', async () => {
+    const api = designerApi();
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await addVisual(user, 'LINE');
+
+    // The history's source is marked as over time.
+    expect(
+      within(settings()).getAllByText(en('dashboards.designer.overTime')).length,
+    ).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(fieldControl(FIELD.HISTORY_ACTUAL_PERCENT).checked).toBe(true);
+    });
+    await chooseField(user, FIELD.HISTORY_PLANNED_PERCENT);
+    await selectField(user, groupBySelect(), FIELD.HISTORY_PERIOD_END);
+    // A line groups by its fields only: no project attribute is offered.
+    expect(optionValues(groupBySelect() as HTMLSelectElement)).not.toContain('PORTFOLIO');
+
+    await previewed(api, {
+      visualType: 'LINE',
+      measures: [],
+      groupBy: 'NONE',
+      values: [
+        { field: FIELD.HISTORY_ACTUAL_PERCENT, aggregation: 'AVERAGE' },
+        { field: FIELD.HISTORY_PLANNED_PERCENT, aggregation: 'COUNT' },
+      ],
+      groupField: FIELD.HISTORY_PERIOD_END,
+      groupDateUnit: 'MONTH',
+    });
+    expect(lastPreviewed(api)?.filters ?? null).toBeNull();
+  });
+
+  test('a figure over time replaces the current values, and the panel says so', async () => {
+    const api = designerApi();
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await addVisual(user, 'COLUMN');
+    await chooseField(user, FIELD.ACTUAL_EXPENDITURE);
+    await previewed(api, { values: [{ field: FIELD.ACTUAL_EXPENDITURE, aggregation: 'COUNT' }] });
+
+    await chooseField(user, FIELD.HISTORY_ACTUAL_PERCENT);
+    expect(
+      await within(settings()).findByText(en('dashboards.designer.replacedByHistory')),
+    ).toBeTruthy();
+    await previewed(api, {
+      values: [{ field: FIELD.HISTORY_ACTUAL_PERCENT, aggregation: 'COUNT' }],
+      groupBy: 'NONE',
+      groupField: FIELD.HISTORY_PERIOD_START,
+      groupDateUnit: 'MONTH',
+    });
+    expect(fieldControl(FIELD.ACTUAL_EXPENDITURE).checked).toBe(false);
+
+    // A card draws no figure over time: the history is not offered there.
+    await addVisual(user, 'CARD');
+    await waitFor(() => fieldControl(FIELD.ACTUAL_EXPENDITURE));
+    expect(
+      within(settings()).queryByRole('checkbox', {
+        name: fieldNamePattern(FIELD.HISTORY_ACTUAL_PERCENT),
+      }),
+    ).toBeNull();
+  });
+
+  describe('drawn', () => {
+    const lineTitle = 'Published progress by month';
+    const strategicTitle = 'Projects by strategic';
+    const cardTitle = 'Earliest planned end';
+    const group = (key: string | null, values: (number | null)[]): VisualGroup => ({
+      key,
+      label: null,
+      projects: 4,
+      measured: 3,
+      valueEntered: 3,
+      values,
+      onPlan: null,
+    });
+    const saved: DesignView = {
+      isStandard: false,
+      updatedAt: '2026-11-18T09:00:00Z',
+      visuals: [
+        {
+          title: { ar: cardTitle, en: cardTitle },
+          visualType: 'CARD',
+          measures: [],
+          groupBy: 'NONE',
+          layoutColumn: 0,
+          layoutRow: 0,
+          layoutWidth: 4,
+          layoutHeight: 2,
+          values: [
+            { field: FIELD.PLANNED_END_DATE, aggregation: 'MIN' },
+            { field: FIELD.IS_STRATEGIC, aggregation: 'SHARE_TRUE' },
+          ],
+          valueTypes: ['DATE', 'BOOLEAN'],
+          // 20515 days after 1970-01-01 is 3 March 2026.
+          groups: [group(null, [20515, 40])],
+        },
+        {
+          title: { ar: lineTitle, en: lineTitle },
+          visualType: 'LINE',
+          measures: [],
+          groupBy: 'NONE',
+          layoutColumn: 0,
+          layoutRow: 2,
+          layoutWidth: 12,
+          layoutHeight: 5,
+          values: [
+            { field: FIELD.HISTORY_ACTUAL_PERCENT, aggregation: 'AVERAGE' },
+            { field: FIELD.HISTORY_PLANNED_PERCENT, aggregation: 'AVERAGE' },
+          ],
+          groupField: FIELD.HISTORY_PERIOD_END,
+          groupDateUnit: 'MONTH',
+          valueTypes: ['PERCENT', 'PERCENT'],
+          groups: [group('2026-01', [20, 25]), group('2026-02', [35, null])],
+        },
+        {
+          title: { ar: strategicTitle, en: strategicTitle },
+          visualType: 'TABLE',
+          measures: [],
+          groupBy: 'NONE',
+          layoutColumn: 0,
+          layoutRow: 7,
+          layoutWidth: 6,
+          layoutHeight: 4,
+          values: [{ field: FIELD.ACTUAL_EXPENDITURE, aggregation: 'COUNT' }],
+          groupField: FIELD.IS_STRATEGIC,
+          valueTypes: ['SAR'],
+          groups: [group('TRUE', [5]), group('FALSE', [2]), group(null, [1])],
+        },
+      ],
+    };
+
+    test('on the dashboard, a date reads as a date, a share as a percentage, and the line has a table of its values', async () => {
+      designerApi(saved, true, false);
+      const user = userEvent.setup();
+      renderApp({ path: DASHBOARD, session: session() });
+
+      const card = present((await screen.findByText(cardTitle)).closest('section'), 'The card');
+      expect(plain(card.textContent)).toContain('3 Mar 2026');
+      expect(plain(card.textContent)).toContain('40%');
+
+      const chart = screen.getByRole('img', {
+        name: (name) => plain(name).startsWith(`${lineTitle}:`),
+      });
+      expect(chart).toBeTruthy();
+      await user.click(screen.getByText(en('dashboards.trend.showTable')));
+      const table = await screen.findByRole('table', { name: lineTitle });
+      const rows = within(table)
+        .getAllByRole('row')
+        .map((row) => plain(row.textContent));
+      expect(rows[1]).toBe('Jan 202620%25%');
+      expect(rows[2]).toBe(`Feb 202635%${en('dashboards.insights.notAvailable')}`);
+    });
+
+    test('a yes/no grouping reads Yes, No and Not set on the dashboard, where the field list answers 403', async () => {
+      designerApi(saved, true, false);
+      renderApp({ path: DASHBOARD, session: session() });
+
+      const table = await screen.findByRole('table', { name: strategicTitle });
+      const heads = within(table)
+        .getAllByRole('rowheader')
+        .map((cell) => plain(cell.textContent));
+      expect(heads).toEqual([
+        en('dashboards.designer.yes'),
+        en('dashboards.designer.no'),
+        en('dashboards.designer.notSet'),
+      ]);
+    });
   });
 });

@@ -11,20 +11,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropCheckConstraint(
-                name: "ck_user_status",
-                schema: "identity_access",
-                table: "user");
+            migrationBuilder.Sql("ALTER TABLE identity_access.\"user\" DROP CONSTRAINT ck_user_status; -- EXPAND-THEN-CONTRACT-REVIEWED: widened to DELETED, re-added in this migration (TASK-112)");
 
             migrationBuilder.DropIndex(
                 name: "ix_project_legacy_reference",
                 schema: "project",
                 table: "project");
 
-            migrationBuilder.DropCheckConstraint(
-                name: "ck_access_relationship_end_reason",
-                schema: "identity_access",
-                table: "access_relationship");
+            migrationBuilder.Sql("ALTER TABLE identity_access.access_relationship DROP CONSTRAINT ck_access_relationship_end_reason; -- EXPAND-THEN-CONTRACT-REVIEWED: widened to USER_DELETED, re-added in this migration (TASK-112)");
 
             migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "deleted_at",

@@ -31,7 +31,7 @@ import {
   type VisualResult,
   type VisualType,
 } from './designApi.ts';
-import { normalized } from './fields.ts';
+import { lineStart, normalized } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import { VisualBody } from './VisualBody.tsx';
@@ -93,14 +93,24 @@ function withoutFigures(visual: VisualResult): Visual {
     ...(visual.section === undefined || visual.section === null ? {} : { section: visual.section }),
     values: visual.values,
     groupField: visual.groupField,
+    groupDateUnit: visual.groupDateUnit,
     filters: visual.filters,
   });
 }
 
 /** What a visual's figures are calculated from: its type, measures or field values, grouping and filters. */
 function figuresBasis(visual: Visual): string {
-  const { visualType, measures, groupBy, values, groupField, filters } = normalized(visual);
-  return JSON.stringify({ visualType, measures, groupBy, values, groupField, filters });
+  const { visualType, measures, groupBy, values, groupField, groupDateUnit, filters } =
+    normalized(visual);
+  return JSON.stringify({
+    visualType,
+    measures,
+    groupBy,
+    values,
+    groupField,
+    groupDateUnit,
+    filters,
+  });
 }
 
 /** Each visual's figures by its key: the API answers a design in the order it was sent. */
@@ -255,7 +265,7 @@ export function DashboardDesignerPage(): ReactElement {
   };
 
   const add = (type: VisualType) => {
-    append(newVisual(type, visuals));
+    append(newVisual(type, visuals, fields.data ?? []));
   };
 
   const addSection = (section: Section) => {
@@ -593,6 +603,8 @@ export function DashboardDesignerPage(): ReactElement {
                   <button
                     type="button"
                     className="designer__type"
+                    // A line draws fields only: it waits for the catalogue to give it one.
+                    disabled={type === 'LINE' && lineStart(fields.data ?? []) === null}
                     onClick={() => {
                       add(type);
                     }}

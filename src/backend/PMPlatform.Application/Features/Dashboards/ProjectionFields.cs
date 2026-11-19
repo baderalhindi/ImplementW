@@ -74,7 +74,8 @@ internal sealed record ProjectionField(string Code, ProjectionValueType Type, Pr
 
     public static ProjectionField State(string code, IReadOnlyList<string> values) => new(code, ProjectionValueType.Code, ProjectionFieldSource.State, null, false, values);
 
-    public static ProjectionField Figure(string code, ProjectionValueType type, bool isSensitive = false) => new(code, type, ProjectionFieldSource.Figure, code, isSensitive, []);
+    public static ProjectionField Figure(string code, ProjectionValueType type, bool isSensitive = false, IReadOnlyList<string>? values = null) =>
+        new(code, type, ProjectionFieldSource.Figure, code, isSensitive, values ?? []);
 
     public static ProjectionField Bucket(string code, string key) => new(code, ProjectionValueType.Count, ProjectionFieldSource.Bucket, key, false, []);
 

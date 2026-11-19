@@ -12,7 +12,8 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 /// initiative are the filters the 2 Nov 2026 review added. <see cref="StagePlanRevisionNo"/> is the stage plan revision an approved schedule change
 /// authorises a change of (review round 7, item 1); 0 while the project has no plan. <see cref="CurrentStageCode"/> and <see cref="CurrentStagePercent"/>
 /// are the latest published stage-based period's, or as imported. <see cref="ProgressMethod"/> says whether its periods weigh stages or read the schedule
-/// (review round 8, point 02).
+/// (review round 8, point 02). The registration budget, the entity-declared percentages, the funding source, the strategic and update-compliance flags, the
+/// closing time and the next action's due date are the project record's own attributes PROJECT.PROJECT_PROFILE presents (the 18 Nov 2026 designer fields).
 /// </summary>
 public sealed record ProjectFacts(
     Guid Id,
@@ -37,4 +38,14 @@ public sealed record ProjectFacts(
     int StagePlanRevisionNo = 0,
     string? CurrentStageCode = null,
     decimal? CurrentStagePercent = null,
-    ProjectProgressMethod? ProgressMethod = null);
+    ProjectProgressMethod? ProgressMethod = null,
+    Money? RegistrationBudgetSar = null,
+    decimal? DeclaredActualPercent = null,
+    decimal? DeclaredPlannedPercent = null,
+    decimal? DeclaredActualSpendPercent = null,
+    decimal? DeclaredPlannedSpendPercent = null,
+    FundingSource? FundingSource = null,
+    bool? IsStrategic = null,
+    bool? EntityUpdateCompliant = null,
+    DateTimeOffset? ClosedAt = null,
+    DateOnly? NextActionDueDate = null);

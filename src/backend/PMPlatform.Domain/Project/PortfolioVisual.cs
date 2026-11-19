@@ -26,6 +26,9 @@ public enum PortfolioVisualType
 
     /// <summary>One of the dashboard's own sections (<see cref="PortfolioSection"/>), drawn as it always was, placed and sized like any visual.</summary>
     Section = 8,
+
+    /// <summary>A line per value over the groups in key order: figures over time (the 18 Nov 2026 designer fields).</summary>
+    Line = 9,
 }
 
 /// <summary>

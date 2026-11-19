@@ -466,6 +466,12 @@ erDiagram
         uuid project_id FK
         varchar stage_code
     }
+    PortfolioVisual {
+        uuid id PK
+        smallint sort_order UK
+        varchar visual_type
+        varchar section UK
+    }
     ProjectImportBatch {
         uuid id PK
         integer batch_no UK
@@ -515,6 +521,7 @@ The 2 Nov 2026 review (R3-3, R3-4) adds RPMO's strategy classification — a str
 | **ProjectImportNameMapping** | `project.project_import_name_mapping` | A workbook name mapped to the platform value it means, remembered for the next import (R3-4). | — | RETAIN | — |
 | **ProjectImportValidation** | `project.project_import_validation` | A workbook of more than 200 rows validated in the background, its result kept for its importer, who is notified when it is done. | `status` → QUEUED · RUNNING · COMPLETED · FAILED | RETAIN | — |
 | **ProjectImportValueRequest** | `project.project_import_value_request` | An importer's request that the administrators add a value the lists lack, marked added or declined. | `status` → OPEN · ADDED · DECLINED | RETAIN | — |
+| **PortfolioVisual** | `project.portfolio_visual` | One visual of the Portfolio dashboard as the Portfolio Manager designed it, the same for everyone (17 Nov 2026 dashboard designer, `DASHBOARD_DESIGN`). Saved and replaced as a whole; no row means the standard design. | — | HARD_WORKING | — |
 
 ### 5.5 Progress — WF-02 (closes TASK-007 S-2)
 
@@ -1672,7 +1679,7 @@ Two lifecycle facts are deliberately not columns:
 | `RETAIN` | Never physically deleted. A terminal lifecycle state or an end timestamp ends its active life; retention period per PTBC-048-class decision. | 55 |
 | `HARD_DRAFT` | Physical delete permitted only while the row is in its DRAFT (unsubmitted) state, by its owner, with an audit event; forbidden once submitted. | 14 |
 | `HARD_OWNER` | User-owned convenience rows deletable by the owner at any time (preferences, saved views); audited. | 3 |
-| `HARD_WORKING` | Working rows the platform's own rule deletes: planning edits on the working schedule (dependencies), which the approved baseline copies, so history is unaffected, audited via the attribute diff; and the stored bytes of a generated output, deleted at its expiry while its `GeneratedOutput` record is kept (TASK-071). | 3 |
+| `HARD_WORKING` | Working rows the platform's own rule deletes: planning edits on the working schedule (dependencies), which the approved baseline copies, so history is unaffected, audited via the attribute diff; the stored bytes of a generated output, deleted at its expiry while its `GeneratedOutput` record is kept (TASK-071); and the Portfolio dashboard design (`PortfolioVisual`), replaced whole on save and deleted on reset; its rows name who saved them, and neither a save nor a reset writes an audit event yet (TASK-112). | 4 |
 | `CASCADE` | Follows its parent's policy. | 35 |
 
 Sum 123. `HARD_DRAFT` applies to business aggregates a person submits; governed configuration drafts (D-12) are `RETAIN` because author, reviewer and publisher separation makes every authored version audit-relevant (TASK-110) — an abandoned draft is RETIRED, not deleted. The physical `GeneratedOutput` file (`ReportOutputContent`) is purged at expiry while its row is retained as PURGED; `DocumentVersion` files are never purged.
@@ -1878,3 +1885,4 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | 2026-10-21 | §5.21, `erd.dbml`: `integration_monitoring.integration_instance.availability_changed_at` (since when the current availability has held, so an availability alert can wait for a configured delay, TBC-INT-08) and the `operational_alert.alert_type` value `QUEUE_BACKLOG` (FG-05 §10.1's backlog family, TBC-INT-11), migration `TASK-092_AddIntegrationQueueStateAndAlertThresholds`, which also adds the worker-owned partial index `ix_invocation_queue_state` behind ADM-047's queue state (`docs/operations/operational-dashboards.md`). Table count unchanged (124). | Observability (TASK-092) |
 | 2026-11-05 | §5.16, §5.1, `erd.dbml`: the 5 Nov 2026 review (R4-2, R4-4, R4-5, R4-6): `update_request_batch` and `user_password_history`; local account columns on `user`; a role's allowed scopes, landing and activation; `project.title_en`, `is_strategic`, `entity_contact_user_id`, `seed_source`; `audit_event.scope_project_id` loses its foreign key, as the trail outlives a removed project. |
 | 2026-11-13 | §5.1, `erd.dbml`: `user_passkey` and `sms_code` for sign-in without a password (`client-review-changes.md` §8), migration `TASK-112_AddPasskeysAndSmsCodes`. |
+| 2026-11-19 | §5.4, §8, `erd.dbml`: `project.portfolio_visual` (`dashboard-designer.md`), migrations `TASK-112_AddPortfolioVisuals`, `…_AddPortfolioVisualSections`, `…_AddPortfolioVisualDataFields`, `…_AddPortfolioVisualLine`; delete policy `HARD_WORKING`. | TASK-112 |

@@ -5,7 +5,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { DataPanel } from './DataPanel.tsx';
 import { type FieldDescriptor, type Visual, type VisualType } from './designApi.ts';
-import { COLUMNS, MAX_HEIGHT, retitled, VISUAL_TYPES, withType } from './visuals.ts';
+import { asLine, COLUMNS, MAX_HEIGHT, retitled, VISUAL_TYPES, withType } from './visuals.ts';
 
 /**
  * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters) and size. Only what the type takes is offered, so whatever is chosen
@@ -84,7 +84,16 @@ export function VisualSettings({
               }}
             >
               {VISUAL_TYPES.map((type) => (
-                <option key={type} value={type}>
+                <option
+                  key={type}
+                  value={type}
+                  // A line draws fields only: it is offered once the catalogue gives it one.
+                  disabled={
+                    type === 'LINE' &&
+                    visual.visualType !== 'LINE' &&
+                    asLine(visual, fields.data ?? []) === null
+                  }
+                >
                   {t(`dashboards.designer.type.${type}`)}
                 </option>
               ))}

@@ -45,6 +45,9 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ["POST /api/v1/project-import-batches/{batchId}/rollback"] = "removes only the projects the batch created, untouched since",
         ["POST /api/v1/project-import-value-requests"] = "asks for a list value to be added; of no project",
         ["POST /api/v1/project-import-value-requests/{requestId}/resolve"] = "marks a list value request added or declined; of no project",
+        ["PUT /api/v1/portfolio-insights/design"] = "the Portfolio dashboard's one design (17 Nov 2026 designer); of no project",
+        ["POST /api/v1/portfolio-insights/design/preview"] = "a read sent as POST (DASHBOARD_DESIGN): it calculates a design being edited and writes nothing",
+        ["POST /api/v1/portfolio-insights/design/reset"] = "back to the standard Portfolio dashboard design; of no project",
     };
 
     /// <summary>String values a request's validation knows but the document does not enumerate, by property name.</summary>
@@ -56,6 +59,7 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ["actionType"] = "MITIGATE",
         ["concernType"] = "ISSUE",
         ["stageCode"] = "EXECUTION",
+        ["progressMethod"] = "SCHEDULE",
         ["plannedResumptionDate"] = null,
     };
 

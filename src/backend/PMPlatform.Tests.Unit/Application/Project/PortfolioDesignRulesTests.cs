@@ -11,7 +11,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 
 /// <summary>
 /// The 17 Nov 2026 dashboard designer: what a saved design may hold, and the permission each grouping is read under; and its 18 Nov 2026 data fields: the
-/// catalogue it offers, rules 1 to 6 and the aggregations' arithmetic.
+/// catalogue it offers, rules 1 to 6 and the aggregations' arithmetic; and its 18 Nov 2026 more fields: PROJECT.PROJECT_PROFILE, yes/no and date fields, the
+/// LINE visual, rule 7's grain and the period charts over the published history.
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -141,13 +142,18 @@ public sealed class PortfolioDesignRulesTests
     public void AGroupingIsReadUnderItsInsightsPermission(PortfolioGroupBy groupBy, string permission) =>
         Assert.Equal(permission, PortfolioDesignService.PermissionOf(groupBy));
 
-    /// <summary>Only project-grain fields of a type a visual calculates with are offered, each keyed by its projection and field, with its type's aggregations.</summary>
+    /// <summary>
+    /// Every field of the register's projections about projects is offered (18 Nov 2026 more fields: yes/no and dates too, and the snapshot history), each keyed
+    /// by its projection and field, with its type's aggregations and its grain; the project-grain fields come first.
+    /// </summary>
     [Fact]
-    public void TheCatalogueOffersProjectGrainFieldsToCalculateWith()
+    public void TheCatalogueOffersEveryFieldAboutProjects()
     {
         Assert.All(Catalogue, f => Assert.Matches(new Regex("^[A-Z][A-Z_]*\\.[A-Z][A-Z_]*\\.[A-Z][A-Z0-9_]*$"), f.Key));
-        Assert.DoesNotContain(Catalogue, f => f.ProjectionCode == DashboardProjections.PublishedProgressHistory);
-        Assert.DoesNotContain(Catalogue, f => f.FieldCode == "ACTUAL_PERCENT_OVERRIDDEN");
+        Assert.Equal(DashboardProjections.Reportable.Sum(p => p.Fields.Count), Catalogue.Count);
+        Assert.DoesNotContain(Catalogue, f => f.ProjectionCode == DashboardProjections.DefinitionBacklog);
+        Assert.Equal(PortfolioFieldType.Boolean, Assert.Single(Catalogue, f => f.FieldCode == "ACTUAL_PERCENT_OVERRIDDEN").Type);
+        Assert.Equal(Catalogue.OrderBy(f => f.Grain).Select(f => f.Key), Catalogue.Select(f => f.Key));
         PortfolioFieldDescriptor spend = Assert.Single(Catalogue, f => f.Key == Spend);
         Assert.Equal((PortfolioFieldType.Sar, true, "WF-14"), (spend.Type, spend.IsSensitive, spend.SourceDomain));
         Assert.Equal([PortfolioFieldAggregation.Count], Assert.Single(Catalogue, f => f.Key == Health).Aggregations);
@@ -237,7 +243,7 @@ public sealed class PortfolioDesignRulesTests
     [InlineData(PortfolioFieldAggregation.Max, "250.00")]
     public void AnAggregationCountsTheRevealedCellsOnly(PortfolioFieldAggregation aggregation, string expected) =>
         Assert.Equal(decimal.Parse(expected, System.Globalization.CultureInfo.InvariantCulture),
-            PortfolioDesignService.Aggregate(aggregation, ["100.25", null, "250.00", "0.25", null]));
+            PortfolioDesignService.Aggregate(aggregation, PortfolioFieldType.Sar, ["100.25", null, "250.00", "0.25", null]));
 
     [Theory]
     [InlineData(PortfolioFieldAggregation.Sum)]
@@ -246,12 +252,12 @@ public sealed class PortfolioDesignRulesTests
     [InlineData(PortfolioFieldAggregation.Max)]
     public void NothingRevealedIsNotAvailable(PortfolioFieldAggregation aggregation)
     {
-        Assert.Null(PortfolioDesignService.Aggregate(aggregation, [null, null]));
-        Assert.Equal(0m, PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Count, [null, null]));
+        Assert.Null(PortfolioDesignService.Aggregate(aggregation, PortfolioFieldType.Sar, [null, null]));
+        Assert.Equal(0m, PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Count, PortfolioFieldType.Sar, [null, null]));
     }
 
     [Fact]
-    public void AStateIsCounted() => Assert.Equal(2m, PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Count, ["RED", "GREEN", null]));
+    public void AStateIsCounted() => Assert.Equal(2m, PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Count, PortfolioFieldType.Code, ["RED", "GREEN", null]));
 
     [Fact]
     public void EveryGroupingIsAFilterDimension() =>
@@ -269,5 +275,279 @@ public sealed class PortfolioDesignRulesTests
                 Drawing(PortfolioVisualType.Table, values: [Value(Spend, PortfolioFieldAggregation.Sum), Value(ActualPercent, PortfolioFieldAggregation.Average), Value(Health, PortfolioFieldAggregation.Count)]),
                 types));
         Assert.Null(PortfolioDesignService.ValueTypesOf(Visual(), types));
+    }
+
+    // The 18 Nov 2026 more fields: PROJECT.PROJECT_PROFILE, yes/no and date fields, snapshot-grain fields and the LINE visual.
+    private const string Budget = "PROJECT.PROJECT_PROFILE.REGISTRATION_BUDGET";
+    private const string Strategic = "PROJECT.PROJECT_PROFILE.IS_STRATEGIC";
+    private const string PlannedEnd = "PROJECT.PROJECT_PROFILE.PLANNED_END_DATE";
+    private const string ActivatedAt = "PROJECT.PROJECT_PROFILE.ACTIVATED_AT";
+    private const string Funding = "PROJECT.PROJECT_PROFILE.FUNDING_SOURCE";
+    private const string PeriodEnd = "PROGRESS.PUBLISHED_PROGRESS_HISTORY.PERIOD_END";
+    private const string PublishedAt = "PROGRESS.PUBLISHED_PROGRESS_HISTORY.PUBLISHED_AT";
+    private const string HistoryActual = "PROGRESS.PUBLISHED_PROGRESS_HISTORY.ACTUAL_PERCENT";
+    private const string HistoryHealth = "PROGRESS.PUBLISHED_PROGRESS_HISTORY.OVERALL_HEALTH";
+
+    private static readonly Dictionary<string, PortfolioFieldDescriptor> ByKey = Catalogue.ToDictionary(f => f.Key, StringComparer.Ordinal);
+
+    /// <summary>A visual of field values grouped by a field (no project attribute), with a date unit when the field is a date.</summary>
+    private static PortfolioVisualInput ByField(
+        PortfolioVisualType type, string? groupField, PortfolioDateUnit? unit, IReadOnlyList<PortfolioFieldFilter>? filters = null, params PortfolioFieldValue[] values) =>
+        new(new BilingualLabel("عبر الزمن", "Over time"), type, [], PortfolioGroupBy.None, 0, 0, 6, 5, null, values, groupField, filters, unit);
+
+    private static PortfolioVisualInput Line(string? groupField = PeriodEnd, PortfolioDateUnit? unit = PortfolioDateUnit.Month, params PortfolioFieldValue[] values) =>
+        ByField(PortfolioVisualType.Line, groupField, unit, null, values.Length == 0 ? [Value(HistoryActual, PortfolioFieldAggregation.Average)] : values);
+
+    [Fact]
+    public void TheProjectProfileOffersItsSixteenFieldsOfProjects()
+    {
+        List<PortfolioFieldDescriptor> profile = [.. Catalogue.Where(f => f.ProjectionCode == DashboardProjections.ProjectProfile)];
+
+        Assert.Equal(16, profile.Count);
+        Assert.All(profile, f => Assert.Equal((PortfolioFieldGrain.Project, "WF-01"), (f.Grain, f.SourceDomain)));
+        Assert.Equal((PortfolioFieldType.Sar, true), (ByKey[Budget].Type, ByKey[Budget].IsSensitive));
+        Assert.Equal(["STRATEGY_BUDGET_FULL", "STRATEGY_BUDGET_PARTIAL", "NOT_STRATEGY_BUDGET"], ByKey[Funding].Values);
+        Assert.Equal(["SCHEDULE", "STAGES"], ByKey["PROJECT.PROJECT_PROFILE.PROGRESS_METHOD"].Values);
+        Assert.Equal(
+            [PortfolioFieldType.Sar, .. Enumerable.Repeat(PortfolioFieldType.Percent, 5), .. Enumerable.Repeat(PortfolioFieldType.Code, 3), PortfolioFieldType.Boolean,
+                PortfolioFieldType.Boolean, PortfolioFieldType.Date, PortfolioFieldType.Date, PortfolioFieldType.Date, PortfolioFieldType.DateTime, PortfolioFieldType.DateTime],
+            profile.Select(f => f.Type));
+        Assert.Equal([PortfolioFieldAggregation.Count, PortfolioFieldAggregation.CountTrue, PortfolioFieldAggregation.ShareTrue], ByKey[Strategic].Aggregations);
+        Assert.Equal([PortfolioFieldAggregation.Count, PortfolioFieldAggregation.Min, PortfolioFieldAggregation.Max], ByKey[ActivatedAt].Aggregations);
+    }
+
+    [Fact]
+    public void ThePublishedHistoryIsOfferedAtSnapshotGrain()
+    {
+        List<PortfolioFieldDescriptor> history = [.. Catalogue.Where(f => f.ProjectionCode == DashboardProjections.PublishedProgressHistory)];
+
+        Assert.Equal(["PUBLISHED_AT", "PERIOD_START", "PERIOD_END", "OVERALL_HEALTH", "ACTUAL_PERCENT", "PLANNED_PERCENT"], history.Select(f => f.FieldCode));
+        Assert.All(history, f => Assert.Equal(PortfolioFieldGrain.Snapshot, f.Grain));
+        Assert.Equal(PortfolioFieldType.DateTime, ByKey[PublishedAt].Type);
+        Assert.All(Catalogue.Where(f => f.ProjectionCode != DashboardProjections.PublishedProgressHistory), f => Assert.Equal(PortfolioFieldGrain.Project, f.Grain));
+    }
+
+    [Theory]
+    [InlineData(PortfolioFieldAggregation.Count, "4")]
+    [InlineData(PortfolioFieldAggregation.CountTrue, "3")]
+    [InlineData(PortfolioFieldAggregation.ShareTrue, "75")]
+    public void AYesNoIsCountedAndItsYesShareTaken(PortfolioFieldAggregation aggregation, string expected) =>
+        Assert.Equal(decimal.Parse(expected, System.Globalization.CultureInfo.InvariantCulture),
+            PortfolioDesignService.Aggregate(aggregation, PortfolioFieldType.Boolean, ["true", "false", null, "true", "true"]));
+
+    [Fact]
+    public void AYesShareHasTwoPlacesAndIsNotAvailableWithNothingRevealed()
+    {
+        Assert.Equal(33.33m, PortfolioDesignService.Aggregate(PortfolioFieldAggregation.ShareTrue, PortfolioFieldType.Boolean, ["true", "false", "false"]));
+        Assert.Null(PortfolioDesignService.Aggregate(PortfolioFieldAggregation.ShareTrue, PortfolioFieldType.Boolean, [null]));
+        Assert.Equal(0m, PortfolioDesignService.Aggregate(PortfolioFieldAggregation.CountTrue, PortfolioFieldType.Boolean, [null]));
+    }
+
+    /// <summary>A date's earliest and latest are day numbers since 1970-01-01; a moment counts by its UTC date.</summary>
+    [Fact]
+    public void ADatesEarliestAndLatestAreDayNumbers()
+    {
+        static decimal Day(int year, int month, int day) => new DateOnly(year, month, day).DayNumber - new DateOnly(1970, 1, 1).DayNumber;
+
+        Assert.Equal(Day(2025, 12, 31), PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Min, PortfolioFieldType.Date, ["2026-03-01", null, "2025-12-31"]));
+        Assert.Equal(Day(2026, 3, 1), PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Max, PortfolioFieldType.Date, ["2026-03-01", null, "2025-12-31"]));
+        Assert.Equal(Day(2026, 11, 18), PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Max, PortfolioFieldType.DateTime, ["2026-11-18T23:59:00Z", "2026-01-02T00:00:00Z"]));
+        Assert.Equal(0m, PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Min, PortfolioFieldType.Date, ["1970-01-01"]));
+        Assert.Null(PortfolioDesignService.Aggregate(PortfolioFieldAggregation.Min, PortfolioFieldType.Date, [null]));
+    }
+
+    [Theory]
+    [InlineData(Strategic, PortfolioFieldAggregation.Sum)]
+    [InlineData(Strategic, PortfolioFieldAggregation.Average)]
+    [InlineData(PlannedEnd, PortfolioFieldAggregation.Sum)]
+    [InlineData(PlannedEnd, PortfolioFieldAggregation.Average)]
+    [InlineData(OpenRisks, PortfolioFieldAggregation.ShareTrue)]
+    public void YesNoAndDateAggregationsFitTheirTypes(string field, PortfolioFieldAggregation aggregation) =>
+        Assert.Equal(new FieldIssue("visuals[0].values", FieldIssue.NotAllowed), Issue(Drawing(values: Value(field, aggregation))));
+
+    /// <summary>Rule 3 widened: a gauge also draws a yes share; a pie and a donut also a count of yeses.</summary>
+    [Fact]
+    public void AGaugeDrawsAYesShareAndAPieACountOfYeses()
+    {
+        Assert.Null(Issue(Drawing(PortfolioVisualType.Gauge, groupField: null, values: Value(Strategic, PortfolioFieldAggregation.ShareTrue))));
+        Assert.Equal("visuals[0].values", Issue(Drawing(PortfolioVisualType.Gauge, groupField: null, values: Value(Strategic, PortfolioFieldAggregation.CountTrue)))?.Field);
+        Assert.Null(Issue(Drawing(PortfolioVisualType.Pie, values: Value(Strategic, PortfolioFieldAggregation.CountTrue))));
+        Assert.Equal("visuals[0].values", Issue(Drawing(PortfolioVisualType.Pie, values: Value(Strategic, PortfolioFieldAggregation.ShareTrue)))?.Field);
+    }
+
+    /// <summary>A visual groups by a yes/no with no unit, and by a date with its year or month, which a date requires and anything else refuses.</summary>
+    [Fact]
+    public void ADateGroupNamesItsUnit()
+    {
+        Assert.Null(Issue(Drawing(groupField: Strategic)));
+        Assert.Null(Issue(ByField(PortfolioVisualType.Column, PlannedEnd, PortfolioDateUnit.Year, null, Value(Budget, PortfolioFieldAggregation.Sum))));
+        Assert.Null(Issue(ByField(PortfolioVisualType.Column, ActivatedAt, PortfolioDateUnit.Month, null, Value(Budget, PortfolioFieldAggregation.Sum))));
+        Assert.Equal(new FieldIssue("visuals[0].groupDateUnit", FieldIssue.Required),
+            Issue(ByField(PortfolioVisualType.Column, PlannedEnd, null, null, Value(Budget, PortfolioFieldAggregation.Sum))));
+        Assert.Equal(new FieldIssue("visuals[0].groupDateUnit", FieldIssue.NotAllowed),
+            Issue(ByField(PortfolioVisualType.Column, Health, PortfolioDateUnit.Year, null, Value(Budget, PortfolioFieldAggregation.Sum))));
+        Assert.Equal(new FieldIssue("visuals[0].groupDateUnit", FieldIssue.NotAllowed),
+            Issue(ByField(PortfolioVisualType.Column, PlannedEnd, (PortfolioDateUnit)9, null, Value(Budget, PortfolioFieldAggregation.Sum))));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.NotAllowed), Issue(Drawing(groupField: Budget)));
+        Assert.Equal("visuals[0].section", Issue(Placed(PortfolioSection.PortfolioTable, 0) with { GroupDateUnit = PortfolioDateUnit.Year })?.Field);
+    }
+
+    /// <summary>Rule 5 widened: a yes/no filters by TRUE or FALSE, a date by year.</summary>
+    [Fact]
+    public void YesNoAndDateFieldsFilterByYesNoAndYear()
+    {
+        Assert.Null(Issue(Drawing(filters: [new(Strategic, ["TRUE"]), new(PlannedEnd, ["2026", "2027"]), new(ActivatedAt, ["2025"])])));
+        Assert.Equal(FieldIssue.NotAllowed, Issue(Drawing(filters: [new(Strategic, ["true"])]))?.Code);
+        Assert.Equal(FieldIssue.NotAllowed, Issue(Drawing(filters: [new(Strategic, ["YES"])]))?.Code);
+        Assert.Equal(FieldIssue.NotAllowed, Issue(Drawing(filters: [new(PlannedEnd, ["26"])]))?.Code);
+        Assert.Equal(FieldIssue.NotAllowed, Issue(Drawing(filters: [new(PlannedEnd, ["2026-03"])]))?.Code);
+        Assert.Equal(FieldIssue.NotAllowed, Issue(Drawing(filters: [new(Budget, ["1"])]))?.Code);
+    }
+
+    /// <summary>A line draws one to three field values, never fixed measures, and is grouped by a field only.</summary>
+    [Fact]
+    public void ALineDrawsFieldValuesGroupedByAField()
+    {
+        Assert.Null(Issue(Line()));
+        Assert.Null(Issue(Line(PlannedEnd, PortfolioDateUnit.Year, Value(Budget, PortfolioFieldAggregation.Sum), Value(OpenRisks, PortfolioFieldAggregation.Sum),
+            Value(ActualPercent, PortfolioFieldAggregation.Average))));
+        Assert.Equal(new FieldIssue("visuals[0].values", FieldIssue.OutsideRange), Issue(Line(values:
+            [Value(HistoryActual, PortfolioFieldAggregation.Average), Value(HistoryActual, PortfolioFieldAggregation.Min), Value(HistoryActual, PortfolioFieldAggregation.Max),
+                Value(HistoryActual, PortfolioFieldAggregation.Count)])));
+        Assert.Equal(new FieldIssue("visuals[0].values", FieldIssue.Required), Issue(Visual(PortfolioVisualType.Line, PortfolioGroupBy.None, measures: []) with { Measures = [] }));
+        Assert.Equal(new FieldIssue("visuals[0].measures", FieldIssue.NotAllowed), Issue(Visual(PortfolioVisualType.Line, PortfolioGroupBy.None)));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.Required), Issue(Line(groupField: null, unit: null)));
+        Assert.Equal(new FieldIssue("visuals[0].groupBy", FieldIssue.NotAllowed),
+            Issue(Line(groupField: null, unit: null) with { GroupBy = PortfolioGroupBy.Sector, Values = [Value(Budget, PortfolioFieldAggregation.Sum)] }));
+    }
+
+    /// <summary>Rule 7: one grain per visual; a snapshot visual is a period chart or by its own state, as a line, columns, bars or a table.</summary>
+    [Fact]
+    public void ASnapshotVisualIsOfOneGrainGroupedOverTime()
+    {
+        Assert.Null(Issue(ByField(PortfolioVisualType.Column, PublishedAt, PortfolioDateUnit.Year, null, Value(HistoryActual, PortfolioFieldAggregation.Max))));
+        Assert.Null(Issue(ByField(PortfolioVisualType.Table, HistoryHealth, null, null, Value(HistoryActual, PortfolioFieldAggregation.Count))));
+        Assert.Equal(new FieldIssue("visuals[0].values", FieldIssue.NotAllowed),
+            Issue(Line(values: [Value(HistoryActual, PortfolioFieldAggregation.Average), Value(ActualPercent, PortfolioFieldAggregation.Average)])));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.NotAllowed), Issue(Line(PlannedEnd, PortfolioDateUnit.Year)));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.NotAllowed),
+            Issue(Line(PeriodEnd, PortfolioDateUnit.Month, Value(ActualPercent, PortfolioFieldAggregation.Average))));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.NotAllowed), Issue(Visual(groupBy: PortfolioGroupBy.None) with { GroupField = HistoryHealth }));
+        Assert.Equal(new FieldIssue("visuals[0].visualType", FieldIssue.NotAllowed),
+            Issue(ByField(PortfolioVisualType.Pie, HistoryHealth, null, null, Value(HistoryActual, PortfolioFieldAggregation.Count))));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.Required),
+            Issue(ByField(PortfolioVisualType.Table, null, null, null, Value(HistoryActual, PortfolioFieldAggregation.Average))));
+    }
+
+    /// <summary>A snapshot visual's filters narrow its projects (project fields, dimensions) or its snapshots (its own state); a project visual takes no snapshot filter.</summary>
+    [Fact]
+    public void ASnapshotFilterNarrowsTheSnapshotsOfASnapshotVisualOnly()
+    {
+        IReadOnlyList<PortfolioFieldFilter> filters = [new(HistoryHealth, ["RED"]), new(Strategic, ["TRUE"]), new("PROJECT.STATUS", ["ACTIVE"])];
+        Assert.Null(Issue(ByField(PortfolioVisualType.Line, PeriodEnd, PortfolioDateUnit.Month, filters, Value(HistoryActual, PortfolioFieldAggregation.Average))));
+        Assert.Equal(new FieldIssue("visuals[0].filters", FieldIssue.NotAllowed), Issue(Drawing(filters: [new(HistoryHealth, ["RED"])])));
+        Assert.Equal(new FieldIssue("visuals[0].filters", FieldIssue.NotAllowed),
+            Issue(ByField(PortfolioVisualType.Line, PeriodEnd, PortfolioDateUnit.Month, [new(PeriodEnd, ["2026"])], Value(HistoryActual, PortfolioFieldAggregation.Average))));
+    }
+
+    private static readonly OnPlanThresholds Thresholds = new(5m, 10m);
+
+    private static PortfolioProjectRow Row(ProjectLifecycleState state = ProjectLifecycleState.Active) =>
+        new(new PMPlatform.Domain.Project.Project { Id = Guid.NewGuid(), Title = new NarrativeText("مشروع", Language.Ar), LifecycleState = state }, ProjectIndicators.None);
+
+    private static Dictionary<string, IReadOnlyList<PortfolioFieldCell>> Cells(params (string Key, string? Value)[] cells) =>
+        cells.ToDictionary(c => c.Key, IReadOnlyList<PortfolioFieldCell> (c) => [new PortfolioFieldCell(c.Value)], StringComparer.Ordinal);
+
+    private static IReadOnlyList<PortfolioVisualGroup> Groups(
+        PortfolioVisualInput visual, IReadOnlyList<PortfolioProjectRow> rows, Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells) =>
+        PortfolioDesignService.Groups(visual, rows, null, amounts: true, Thresholds, cells, ByKey);
+
+    /// <summary>Date groups run in time order, whatever their size, the projects with no date last; a yes/no filter keeps the yeses.</summary>
+    [Fact]
+    public void DateGroupsRunInTimeOrderAndAYesNoFilterKeepsItsValue()
+    {
+        PortfolioProjectRow a = Row(), b = Row(), c = Row(), d = Row(), e = Row();
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = new()
+        {
+            [a.Project.Id] = Cells((PlannedEnd, "2027-02-01"), (Strategic, "true")),
+            [b.Project.Id] = Cells((PlannedEnd, "2026-12-31"), (Strategic, "true")),
+            [c.Project.Id] = Cells((PlannedEnd, "2027-06-30"), (Strategic, "true")),
+            [d.Project.Id] = Cells((PlannedEnd, null), (Strategic, "true")),
+            [e.Project.Id] = Cells((PlannedEnd, "2025-01-01"), (Strategic, "false")),
+        };
+
+        IReadOnlyList<PortfolioVisualGroup> byYear = Groups(
+            ByField(PortfolioVisualType.Column, PlannedEnd, PortfolioDateUnit.Year, [new(Strategic, ["TRUE"])], Value(PlannedEnd, PortfolioFieldAggregation.Count)), [a, b, c, d, e], cells);
+        Assert.Equal(["2026", "2027", null], byYear.Select(g => g.Key));
+        Assert.Equal([1, 2, 1], byYear.Select(g => g.Projects));
+        Assert.Equal([1m, 2m, 0m], byYear.Select(g => g.Values[0]));
+
+        IReadOnlyList<PortfolioVisualGroup> byMonth = Groups(
+            ByField(PortfolioVisualType.Line, PlannedEnd, PortfolioDateUnit.Month, [new(PlannedEnd, ["2027"])], Value(Strategic, PortfolioFieldAggregation.ShareTrue)), [a, b, c, d, e], cells);
+        Assert.Equal(["2027-02", "2027-06"], byMonth.Select(g => g.Key));
+    }
+
+    [Fact]
+    public void AYesNoGroupsByTrueAndFalse()
+    {
+        PortfolioProjectRow a = Row(), b = Row(), c = Row();
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = new()
+        {
+            [a.Project.Id] = Cells((Strategic, "true"), (Budget, "100.00")),
+            [b.Project.Id] = Cells((Strategic, "true"), (Budget, null)),
+            [c.Project.Id] = Cells((Strategic, "false"), (Budget, "50.00")),
+        };
+
+        IReadOnlyList<PortfolioVisualGroup> groups = Groups(Drawing(groupField: Strategic, values: Value(Budget, PortfolioFieldAggregation.Sum)), [a, b, c], cells);
+
+        Assert.Equal(["TRUE", "FALSE"], groups.Select(g => g.Key));
+        Assert.Equal([100m, 50m], groups.Select(g => g.Values[0]));
+        Assert.Equal([1, 1], groups.Select(g => g.Measured));
+    }
+
+    /// <summary>
+    /// A period chart: the population's snapshots grouped by their period, in time order; <c>Projects</c> are the distinct projects with a snapshot in the group,
+    /// <c>Measured</c> the snapshots whose value is revealed; a snapshot filter narrows the snapshots, a project filter the projects.
+    /// </summary>
+    [Fact]
+    public void SnapshotsGroupByTheirPeriod()
+    {
+        PortfolioProjectRow a = Row(), b = Row(), c = Row(ProjectLifecycleState.Suspended);
+        static IReadOnlyList<PortfolioFieldCell> History(params string?[] values) => [.. values.Select((v, i) => new PortfolioFieldCell(v, i))];
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = new()
+        {
+            [a.Project.Id] = new Dictionary<string, IReadOnlyList<PortfolioFieldCell>>(StringComparer.Ordinal)
+            {
+                [PeriodEnd] = History("2026-08-31", "2026-09-30", "2026-10-31"),
+                [HistoryActual] = History("10", "20", "30"),
+                [HistoryHealth] = History("GREEN", "RED", "RED"),
+            },
+            [b.Project.Id] = new Dictionary<string, IReadOnlyList<PortfolioFieldCell>>(StringComparer.Ordinal)
+            {
+                [PeriodEnd] = History("2026-09-30", "2026-10-31"),
+                [HistoryActual] = History("40", null),
+                [HistoryHealth] = History("RED", "RED"),
+            },
+            [c.Project.Id] = new Dictionary<string, IReadOnlyList<PortfolioFieldCell>>(StringComparer.Ordinal)
+            {
+                [PeriodEnd] = History("2026-09-30"),
+                [HistoryActual] = History("90"),
+                [HistoryHealth] = History("RED"),
+            },
+        };
+
+        IReadOnlyList<PortfolioVisualGroup> all = Groups(Line(), [a, b, c], cells);
+        Assert.Equal(["2026-08", "2026-09", "2026-10"], all.Select(g => g.Key));
+        Assert.Equal([1, 3, 2], all.Select(g => g.Projects));
+        Assert.Equal([1, 3, 1], all.Select(g => g.Measured));
+        Assert.Equal([10m, 50m, 30m], all.Select(g => g.Values[0]));
+
+        IReadOnlyList<PortfolioVisualGroup> red = Groups(
+            ByField(PortfolioVisualType.Line, PeriodEnd, PortfolioDateUnit.Month, [new(HistoryHealth, ["RED"]), new("PROJECT.STATUS", ["ACTIVE"])],
+                Value(HistoryActual, PortfolioFieldAggregation.Average)),
+            [a, b, c], cells);
+        Assert.Equal(["2026-09", "2026-10"], red.Select(g => g.Key));
+        Assert.Equal([30m, 30m], red.Select(g => g.Values[0]));
+        Assert.Equal([2, 2], red.Select(g => g.Projects));
     }
 }

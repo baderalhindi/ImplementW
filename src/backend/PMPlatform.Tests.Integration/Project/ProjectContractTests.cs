@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(36, built["paths"]!.AsObject().Count);
+        Assert.Equal(42, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -231,6 +231,35 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         await responses.CheckAsync("GET", "/api/v1/portfolio-insights", insights);
         using HttpResponseMessage card = await client.GetAsync($"/api/v1/portfolio-insights/cards?dimension=PORTFOLIO&itemId={Guid.NewGuid()}", manager);
         await responses.CheckAsync("GET", "/api/v1/portfolio-insights/cards", card);
+
+        // The 17 Nov 2026 designer: the design read, its data catalogue, a preview, a save and a reset, as local.r02 (DASHBOARD_DESIGN) calls them.
+        const string design = "/api/v1/portfolio-insights/design";
+        object visuals = new
+        {
+            visuals = new[]
+            {
+                new
+                {
+                    title = new { ar = "المشاريع", en = "Projects" }, visualType = "CARD", measures = new[] { "PROJECTS" }, groupBy = "NONE",
+                    layoutColumn = 0, layoutRow = 0, layoutWidth = 3, layoutHeight = 2,
+                },
+            },
+        };
+        using HttpResponseMessage standardDesign = await client.GetAsync(design, manager);
+        await responses.CheckAsync("GET", design, standardDesign);
+        using HttpResponseMessage designFields = await client.GetAsync($"{design}/fields", manager);
+        await responses.CheckAsync("GET", $"{design}/fields", designFields);
+        using HttpResponseMessage designPreview = await client.PostAsync($"{design}/preview", manager, visuals);
+        await responses.CheckAsync("POST", $"{design}/preview", designPreview);
+        using HttpResponseMessage designSaved = await client.PutAsync(design, manager, visuals, ifMatch: null);
+        await responses.CheckAsync("PUT", design, designSaved);
+        using HttpResponseMessage designReset = await client.PostAsync($"{design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, designReset.StatusCode);
+        await responses.CheckAsync("POST", $"{design}/reset", designReset);
+
+        // Review round 8, point 13: what waits on the projects the caller manages.
+        using HttpResponseMessage attention = await client.GetAsync("/api/v1/users/current/managed-project-attention", manager);
+        await responses.CheckAsync("GET", "/api/v1/users/current/managed-project-attention", attention);
 
         Assert.Equal(document.Operations(Tag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);

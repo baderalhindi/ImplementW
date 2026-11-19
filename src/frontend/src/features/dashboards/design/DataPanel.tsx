@@ -5,6 +5,7 @@ import { type ApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import {
+  type DateUnit,
   type FieldAggregation,
   type FieldDescriptor,
   type FieldFilter,
@@ -19,8 +20,13 @@ import {
   FILTER_DIMENSIONS,
   fieldName,
   filterFieldName,
+  filterFieldsFor,
   filterOptions,
-  groupsByField,
+  grainOf,
+  groupedBy,
+  groupFieldsFor,
+  groupsByFieldOnly,
+  isDateType,
   MAX_FILTER_VALUES,
   MAX_FILTERS,
   MAX_VALUES,
@@ -28,7 +34,24 @@ import {
   sourceName,
   withFilter,
 } from './fields.ts';
-import { firstGrouping, GROUP_BYS, groupBysFor, MAX_MEASURES, measuresFor } from './visuals.ts';
+import {
+  firstGrouping,
+  GROUP_BYS,
+  groupBysFor,
+  MAX_MEASURES,
+  measuresFor,
+  withValues,
+} from './visuals.ts';
+
+/** What the one-line note says was replaced: the figures, the fields, or the values of the other grain (now, or over time). */
+type Replaced = 'figures' | 'fields' | 'byHistory' | 'byCurrent';
+
+const REPLACED_NOTE = {
+  figures: 'dashboards.designer.replacedFigures',
+  fields: 'dashboards.designer.replacedFields',
+  byHistory: 'dashboards.designer.replacedByHistory',
+  byCurrent: 'dashboards.designer.replacedByCurrent',
+} as const;
 
 /** The Data panel's first group: the eight Portfolio figures (`measures`), before the governed fields' sources. */
 const FIGURES = 'FIGURES';
@@ -52,7 +75,7 @@ export function DataPanel({
   const [search, setSearch] = useState('');
   // Every group starts open, so each field is in view at once; a group is closed by its heading.
   const [closed, setClosed] = useState<ReadonlySet<string>>(() => new Set());
-  const [replaced, setReplaced] = useState<'figures' | 'fields' | null>(null);
+  const [replaced, setReplaced] = useState<Replaced | null>(null);
   const type = visual.visualType;
   const catalogue = fields.data ?? [];
   const onFields = drawsFields(visual);
@@ -74,7 +97,8 @@ export function DataPanel({
         field.projectionCode === code &&
         (matches(name) || matches(fieldName(field.key, language)) || matches(field.fieldCode)),
     );
-    return inSource.length === 0 ? [] : [{ code, name, fields: inSource }];
+    const overTime = inSource.some((field) => field.grain === 'SNAPSHOT');
+    return inSource.length === 0 ? [] : [{ code, name, overTime, fields: inSource }];
   });
 
   const toggleGroup = (group: string) => {
@@ -118,9 +142,14 @@ export function DataPanel({
       return;
     }
     const value = { field: field.key, aggregation };
-    if (!onFields) {
-      setReplaced('figures');
-      onChange({ ...visual, measures: [], values: [value] });
+    // A first field, or one of the other grain, starts the values over: the grouping and filters follow the new grain.
+    const grain = grainOf(visual, catalogue);
+    if (!onFields || field.grain !== grain) {
+      const next = withValues(visual, type, [value], catalogue);
+      if (next !== null) {
+        setReplaced(!onFields ? 'figures' : field.grain === 'SNAPSHOT' ? 'byHistory' : 'byCurrent');
+        onChange(next);
+      }
       return;
     }
     setReplaced(null);
@@ -210,11 +239,7 @@ export function DataPanel({
         </ul>
         {replaced !== null && (
           <p className="designer-data__note" role="status">
-            {t(
-              replaced === 'figures'
-                ? 'dashboards.designer.replacedFigures'
-                : 'dashboards.designer.replacedFields',
-            )}
+            {t(REPLACED_NOTE[replaced])}
           </p>
         )}
         <input
@@ -231,6 +256,7 @@ export function DataPanel({
           {figures.length > 0 && (
             <FieldGroup
               name={t('dashboards.designer.portfolioFigures')}
+              hint={null}
               chosen={onFields ? 0 : visual.measures.length}
               open={sourceOpen(FIGURES)}
               onToggle={() => {
@@ -260,6 +286,7 @@ export function DataPanel({
             <FieldGroup
               key={source.code}
               name={source.name}
+              hint={source.overTime ? t('dashboards.designer.overTime') : null}
               chosen={
                 values.filter((value) => source.fields.some((f) => f.key === value.field)).length
               }
@@ -309,12 +336,15 @@ export function DataPanel({
 /** A source's fields under a heading that opens and closes them, with how many of them are chosen. */
 function FieldGroup({
   name,
+  hint,
   chosen,
   open,
   onToggle,
   children,
 }: {
   name: string;
+  /** A word beside the name: "over time" for the published history's fields. */
+  hint: string | null;
   chosen: number;
   open: boolean;
   onToggle: () => void;
@@ -332,6 +362,7 @@ function FieldGroup({
       >
         <span className="designer-data__chevron" aria-hidden="true" />
         <span className="designer-data__group-name">{name}</span>
+        {hint !== null && <span className="designer-data__over-time">{hint}</span>}
         {chosen > 0 && <span className="designer-data__count">{chosen}</span>}
       </button>
       {open && (
@@ -401,7 +432,43 @@ function RemoveButton({
   );
 }
 
-/** Group by: the project attributes the type takes, then, for a visual drawing fields, the status (CODE) fields. */
+/** The fields of a list as a select's option groups: status, yes/no and date fields, each under its heading. */
+function FieldOptions({ fields }: { fields: readonly FieldDescriptor[] }): ReactElement {
+  const { t, language } = useI18n();
+  const kinds = [
+    { label: t('dashboards.designer.statusFields'), of: fields.filter((f) => f.type === 'CODE') },
+    {
+      label: t('dashboards.designer.yesNoFields'),
+      of: fields.filter((f) => f.type === 'BOOLEAN'),
+    },
+    {
+      label: t('dashboards.designer.dateFields'),
+      of: fields.filter((f) => isDateType(f.type)),
+    },
+  ];
+  return (
+    <>
+      {kinds
+        .filter((kind) => kind.of.length > 0)
+        .map((kind) => (
+          <optgroup key={kind.label} label={kind.label}>
+            {kind.of.map((field) => (
+              <option key={field.key} value={field.key}>
+                {fieldName(field.key, language)}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+    </>
+  );
+}
+
+const DATE_UNITS: readonly DateUnit[] = ['YEAR', 'MONTH'];
+
+/**
+ * Group by: the project attributes the type takes, then, for a visual drawing fields, the status, yes/no and date fields of its grain; a date
+ * field with a Year/Month select beside it. A line, and a visual over time, groups by its fields only.
+ */
 function GroupBySelect({
   visual,
   catalogue,
@@ -411,13 +478,18 @@ function GroupBySelect({
   catalogue: readonly FieldDescriptor[];
   onChange: (next: Visual) => void;
 }): ReactElement {
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const id = useId();
-  const groupings = groupBysFor(visual.visualType);
-  const statusFields =
-    drawsFields(visual) && groupsByField(visual.visualType)
-      ? catalogue.filter((field) => field.type === 'CODE')
-      : [];
+  const grain = grainOf(visual, catalogue);
+  const fieldsOnly = groupsByFieldOnly(visual.visualType, grain);
+  const groupings = fieldsOnly ? [] : groupBysFor(visual.visualType);
+  const groupFields = drawsFields(visual)
+    ? groupFieldsFor(grain, visual.visualType, catalogue)
+    : [];
+  const groupField = visual.groupField ?? null;
+  const dateField =
+    groupField !== null &&
+    groupFields.some((field) => field.key === groupField && isDateType(field.type));
   const attributes = groupings.map((groupBy) => (
     <option key={groupBy} value={groupBy}>
       {t(`dashboards.designer.groupBy.${groupBy}`)}
@@ -428,35 +500,54 @@ function GroupBySelect({
       <label className="field__label" htmlFor={`${id}-group`}>
         {t('dashboards.designer.groupByLabel')}
       </label>
-      <select
-        id={`${id}-group`}
-        className="field__input"
-        value={visual.groupField ?? visual.groupBy}
-        disabled={groupings.length === 1 && statusFields.length === 0}
-        onChange={(event) => {
-          const chosen = event.target.value;
-          onChange(
-            (GROUP_BYS as readonly string[]).includes(chosen)
-              ? { ...visual, groupBy: chosen as GroupBy, groupField: null }
-              : { ...visual, groupBy: 'NONE', groupField: chosen },
-          );
-        }}
-      >
-        {statusFields.length === 0 ? (
-          attributes
-        ) : (
-          <>
-            <optgroup label={t('dashboards.designer.projectAttributes')}>{attributes}</optgroup>
-            <optgroup label={t('dashboards.designer.statusFields')}>
-              {statusFields.map((field) => (
-                <option key={field.key} value={field.key}>
-                  {fieldName(field.key, language)}
-                </option>
-              ))}
-            </optgroup>
-          </>
+      <div className={dateField ? 'designer-data__group-by' : undefined}>
+        <select
+          id={`${id}-group`}
+          className="field__input"
+          value={groupField ?? visual.groupBy}
+          disabled={groupings.length + groupFields.length <= 1}
+          onChange={(event) => {
+            const chosen = event.target.value;
+            onChange(
+              (GROUP_BYS as readonly string[]).includes(chosen)
+                ? {
+                    ...visual,
+                    groupBy: chosen as GroupBy,
+                    groupField: null,
+                    groupDateUnit: null,
+                  }
+                : { ...visual, groupBy: 'NONE', ...groupedBy(visual, chosen, catalogue) },
+            );
+          }}
+        >
+          {groupFields.length === 0 ? (
+            attributes
+          ) : (
+            <>
+              {attributes.length > 0 && (
+                <optgroup label={t('dashboards.designer.projectAttributes')}>{attributes}</optgroup>
+              )}
+              <FieldOptions fields={groupFields} />
+            </>
+          )}
+        </select>
+        {dateField && (
+          <select
+            className="field__input designer-data__unit"
+            aria-label={t('dashboards.designer.dateUnitLabel')}
+            value={visual.groupDateUnit ?? 'MONTH'}
+            onChange={(event) => {
+              onChange({ ...visual, groupDateUnit: event.target.value as DateUnit });
+            }}
+          >
+            {DATE_UNITS.map((unit) => (
+              <option key={unit} value={unit}>
+                {t(`dashboards.designer.dateUnit.${unit}`)}
+              </option>
+            ))}
+          </select>
         )}
-      </select>
+      </div>
     </div>
   );
 }
@@ -477,11 +568,12 @@ function FiltersEditor({
   const { t, language } = useI18n();
   const lookups = useProjectLookups();
   const id = useId();
+  const grain = grainOf(visual, catalogue);
   // The filter being added: null while none is, '' while its field is being picked, then the field until its first value is ticked.
   const [adding, setAdding] = useState<string | null>(null);
   const filters = visual.filters ?? [];
   const used = new Set(filters.map((filter) => filter.field));
-  const codeFields = catalogue.filter((field) => field.type === 'CODE' && !used.has(field.key));
+  const testable = filterFieldsFor(grain, catalogue).filter((field) => !used.has(field.key));
   const dimensions = FILTER_DIMENSIONS.filter((dimension) => !used.has(dimensionKey(dimension)));
   const change = (next: FieldFilter[]) => {
     onChange({ ...visual, filters: next.length === 0 ? null : next });
@@ -541,15 +633,7 @@ function FiltersEditor({
                 </option>
               ))}
             </optgroup>
-            {codeFields.length > 0 && (
-              <optgroup label={t('dashboards.designer.statusFields')}>
-                {codeFields.map((field) => (
-                  <option key={field.key} value={field.key}>
-                    {fieldName(field.key, language)}
-                  </option>
-                ))}
-              </optgroup>
-            )}
+            <FieldOptions fields={testable} />
           </select>
           <RemoveButton
             label={t('dashboards.designer.cancelFilter')}

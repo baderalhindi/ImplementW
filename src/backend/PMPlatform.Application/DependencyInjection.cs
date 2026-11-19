@@ -426,6 +426,7 @@ public static class DependencyInjection
         // projection, read only through its owning module's contracts (ADR-003 §8.2 edges 29 and 47) and authorised on that module's own
         // view permission. The repository is Infrastructure's.
         services.AddScoped<IDashboardProjectionSource, ProjectLifecycleSource>();
+        services.AddScoped<IDashboardProjectionSource, ProjectProfileSource>();
         services.AddScoped<IDashboardProjectionSource, ProjectHealthSource>();
         services.AddScoped<IDashboardProjectionSource, PublishedProgressSource>();
         services.AddScoped<IDashboardProjectionSource, PublishedProgressHistorySource>();

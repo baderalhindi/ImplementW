@@ -1282,6 +1282,197 @@
         }
       }
     },
+    "/api/v1/banner-images": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "operationId": "IdentityAccess_ListBannerImages",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerImageList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Adds an image, or replaces the one with the same code: a WebP of at most 300 KB, with its captions, alt text, focal point and credit.",
+        "operationId": "IdentityAccess_SaveBannerImage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerImageSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/banner-images/{imageId}/content": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The image itself. It changes only when uploaded again, so the browser keeps it for a day.",
+        "operationId": "IdentityAccess_GetBannerImageContent",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileContentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/banner": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The person's choice; the green banner when they never chose.",
+        "operationId": "IdentityAccess_GetBannerPreference",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerPreferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Saves the choice. One image takes exactly one image, the turns at least one (422 `IDENTITY_ACCESS_BANNER_IMAGES_INVALID`).",
+        "operationId": "IdentityAccess_SetBannerPreference",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BannerPreferenceRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BannerPreferenceRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BannerPreferenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerPreferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/quick-actions": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The person's choice; `actions` null while they keep their role's set.",
+        "operationId": "IdentityAccess_GetQuickActions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickActionsDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Saves the choice: at most six distinct codes (422 `IDENTITY_ACCESS_QUICK_ACTIONS_INVALID`), or `actions` null to restore the role's set.",
+        "operationId": "IdentityAccess_SetQuickActions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickActionsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickActionsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickActionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickActionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/change-authorizations": {
       "get": {
         "tags": [
@@ -8804,6 +8995,27 @@
         }
       }
     },
+    "/api/v1/users/current/managed-project-attention": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Every project PROJECT_VIEW reaches for the caller that names them as manager, with the period due by month end and the overdue counts.",
+        "operationId": "Project_ListManagedProjectAttention",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedProjectAttentionList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/management-concerns/import-template/content": {
       "get": {
         "tags": [
@@ -11869,6 +12081,312 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/design": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The Portfolio dashboard's design with the caller's figures, under the same filters as the insights (the 17 Nov 2026 designer): the saved design, or the\nstandard one while nobody has saved one (`isStandard`). A visual whose grouping the caller holds no insights permission for has `groups` null.",
+        "operationId": "Project_GetPortfolioDesign",
+        "parameters": [
+          {
+            "name": "DepartmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ExternalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ClassificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "RegionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "CityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProjectLifecycleState"
+            }
+          },
+          {
+            "name": "PriorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Saves the design for everyone who opens the Portfolio dashboard, as a whole, with no approval: the Portfolio Manager decides it.",
+        "operationId": "Project_SavePortfolioDesign",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/design/fields": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The data catalogue a visual may draw, group by and filter on (the 18 Nov 2026 data fields): every project-grain field of the projection register of\na type a visual calculates with, and the aggregations its type allows. A value is still read under its own projection's permission.",
+        "operationId": "Project_GetPortfolioDesignFields",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignFields"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/design/preview": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "A design being edited, with the caller's figures, not saved.",
+        "operationId": "Project_PreviewPortfolioDesign",
+        "parameters": [
+          {
+            "name": "DepartmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ExternalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ClassificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "RegionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "CityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProjectLifecycleState"
+            }
+          },
+          {
+            "name": "PriorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/design/reset": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Back to the standard design.",
+        "operationId": "Project_ResetPortfolioDesign",
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -23171,6 +23689,141 @@
         ],
         "description": "How the session's user proved their identity."
       },
+      "BannerImageList": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BannerImageSummary"
+            }
+          }
+        }
+      },
+      "BannerImageSummary": {
+        "required": [
+          "id",
+          "code",
+          "caption",
+          "alt",
+          "focalX",
+          "focalY",
+          "credit",
+          "width",
+          "height"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "caption": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "alt": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "focalX": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "focalY": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "credit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "width": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "An image the welcome banner can show, without its content, which is read from its own address."
+      },
+      "BannerPreferenceDetail": {
+        "required": [
+          "style",
+          "imageIds"
+        ],
+        "type": "object",
+        "properties": {
+          "style": {
+            "$ref": "#/components/schemas/BannerStyle"
+          },
+          "imageIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "One person's banner: the style and the images chosen, in the order they show."
+      },
+      "BannerPreferenceRequest": {
+        "required": [
+          "style"
+        ],
+        "type": "object",
+        "properties": {
+          "style": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "imageIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "A person's banner (review round 8, point 07): `style` DEFAULT, IMAGE or ROTATE, and the images chosen, in order."
+      },
+      "BannerStyle": {
+        "enum": [
+          "DEFAULT",
+          "IMAGE",
+          "ROTATE"
+        ],
+        "description": "How the Home welcome banner looks for one person (review round 8, point 07)."
+      },
       "BaselineActivityDetail": {
         "required": [
           "scheduleActivityId",
@@ -29487,6 +30140,47 @@
           }
         }
       },
+      "FileContentResult": {
+        "type": "object",
+        "properties": {
+          "fileContents": {
+            "type": "string",
+            "format": "byte"
+          },
+          "contentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fileDownloadName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastModified": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "entityTag": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EntityTagHeaderValue"
+              }
+            ]
+          },
+          "enableRangeProcessing": {
+            "type": "boolean"
+          }
+        }
+      },
       "FileStreamResult": {
         "type": "object",
         "properties": {
@@ -33197,6 +33891,70 @@
           "EN"
         ],
         "description": "The two platform languages (ADR-012). Persisted as the ISO 639-1 code in a `char(2)` column."
+      },
+      "ManagedProjectAttention": {
+        "required": [
+          "projectId",
+          "updateDueDate",
+          "overdueTasks",
+          "overdueMilestones"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updateDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "overdueTasks": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overdueMilestones": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "What waits on one project the caller manages (review round 8, point 13): the earliest progress and financial reporting period due by the end\nof this month and not yet published, and the tasks and milestones past their dates. A project that never started an update has no period\nyet, so none is due for it: the same rule as FG-01's reporting completeness."
+      },
+      "ManagedProjectAttentionList": {
+        "required": [
+          "today",
+          "monthEnd",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "monthEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagedProjectAttention"
+            }
+          }
+        },
+        "description": "Every project the caller manages and may view, with what waits on it; `MonthEnd` is the last day \"this month\" covers."
       },
       "MaskingRule": {
         "enum": [
@@ -37242,6 +38000,241 @@
         },
         "description": "Projects by their current stage (review round 7, item 1): the first applicable stage below 100% in the latest published stage-based update, or as\nimported. string? PortfolioCurrentStage.StageCode null counts the projects with none yet. Stages run in stage order; a value is null when the caller may not see amounts."
       },
+      "PortfolioDateUnit": {
+        "enum": [
+          "YEAR",
+          "MONTH",
+          null
+        ]
+      },
+      "PortfolioDesignFields": {
+        "required": [
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldDescriptor"
+            }
+          }
+        },
+        "description": "The fields the designer offers, in the register's order."
+      },
+      "PortfolioDesignRequest": {
+        "required": [
+          "visuals"
+        ],
+        "type": "object",
+        "properties": {
+          "visuals": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualRequest"
+            }
+          }
+        },
+        "description": "The Portfolio dashboard's design as a whole, in reading order (the 17 Nov 2026 designer). Each field is required here; how they fit together — a grouping\nthe type takes, a place on the grid no other visual holds — is checked by the service (422 `PROJECT_PORTFOLIO_DESIGN_INVALID`)."
+      },
+      "PortfolioDesignView": {
+        "required": [
+          "isStandard",
+          "updatedAt",
+          "visuals"
+        ],
+        "type": "object",
+        "properties": {
+          "isStandard": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "visuals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualResult"
+            }
+          }
+        },
+        "description": "The Portfolio dashboard's design with its figures. bool PortfolioDesignView.IsStandard is true while nobody has saved a design."
+      },
+      "PortfolioFieldAggregation": {
+        "enum": [
+          "COUNT",
+          "SUM",
+          "AVERAGE",
+          "MIN",
+          "MAX",
+          "COUNT_TRUE",
+          "SHARE_TRUE"
+        ],
+        "description": "How a visual calculates a field over the projects (or snapshots) of a group (the 18 Nov 2026 data fields), over the cells revealed to the caller only."
+      },
+      "PortfolioFieldDescriptor": {
+        "required": [
+          "key",
+          "projectionCode",
+          "sourceDomain",
+          "fieldCode",
+          "type",
+          "isSensitive",
+          "values",
+          "aggregations"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "projectionCode": {
+            "type": "string"
+          },
+          "sourceDomain": {
+            "type": "string"
+          },
+          "fieldCode": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PortfolioFieldType"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aggregations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldAggregation"
+            }
+          },
+          "grain": {
+            "$ref": "#/components/schemas/PortfolioFieldGrain"
+          }
+        },
+        "description": "One field the designer offers (the 18 Nov 2026 data catalogue): its key `&lt;PROJECTION_CODE&gt;.&lt;FIELD_CODE&gt;`, the projection it belongs to\n(code and domain), its field code, its type, whether it is sensitive, the codes a CODE field takes (the register's values, in the source's order), the\naggregations its type allows, and its grain."
+      },
+      "PortfolioFieldFilter": {
+        "required": [
+          "field",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A visual's filter: a CODE field key or a dimension key (`PROJECT.&lt;GROUP_BY&gt;`) and the values that pass. A project passes when its value is\none of them; a value not revealed, and a dimension's null key, never passes."
+      },
+      "PortfolioFieldFilterRequest": {
+        "required": [
+          "field",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A visual's filter: a CODE field key or a dimension key, and the values that pass; their shape is checked by the service."
+      },
+      "PortfolioFieldGrain": {
+        "enum": [
+          "PROJECT",
+          "SNAPSHOT"
+        ],
+        "description": "What a field's rows are: one per project, or one per published snapshot of a project (its history over time).",
+        "default": "PROJECT"
+      },
+      "PortfolioFieldType": {
+        "enum": [
+          "CODE",
+          "COUNT",
+          "PERCENT",
+          "DAYS",
+          "SAR",
+          "BOOLEAN",
+          "DATE",
+          "DATE_TIME"
+        ],
+        "description": "What a designer field holds: the register's value types."
+      },
+      "PortfolioFieldValue": {
+        "required": [
+          "field",
+          "aggregation"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "aggregation": {
+            "$ref": "#/components/schemas/PortfolioFieldAggregation"
+          }
+        },
+        "description": "One value a visual draws: a field of the data catalogue (string PortfolioFieldDescriptor.Key) and its calculation."
+      },
+      "PortfolioFieldValueRequest": {
+        "required": [
+          "field",
+          "aggregation"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioFieldAggregation"
+              }
+            ]
+          }
+        },
+        "description": "A value a visual draws: a field key of the data catalogue and its aggregation; how they fit the visual is checked by the service."
+      },
       "PortfolioFollowUpReasons": {
         "required": [
           "stalled",
@@ -37303,6 +38296,23 @@
           }
         },
         "description": "Each project counted once, under its first reason in the Follow-up list's order."
+      },
+      "PortfolioGroupBy": {
+        "enum": [
+          "NONE",
+          "PORTFOLIO",
+          "INITIATIVE",
+          "SECTOR",
+          "DEPARTMENT",
+          "ENTITY",
+          "STATUS",
+          "STAGE",
+          "ON_PLAN",
+          "REGION",
+          "CITY",
+          "PRIORITY"
+        ],
+        "description": "What the projects of a visual are grouped by: a project attribute, or none for one figure over them all."
       },
       "PortfolioHeadline": {
         "required": [
@@ -37518,6 +38528,19 @@
         },
         "description": "What the Excel's dashboard answers (the 5 Nov 2026 review §3). A section is null when the caller holds no permission for it: permissions decide, never a role code. Averages are simple\naverages of project percentages. A project without both percentages is unmeasured, never zero."
       },
+      "PortfolioMeasure": {
+        "enum": [
+          "PROJECTS",
+          "IN_PROGRESS",
+          "VALUE_SAR",
+          "AVERAGE_PLANNED",
+          "AVERAGE_ACTUAL",
+          "GAP_POINTS",
+          "NEEDING_FOLLOW_UP",
+          "OVERDUE_ACTIONS"
+        ],
+        "description": "What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3)."
+      },
       "PortfolioOnPlan": {
         "required": [
           "onTrack",
@@ -37560,6 +38583,23 @@
             "format": "int32"
           }
         }
+      },
+      "PortfolioSection": {
+        "enum": [
+          "PORTFOLIO_TABLE",
+          "INITIATIVE_TABLE",
+          "SECTOR_TABLE",
+          "STATUS_TABLE",
+          "CURRENT_STAGE_TABLE",
+          "ON_PLAN_COUNTS",
+          "FOLLOW_UP_REASONS",
+          "TOP_FOLLOW_UP",
+          "ENTITY_COMPLETION",
+          "PROJECT_LOCATIONS",
+          "DASHBOARD_WIDGETS",
+          "ENTITY_COMPLETION_TABLE",
+          null
+        ]
       },
       "PortfolioSplit": {
         "required": [
@@ -37692,6 +38732,357 @@
             "format": "date"
           }
         }
+      },
+      "PortfolioVisualGroup": {
+        "required": [
+          "key",
+          "label",
+          "projects",
+          "measured",
+          "valueEntered",
+          "values",
+          "onPlan"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "measured": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "valueEntered": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "null",
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          "onPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnPlanStatus"
+              }
+            ]
+          }
+        },
+        "description": "One group of a visual: its key (an item, department or entity id, a status, stage or on-plan code; null for the projects with none, and for the one group of an\nungrouped visual), the stage's name when it is a stage, and one value per measure in the visual's order. A value is null when it cannot be calculated (an average\nwith nothing measured) or the caller may not see it (an amount). int PortfolioVisualGroup.Measured and int PortfolioVisualGroup.ValueEntered say how many projects the averages and the\nvalue cover."
+      },
+      "PortfolioVisualRequest": {
+        "required": [
+          "title",
+          "visualType",
+          "measures",
+          "groupBy",
+          "layoutColumn",
+          "layoutRow",
+          "layoutWidth",
+          "layoutHeight"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "visualType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioVisualType"
+              }
+            ]
+          },
+          "measures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioMeasure"
+            }
+          },
+          "groupBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioGroupBy"
+              }
+            ]
+          },
+          "layoutColumn": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutRow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "section": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioSection"
+              }
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldValueRequest"
+            }
+          },
+          "groupField": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldFilterRequest"
+            }
+          },
+          "groupDateUnit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioDateUnit"
+              }
+            ]
+          }
+        }
+      },
+      "PortfolioVisualResult": {
+        "required": [
+          "title",
+          "visualType",
+          "measures",
+          "groupBy",
+          "layoutColumn",
+          "layoutRow",
+          "layoutWidth",
+          "layoutHeight",
+          "groups"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "visualType": {
+            "$ref": "#/components/schemas/PortfolioVisualType"
+          },
+          "measures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioMeasure"
+            }
+          },
+          "groupBy": {
+            "$ref": "#/components/schemas/PortfolioGroupBy"
+          },
+          "layoutColumn": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutRow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "groups": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualGroup"
+            }
+          },
+          "section": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioSection"
+              }
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldValue"
+            }
+          },
+          "groupField": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldFilter"
+            }
+          },
+          "valueTypes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldType"
+            }
+          },
+          "groupDateUnit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioDateUnit"
+              }
+            ]
+          }
+        },
+        "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."
+      },
+      "PortfolioVisualType": {
+        "enum": [
+          "CARD",
+          "BAR",
+          "COLUMN",
+          "PIE",
+          "DONUT",
+          "TABLE",
+          "GAUGE",
+          "SECTION",
+          "LINE"
+        ],
+        "description": "How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer)."
       },
       "PostProjectObligationCreateRequest": {
         "required": [
@@ -42531,6 +43922,42 @@
           }
         },
         "description": "One page of a project's published snapshots, latest first (R-29)."
+      },
+      "QuickActionsDetail": {
+        "required": [
+          "actions"
+        ],
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The person's quick actions in the welcome banner, in order (review round 8, point 08); null when they keep their role's set."
+      },
+      "QuickActionsRequest": {
+        "required": [
+          "actions"
+        ],
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A person's quick actions (review round 8, point 08): at most six action codes in order, or null to go back to their role's set."
       },
       "ReadinessCheckCode": {
         "enum": [
@@ -49935,13 +51362,13 @@
       "name": "GlobalSearch"
     },
     {
+      "name": "Project"
+    },
+    {
       "name": "Milestone"
     },
     {
       "name": "Notifications"
-    },
-    {
-      "name": "Project"
     },
     {
       "name": "Progress"

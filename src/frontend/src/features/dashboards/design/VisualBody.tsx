@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 
 import { OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
+import { formatPoints } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { sarExactLabel } from '@/shared/format/money.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
@@ -10,9 +11,10 @@ import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { bucketColors, type ChartBucket } from '../charts.ts';
 import { BarChart, DonutChart, GaugeChart, GroupedColumnChart } from '../components/Charts.tsx';
+import { LineChart } from './LineChart.tsx';
 import { Coverage } from '../insights/figures.tsx';
 import { isStatusScale, labelOfValue } from '../presentation.ts';
-import { type FieldDescriptor, type VisualResult } from './designApi.ts';
+import { type FieldDescriptor, type VisualGroup, type VisualResult } from './designApi.ts';
 import {
   fieldName,
   fieldParts,
@@ -83,7 +85,8 @@ export function VisualBody({
         return {
           key: `${value.field}:${value.aggregation}`,
           text: fieldValueText(value, language),
-          format: (figure: number | null) => formatFieldValue(value.aggregation, type, figure, t),
+          format: (figure: number | null) =>
+            formatFieldValue(value.aggregation, type, figure, t, language),
           percent: isPercentValue(value.aggregation, type),
           exact: (figure: number) =>
             value.aggregation !== 'COUNT' && type === 'SAR'
@@ -114,7 +117,7 @@ export function VisualBody({
     }
     return groupField === null
       ? groupText(visual.groupBy, group, lookups, t, language)
-      : fieldGroupText(groupField, group, t, language);
+      : fieldGroupText(groupField, visual.groupDateUnit ?? null, group, t, language);
   };
   const rowDrill = (key: string | null) =>
     onFields || filters === undefined
@@ -340,38 +343,110 @@ export function VisualBody({
     case 'SECTION':
       // A section is drawn from the dashboard's own sources (SectionBody), never from a visual's figures.
       return <p className="state">{t('dashboards.noData')}</p>;
+    case 'LINE': {
+      // The groups along the x axis in key order (a period runs left to right); the projects with no value have no place on it and are in the table.
+      const points = groups
+        .map((group, index) => ({ group, text: text(index) }))
+        .filter(
+          (point): point is { group: VisualGroup & { key: string }; text: string } =>
+            point.group.key !== null,
+        )
+        .sort((a, b) => a.group.key.localeCompare(b.group.key));
+      const percent = series.every((one) => one.percent);
+      return (
+        <>
+          <LineChart
+            title={visual.title[language]}
+            points={points.map((point) => ({
+              key: point.group.key,
+              text: point.text,
+              values: point.group.values,
+            }))}
+            series={series.map((one, index) => ({
+              key: one.key,
+              text: one.text,
+              color: SERIES_COLORS[index] ?? 'var(--chart-single)',
+            }))}
+            percent={percent}
+            format={(value, index) => (series[index] ?? first).format(value)}
+            axis={(value) =>
+              percent || series.length === 1 ? first.format(value) : formatPoints(value)
+            }
+          />
+          <details className="widget__data">
+            <summary>{t('dashboards.trend.showTable')}</summary>
+            <ValuesTable
+              caption={visual.title[language]}
+              groupHeading={groupHeading}
+              groups={groups}
+              series={series}
+              text={text}
+              rowDrill={rowDrill}
+            />
+          </details>
+        </>
+      );
+    }
     case 'TABLE':
       return (
-        <TableContainer caption={visual.title[language]}>
-          <thead>
-            <tr>
-              {groupHeading !== null && <th scope="col">{groupHeading}</th>}
-              {series.map((one) => (
-                <th key={one.key} scope="col">
-                  {one.text}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {groups.map((group, index) => (
-              <tr key={group.key ?? 'none'}>
-                {groupHeading !== null && (
-                  <th scope="row">
-                    <FigureText text={text(index)} href={rowDrill(group.key)} />
-                  </th>
-                )}
-                {series.map((one, column) => (
-                  <td key={one.key} dir="auto">
-                    {one.format(group.values[column] ?? null)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </TableContainer>
+        <ValuesTable
+          caption={visual.title[language]}
+          groupHeading={groupHeading}
+          groups={groups}
+          series={series}
+          text={text}
+          rowDrill={rowDrill}
+        />
       );
   }
+}
+
+/** A visual's figures as a table: a row per group, a column per value; a table visual's body and a line's accessible fallback. */
+function ValuesTable({
+  caption,
+  groupHeading,
+  groups,
+  series,
+  text,
+  rowDrill,
+}: {
+  caption: string;
+  groupHeading: string | null;
+  groups: VisualGroup[];
+  series: Series[];
+  text: (index: number) => string;
+  rowDrill: (key: string | null) => string | undefined;
+}): ReactElement {
+  return (
+    <TableContainer caption={caption}>
+      <thead>
+        <tr>
+          {groupHeading !== null && <th scope="col">{groupHeading}</th>}
+          {series.map((one) => (
+            <th key={one.key} scope="col">
+              {one.text}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {groups.map((group, index) => (
+          <tr key={group.key ?? 'none'}>
+            {groupHeading !== null && (
+              <th scope="row">
+                <FigureText text={text(index)} href={rowDrill(group.key)} />
+              </th>
+            )}
+            {series.map((one, column) => (
+              <td key={one.key} dir="auto">
+                {one.format(group.values[column] ?? null)}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </TableContainer>
+  );
 }
 
 /** How many of a field visual's projects have its first value revealed (the others are unknown, restricted or masked). */

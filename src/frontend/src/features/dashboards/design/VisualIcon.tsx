@@ -30,6 +30,12 @@ const SHAPES: Record<VisualType, ReactElement> = {
       <path d="M3 10h18M3 14.5h18M9 5v14" />
     </>
   ),
+  LINE: (
+    <>
+      <path d="M3 20h18" />
+      <path d="M4 16l5-6 4 3 7-8" />
+    </>
+  ),
   GAUGE: (
     <>
       <path d="M4 17a8 8 0 1 1 16 0" />

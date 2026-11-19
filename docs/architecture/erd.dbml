@@ -757,27 +757,23 @@ Table project.project_follow_up_note {
 
 Table project.portfolio_visual {
   id uuid [pk, not null, note: 'Primary key (D-1)']
-  sort_order smallint [not null, note: 'Reading order from 1; CHECK >= 1']
+  sort_order smallint [not null, unique, note: 'Reading order from 1; CHECK >= 1']
   title_ar varchar(100) [not null]
   title_en varchar(100) [not null]
-  visual_type varchar(50) [not null, note: 'CARD | BAR | COLUMN | PIE | DONUT | TABLE | GAUGE | SECTION']
-  measures "text[]" [not null, note: '1 to 3 of PROJECTS, IN_PROGRESS, VALUE_SAR, AVERAGE_PLANNED, AVERAGE_ACTUAL, GAP_POINTS, NEEDING_FOLLOW_UP, OVERDUE_ACTIONS (CHECK); codes, never an expression (BR-DSH-030). None for a SECTION, and none for a visual drawing data fields (data_fields not null)']
-  section varchar(50) [note: 'The dashboard section a SECTION places (PORTFOLIO_TABLE ... ENTITY_COMPLETION_TABLE); null otherwise; unique where not null']
+  visual_type varchar(50) [not null, note: 'CARD | BAR | COLUMN | PIE | DONUT | TABLE | GAUGE | SECTION | LINE (LINE: 18 Nov 2026 more fields; field values only)']
+  measures text[] [not null, note: '1 to 3 of PROJECTS, IN_PROGRESS, VALUE_SAR, AVERAGE_PLANNED, AVERAGE_ACTUAL, GAP_POINTS, NEEDING_FOLLOW_UP, OVERDUE_ACTIONS (CHECK); codes, never an expression (BR-DSH-030). None for a SECTION, and none for a visual drawing data fields (data_fields not null)']
+  section varchar(50) [unique, note: 'The dashboard section a SECTION places (PORTFOLIO_TABLE ... ENTITY_COMPLETION_TABLE); null otherwise; a partial unique index WHERE section IS NOT NULL']
   group_by varchar(50) [not null, note: 'NONE | PORTFOLIO | INITIATIVE | SECTOR | DEPARTMENT | ENTITY | STATUS | STAGE | ON_PLAN | REGION | CITY | PRIORITY']
   layout_column smallint [not null, note: '0 to 11 from the reading start; layout_column + layout_width <= 12 (CHECK)']
   layout_row smallint [not null, note: '>= 0']
   layout_width smallint [not null, note: '1 to 12']
   layout_height smallint [not null, note: '1 to 24']
-  data_fields jsonb [note: '{"values":[{"field","aggregation"}],"groupField","filters":[{"field","values"}]} in the API shape (camelCase, UPPER_SNAKE enums): registered projection field keys of the data catalogue, never a table, column or expression (BR-DSH-030); null when the visual names none and always for a SECTION (CHECK, 18 Nov 2026 data fields)']
+  data_fields jsonb [note: '{"values":[{"field","aggregation"}],"groupField","groupDateUnit","filters":[{"field","values"}]} in the API shape (camelCase, UPPER_SNAKE enums): registered projection field keys of the data catalogue, never a table, column or expression (BR-DSH-030); null when the visual names none and always for a SECTION (CHECK, 18 Nov 2026 data fields)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2)']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  indexes {
-    sort_order [unique]
-    section [unique, note: 'WHERE section IS NOT NULL']
-  }
-  Note: 'One visual of the Portfolio dashboard as the Portfolio Manager designed it, the same for everyone (17 Nov 2026 dashboard designer, DASHBOARD_DESIGN, no approval). Saved and replaced as a whole; no row means the standard design. Delete policy: HARD (a new design replaces the old).'
+  Note: 'One visual of the Portfolio dashboard as the Portfolio Manager designed it, the same for everyone (17 Nov 2026 dashboard designer, DASHBOARD_DESIGN, no approval). Saved and replaced as a whole; no row means the standard design. Delete policy: HARD_WORKING. A save replaces the rows and a reset deletes them; the rows name who saved them (created_by), and no audit event is written yet.'
 }
 
 Table project.project_stage_plan {
@@ -3003,8 +2999,8 @@ Table identity_access.user_banner_preference {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   user_id uuid [unique, not null, ref: > identity_access.user.id]
   style varchar(50) [not null, note: 'DEFAULT | IMAGE | ROTATE']
-  image_ids "uuid[]" [not null, note: 'The images chosen, in the order they show']
-  quick_actions "text[]" [null, note: 'The banner quick actions chosen, in order, at most six (point 08); null: the role set']
+  image_ids uuid[] [not null, note: 'The images chosen, in the order they show']
+  quick_actions text[] [null, note: 'The banner quick actions chosen, in order, at most six (point 08); null: the role set']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'Audit column (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2)']

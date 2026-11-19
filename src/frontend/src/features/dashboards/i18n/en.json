@@ -379,7 +379,8 @@
       "DONUT": "Donut chart",
       "TABLE": "Table",
       "GAUGE": "Gauge",
-      "SECTION": "Dashboard section"
+      "SECTION": "Dashboard section",
+      "LINE": "Line chart"
     },
     "measure": {
       "PROJECTS": "Projects",
@@ -454,21 +455,28 @@
       "SUM": "Sum",
       "AVERAGE": "Average",
       "MIN": "Minimum",
-      "MAX": "Maximum"
+      "MAX": "Maximum",
+      "COUNT_TRUE": "Count of yes",
+      "SHARE_TRUE": "Share of yes"
     },
     "aggregationOf": {
       "COUNT": "Count of {field}",
       "SUM": "Sum of {field}",
       "AVERAGE": "Average of {field}",
       "MIN": "Minimum of {field}",
-      "MAX": "Maximum of {field}"
+      "MAX": "Maximum of {field}",
+      "COUNT_TRUE": "{field}: yes (count)",
+      "SHARE_TRUE": "{field}: yes (share)"
     },
     "fieldType": {
       "CODE": "Status",
       "COUNT": "Count",
       "PERCENT": "%",
       "DAYS": "Days",
-      "SAR": "SAR"
+      "SAR": "SAR",
+      "BOOLEAN": "Yes/no",
+      "DATE": "Date",
+      "DATE_TIME": "Date"
     },
     "fieldSource": {
       "CHANGE_REQUEST_CHANGE_POSITION": "Change requests",
@@ -485,7 +493,9 @@
       "PROJECT_TASK_OPEN_TASKS": "Tasks",
       "RISK_RISK_EXPOSURE": "Risks",
       "SCHEDULE_SCHEDULE_HEALTH_STATUS": "Schedule (live)",
-      "SUSPENSION_OPEN_REQUESTS": "Suspensions"
+      "SUSPENSION_OPEN_REQUESTS": "Suspensions",
+      "PROJECT_PROJECT_PROFILE": "Project record",
+      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": "Published progress history"
     },
     "field": {
       "CHANGE_REQUEST_CHANGE_POSITION": {
@@ -555,10 +565,66 @@
       },
       "SUSPENSION_OPEN_REQUESTS": {
         "OPEN_REQUESTS": "Open suspension requests"
+      },
+      "PROJECT_PROJECT_PROFILE": {
+        "REGISTRATION_BUDGET": "Registration budget",
+        "DECLARED_ACTUAL_PERCENT": "Declared actual progress",
+        "DECLARED_PLANNED_PERCENT": "Declared planned progress",
+        "DECLARED_ACTUAL_SPEND_PERCENT": "Declared actual spend",
+        "DECLARED_PLANNED_SPEND_PERCENT": "Declared planned spend",
+        "CURRENT_STAGE_PERCENT": "Current stage completion",
+        "FUNDING_SOURCE": "Funding source",
+        "PARTICIPATION_MODE": "Participation",
+        "PROGRESS_METHOD": "Progress method",
+        "IS_STRATEGIC": "Strategic project",
+        "ENTITY_UPDATE_COMPLIANT": "Entity updates on time",
+        "PLANNED_START_DATE": "Planned start date",
+        "PLANNED_END_DATE": "Planned end date",
+        "NEXT_ACTION_DUE_DATE": "Next action due date",
+        "ACTIVATED_AT": "Activated on",
+        "CLOSED_AT": "Closed on"
+      },
+      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": {
+        "PUBLISHED_AT": "Published on",
+        "PERIOD_START": "Period start",
+        "PERIOD_END": "Period end",
+        "OVERALL_HEALTH": "Health over time",
+        "ACTUAL_PERCENT": "Actual progress over time",
+        "PLANNED_PERCENT": "Planned progress over time"
       }
     },
     "filterField": "Filter on",
     "chooseFilterField": "Choose a field…",
-    "cancelFilter": "Cancel the new filter"
+    "cancelFilter": "Cancel the new filter",
+    "fieldValue": {
+      "PROJECT_PROJECT_PROFILE": {
+        "FUNDING_SOURCE": {
+          "STRATEGY_BUDGET_FULL": "Strategy budget, in full",
+          "STRATEGY_BUDGET_PARTIAL": "Strategy budget, in part",
+          "NOT_STRATEGY_BUDGET": "Not the strategy budget"
+        },
+        "PARTICIPATION_MODE": {
+          "AHDA_MANAGED": "Managed by AHDA",
+          "ENTITY_MANAGED": "Managed by an external entity"
+        },
+        "PROGRESS_METHOD": {
+          "STAGES": "Project stages",
+          "SCHEDULE": "Schedule"
+        }
+      }
+    },
+    "yes": "Yes",
+    "no": "No",
+    "overTime": "over time",
+    "replacedByHistory": "The current values were replaced by the published history you chose: a visual shows values now or over time, not both.",
+    "replacedByCurrent": "The published history was replaced by the current value you chose: a visual shows values now or over time, not both.",
+    "yesNoFields": "Yes/no fields",
+    "dateFields": "Date fields",
+    "dateUnitLabel": "Group the dates by",
+    "dateUnit": {
+      "YEAR": "Year",
+      "MONTH": "Month"
+    },
+    "lineLabel": "{title}: a line chart over {count} points. The table under it lists the same values."
   }
 }

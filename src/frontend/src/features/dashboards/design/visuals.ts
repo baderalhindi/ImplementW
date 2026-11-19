@@ -8,7 +8,9 @@ import { type Language, translate, type TranslationKey } from '@/shared/i18n/i18
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { followUpPath, registerPath } from '../drillLinks.ts';
 import {
+  type DateUnit,
   type FieldDescriptor,
+  type FieldValue,
   type GroupBy,
   type Measure,
   type Section,
@@ -17,11 +19,20 @@ import {
   type VisualType,
 } from './designApi.ts';
 import {
+  booleanText,
   codeText,
+  dateKeyText,
   drawsFields,
   fieldName,
   fieldValueText,
+  filterFits,
+  firstGroupField,
+  grainOf,
+  groupedBy,
+  groupFieldsFor,
   groupsByField,
+  groupsByFieldOnly,
+  lineStart,
   NO_FIELD_DATA,
   valuesFor,
 } from './fields.ts';
@@ -35,6 +46,7 @@ export const VISUAL_TYPES: readonly VisualType[] = [
   'CARD',
   'BAR',
   'COLUMN',
+  'LINE',
   'PIE',
   'DONUT',
   'TABLE',
@@ -78,6 +90,7 @@ export const MAX_MEASURES: Record<VisualType, number> = {
   DONUT: 1,
   TABLE: 3,
   GAUGE: 1,
+  LINE: 0,
   SECTION: 0,
 };
 
@@ -90,6 +103,7 @@ const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }> = {
   DONUT: { width: 4, height: 5 },
   TABLE: { width: 6, height: 5 },
   GAUGE: { width: 3, height: 4 },
+  LINE: { width: 6, height: 5 },
   SECTION: { width: 12, height: 6 },
 };
 
@@ -97,9 +111,9 @@ export const COLUMNS = 12;
 export const MAX_HEIGHT = 24;
 export const MAX_VISUALS = 60;
 
-/** The groupings a type takes. */
+/** The groupings by a project attribute a type takes; a line groups by a field only. */
 export function groupBysFor(type: VisualType): readonly GroupBy[] {
-  if (type === 'CARD' || type === 'GAUGE' || type === 'SECTION') {
+  if (type === 'CARD' || type === 'GAUGE' || type === 'LINE' || type === 'SECTION') {
     return ['NONE'];
   }
   return type === 'TABLE' ? GROUP_BYS : GROUP_BYS.filter((groupBy) => groupBy !== 'NONE');
@@ -114,9 +128,9 @@ const ADDITIVE_MEASURES: readonly Measure[] = [
   'OVERDUE_ACTIONS',
 ];
 
-/** The measures a type may draw: a gauge a percentage, a pie or donut a total that adds up. */
+/** The measures a type may draw: a gauge a percentage, a pie or donut a total that adds up; a line draws fields only. */
 export function measuresFor(type: VisualType): readonly Measure[] {
-  if (type === 'SECTION') {
+  if (type === 'SECTION' || type === 'LINE') {
     return [];
   }
   if (type === 'GAUGE') {
@@ -130,31 +144,78 @@ export function isPercent(measure: Measure): boolean {
 }
 
 /**
+ * A visual drawing `values` (all of one grain) on a visual of `type`: its grouping kept where it still fits, else the grain's first group field
+ * where the type groups by fields only (a line, a chart over time), else the type's first project grouping; and the filters that still fit.
+ * Null when the visual must group by a field and the catalogue has none for it.
+ */
+export function withValues(
+  visual: Visual,
+  type: VisualType,
+  values: FieldValue[],
+  fields: readonly FieldDescriptor[],
+): Visual | null {
+  const grain = grainOf({ values }, fields);
+  const current = visual.groupField ?? null;
+  const fieldsOnly = groupsByFieldOnly(type, grain);
+  const keeps =
+    current !== null && groupFieldsFor(grain, type, fields).some((field) => field.key === current);
+  const groupField = keeps ? current : firstGroupField(grain, type, fields);
+  if (fieldsOnly && groupField === null) {
+    return null;
+  }
+  const groupings = groupBysFor(type);
+  const filters = (visual.filters ?? []).filter((filter) => filterFits(filter, grain, fields));
+  return {
+    ...visual,
+    visualType: type,
+    measures: [],
+    values,
+    ...groupedBy(visual, groupField, fields),
+    groupBy:
+      groupField !== null
+        ? 'NONE'
+        : groupings.includes(visual.groupBy) && current === null
+          ? visual.groupBy
+          : firstGrouping(type),
+    filters: filters.length === 0 ? null : filters,
+  };
+}
+
+/** A visual as a line: its field values that fit (or the catalogue's first line), grouped by a field; null when the catalogue offers none. */
+export function asLine(visual: Visual, fields: readonly FieldDescriptor[]): Visual | null {
+  const kept = drawsFields(visual) ? valuesFor(visual.values ?? [], 'LINE', fields) : [];
+  const start = lineStart(fields);
+  const values = kept.length > 0 ? kept : start === null ? [] : [start];
+  return values.length === 0 ? null : withValues(visual, 'LINE', values, fields);
+}
+
+/**
  * A visual changed to `type`, keeping what still fits: its measures (or field values) up to the type's count, with a calculation the type takes,
- * and a grouping the type takes. Field values none of which fit fall back to the type's first measure.
+ * and a grouping the type takes. Field values none of which fit fall back to the type's first measure; a line, which draws fields only, is the
+ * visual unchanged when the catalogue offers it none.
  */
 export function withType(
   visual: Visual,
   type: VisualType,
   fields: readonly FieldDescriptor[] = [],
 ): Visual {
+  if (type === 'LINE') {
+    return asLine(visual, fields) ?? visual;
+  }
   const groupings = groupBysFor(type);
   if (drawsFields(visual)) {
     const values = valuesFor(visual.values ?? [], type, fields);
-    if (values.length > 0) {
-      const groupField = groupsByField(type) ? (visual.groupField ?? null) : null;
-      return {
-        ...visual,
-        visualType: type,
-        values,
-        groupField,
-        groupBy:
-          groupField !== null
-            ? 'NONE'
-            : groupings.includes(visual.groupBy)
-              ? visual.groupBy
-              : firstGrouping(type),
-      };
+    const next =
+      values.length > 0
+        ? withValues(
+            groupsByField(type) ? visual : { ...visual, groupField: null },
+            type,
+            values,
+            fields,
+          )
+        : null;
+    if (next !== null) {
+      return next;
     }
   }
   const allowed = measuresFor(type);
@@ -214,12 +275,37 @@ export function firstGrouping(type: VisualType): GroupBy {
   return groupBysFor(type).includes('PORTFOLIO') ? 'PORTFOLIO' : 'NONE';
 }
 
-/** A new visual of `type` with sensible first values, at the first free place; null when the grid has no room left for it. */
-export function newVisual(type: VisualType, visuals: Visual[]): Visual | null {
+/**
+ * A new visual of `type` with sensible first values, at the first free place; null when the grid has no room left for it. A line starts from
+ * the catalogue (`fields`): the gallery offers it only when `asLine` finds one.
+ */
+export function newVisual(
+  type: VisualType,
+  visuals: Visual[],
+  fields: readonly FieldDescriptor[] = [],
+): Visual | null {
   const { width, height } = DEFAULT_SIZE[type];
   const place = freePlace(visuals, width, height);
   if (place === null) {
     return null;
+  }
+  if (type === 'LINE') {
+    const line = asLine(
+      {
+        title: { ar: '', en: '' },
+        visualType: 'LINE',
+        measures: [],
+        groupBy: 'NONE',
+        layoutColumn: place.column,
+        layoutRow: place.row,
+        layoutWidth: width,
+        layoutHeight: height,
+      },
+      fields,
+    );
+    return line === null
+      ? null
+      : { ...line, title: { ar: autoTitle(line, 'ar'), en: autoTitle(line, 'en') } };
   }
   const measures: Measure[] =
     type === 'COLUMN'
@@ -328,15 +414,25 @@ export interface GroupNames {
   entityName: (id: string) => string | null;
 }
 
-/** A group's words when the visual groups by a status field: the value's word, or "not set" for the projects whose value is not revealed. */
+/**
+ * A group's words when the visual groups by a field: a period ("Mar 2026", "2026") for a date field (the visual's `groupDateUnit` says so),
+ * Yes or No for a yes/no field, a status's word, or "not set" for the projects whose value is not revealed.
+ */
 export function fieldGroupText(
   groupField: string,
+  dateUnit: DateUnit | null,
   group: VisualGroup,
   t: Translate,
   language: Language,
 ): string {
-  return group.key === null
-    ? t('dashboards.designer.notSet')
+  if (group.key === null) {
+    return t('dashboards.designer.notSet');
+  }
+  if (dateUnit !== null) {
+    return dateKeyText(group.key, dateUnit, language);
+  }
+  return group.key === 'TRUE' || group.key === 'FALSE'
+    ? booleanText(group.key, t)
     : codeText(groupField, group.key, language, t);
 }
 

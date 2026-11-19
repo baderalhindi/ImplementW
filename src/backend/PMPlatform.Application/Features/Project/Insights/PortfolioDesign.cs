@@ -21,16 +21,23 @@ public sealed record PortfolioFieldValue(string Field, PortfolioFieldAggregation
 /// </summary>
 public sealed record PortfolioFieldFilter(string Field, IReadOnlyList<string> Values);
 
+/// <summary>What a visual grouped by a date field groups by: the year (key <c>2026</c>) or the month (key <c>2026-03</c>).</summary>
+public enum PortfolioDateUnit
+{
+    Year = 1,
+    Month = 2,
+}
+
 /// <summary>
 /// A visual as the designer sends it: a title in both languages, a type, one to three measures, a grouping and a place on the grid; or, as a
 /// <see cref="PortfolioVisualType.Section"/>, one of the dashboard's own sections and no measure. Since 18 Nov 2026 a visual may draw
 /// <paramref name="Values"/> of the data catalogue instead of measures, be grouped by a CODE field (<paramref name="GroupField"/>) and narrowed by
-/// <paramref name="Filters"/>.
+/// <paramref name="Filters"/>; grouped by a date field, it names the <paramref name="GroupDateUnit"/> (the 18 Nov 2026 more fields).
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
-    IReadOnlyList<PortfolioFieldFilter>? Filters = null);
+    IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -58,7 +65,8 @@ public sealed record PortfolioVisualGroup(
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
-    string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null);
+    string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
+    PortfolioDateUnit? GroupDateUnit = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -105,6 +113,9 @@ internal sealed partial class PortfolioDesignService(
     private const int MaxHeight = 24;
     private const int MaxFilters = 5;
     private const int MaxFilterValues = 20;
+    private const string True = "TRUE";
+    private const string False = "FALSE";
+    private static readonly DateOnly UnixEpoch = new(1970, 1, 1);
 
     /// <summary>
     /// The dimension keys a filter takes: <c>PROJECT.&lt;GROUP_BY&gt;</c> for each project attribute a visual groups by (<c>PROJECT.STATUS</c>,
@@ -278,20 +289,22 @@ internal sealed partial class PortfolioDesignService(
     private static FieldIssue? SectionIssue(PortfolioVisualInput v, HashSet<PortfolioSection> sections) =>
         v.VisualType != PortfolioVisualType.Section || v.Section is not { } section || !Enum.IsDefined(section) ? new("section", FieldIssue.NotAllowed)
         : (v.Measures?.Count ?? 0) != 0 || v.GroupBy != PortfolioGroupBy.None || (v.Values?.Count ?? 0) != 0 || v.GroupField is not null || (v.Filters?.Count ?? 0) != 0
+            || v.GroupDateUnit is not null
             ? new("section", FieldIssue.NotAllowed)
         : !sections.Add(section) ? new("section", FieldIssue.Duplicate)
         : null;
 
     /// <summary>
-    /// What is wrong with what a chart, card or table draws, or null (its field relative to the visual): the fixed measures or the field values, never both
-    /// (rule 1), then its grouping (rule 4) and its filters (rule 5).
+    /// What is wrong with what a chart, card, line or table draws, or null (its field relative to the visual): the fixed measures or the field values, never both
+    /// (rule 1), then its grouping (rule 4), its grain (rule 7) and its filters (rule 5). A line draws field values only.
     /// </summary>
     private static FieldIssue? DrawingIssue(PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue)
     {
         FieldIssue? drawn = v.Values is { Count: > 0 } values
             ? (v.Measures?.Count ?? 0) != 0 ? new("values", FieldIssue.NotAllowed) : ValuesIssue(v.VisualType, values, catalogue)
+            : v.VisualType == PortfolioVisualType.Line ? (v.Measures?.Count ?? 0) != 0 ? new("measures", FieldIssue.NotAllowed) : new("values", FieldIssue.Required)
             : MeasuresIssue(v);
-        return drawn ?? GroupingIssue(v, catalogue) ?? FiltersIssue(v.Filters, catalogue);
+        return drawn ?? GroupingIssue(v, catalogue) ?? GrainIssue(v, catalogue) ?? FiltersIssue(v, catalogue);
     }
 
     /// <summary>
@@ -310,8 +323,9 @@ internal sealed partial class PortfolioDesignService(
         : null;
 
     /// <summary>
-    /// What is wrong with the field values, or null (rules 2, 3 and 6): as many as the type draws (a table up to six), each a field the designer offers with
-    /// an aggregation its type allows, no two alike; a gauge draws a percentage's average, least or greatest, a pie and a donut a count or a sum.
+    /// What is wrong with the field values, or null (rules 2, 3 and 6): as many as the type draws (a table up to six, a line three), each a field the designer
+    /// offers with an aggregation its type allows, no two alike; a gauge draws a percentage's average, least or greatest or a yes share, a pie and a donut a
+    /// count, a sum or a count of yeses.
     /// </summary>
     private static FieldIssue? ValuesIssue(PortfolioVisualType type, IReadOnlyList<PortfolioFieldValue> values, Dictionary<string, PortfolioFieldDescriptor> catalogue)
     {
@@ -331,39 +345,66 @@ internal sealed partial class PortfolioDesignService(
         }
 
         PortfolioFieldValue first = values[0];
+        PortfolioFieldType firstType = catalogue[first.Field].Type;
         bool fits = type switch
         {
-            PortfolioVisualType.Gauge => catalogue[first.Field].Type == PortfolioFieldType.Percent
-                && first.Aggregation is PortfolioFieldAggregation.Average or PortfolioFieldAggregation.Min or PortfolioFieldAggregation.Max,
-            PortfolioVisualType.Pie or PortfolioVisualType.Donut => first.Aggregation is PortfolioFieldAggregation.Count or PortfolioFieldAggregation.Sum,
-            PortfolioVisualType.Card or PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Table or PortfolioVisualType.Section => true,
+            PortfolioVisualType.Gauge =>
+                (firstType == PortfolioFieldType.Percent && first.Aggregation is PortfolioFieldAggregation.Average or PortfolioFieldAggregation.Min or PortfolioFieldAggregation.Max)
+                || (firstType == PortfolioFieldType.Boolean && first.Aggregation == PortfolioFieldAggregation.ShareTrue),
+            PortfolioVisualType.Pie or PortfolioVisualType.Donut =>
+                first.Aggregation is PortfolioFieldAggregation.Count or PortfolioFieldAggregation.Sum or PortfolioFieldAggregation.CountTrue,
+            PortfolioVisualType.Card or PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Table or PortfolioVisualType.Line
+                or PortfolioVisualType.Section => true,
             _ => true,
         };
         return fits ? null : new("values", FieldIssue.NotAllowed);
     }
 
-    /// <summary>How many measures or field values a type draws: a bar, pie, donut and gauge one, a card two, columns three, a table three measures or six values.</summary>
+    /// <summary>
+    /// How many measures or field values a type draws: a bar, pie, donut and gauge one, a card two, columns three, a table three measures or six values, a line
+    /// three values and no measure.
+    /// </summary>
     private static int MaxDrawn(PortfolioVisualType type, bool fieldValues) => type switch
     {
         PortfolioVisualType.Bar or PortfolioVisualType.Pie or PortfolioVisualType.Donut or PortfolioVisualType.Gauge => 1,
         PortfolioVisualType.Card => 2,
         PortfolioVisualType.Column => 3,
         PortfolioVisualType.Table => fieldValues ? 6 : 3,
+        PortfolioVisualType.Line => fieldValues ? 3 : 0,
         PortfolioVisualType.Section => 0,
         _ => 0,
     };
 
     /// <summary>
-    /// What is wrong with the grouping, or null (rule 4): a card and a gauge are not grouped, a chart is — by a project attribute or by a CODE field the
-    /// designer offers, never both — and a table either.
+    /// What is wrong with the grouping, or null (rule 4): a card and a gauge are not grouped, a chart is — by a project attribute or by a CODE, BOOLEAN or date
+    /// field the designer offers, never both — and a table either; a line only by a field. A date field names its <see cref="PortfolioVisualInput.GroupDateUnit"/>,
+    /// any other grouping none.
     /// </summary>
     private static FieldIssue? GroupingIssue(PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue)
     {
         bool single = v.VisualType is PortfolioVisualType.Card or PortfolioVisualType.Gauge;
+        PortfolioFieldDescriptor? field = null;
         if (v.GroupField is { } key
-            && (single || v.GroupBy != PortfolioGroupBy.None || !catalogue.TryGetValue(key, out PortfolioFieldDescriptor? field) || field.Type != PortfolioFieldType.Code))
+            && (single || v.GroupBy != PortfolioGroupBy.None || !catalogue.TryGetValue(key, out field) || field.Type is not (PortfolioFieldType.Code or PortfolioFieldType.Boolean
+                or PortfolioFieldType.Date or PortfolioFieldType.DateTime)))
         {
             return new("groupField", FieldIssue.NotAllowed);
+        }
+
+        bool byDate = field?.IsDate() == true;
+        if (byDate && v.GroupDateUnit is null)
+        {
+            return new("groupDateUnit", FieldIssue.Required);
+        }
+
+        if (v.GroupDateUnit is { } unit && (!byDate || !Enum.IsDefined(unit)))
+        {
+            return new("groupDateUnit", FieldIssue.NotAllowed);
+        }
+
+        if (v.VisualType == PortfolioVisualType.Line)
+        {
+            return v.GroupBy != PortfolioGroupBy.None ? new("groupBy", FieldIssue.NotAllowed) : v.GroupField is null ? new("groupField", FieldIssue.Required) : null;
         }
 
         bool grouped = v.GroupBy != PortfolioGroupBy.None || v.GroupField is not null;
@@ -371,12 +412,36 @@ internal sealed partial class PortfolioDesignService(
     }
 
     /// <summary>
-    /// What is wrong with the filters, or null (rule 5): at most five, each on a CODE field the designer offers or a dimension (<see cref="Dimensions"/>),
-    /// with one to twenty values, each a code for a CODE field, a status, a stage or an on-plan label, or an id for an item, department or entity.
+    /// What is wrong with the grain, or null (rule 7): the values and the grouping field are all of one grain (fixed measures are of projects). A visual of
+    /// snapshot values is a line, columns, bars or a table, grouped by a date or the CODE field of the values' own projection: figures over time.
     /// </summary>
-    private static FieldIssue? FiltersIssue(IReadOnlyList<PortfolioFieldFilter>? filters, Dictionary<string, PortfolioFieldDescriptor> catalogue)
+    private static FieldIssue? GrainIssue(PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue)
     {
-        if (filters is null)
+        List<PortfolioFieldDescriptor> drawn = [.. (v.Values ?? []).Select(value => catalogue[value.Field])];
+        PortfolioFieldDescriptor? group = v.GroupField is { } key ? catalogue[key] : null;
+        string? projection = SnapshotProjectionOf(drawn);
+        return projection is null ? group?.Grain == PortfolioFieldGrain.Snapshot ? new("groupField", FieldIssue.NotAllowed) : null
+            : drawn.Any(f => f.ProjectionCode != projection) ? new("values", FieldIssue.NotAllowed)
+            : v.VisualType is not (PortfolioVisualType.Line or PortfolioVisualType.Column or PortfolioVisualType.Bar or PortfolioVisualType.Table)
+                ? new("visualType", FieldIssue.NotAllowed)
+            : group is null ? new("groupField", FieldIssue.Required)
+            : group.ProjectionCode != projection || group.Type is not (PortfolioFieldType.Code or PortfolioFieldType.Date or PortfolioFieldType.DateTime)
+                ? new("groupField", FieldIssue.NotAllowed)
+            : null;
+    }
+
+    /// <summary>The snapshot projection a visual's values are read from, or null for a visual of projects.</summary>
+    private static string? SnapshotProjectionOf(IEnumerable<PortfolioFieldDescriptor> values) =>
+        values.FirstOrDefault(f => f.Grain == PortfolioFieldGrain.Snapshot)?.ProjectionCode;
+
+    /// <summary>
+    /// What is wrong with the filters, or null (rule 5): at most five, each on a dimension (<see cref="Dimensions"/>) or a project-grain CODE, BOOLEAN or date
+    /// field the designer offers — or, on a visual of snapshots, its own projection's CODE field — with one to twenty values, each of its kind's shape: a code, an
+    /// id, <c>TRUE</c> or <c>FALSE</c>, or a year.
+    /// </summary>
+    private static FieldIssue? FiltersIssue(PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue)
+    {
+        if (v.Filters is not { } filters)
         {
             return null;
         }
@@ -386,6 +451,7 @@ internal sealed partial class PortfolioDesignService(
             return new("filters", FieldIssue.OutsideRange);
         }
 
+        string? snapshots = SnapshotProjectionOf((v.Values ?? []).Select(value => catalogue[value.Field]));
         foreach (PortfolioFieldFilter filter in filters)
         {
             if (filter?.Field is null || filter.Values is not { Count: > 0 } values)
@@ -393,10 +459,10 @@ internal sealed partial class PortfolioDesignService(
                 return new("filters", FieldIssue.Required);
             }
 
-            bool? byId = Dimensions.TryGetValue(filter.Field, out PortfolioGroupBy dimension)
-                ? dimension is not (PortfolioGroupBy.Status or PortfolioGroupBy.Stage or PortfolioGroupBy.OnPlan)
-                : catalogue.TryGetValue(filter.Field, out PortfolioFieldDescriptor? field) && field.Type == PortfolioFieldType.Code ? false : null;
-            if (byId is not { } ids)
+            FilterShape? shape = Dimensions.TryGetValue(filter.Field, out PortfolioGroupBy dimension)
+                ? dimension is PortfolioGroupBy.Status or PortfolioGroupBy.Stage or PortfolioGroupBy.OnPlan ? FilterShape.Code : FilterShape.Id
+                : catalogue.GetValueOrDefault(filter.Field) is { } field ? ShapeOf(field, snapshots) : null;
+            if (shape is not { } kind)
             {
                 return new("filters", FieldIssue.NotAllowed);
             }
@@ -406,7 +472,7 @@ internal sealed partial class PortfolioDesignService(
                 return new("filters", FieldIssue.OutsideRange);
             }
 
-            if (values.Any(value => value is null || (ids ? !Guid.TryParseExact(value, "D", out _) : !CodeShape().IsMatch(value))))
+            if (values.Any(value => value is null || !Fits(kind, value)))
             {
                 return new("filters", FieldIssue.NotAllowed);
             }
@@ -414,6 +480,31 @@ internal sealed partial class PortfolioDesignService(
 
         return null;
     }
+
+    /// <summary>
+    /// The values a filter on <paramref name="field"/> takes, or null when it takes none: a CODE field's codes, a yes/no's <c>TRUE</c> or <c>FALSE</c>, a
+    /// date's years; of a snapshot projection, only the CODE field of the visual's own (<paramref name="snapshots"/>).
+    /// </summary>
+    private static FilterShape? ShapeOf(PortfolioFieldDescriptor field, string? snapshots) =>
+        field.Grain == PortfolioFieldGrain.Snapshot
+            ? field.ProjectionCode == snapshots && field.Type == PortfolioFieldType.Code ? FilterShape.Code : null
+            : field.Type switch
+            {
+                PortfolioFieldType.Code => FilterShape.Code,
+                PortfolioFieldType.Boolean => FilterShape.Boolean,
+                PortfolioFieldType.Date or PortfolioFieldType.DateTime => FilterShape.Year,
+                PortfolioFieldType.Count or PortfolioFieldType.Percent or PortfolioFieldType.Days or PortfolioFieldType.Sar => null,
+                _ => null,
+            };
+
+    private static bool Fits(FilterShape shape, string value) => shape switch
+    {
+        FilterShape.Code => CodeShape().IsMatch(value),
+        FilterShape.Id => Guid.TryParseExact(value, "D", out _),
+        FilterShape.Boolean => value is True or False,
+        FilterShape.Year => YearShape().IsMatch(value),
+        _ => false,
+    };
 
     private async Task<PortfolioDesignView> ViewAsync(
         Guid callerId, IReadOnlyList<PortfolioVisualInput> visuals, PortfolioInsightFilters filters, bool isStandard, DateTimeOffset? updatedAt, CancellationToken cancellationToken)
@@ -436,11 +527,12 @@ internal sealed partial class PortfolioDesignService(
         // The data fields: one read for every field any visual names, over every project of the population, each cell authorised as a report cell.
         List<string> keys = [.. visuals.Where(v => v.Section is null).SelectMany(FieldKeysOf).Distinct(StringComparer.Ordinal)];
         List<Guid> projectIds = [.. rowsByPermission.Values.OfType<IReadOnlyList<PortfolioProjectRow>>().SelectMany(rows => rows).Select(r => r.Project.Id).Distinct()];
-        IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, PortfolioFieldCell>> cells = keys.Count == 0 || projectIds.Count == 0
-            ? new Dictionary<Guid, IReadOnlyDictionary<string, PortfolioFieldCell>>()
+        IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = keys.Count == 0 || projectIds.Count == 0
+            ? new Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>>()
             : await fieldReader.ReadAsync(callerId, projectIds, keys, now, cancellationToken).ConfigureAwait(false);
 
-        Dictionary<string, PortfolioFieldType> types = fieldReader.Fields.ToDictionary(f => f.Key, f => f.Type, StringComparer.Ordinal);
+        Dictionary<string, PortfolioFieldDescriptor> catalogue = fieldReader.Fields.ToDictionary(f => f.Key, StringComparer.Ordinal);
+        Dictionary<string, PortfolioFieldType> types = catalogue.ToDictionary(f => f.Key, f => f.Value.Type, StringComparer.Ordinal);
         return new PortfolioDesignView(isStandard, updatedAt, [.. visuals.Select(v =>
         {
             if (v.Section is { } section)
@@ -452,7 +544,8 @@ internal sealed partial class PortfolioDesignService(
             IReadOnlyList<PortfolioProjectRow>? rows = rowsByPermission[PermissionOf(v.GroupBy)];
             return new PortfolioVisualResult(
                 v.Title, v.VisualType, v.Measures, v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
-                rows is null ? null : Groups(v, rows, stages, amounts, thresholds, cells), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types));
+                rows is null ? null : Groups(v, rows, stages, amounts, thresholds, cells, catalogue), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types),
+                v.GroupDateUnit);
         })]);
     }
 
@@ -470,77 +563,136 @@ internal sealed partial class PortfolioDesignService(
             .Concat((v.Filters ?? []).Select(f => f.Field).Where(field => !Dimensions.ContainsKey(field)));
 
     /// <summary>
-    /// A visual's groups: its projects narrowed by its filters, grouped by a project attribute or a CODE field's value. Field values are calculated over the
-    /// revealed cells only (<see cref="Aggregate"/>); <see cref="PortfolioVisualGroup.Measured"/> and <see cref="PortfolioVisualGroup.ValueEntered"/> are
-    /// then the projects whose first value is revealed.
+    /// A visual's groups: its projects narrowed by its filters, grouped by a project attribute or a field's value. A visual of snapshot values (rule 7) is
+    /// calculated over its projects' published snapshots instead, narrowed by its snapshot filters. Field values are calculated over the revealed cells only
+    /// (<see cref="Aggregate"/>); <see cref="PortfolioVisualGroup.Measured"/> and <see cref="PortfolioVisualGroup.ValueEntered"/> are then the rows (projects
+    /// or snapshots) whose first value is revealed, and <see cref="PortfolioVisualGroup.Projects"/> the distinct projects.
     /// </summary>
-    private static IReadOnlyList<PortfolioVisualGroup> Groups(
+    internal static IReadOnlyList<PortfolioVisualGroup> Groups(
         PortfolioVisualInput visual, IReadOnlyList<PortfolioProjectRow> rows, ProjectStageSet? stages, bool amounts, OnPlanThresholds thresholds,
-        IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, PortfolioFieldCell>> cells)
+        IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells, IReadOnlyDictionary<string, PortfolioFieldDescriptor> catalogue)
     {
-        string? CellOf(PortfolioProjectRow row, string key) => cells.GetValueOrDefault(row.Project.Id)?.GetValueOrDefault(key)?.Value;
+        PortfolioFieldDescriptor? FieldOf(string key) => catalogue.GetValueOrDefault(key);
+        bool IsSnapshotField(string key) => FieldOf(key)?.Grain == PortfolioFieldGrain.Snapshot;
+        IReadOnlyList<PortfolioFieldCell> CellsOf(PortfolioProjectRow row, string key) => cells.GetValueOrDefault(row.Project.Id)?.GetValueOrDefault(key) ?? [];
 
-        PortfolioVisualGroup GroupOf(string? key, BilingualLabel? label, IReadOnlyList<PortfolioProjectRow> members)
+        bool snapshotVisual = (visual.Values ?? []).Any(v => IsSnapshotField(v.Field));
+        List<PortfolioFieldFilter> projectFilters = [.. (visual.Filters ?? []).Where(f => !IsSnapshotField(f.Field))];
+        List<PortfolioFieldFilter> snapshotFilters = [.. (visual.Filters ?? []).Where(f => IsSnapshotField(f.Field))];
+        List<string> snapshotKeys = [.. FieldKeysOf(visual).Where(IsSnapshotField).Distinct(StringComparer.Ordinal)];
+
+        bool Passes(PortfolioFieldFilter filter, FieldRow row) =>
+            filter.Values.Contains(
+                Dimensions.TryGetValue(filter.Field, out PortfolioGroupBy dimension) ? KeyOf(dimension, row.Project) : FilterKeyOf(FieldOf(filter.Field), row.Cell(filter.Field)),
+                StringComparer.OrdinalIgnoreCase);
+
+        List<FieldRow> projects = [.. rows.Select(r => new FieldRow(r, key => CellsOf(r, key) is [var first, ..] ? first.Value : null))
+            .Where(r => projectFilters.All(f => Passes(f, r)))];
+        List<FieldRow> members = snapshotVisual
+            ? [.. projects.SelectMany(p => SnapshotsOf(p.Project, key => CellsOf(p.Project, key), snapshotKeys)).Where(r => snapshotFilters.All(f => Passes(f, r)))]
+            : projects;
+
+        PortfolioVisualGroup GroupOf(string? key, BilingualLabel? label, IReadOnlyList<FieldRow> group)
         {
+            int distinct = group.Select(m => m.Project.Project.Id).Distinct().Count();
             if (visual.Values is { Count: > 0 } values)
             {
-                int revealed = members.Count(m => CellOf(m, values[0].Field) is not null);
+                int revealed = group.Count(m => m.Cell(values[0].Field) is not null);
                 return new PortfolioVisualGroup(
-                    key, label, members.Count, revealed, revealed, [.. values.Select(v => Aggregate(v.Aggregation, members.Select(m => CellOf(m, v.Field))))], null);
+                    key, label, distinct, revealed, revealed,
+                    [.. values.Select(v => Aggregate(v.Aggregation, FieldOf(v.Field)?.Type ?? PortfolioFieldType.Count, group.Select(m => m.Cell(v.Field))))], null);
             }
 
-            PortfolioBreakdownRow figures = PortfolioInsightsService.RowOf(null, null, members, amounts, thresholds, sector: false);
+            List<PortfolioProjectRow> projectRows = [.. group.Select(m => m.Project)];
+            PortfolioBreakdownRow figures = PortfolioInsightsService.RowOf(null, null, projectRows, amounts, thresholds, sector: false);
             return new PortfolioVisualGroup(
-                key, label, figures.Projects, figures.Measured, figures.ValueEntered, [.. visual.Measures.Select(m => ValueOf(m, figures, members))], figures.OnPlan);
+                key, label, figures.Projects, figures.Measured, figures.ValueEntered, [.. visual.Measures.Select(m => ValueOf(m, figures, projectRows))], figures.OnPlan);
         }
 
-        IReadOnlyList<PortfolioProjectRow> shown = visual.Filters is { Count: > 0 } filters
-            ? [.. rows.Where(r => filters.All(f => f.Values.Contains(Dimensions.TryGetValue(f.Field, out PortfolioGroupBy dimension) ? KeyOf(dimension, r) : CellOf(r, f.Field),
-                StringComparer.OrdinalIgnoreCase)))]
-            : rows;
         if (visual.GroupField is { } field)
         {
-            // By the field's value, from the largest group; the projects whose value is not revealed come last.
-            return [.. shown.GroupBy(r => CellOf(r, field)).OrderBy(g => g.Key is null).ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal)
-                .Select(g => GroupOf(g.Key, null, [.. g]))];
+            // A date's groups run in time order; any other field's from the largest group. The rows whose value is not revealed come last.
+            PortfolioFieldDescriptor? descriptor = FieldOf(field);
+            List<IGrouping<string?, FieldRow>> byValue = [.. members.GroupBy(m => GroupKeyOf(descriptor, visual.GroupDateUnit, m.Cell(field)))];
+            IEnumerable<IGrouping<string?, FieldRow>> ordered = descriptor?.IsDate() == true
+                ? byValue.OrderBy(g => g.Key is null).ThenBy(g => g.Key, StringComparer.Ordinal)
+                : byValue.OrderBy(g => g.Key is null).ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal);
+            return [.. ordered.Select(g => GroupOf(g.Key, null, [.. g]))];
         }
 
         if (visual.GroupBy == PortfolioGroupBy.None)
         {
-            return [GroupOf(null, null, shown)];
+            return [GroupOf(null, null, members)];
         }
 
-        List<IGrouping<string?, PortfolioProjectRow>> groups = [.. shown.GroupBy(r => KeyOf(visual.GroupBy, r))];
+        List<IGrouping<string?, FieldRow>> groups = [.. members.GroupBy(m => KeyOf(visual.GroupBy, m.Project))];
         // A scale keeps its own order; anything else runs from the largest group. The projects with no value come last.
-        IEnumerable<IGrouping<string?, PortfolioProjectRow>> ordered = visual.GroupBy is PortfolioGroupBy.Stage or PortfolioGroupBy.Status or PortfolioGroupBy.OnPlan
-            ? groups.OrderBy(g => g.Key is null).ThenBy(g => ScaleOrder(visual.GroupBy, g.First(), stages))
+        IEnumerable<IGrouping<string?, FieldRow>> scaled = visual.GroupBy is PortfolioGroupBy.Stage or PortfolioGroupBy.Status or PortfolioGroupBy.OnPlan
+            ? groups.OrderBy(g => g.Key is null).ThenBy(g => ScaleOrder(visual.GroupBy, g.First().Project, stages))
             : groups.OrderBy(g => g.Key is null).ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal);
-        return [.. ordered.Select(g => GroupOf(g.Key, visual.GroupBy == PortfolioGroupBy.Stage && g.Key is { } code ? stages?.Find(code)?.Name : null, [.. g]))];
+        return [.. scaled.Select(g => GroupOf(g.Key, visual.GroupBy == PortfolioGroupBy.Stage && g.Key is { } code ? stages?.Find(code)?.Name : null, [.. g]))];
     }
 
-    /// <summary>
-    /// A field value over a group's cells, the revealed ones only (null for a cell not revealed): <c>COUNT</c> counts them, 0 when there is none; the others
-    /// calculate over their numbers and are null, "not available" and never 0, when there is none. An average keeps two places, as the insights' averages do.
-    /// </summary>
-    internal static decimal? Aggregate(PortfolioFieldAggregation aggregation, IEnumerable<string?> cells)
+    /// <summary>A project's published snapshots as rows, oldest first: each of <paramref name="keys"/> (snapshot-grain) read from that snapshot's cell.</summary>
+    private static IEnumerable<FieldRow> SnapshotsOf(PortfolioProjectRow project, Func<string, IReadOnlyList<PortfolioFieldCell>> cellsOf, IReadOnlyCollection<string> keys)
     {
-        List<string> revealed = [.. cells.OfType<string>()];
-        if (aggregation == PortfolioFieldAggregation.Count)
+        Dictionary<(string Key, int Index), string?> byIndex = [];
+        foreach (string key in keys)
         {
-            return revealed.Count;
+            foreach (PortfolioFieldCell cell in cellsOf(key))
+            {
+                if (cell.SnapshotIndex is { } index)
+                {
+                    byIndex[(key, index)] = cell.Value;
+                }
+            }
         }
 
-        List<decimal> numbers = [.. revealed.Select(Number).OfType<decimal>()];
-        return numbers.Count == 0 ? null : aggregation switch
+        return byIndex.Keys.Select(k => k.Index).Distinct().Order().Select(index => new FieldRow(project, key => byIndex.GetValueOrDefault((key, index))));
+    }
+
+    /// <summary>A filter's comparable value of a field's cell: a yes/no as <c>TRUE</c> or <c>FALSE</c>, a date as its year, anything else as the source wrote it.</summary>
+    internal static string? FilterKeyOf(PortfolioFieldDescriptor? field, string? value) =>
+        value is null || field is null ? value
+        : field.Type == PortfolioFieldType.Boolean ? value.ToUpperInvariant()
+        : field.IsDate() ? (value.Length >= 4 ? value[..4] : null)
+        : value;
+
+    /// <summary>A group's key of a field's cell: a yes/no as <c>TRUE</c> or <c>FALSE</c>, a date as its year (<c>2026</c>) or month (<c>2026-03</c>), a code as is.</summary>
+    internal static string? GroupKeyOf(PortfolioFieldDescriptor? field, PortfolioDateUnit? unit, string? value) =>
+        value is null || field is null ? value
+        : field.Type == PortfolioFieldType.Boolean ? value.ToUpperInvariant()
+        : field.IsDate() ? unit == PortfolioDateUnit.Month ? (value.Length >= 7 ? value[..7] : null) : (value.Length >= 4 ? value[..4] : null)
+        : value;
+
+    /// <summary>
+    /// A field value over a group's cells, the revealed ones only (null for a cell not revealed): <c>COUNT</c> counts them and <c>COUNT_TRUE</c> their yeses, 0
+    /// when there is none; <c>SHARE_TRUE</c> is the yeses' share in percent; the others calculate over their numbers — a date's being its day number since
+    /// 1970-01-01 — and are null, "not available" and never 0, when there is none. An average and a share keep two places, as the insights' averages do.
+    /// </summary>
+    internal static decimal? Aggregate(PortfolioFieldAggregation aggregation, PortfolioFieldType type, IEnumerable<string?> cells)
+    {
+        List<string> revealed = [.. cells.OfType<string>()];
+        int yes = revealed.Count(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
+        List<decimal> numbers = [.. revealed.Select(v => type is PortfolioFieldType.Date or PortfolioFieldType.DateTime ? DayNumber(v) : Number(v)).OfType<decimal>()];
+        return aggregation switch
         {
-            PortfolioFieldAggregation.Sum => numbers.Sum(),
-            PortfolioFieldAggregation.Average => decimal.Round(numbers.Average(), 2, MidpointRounding.AwayFromZero),
-            PortfolioFieldAggregation.Min => numbers.Min(),
-            PortfolioFieldAggregation.Max => numbers.Max(),
-            PortfolioFieldAggregation.Count => numbers.Count,
+            PortfolioFieldAggregation.Count => revealed.Count,
+            PortfolioFieldAggregation.CountTrue => yes,
+            PortfolioFieldAggregation.ShareTrue => revealed.Count == 0 ? null : decimal.Round(yes * 100m / revealed.Count, 2, MidpointRounding.AwayFromZero),
+            PortfolioFieldAggregation.Sum => numbers.Count == 0 ? null : numbers.Sum(),
+            PortfolioFieldAggregation.Average => numbers.Count == 0 ? null : decimal.Round(numbers.Average(), 2, MidpointRounding.AwayFromZero),
+            PortfolioFieldAggregation.Min => numbers.Count == 0 ? null : numbers.Min(),
+            PortfolioFieldAggregation.Max => numbers.Count == 0 ? null : numbers.Max(),
             _ => throw new ArgumentOutOfRangeException(nameof(aggregation), aggregation, "Unknown aggregation."),
         };
     }
+
+    /// <summary>A source's date (<c>yyyy-MM-dd</c>, or a UTC moment starting so) as its day number since 1970-01-01; null for one that is not.</summary>
+    private static decimal? DayNumber(string value) =>
+        value.Length >= 10 && DateOnly.TryParseExact(value[..10], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly date)
+            ? date.DayNumber - UnixEpoch.DayNumber
+            : null;
 
     /// <summary>A source's exact decimal string as a number; null for one that is not (a code).</summary>
     private static decimal? Number(string value) =>
@@ -591,13 +743,13 @@ internal sealed partial class PortfolioDesignService(
         PortfolioVisualDataFields? data = v.DataFields is { } json ? JsonSerializer.Deserialize<PortfolioVisualDataFields>(json, DataFieldsJson) : null;
         return new(
             new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
-            v.Section, data?.Values, data?.GroupField, data?.Filters);
+            v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit);
     }
 
     /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section).</summary>
     private static string? DataFieldsOf(PortfolioVisualInput v) =>
-        v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 }
-            ? JsonSerializer.Serialize(new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters), DataFieldsJson)
+        v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null
+            ? JsonSerializer.Serialize(new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit), DataFieldsJson)
             : null;
 
     private static PortfolioVisualInput Section(string ar, string en, PortfolioSection section, short column, short row, short width, short height) =>
@@ -616,6 +768,23 @@ internal sealed partial class PortfolioDesignService(
     [GeneratedRegex("^[A-Z0-9_-]{1,64}$", RegexOptions.CultureInvariant)]
     private static partial Regex CodeShape();
 
-    /// <summary>The JSON of <c>data_fields</c>: the visual's values, grouping field and filters, as the API carries them.</summary>
-    private sealed record PortfolioVisualDataFields(IReadOnlyList<PortfolioFieldValue>? Values, string? GroupField, IReadOnlyList<PortfolioFieldFilter>? Filters);
+    /// <summary>A filter value of a date field: a year.</summary>
+    [GeneratedRegex("^[0-9]{4}$", RegexOptions.CultureInvariant)]
+    private static partial Regex YearShape();
+
+    /// <summary>The JSON of <c>data_fields</c>: the visual's values, grouping field and its date unit, and filters, as the API carries them.</summary>
+    private sealed record PortfolioVisualDataFields(
+        IReadOnlyList<PortfolioFieldValue>? Values, string? GroupField, IReadOnlyList<PortfolioFieldFilter>? Filters, PortfolioDateUnit? GroupDateUnit = null);
+
+    /// <summary>A row a visual of fields calculates over: a project, or one published snapshot of it; <see cref="Cell"/> reads a field key's revealed value.</summary>
+    private sealed record FieldRow(PortfolioProjectRow Project, Func<string, string?> Cell);
+
+    /// <summary>What the values of a filter are: codes, ids (items, departments, entities), yes/no, or years.</summary>
+    private enum FilterShape
+    {
+        Code = 1,
+        Id = 2,
+        Boolean = 3,
+        Year = 4,
+    }
 }

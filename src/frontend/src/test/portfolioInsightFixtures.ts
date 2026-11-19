@@ -8,6 +8,7 @@ import {
   type DesignView,
   type FieldAggregation,
   type FieldDescriptor,
+  type FieldGrain,
   type FieldType,
   type GroupBy,
   type Measure,
@@ -355,6 +356,9 @@ export const AGGREGATIONS_OF: Record<FieldType, FieldAggregation[]> = {
   DAYS: ['COUNT', 'SUM', 'AVERAGE', 'MIN', 'MAX'],
   SAR: ['COUNT', 'SUM', 'AVERAGE', 'MIN', 'MAX'],
   PERCENT: ['COUNT', 'AVERAGE', 'MIN', 'MAX'],
+  BOOLEAN: ['COUNT', 'COUNT_TRUE', 'SHARE_TRUE'],
+  DATE: ['COUNT', 'MIN', 'MAX'],
+  DATE_TIME: ['COUNT', 'MIN', 'MAX'],
 };
 
 /** The status codes of the RAG-like projections (the register's Values for their CODE fields). */
@@ -373,13 +377,30 @@ export const FIELD = {
   REVIEW_OVERDUE: 'RISK.RISK_EXPOSURE.REVIEW_OVERDUE',
   SCHEDULE_HEALTH: 'SCHEDULE.SCHEDULE_HEALTH_STATUS.SCHEDULE_HEALTH',
   FINISH_VARIANCE_DAYS: 'SCHEDULE.SCHEDULE_HEALTH_STATUS.FINISH_VARIANCE_DAYS',
+  // The project record's own attributes (more fields contract §1) and the published progress history (§4, snapshot grain).
+  REGISTRATION_BUDGET: 'PROJECT.PROJECT_PROFILE.REGISTRATION_BUDGET',
+  FUNDING_SOURCE: 'PROJECT.PROJECT_PROFILE.FUNDING_SOURCE',
+  DECLARED_ACTUAL_PERCENT: 'PROJECT.PROJECT_PROFILE.DECLARED_ACTUAL_PERCENT',
+  IS_STRATEGIC: 'PROJECT.PROJECT_PROFILE.IS_STRATEGIC',
+  PLANNED_END_DATE: 'PROJECT.PROJECT_PROFILE.PLANNED_END_DATE',
+  ACTIVATED_AT: 'PROJECT.PROJECT_PROFILE.ACTIVATED_AT',
+  HISTORY_PUBLISHED_AT: 'PROGRESS.PUBLISHED_PROGRESS_HISTORY.PUBLISHED_AT',
+  HISTORY_PERIOD_START: 'PROGRESS.PUBLISHED_PROGRESS_HISTORY.PERIOD_START',
+  HISTORY_PERIOD_END: 'PROGRESS.PUBLISHED_PROGRESS_HISTORY.PERIOD_END',
+  HISTORY_HEALTH: 'PROGRESS.PUBLISHED_PROGRESS_HISTORY.OVERALL_HEALTH',
+  HISTORY_ACTUAL_PERCENT: 'PROGRESS.PUBLISHED_PROGRESS_HISTORY.ACTUAL_PERCENT',
+  HISTORY_PLANNED_PERCENT: 'PROGRESS.PUBLISHED_PROGRESS_HISTORY.PLANNED_PERCENT',
 } as const;
 
 function field(
   key: string,
   sourceDomain: string,
   type: FieldType,
-  { isSensitive = false, values = [] }: { isSensitive?: boolean; values?: string[] } = {},
+  {
+    isSensitive = false,
+    values = [],
+    grain = 'PROJECT',
+  }: { isSensitive?: boolean; values?: string[]; grain?: FieldGrain } = {},
 ): FieldDescriptor {
   const fieldCode = key.split('.').at(-1) ?? key;
   return {
@@ -391,6 +412,7 @@ function field(
     isSensitive,
     values,
     aggregations: AGGREGATIONS_OF[type],
+    grain,
   };
 }
 
@@ -413,6 +435,20 @@ export function designFieldsFixture(): { fields: FieldDescriptor[] } {
       field(FIELD.REVIEW_OVERDUE, 'WF-06', 'COUNT'),
       field(FIELD.SCHEDULE_HEALTH, 'WF-03', 'CODE', { values: RAG }),
       field(FIELD.FINISH_VARIANCE_DAYS, 'WF-03', 'DAYS'),
+      field(FIELD.REGISTRATION_BUDGET, 'WF-01', 'SAR', { isSensitive: true }),
+      field(FIELD.DECLARED_ACTUAL_PERCENT, 'WF-01', 'PERCENT'),
+      field(FIELD.FUNDING_SOURCE, 'WF-01', 'CODE', {
+        values: ['STRATEGY_BUDGET_FULL', 'STRATEGY_BUDGET_PARTIAL', 'NOT_STRATEGY_BUDGET'],
+      }),
+      field(FIELD.IS_STRATEGIC, 'WF-01', 'BOOLEAN'),
+      field(FIELD.PLANNED_END_DATE, 'WF-01', 'DATE'),
+      field(FIELD.ACTIVATED_AT, 'WF-01', 'DATE_TIME'),
+      field(FIELD.HISTORY_PUBLISHED_AT, 'WF-02', 'DATE_TIME', { grain: 'SNAPSHOT' }),
+      field(FIELD.HISTORY_PERIOD_START, 'WF-02', 'DATE', { grain: 'SNAPSHOT' }),
+      field(FIELD.HISTORY_PERIOD_END, 'WF-02', 'DATE', { grain: 'SNAPSHOT' }),
+      field(FIELD.HISTORY_HEALTH, 'WF-02', 'CODE', { values: RAG, grain: 'SNAPSHOT' }),
+      field(FIELD.HISTORY_ACTUAL_PERCENT, 'WF-02', 'PERCENT', { grain: 'SNAPSHOT' }),
+      field(FIELD.HISTORY_PLANNED_PERCENT, 'WF-02', 'PERCENT', { grain: 'SNAPSHOT' }),
     ],
   };
 }

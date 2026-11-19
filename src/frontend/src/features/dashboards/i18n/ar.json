@@ -379,7 +379,8 @@
       "DONUT": "مخطط حلقي",
       "TABLE": "جدول",
       "GAUGE": "مؤشر نسبة",
-      "SECTION": "قسم من اللوحة"
+      "SECTION": "قسم من اللوحة",
+      "LINE": "مخطط خطي"
     },
     "measure": {
       "PROJECTS": "عدد المشاريع",
@@ -454,21 +455,28 @@
       "SUM": "المجموع",
       "AVERAGE": "المتوسط",
       "MIN": "الحد الأدنى",
-      "MAX": "الحد الأقصى"
+      "MAX": "الحد الأقصى",
+      "COUNT_TRUE": "عدد نعم",
+      "SHARE_TRUE": "نسبة نعم"
     },
     "aggregationOf": {
       "COUNT": "عدد {field}",
       "SUM": "مجموع {field}",
       "AVERAGE": "متوسط {field}",
       "MIN": "الحد الأدنى من {field}",
-      "MAX": "الحد الأقصى من {field}"
+      "MAX": "الحد الأقصى من {field}",
+      "COUNT_TRUE": "{field}: نعم (العدد)",
+      "SHARE_TRUE": "{field}: نعم (النسبة)"
     },
     "fieldType": {
       "CODE": "حالة",
       "COUNT": "عدد",
       "PERCENT": "٪",
       "DAYS": "أيام",
-      "SAR": "ريال"
+      "SAR": "ريال",
+      "BOOLEAN": "نعم/لا",
+      "DATE": "تاريخ",
+      "DATE_TIME": "تاريخ"
     },
     "fieldSource": {
       "CHANGE_REQUEST_CHANGE_POSITION": "طلبات التغيير",
@@ -485,7 +493,9 @@
       "PROJECT_TASK_OPEN_TASKS": "المهام",
       "RISK_RISK_EXPOSURE": "المخاطر",
       "SCHEDULE_SCHEDULE_HEALTH_STATUS": "الجدول الزمني (مباشر)",
-      "SUSPENSION_OPEN_REQUESTS": "طلبات التعليق"
+      "SUSPENSION_OPEN_REQUESTS": "طلبات التعليق",
+      "PROJECT_PROJECT_PROFILE": "سجل المشروع",
+      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": "سجل التقدم المنشور"
     },
     "field": {
       "CHANGE_REQUEST_CHANGE_POSITION": {
@@ -555,10 +565,66 @@
       },
       "SUSPENSION_OPEN_REQUESTS": {
         "OPEN_REQUESTS": "طلبات التعليق المفتوحة"
+      },
+      "PROJECT_PROJECT_PROFILE": {
+        "REGISTRATION_BUDGET": "ميزانية التسجيل",
+        "DECLARED_ACTUAL_PERCENT": "نسبة الإنجاز الفعلية المعلنة",
+        "DECLARED_PLANNED_PERCENT": "نسبة الإنجاز المخططة المعلنة",
+        "DECLARED_ACTUAL_SPEND_PERCENT": "نسبة الصرف الفعلية المعلنة",
+        "DECLARED_PLANNED_SPEND_PERCENT": "نسبة الصرف المخططة المعلنة",
+        "CURRENT_STAGE_PERCENT": "نسبة إنجاز المرحلة الحالية",
+        "FUNDING_SOURCE": "مصدر التمويل",
+        "PARTICIPATION_MODE": "المشاركة",
+        "PROGRESS_METHOD": "طريقة احتساب التقدم",
+        "IS_STRATEGIC": "مشروع استراتيجي",
+        "ENTITY_UPDATE_COMPLIANT": "تحديثات الجهة في موعدها",
+        "PLANNED_START_DATE": "تاريخ البدء المخطط",
+        "PLANNED_END_DATE": "تاريخ الانتهاء المخطط",
+        "NEXT_ACTION_DUE_DATE": "الموعد المستهدف للإجراء التالي",
+        "ACTIVATED_AT": "تاريخ التفعيل",
+        "CLOSED_AT": "تاريخ الإغلاق"
+      },
+      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": {
+        "PUBLISHED_AT": "تاريخ النشر",
+        "PERIOD_START": "بداية الفترة",
+        "PERIOD_END": "نهاية الفترة",
+        "OVERALL_HEALTH": "الصحة العامة عبر الزمن",
+        "ACTUAL_PERCENT": "التقدم الفعلي عبر الزمن",
+        "PLANNED_PERCENT": "التقدم المخطط عبر الزمن"
       }
     },
     "filterField": "التصفية حسب",
     "chooseFilterField": "اختر حقلًا…",
-    "cancelFilter": "إلغاء عامل التصفية الجديد"
+    "cancelFilter": "إلغاء عامل التصفية الجديد",
+    "fieldValue": {
+      "PROJECT_PROJECT_PROFILE": {
+        "FUNDING_SOURCE": {
+          "STRATEGY_BUDGET_FULL": "ميزانية الاستراتيجية كلياً",
+          "STRATEGY_BUDGET_PARTIAL": "ميزانية الاستراتيجية جزئياً",
+          "NOT_STRATEGY_BUDGET": "من خارج ميزانية الاستراتيجية"
+        },
+        "PARTICIPATION_MODE": {
+          "AHDA_MANAGED": "تديره الهيئة",
+          "ENTITY_MANAGED": "تديره جهة خارجية"
+        },
+        "PROGRESS_METHOD": {
+          "STAGES": "مراحل المشروع",
+          "SCHEDULE": "الجدول الزمني"
+        }
+      }
+    },
+    "yes": "نعم",
+    "no": "لا",
+    "overTime": "عبر الزمن",
+    "replacedByHistory": "حلّ سجل التقدم المنشور الذي اخترته محل القيم الحالية: يعرض المرئي القيم الحالية أو عبر الزمن، لا كليهما.",
+    "replacedByCurrent": "حلّت القيمة الحالية التي اخترتها محل سجل التقدم المنشور: يعرض المرئي القيم الحالية أو عبر الزمن، لا كليهما.",
+    "yesNoFields": "حقول نعم/لا",
+    "dateFields": "حقول التواريخ",
+    "dateUnitLabel": "تجميع التواريخ حسب",
+    "dateUnit": {
+      "YEAR": "السنة",
+      "MONTH": "الشهر"
+    },
+    "lineLabel": "{title}: مخطط خطي عبر {count} نقطة. يسرد الجدول أسفله القيم نفسها."
   }
 }

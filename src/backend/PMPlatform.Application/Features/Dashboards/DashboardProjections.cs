@@ -83,6 +83,7 @@ internal sealed record ProjectionContract(
 internal static class DashboardProjections
 {
     public const string ProjectLifecycleState = "PROJECT.LIFECYCLE_STATE";
+    public const string ProjectProfile = "PROJECT.PROJECT_PROFILE";
     public const string ProjectHealthStatus = "PROGRESS.PROJECT_HEALTH_STATUS";
     public const string PublishedProgressSnapshot = "PROGRESS.PUBLISHED_PROGRESS_SNAPSHOT";
     public const string PublishedProgressHistory = "PROGRESS.PUBLISHED_PROGRESS_HISTORY";
@@ -126,6 +127,9 @@ internal static class DashboardProjections
         new(ProjectLifecycleState, "WF-01", Version, ProjectionSemanticState.CurrentLive, Both, Categorical, PermissionCatalogue.ProjectView, false,
             ProjectionEligibility.AnyProject, "The project's lifecycle state as WF-01 holds it; over a population, the count of authorised projects in each state, each project once.", "SCR-025",
             ProjectionGrain.Project, [ProjectionField.State("LIFECYCLE_STATE", Lifecycle)]),
+        new(ProjectProfile, "WF-01", Version, ProjectionSemanticState.CurrentLive, Both, Counts, PermissionCatalogue.ProjectView, false,
+            ProjectionEligibility.AnyProject, "The project record's own registered attributes as WF-01 holds them: registration budget, declared progress, funding, dates and flags.", "SCR-025",
+            ProjectionGrain.Project, ProjectProfileSource.Fields),
         new(ProjectHealthStatus, "WF-02", Version, ProjectionSemanticState.CurrentLive, Both, Categorical, PermissionCatalogue.ProgressView, false,
             ProjectionEligibility.Delivering, "Overall Project Health as WF-02 last computed it, with the live actual and planned percentages; never recomputed here (ICD-03).", "SCR-027",
             ProjectionGrain.Project, [ProjectionField.State("OVERALL_HEALTH", Health), ProjectionField.Figure("ACTUAL_PERCENT", ProjectionValueType.Percent), ProjectionField.Figure("PLANNED_PERCENT", ProjectionValueType.Percent)]),

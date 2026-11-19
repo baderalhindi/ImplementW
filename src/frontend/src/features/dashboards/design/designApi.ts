@@ -10,7 +10,7 @@ import { type InsightSectionCode } from '../insights/insightSections.ts';
 // insights; a visual whose grouping the caller may not see comes back with `groups` null and is left out.
 
 export type VisualType =
-  'CARD' | 'BAR' | 'COLUMN' | 'PIE' | 'DONUT' | 'TABLE' | 'GAUGE' | 'SECTION';
+  'CARD' | 'BAR' | 'COLUMN' | 'PIE' | 'DONUT' | 'TABLE' | 'GAUGE' | 'LINE' | 'SECTION';
 
 /** One of the dashboard's own sections a design places (18 Nov 2026): drawn as it always was, with its own figures and permission. */
 export type Section =
@@ -40,10 +40,19 @@ export type GroupBy =
   | 'CITY'
   | 'PRIORITY';
 
-/** A governed field's type (the register's ProjectionValueType); BOOLEAN, DATE and DATE_TIME fields are not offered. */
-export type FieldType = 'CODE' | 'COUNT' | 'PERCENT' | 'DAYS' | 'SAR';
+/** A governed field's type (the register's ProjectionValueType). */
+export type FieldType =
+  'CODE' | 'COUNT' | 'PERCENT' | 'DAYS' | 'SAR' | 'BOOLEAN' | 'DATE' | 'DATE_TIME';
 
-export type FieldAggregation = 'COUNT' | 'SUM' | 'AVERAGE' | 'MIN' | 'MAX';
+/** A field value's calculation; COUNT_TRUE and SHARE_TRUE are a yes/no field's (the projects whose value is yes, and their share in %). */
+export type FieldAggregation =
+  'COUNT' | 'SUM' | 'AVERAGE' | 'MIN' | 'MAX' | 'COUNT_TRUE' | 'SHARE_TRUE';
+
+/** A field's rows: one per project, or one per published progress snapshot (figures over time). */
+export type FieldGrain = 'PROJECT' | 'SNAPSHOT';
+
+/** How a visual grouped by a date field groups it: by year (key `2026`) or by month (key `2026-03`). */
+export type DateUnit = 'YEAR' | 'MONTH';
 
 /** One field the designer offers (GET /portfolio-insights/design/fields): a project-grain field of the governed catalogue. */
 export interface FieldDescriptor {
@@ -58,6 +67,7 @@ export interface FieldDescriptor {
   values: string[];
   /** The calculations its type allows, in the register's order. */
   aggregations: FieldAggregation[];
+  grain: FieldGrain;
 }
 
 /** A value a visual draws from a field: the field's key and the calculation over each group's projects. */
@@ -86,8 +96,13 @@ export interface Visual {
   section?: Section | null | undefined;
   /** Field values the visual draws instead of `measures` (which is then empty); absent or null when it draws measures. */
   values?: FieldValue[] | null | undefined;
-  /** A CODE field the visual groups by, `groupBy` being NONE; absent or null when it groups by a project attribute or not at all. */
+  /**
+   * A CODE, yes/no or date field the visual groups by, `groupBy` being NONE; absent or null when it groups by a project attribute or not at
+   * all.
+   */
   groupField?: string | null | undefined;
+  /** How a date `groupField` groups: required with a date field, null otherwise. */
+  groupDateUnit?: DateUnit | null | undefined;
   /** The visual's own filters, applied after the dashboard's; absent or null when it has none. */
   filters?: FieldFilter[] | null | undefined;
 }
