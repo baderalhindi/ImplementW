@@ -41,13 +41,16 @@ function widgetVisual(
 /** The widget codes the design's DASHBOARD_WIDGET visuals draw. */
 function placedCodes(visuals: readonly Visual[]): Set<string> {
   return new Set(
-    visuals.flatMap((visual) =>
-      visual.section === 'DASHBOARD_WIDGET' &&
-      visual.widgetCode !== undefined &&
-      visual.widgetCode !== null
-        ? [visual.widgetCode]
-        : [],
-    ),
+    // A widget's visual may be in a container.
+    visuals
+      .flatMap((visual) => [visual, ...(visual.children ?? [])])
+      .flatMap((visual) =>
+        visual.section === 'DASHBOARD_WIDGET' &&
+        visual.widgetCode !== undefined &&
+        visual.widgetCode !== null
+          ? [visual.widgetCode]
+          : [],
+      ),
   );
 }
 

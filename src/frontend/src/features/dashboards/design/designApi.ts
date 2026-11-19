@@ -9,8 +9,18 @@ import { type InsightSectionCode } from '../insights/insightSections.ts';
 // measures and a grouping — never a formula (BR-DSH-030) — on a twelve-column grid. The API calculates every figure over the same projects as the
 // insights; a visual whose grouping the caller may not see comes back with `groups` null and is left out.
 
+/** CONTAINER (19 Nov 2026, docs/architecture/dashboard-designer-containers.md): a framed, titled box holding visuals, one level deep. */
 export type VisualType =
-  'CARD' | 'BAR' | 'COLUMN' | 'PIE' | 'DONUT' | 'TABLE' | 'GAUGE' | 'LINE' | 'SECTION';
+  | 'CARD'
+  | 'BAR'
+  | 'COLUMN'
+  | 'PIE'
+  | 'DONUT'
+  | 'TABLE'
+  | 'GAUGE'
+  | 'LINE'
+  | 'SECTION'
+  | 'CONTAINER';
 
 /**
  * One of the dashboard's own sections a design places (18 Nov 2026): drawn as it always was, with its own figures and permission.
@@ -138,6 +148,11 @@ export interface Visual {
   filters?: FieldFilter[] | null | undefined;
   /** A bar, column or line chart's axes; null or absent when they are the defaults, and for any other type. */
   axes?: VisualAxes | null | undefined;
+  /**
+   * A container's visuals, in reading order, each placed on the container's inner grid: `layoutWidth` columns and `layoutHeight − 1` rows (its
+   * first row is its title bar). Absent or null on every other visual; never a container.
+   */
+  children?: Visual[] | null | undefined;
 }
 
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */
@@ -155,6 +170,8 @@ export interface VisualResult extends Visual {
   groups: VisualGroup[] | null;
   /** Each field value's type, in the order of `values`: how a value reads, for readers who may not read the designer's catalogue. */
   valueTypes?: FieldType[] | null | undefined;
+  /** A container's visuals, each calculated as a top-level visual is. */
+  children?: VisualResult[] | null | undefined;
 }
 
 export interface DesignView {

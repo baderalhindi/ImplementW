@@ -29,6 +29,12 @@ public enum PortfolioVisualType
 
     /// <summary>A line per value over the groups in key order: figures over time (the 18 Nov 2026 designer fields).</summary>
     Line = 9,
+
+    /// <summary>
+    /// A framed, titled box holding other visuals (the 19 Nov 2026 containers): it draws no figure of its own; its children are placed on its inner grid, one
+    /// level only.
+    /// </summary>
+    Container = 10,
 }
 
 /// <summary>
@@ -121,8 +127,14 @@ public enum PortfolioGroupBy
 /// </summary>
 public sealed class PortfolioVisual : AuditedEntity
 {
-    /// <summary>The reading order, from 1.</summary>
+    /// <summary>The reading order, from 1, over the whole design: a container, then its children in their order, then the next top-level visual.</summary>
     public short SortOrder { get; set; }
+
+    /// <summary>
+    /// The <see cref="PortfolioVisualType.Container"/> this visual is placed in (the 19 Nov 2026 containers), or null for a visual on the dashboard itself. A child's
+    /// place and size count the container's inner grid: its <see cref="LayoutWidth"/> columns and <see cref="LayoutHeight"/> − 1 rows under its title bar.
+    /// </summary>
+    public Guid? ParentId { get; set; }
 
     public required string TitleAr { get; set; }
 

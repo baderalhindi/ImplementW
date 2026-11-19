@@ -17,13 +17,18 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
                 + "AND layout_row >= 0 AND layout_height BETWEEN 1 AND 24");
             // Measures are codes from a fixed list, never an expression (BR-DSH-030).
             // A section names one of the dashboard's own parts and no measure or data field; any other visual no section, and one to three
-            // measures or, drawing the data catalogue's fields instead (18 Nov 2026), no measure and its data fields.
+            // measures or, drawing the data catalogue's fields instead (18 Nov 2026), no measure and its data fields. A container is checked apart.
             t.HasCheckConstraint(
                 "ck_portfolio_visual_measures",
-                "(visual_type = 'SECTION' AND cardinality(measures) = 0 AND section IS NOT NULL AND group_by = 'NONE' AND data_fields IS NULL) "
+                "visual_type = 'CONTAINER' OR (visual_type = 'SECTION' AND cardinality(measures) = 0 AND section IS NOT NULL AND group_by = 'NONE' AND data_fields IS NULL) "
                 + "OR (visual_type <> 'SECTION' AND section IS NULL AND ((cardinality(measures) BETWEEN 1 AND 3 "
                 + "AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', "
                 + "'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS']::text[]) OR (cardinality(measures) = 0 AND data_fields IS NOT NULL)))");
+            // A container (19 Nov 2026) draws nothing of its own, has its title bar and a row, and is on the dashboard itself: one level only.
+            t.HasCheckConstraint(
+                "ck_portfolio_visual_container",
+                "visual_type <> 'CONTAINER' OR (cardinality(measures) = 0 AND section IS NULL AND group_by = 'NONE' AND data_fields IS NULL AND axes IS NULL "
+                + "AND widget_code IS NULL AND layout_height >= 2 AND parent_id IS NULL)");
             t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
             // Only a bar, column or line chart has axes to set (19 Nov 2026).
             t.HasCheckConstraint("ck_portfolio_visual_axes", "axes IS NULL OR visual_type IN ('BAR', 'COLUMN', 'LINE')");
@@ -39,6 +44,9 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
         builder.Property(e => e.Axes).HasColumnType("jsonb");
         builder.Property(e => e.WidgetCode).HasMaxLength(50);
         builder.HasIndex(e => e.SortOrder).IsUnique();
+        // A child is in its container (19 Nov 2026) and goes with it; the service checks that the parent is a container.
+        builder.HasOne<PortfolioVisual>().WithMany().HasForeignKey(e => e.ParentId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(e => e.ParentId);
         // A section is placed once; DASHBOARD_WIDGET once per widget (19 Nov 2026).
         builder.HasIndex(e => e.Section).IsUnique().HasFilter("section IS NOT NULL AND section <> 'DASHBOARD_WIDGET'");
         builder.HasIndex(e => e.WidgetCode).IsUnique().HasFilter("widget_code IS NOT NULL");

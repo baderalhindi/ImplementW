@@ -380,7 +380,8 @@
       "TABLE": "Table",
       "GAUGE": "Gauge",
       "SECTION": "Dashboard section",
-      "LINE": "Line chart"
+      "LINE": "Line chart",
+      "CONTAINER": "Container"
     },
     "measure": {
       "PROJECTS": "Projects",
@@ -626,6 +627,16 @@
     "axisRangeHint": "Leave empty to follow the figures.",
     "axisRangeOrder": "The start must be less than the end.",
     "axisRangeLimit": "Use a number between minus one trillion and one trillion.",
-    "gridlines": "Gridlines"
+    "gridlines": "Gridlines",
+    "containerDefaultTitle": "Container",
+    "removeContainer": "Remove container",
+    "removeContainerBody": "Remove the visuals in “{title}” with it, or keep them on the dashboard where they are?",
+    "removeWithVisuals": "Remove the container and its visuals",
+    "keepVisuals": "Keep its visuals on the dashboard",
+    "cancel": "Cancel",
+    "noRoomInContainer": "That visual does not fit in the container: it is wider than the container, or the container is full. Make the visual narrower or the container wider.",
+    "containerEmpty": "Drag visuals here to group them.",
+    "containerSettings": "A container groups the visuals dragged into it; moving it moves them. Set its titles and size here.",
+    "containerSizeHint": "A container is never smaller than the visuals in it."
   }
 }

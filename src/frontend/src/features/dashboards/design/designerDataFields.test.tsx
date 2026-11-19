@@ -81,7 +81,8 @@ function sourceName(projectionCode: string): string {
 const SOURCES = [...new Set(FIELDS.map((field) => field.projectionCode))];
 
 /** What the mocked API calculates for a visual: one group, a figure per value (or measure). */
-function calculated(visual: Visual): VisualResult {
+function calculated({ children: _children, ...visual }: Visual): VisualResult {
+  // These designs hold no container, so a result has no children.
   const entries = visual.values?.length ?? visual.measures.length;
   const group: VisualGroup = {
     key: null,
@@ -115,7 +116,9 @@ function designerApi(
   withDashboards(api, { views: { PORTFOLIO: dashboardView('PORTFOLIO') } });
   const answer = (visuals: Visual[]): VisualResult[] =>
     visuals.map((visual, index) =>
-      figures ? { ...visual, groups: design.visuals[index]?.groups ?? [] } : calculated(visual),
+      figures
+        ? { ...calculated(visual), groups: design.visuals[index]?.groups ?? [] }
+        : calculated(visual),
     );
   api
     .on('GET', /^\/portfolio-insights\/design$/, { body: design })
@@ -434,6 +437,8 @@ describe('saving', () => {
     });
     const put = present(api.requestsTo('PUT', /^\/portfolio-insights\/design$/)[0]);
     expect(visualsSent(put.body).at(-1)).toMatchObject(expected);
+    // The API takes `children` only on a container: no other visual sends any, not even [].
+    expect(visualsSent(put.body).map((visual) => visual.children ?? null)).toEqual([null]);
   });
 });
 
@@ -818,8 +823,9 @@ describe('the gallery without the sections list (19 Nov 2026)', () => {
     await screen.findByRole('heading', { level: 1, name: en('dashboards.designer.title') });
 
     const gallery = screen.getByRole('region', { name: en('dashboards.designer.gallery') });
-    const types = ['CARD', 'BAR', 'COLUMN', 'LINE', 'PIE', 'DONUT', 'TABLE', 'GAUGE'];
-    // The visual types, and the Widgets group of the view's widgets no visual draws (its own test is below).
+    const types = ['CARD', 'BAR', 'COLUMN', 'LINE', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'CONTAINER'];
+    // The visual types, then the Container tile (19 Nov 2026), and the Widgets group of the view's widgets no visual draws (its own test
+    // is below).
     const widgets = within(gallery).getByRole('region', {
       name: en('dashboards.designer.widgets'),
     });

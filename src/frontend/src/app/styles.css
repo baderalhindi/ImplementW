@@ -9037,3 +9037,98 @@ tr[data-flagged='true'] {
     transition: none;
   }
 }
+
+/*
+ * A container (19 Nov 2026): a framed, titled region holding visuals, drawn apart from a visual's card by a tinted ground, a primary-toned
+ * frame and no shadow. On a wide screen its tracks are the dashboard's own (subgrid): its first row is its title bar and its children take
+ * their inner places on the rows under it, so a child lines up with the visuals beside the container. On a narrow screen it stacks them.
+ */
+.visual-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  padding: var(--space-3);
+  border: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-primary-tint) 75%, transparent);
+}
+
+@media (min-width: 48rem) {
+  .visual-grid > .visual-container {
+    display: grid;
+    grid-column: var(--visual-column) / span var(--visual-width);
+    grid-row: var(--visual-row) / span var(--visual-height);
+    grid-template-columns: subgrid;
+    grid-template-rows: subgrid;
+  }
+
+  .visual-container > .visual {
+    grid-column: var(--visual-column) / span var(--visual-width);
+    grid-row: var(--visual-row) / span var(--visual-height);
+  }
+
+  .visual-container__bar,
+  .visual-container__empty {
+    grid-column: 1 / -1;
+  }
+
+  .visual-container__bar {
+    grid-row: 1;
+  }
+
+  .visual-container__empty {
+    grid-row: 2 / -1;
+  }
+}
+
+/* The title bar fills its row (on a wide screen, the container's first grid row), its title centred over the divider. */
+.visual-container__bar {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding-block-end: var(--space-2);
+  border-block-end: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.visual-container__title {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* An empty container in the designer says what it is for, on a dashed drop area. */
+.visual-container__empty {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
+  border-radius: var(--radius);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.designer__container {
+  touch-action: none;
+}
+
+.designer__container.is-selected {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.designer__container.is-dragging {
+  z-index: 2;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+  opacity: 0.92;
+}

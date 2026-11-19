@@ -4,7 +4,7 @@ using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Infrastructure.Persistence.Project;
 
-/// <summary>The Portfolio dashboard's design (17 Nov 2026): saved and read as a whole, in reading order.</summary>
+/// <summary>The Portfolio dashboard's design (17 Nov 2026): saved and read as a whole, in reading order, the containers' children included.</summary>
 internal sealed class PortfolioVisualRepository(PMPlatformDbContext context) : IPortfolioVisualRepository
 {
     public async Task<IReadOnlyList<PortfolioVisual>> ListAsync(CancellationToken cancellationToken) =>
@@ -14,6 +14,7 @@ internal sealed class PortfolioVisualRepository(PMPlatformDbContext context) : I
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await context.Set<PortfolioVisual>().ExecuteDeleteAsync(cancellationToken).ConfigureAwait(false);
+        // One save: EF inserts a container before the children that reference it.
         context.AddRange(visuals);
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);

@@ -48,6 +48,15 @@ const SHAPES: Record<VisualType, ReactElement> = {
       <path d="M3 9h18M8 13h8M8 16h5" />
     </>
   ),
+  // A frame with a title bar over two visuals.
+  CONTAINER: (
+    <>
+      <rect x="2.5" y="3.5" width="19" height="17" rx="2" />
+      <path d="M2.5 8h19M6 6h5" />
+      <rect x="5.5" y="11" width="5.5" height="6.5" rx="0.8" />
+      <rect x="13" y="11" width="5.5" height="6.5" rx="0.8" />
+    </>
+  ),
 };
 
 export function VisualIcon({ type }: { type: VisualType }): ReactElement {

@@ -38132,7 +38132,7 @@
             }
           }
         },
-        "description": "The Portfolio dashboard's design as a whole, in reading order (the 17 Nov 2026 designer). Each field is required here; how they fit together — a grouping\nthe type takes, a place on the grid no other visual holds — is checked by the service (422 `PROJECT_PORTFOLIO_DESIGN_INVALID`)."
+        "description": "The Portfolio dashboard's design as a whole, in reading order (the 17 Nov 2026 designer). Each field is required here; how they fit together — a grouping\nthe type takes, a place on the grid no other visual holds — is checked by the service (422 `PROJECT_PORTFOLIO_DESIGN_INVALID`). A container's\n`children` (the 19 Nov 2026 containers) are visuals of the same shape, counted in the design's 60."
       },
       "PortfolioDesignView": {
         "required": [
@@ -39149,6 +39149,15 @@
               "null",
               "string"
             ]
+          },
+          "children": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualRequest"
+            }
           }
         }
       },
@@ -39290,6 +39299,15 @@
               "null",
               "string"
             ]
+          },
+          "children": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualResult"
+            }
           }
         },
         "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."
@@ -39304,7 +39322,8 @@
           "TABLE",
           "GAUGE",
           "SECTION",
-          "LINE"
+          "LINE",
+          "CONTAINER"
         ],
         "description": "How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer)."
       },

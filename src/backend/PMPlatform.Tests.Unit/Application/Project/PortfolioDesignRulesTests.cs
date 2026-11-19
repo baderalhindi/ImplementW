@@ -14,7 +14,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// The 17 Nov 2026 dashboard designer: what a saved design may hold, and the permission each grouping is read under; and its 18 Nov 2026 data fields: the
 /// catalogue it offers, rules 1 to 6 and the aggregations' arithmetic; and its 18 Nov 2026 more fields: PROJECT.PROJECT_PROFILE, yes/no and date fields, the
 /// LINE visual, rule 7's grain and the period charts over the published history; and its 19 Nov 2026 axes: who takes them, their titles and range, and what is
-/// stored; and its 19 Nov 2026 widgets: one DASHBOARD_WIDGET section per governed widget, named by its code.
+/// stored; and its 19 Nov 2026 widgets: one DASHBOARD_WIDGET section per governed widget, named by its code; and its 19 Nov 2026 containers: rules 1 to 6
+/// (dashboard-designer-containers.md), the saved rows nested back and the children calculated as top-level visuals.
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -707,5 +708,205 @@ public sealed class PortfolioDesignRulesTests
         Assert.True(JsonNode.DeepEquals(
             JsonNode.Parse("""{"category":{"show":true,"title":{"ar":"المحفظة","en":"Portfolio"}},"value":{"show":true,"title":null,"min":0,"max":100,"gridlines":false}}"""),
             JsonNode.Parse(PortfolioDesignService.AxesOf(Visual() with { Axes = Axes(new BilingualLabel(" المحفظة ", "Portfolio  "), min: 0, max: 100, gridlines: false) })!)));
+    }
+
+    private static PortfolioVisualInput Container(short column = 0, short row = 0, short width = 12, short height = 6, params PortfolioVisualInput[] children) =>
+        new(new BilingualLabel("حاوية", "Container"), PortfolioVisualType.Container, [], PortfolioGroupBy.None, column, row, width, height, Children: children);
+
+    private static PortfolioVisualInput SmallCard(short column, short row, short width = 4, short height = 2) =>
+        Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, column, row, width, height);
+
+    /// <summary>19 Nov 2026 containers: a container holds visuals on its inner grid, its children's places counted from its own first column and row.</summary>
+    [Fact]
+    public void AContainerHoldsVisualsOnItsInnerGrid()
+    {
+        Assert.Null(Issue(Container(children: [SmallCard(0, 0), Visual(column: 4, row: 0, width: 8, height: 5)]), Visual(row: 6)));
+        Assert.Null(Issue(Container(column: 6, width: 6, height: 2, children: [SmallCard(0, 0, width: 6, height: 1)]), Visual(width: 6, height: 2)));
+        Assert.Null(Issue(Container(children: [])));
+        Assert.Null(Issue(Container() with { Measures = [], Values = [], Filters = [] }));
+    }
+
+    /// <summary>Rule 1: only a container has children, and a child is never a container (one level only).</summary>
+    [Fact]
+    public void OnlyAContainerHoldsChildrenAndNeverAContainer()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].children", FieldIssue.NotAllowed), Issue(Visual() with { Children = [SmallCard(0, 0)] }));
+        Assert.Equal(new FieldIssue("visuals[0].children", FieldIssue.NotAllowed), Issue(Visual() with { Children = [] }));
+        Assert.Equal(new FieldIssue("visuals[0].children[1].visualType", FieldIssue.NotAllowed),
+            Issue(Container(children: [SmallCard(0, 0), Container(column: 4, width: 4, height: 3)])));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].children", FieldIssue.NotAllowed),
+            Issue(Container(children: [SmallCard(0, 0) with { Children = [] }])));
+    }
+
+    public static TheoryData<string, PortfolioVisualInput> ContainersDrawingSomething => new()
+    {
+        { "measures", Container() with { Measures = [PortfolioMeasure.Projects] } },
+        { "values", Container() with { Values = [new PortfolioFieldValue(Spend, PortfolioFieldAggregation.Sum)] } },
+        { "groupBy", Container() with { GroupBy = PortfolioGroupBy.Sector } },
+        { "groupField", Container() with { GroupField = Health } },
+        { "groupDateUnit", Container() with { GroupDateUnit = PortfolioDateUnit.Year } },
+        { "filters", Container() with { Filters = [new PortfolioFieldFilter("PROJECT.STATUS", ["ACTIVE"])] } },
+        { "axes", Container() with { Axes = PortfolioAxes.Default } },
+        { "section", Container() with { Section = PortfolioSection.PortfolioTable } },
+        { "widgetCode", Container() with { WidgetCode = "OPEN_RISKS" } },
+    };
+
+    /// <summary>Rule 2: a container draws nothing of its own.</summary>
+    [Theory]
+    [MemberData(nameof(ContainersDrawingSomething))]
+    public void AContainerDrawsNothingOfItsOwn(string field, PortfolioVisualInput container) =>
+        Assert.Equal(new FieldIssue($"visuals[0].{field}", FieldIssue.NotAllowed), Issue(container));
+
+    /// <summary>Rule 2: a container is at least two rows tall, its title bar and a row for its children.</summary>
+    [Fact]
+    public void AContainerIsAtLeastTwoRowsTall()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].layout", FieldIssue.OutsideRange), Issue(Container(height: 1)));
+        Assert.Null(Issue(Container(height: 2)));
+    }
+
+    /// <summary>Rule 3: a child fits the inner grid: the container's columns, and its rows less the title bar's.</summary>
+    [Theory]
+    [InlineData(12, 6, 10, 0, 4, 2)]
+    [InlineData(12, 6, 0, 4, 4, 2)]
+    [InlineData(6, 6, 0, 0, 7, 2)]
+    [InlineData(12, 6, -1, 0, 4, 2)]
+    [InlineData(12, 6, 0, -1, 4, 2)]
+    [InlineData(12, 2, 0, 0, 4, 2)]
+    public void AChildFitsInsideItsContainer(short width, short height, short column, short row, short childWidth, short childHeight) =>
+        Assert.Equal(
+            new FieldIssue("visuals[0].children[0].layout", FieldIssue.OutsideRange),
+            Issue(Container(width: width, height: height, children: [SmallCard(column, row, childWidth, childHeight)])));
+
+    [Fact]
+    public void AChildMayTakeTheWholeInnerGrid() =>
+        Assert.Null(Issue(Container(width: 6, height: 6, children: [Visual(column: 0, row: 0, width: 6, height: 5)])));
+
+    /// <summary>Rule 3: no two children overlap, as top-level visuals; a child's cells are its container's, apart from the dashboard's.</summary>
+    [Fact]
+    public void ChildrenOfAContainerDoNotOverlap()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].children[1].layout", FieldIssue.InUse), Issue(Container(children: [SmallCard(0, 0), SmallCard(3, 1)])));
+        Assert.Null(Issue(Container(children: [SmallCard(0, 0)]), Container(row: 6, children: [SmallCard(0, 0)])));
+    }
+
+    /// <summary>Rule 4: a child obeys every rule a top-level visual obeys.</summary>
+    [Fact]
+    public void AChildObeysTheRulesOfAVisual()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].children[0].groupBy", FieldIssue.NotAllowed),
+            Issue(Container(children: [Visual(PortfolioVisualType.Card, PortfolioGroupBy.Sector, width: 4, height: 2)])));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].measures", FieldIssue.NotAllowed),
+            Issue(Container(children: [Visual(PortfolioVisualType.Pie, measures: PortfolioMeasure.AveragePlanned)])));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].axes", FieldIssue.NotAllowed),
+            Issue(Container(children: [Visual(PortfolioVisualType.Pie) with { Axes = PortfolioAxes.Default }])));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].title", FieldIssue.OutsideRange),
+            Issue(Container(children: [SmallCard(0, 0) with { Title = new BilingualLabel("بطاقة", new string('x', 101)) }])));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].widgetCode", FieldIssue.Required), Issue(Container(children: [Widget(null)])));
+    }
+
+    /// <summary>Rule 4: sections and widget codes stay unique over the whole design, children included.</summary>
+    [Fact]
+    public void SectionsAndWidgetCodesStayUniqueAcrossContainers()
+    {
+        Assert.Null(Issue(Container(height: 12, children: [Placed(PortfolioSection.PortfolioTable, 0), Widget("OPEN_RISKS", 4)])));
+        Assert.Equal(new FieldIssue("visuals[1].children[0].section", FieldIssue.Duplicate),
+            Issue(Placed(PortfolioSection.PortfolioTable, 0), Container(row: 4, children: [Placed(PortfolioSection.PortfolioTable, 0)])));
+        Assert.Equal(new FieldIssue("visuals[1].children[1].section", FieldIssue.Duplicate),
+            Issue(Placed(PortfolioSection.TopFollowUp, 0), Container(row: 4, height: 12, children: [Placed(PortfolioSection.PortfolioTable, 0), Placed(PortfolioSection.PortfolioTable, 4)])));
+        Assert.Equal(new FieldIssue("visuals[1].widgetCode", FieldIssue.Duplicate),
+            Issue(Container(children: [Widget("OPEN_RISKS")]), Widget("OPEN_RISKS", 6)));
+        Assert.Equal(new FieldIssue("visuals[1].children[0].widgetCode", FieldIssue.Duplicate),
+            Issue(Container(children: [Widget("OPEN_RISKS")]), Container(row: 6, children: [Widget("OPEN_RISKS")])));
+    }
+
+    /// <summary>A full container: 1×1 cards in its inner grid, row by row.</summary>
+    private static PortfolioVisualInput Full(short row, int children) =>
+        Container(row: row, width: 12, height: 24, children: [.. Enumerable.Range(0, children).Select(i => SmallCard((short)(i % 12), (short)(i / 12), 1, 1))]);
+
+    /// <summary>Rule 5: at most 60 visuals, children counted, and at most 20 children in a container.</summary>
+    [Fact]
+    public void AtMostSixtyVisualsChildrenCountedAndTwentyPerContainer()
+    {
+        PortfolioVisualInput[] cards = [.. Enumerable.Range(0, 18).Select(i => SmallCard((short)(i % 12), (short)(48 + (i / 12)), 1, 1))];
+        Assert.Null(Issue([Full(0, 20), Full(24, 20), .. cards]));
+        Assert.Equal(new FieldIssue("visuals", FieldIssue.OutsideRange), Issue([Full(0, 20), Full(24, 20), .. cards, SmallCard(0, 60, 1, 1)]));
+        Assert.Equal(new FieldIssue("visuals[0].children", FieldIssue.OutsideRange), Issue(Full(0, 21)));
+    }
+
+    /// <summary>Rule 6: top-level visuals, containers included, still never overlap.</summary>
+    [Fact]
+    public void AContainerDoesNotOverlapAnotherVisual()
+    {
+        Assert.Equal(new FieldIssue("visuals[1].layout", FieldIssue.InUse), Issue(Container(), Visual(row: 5)));
+        Assert.Equal(new FieldIssue("visuals[1].layout", FieldIssue.InUse), Issue(Visual(), Container(row: 2, width: 6)));
+        Assert.Equal(new FieldIssue("visuals[0].layout", FieldIssue.OutsideRange), Issue(Container(column: 6, width: 7)));
+    }
+
+    private static PortfolioVisual Saved(short sortOrder, PortfolioVisualType type, string title, Guid? parentId = null, short row = 0) => new()
+    {
+        Id = Guid.NewGuid(),
+        SortOrder = sortOrder,
+        ParentId = parentId,
+        TitleAr = title,
+        TitleEn = title,
+        VisualType = type,
+        Measures = type == PortfolioVisualType.Container ? [] : ["PROJECTS"],
+        GroupBy = PortfolioGroupBy.None,
+        LayoutColumn = 0,
+        LayoutRow = row,
+        LayoutWidth = 4,
+        LayoutHeight = 6,
+    };
+
+    /// <summary>The saved rows read back as the design: each container holding its children in their order, the top-level visuals in theirs.</summary>
+    [Fact]
+    public void SavedChildrenAreNestedUnderTheirContainerInOrder()
+    {
+        PortfolioVisual first = Saved(1, PortfolioVisualType.Container, "First");
+        PortfolioVisual second = Saved(4, PortfolioVisualType.Container, "Second", row: 6);
+        IReadOnlyList<PortfolioVisualInput> design = PortfolioDesignService.Nested(
+        [
+            Saved(5, PortfolioVisualType.Card, "Card"),
+            Saved(3, PortfolioVisualType.Card, "First B", first.Id),
+            second,
+            Saved(2, PortfolioVisualType.Card, "First A", first.Id),
+            first,
+        ]);
+
+        Assert.Equal(["First", "Second", "Card"], design.Select(v => v.Title.En));
+        Assert.Equal(["First A", "First B"], design[0].Children!.Select(v => v.Title.En));
+        Assert.Empty(design[1].Children!);
+        Assert.Null(design[2].Children);
+    }
+
+    /// <summary>A child is calculated as the same visual on the dashboard itself; a container carries no figures and a non-container no children.</summary>
+    [Fact]
+    public void AChildIsCalculatedAsATopLevelVisual()
+    {
+        PortfolioProjectRow a = Row(), b = Row(ProjectLifecycleState.Draft), c = Row();
+        IReadOnlyList<PortfolioProjectRow> rows = [a, b, c];
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = [];
+        IReadOnlyDictionary<string, PortfolioFieldType> types = new Dictionary<string, PortfolioFieldType>(StringComparer.Ordinal);
+
+        // The status breakdown is held, the sector one is not: its visual has no groups, inside a container as outside.
+        IReadOnlyList<PortfolioVisualGroup>? GroupsOf(PortfolioVisualInput v) =>
+            v.GroupBy == PortfolioGroupBy.Sector ? null : PortfolioDesignService.Groups(v, rows, null, amounts: true, Thresholds, cells, ByKey);
+
+        PortfolioVisualInput card = SmallCard(0, 0) with { Measures = [PortfolioMeasure.Projects, PortfolioMeasure.InProgress] };
+        PortfolioVisualInput bar = Visual(groupBy: PortfolioGroupBy.Status, column: 4, row: 0, width: 8, height: 5);
+        PortfolioVisualInput withheld = Visual(column: 0, row: 2, width: 4, height: 3);
+
+        PortfolioVisualResult container = PortfolioDesignService.ResultOf(Container(children: [card, bar, withheld]), GroupsOf, types);
+
+        Assert.Equal(PortfolioVisualType.Container, container.VisualType);
+        Assert.Empty(container.Groups!);
+        Assert.Equal([PortfolioVisualType.Card, PortfolioVisualType.Bar, PortfolioVisualType.Bar], container.Children!.Select(v => v.VisualType));
+        Assert.Equivalent(PortfolioDesignService.ResultOf(card, GroupsOf, types), container.Children![0], strict: true);
+        Assert.Equivalent(PortfolioDesignService.ResultOf(bar, GroupsOf, types), container.Children![1], strict: true);
+        Assert.Equal([3m, 2m], container.Children![0].Groups!.Single().Values);
+        Assert.Equal(["DRAFT", "ACTIVE"], container.Children![1].Groups!.Select(g => g.Key));
+        Assert.Null(container.Children![2].Groups);
+        Assert.All(container.Children!, child => Assert.Null(child.Children));
     }
 }

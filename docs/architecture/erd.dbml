@@ -757,10 +757,11 @@ Table project.project_follow_up_note {
 
 Table project.portfolio_visual {
   id uuid [pk, not null, note: 'Primary key (D-1)']
-  sort_order smallint [not null, unique, note: 'Reading order from 1; CHECK >= 1']
+  sort_order smallint [not null, unique, note: 'Reading order from 1 over the whole design: a CONTAINER, then its children in their order, then the next top-level visual; CHECK >= 1']
+  parent_id uuid [ref: > project.portfolio_visual.id, note: 'The CONTAINER a child is placed in (19 Nov 2026 containers); null for a visual on the dashboard itself. ON DELETE CASCADE: a child goes with its container. A CONTAINER has none (CHECK: one level only); the service checks that the parent is a CONTAINER. A child\'s layout counts the container\'s inner grid: layout_width columns, layout_height - 1 rows. Indexed']
   title_ar varchar(100) [not null]
   title_en varchar(100) [not null]
-  visual_type varchar(50) [not null, note: 'CARD | BAR | COLUMN | PIE | DONUT | TABLE | GAUGE | SECTION | LINE (LINE: 18 Nov 2026 more fields; field values only)']
+  visual_type varchar(50) [not null, note: 'CARD | BAR | COLUMN | PIE | DONUT | TABLE | GAUGE | SECTION | LINE | CONTAINER (LINE: 18 Nov 2026 more fields; field values only. CONTAINER: 19 Nov 2026 containers; no measures, data_fields, axes, section or widget_code, group_by NONE, layout_height >= 2, CHECK)']
   measures text[] [not null, note: '1 to 3 of PROJECTS, IN_PROGRESS, VALUE_SAR, AVERAGE_PLANNED, AVERAGE_ACTUAL, GAP_POINTS, NEEDING_FOLLOW_UP, OVERDUE_ACTIONS (CHECK); codes, never an expression (BR-DSH-030). None for a SECTION, and none for a visual drawing data fields (data_fields not null)']
   section varchar(50) [unique, note: 'The dashboard section a SECTION places (PORTFOLIO_TABLE ... ENTITY_COMPLETION_TABLE, DASHBOARD_WIDGET); null otherwise; a partial unique index WHERE section IS NOT NULL AND section <> \'DASHBOARD_WIDGET\' (several DASHBOARD_WIDGET, one per widget, 19 Nov 2026 widgets)']
   group_by varchar(50) [not null, note: 'NONE | PORTFOLIO | INITIATIVE | SECTOR | DEPARTMENT | ENTITY | STATUS | STAGE | ON_PLAN | REGION | CITY | PRIORITY']
@@ -775,7 +776,10 @@ Table project.portfolio_visual {
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2)']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'One visual of the Portfolio dashboard as the Portfolio Manager designed it, the same for everyone (17 Nov 2026 dashboard designer, DASHBOARD_DESIGN, no approval). Saved and replaced as a whole; no row means the standard design. Delete policy: HARD_WORKING. A save replaces the rows and a reset deletes them; the rows name who saved them (created_by), and no audit event is written yet.'
+  indexes {
+    parent_id
+  }
+  Note: 'One visual of the Portfolio dashboard as the Portfolio Manager designed it, the same for everyone (17 Nov 2026 dashboard designer, DASHBOARD_DESIGN, no approval). Saved and replaced as a whole, containers inserted before their children; no row means the standard design. Delete policy: HARD_WORKING. A save replaces the rows and a reset deletes them; the rows name who saved them (created_by), and no audit event is written yet.'
 }
 
 Table project.project_stage_plan {

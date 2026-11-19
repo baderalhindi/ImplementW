@@ -144,6 +144,7 @@ export const MAX_VALUES: Record<VisualType, number> = {
   GAUGE: 1,
   LINE: 3,
   SECTION: 0,
+  CONTAINER: 0,
 };
 
 const GAUGE_AGGREGATIONS: readonly FieldAggregation[] = ['AVERAGE', 'MIN', 'MAX'];
@@ -332,12 +333,23 @@ export const NO_FIELD_DATA = {
 
 /**
  * A visual as it is compared and sent: its field data and widget code only where it has some, so a design read back equals the one sent; its axes as the API
- * takes them, null for the defaults (axes.ts).
+ * takes them, null for the defaults (axes.ts); a container's children, each so.
  */
 export function normalized<T extends Visual>(visual: T): T {
-  const { values, groupField, groupDateUnit, filters, axes: _axes, widgetCode, ...rest } = visual;
+  const {
+    values,
+    groupField,
+    groupDateUnit,
+    filters,
+    axes: _axes,
+    widgetCode,
+    children,
+    ...rest
+  } = visual;
   return {
     ...rest,
+    // Children only on a container, which always sends its list (empty or not), each child as a top-level visual is sent.
+    ...(visual.visualType === 'CONTAINER' ? { children: (children ?? []).map(normalized) } : {}),
     axes: sentAxes(visual),
     ...(widgetCode === undefined || widgetCode === null ? {} : { widgetCode }),
     ...(values === undefined || values === null || values.length === 0 ? {} : { values }),

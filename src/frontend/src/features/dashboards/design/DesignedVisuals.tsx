@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback, useId } from 'react';
+import { type CSSProperties, type ReactElement, useCallback, useId } from 'react';
 import { Link } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -13,6 +13,7 @@ import {
   useShowsCompletion,
 } from '../insights/insightSections.ts';
 import { emptyPortfolioReason, hasNoData } from '../presentation.ts';
+import { childrenOf, innerGridPlace, isContainer, withoutEmptyInnerRows } from './containers.ts';
 import { designApi, type VisualResult } from './designApi.ts';
 import { drawsFields } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
@@ -25,9 +26,11 @@ import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
 function VisualFrame({
   visual,
   filters,
+  place,
 }: {
   visual: VisualResult;
   filters: PortfolioFilters;
+  place: CSSProperties;
 }): ReactElement {
   const { t, language } = useI18n();
   const title = visual.title[language];
@@ -40,7 +43,7 @@ function VisualFrame({
   return (
     <section
       className={href === undefined ? 'widget visual' : 'widget visual home__tile--linked'}
-      style={gridPlace(visual)}
+      style={place}
       data-visual={visual.visualType}
     >
       <h3 className="widget__title">
@@ -80,9 +83,11 @@ function withheld(visual: VisualResult): boolean {
 function SectionFrame({
   visual,
   sources,
+  place,
 }: {
   visual: VisualResult;
   sources: SectionSources;
+  place: CSSProperties;
 }): ReactElement | null {
   const { language } = useI18n();
   const titleId = useId();
@@ -93,7 +98,7 @@ function SectionFrame({
       className={
         isWidget ? 'widget visual visual--section visual--widget' : 'widget visual visual--section'
       }
-      style={gridPlace(visual)}
+      style={place}
       aria-labelledby={isWidget ? titleId : undefined}
       data-visual="SECTION"
       data-section-code={visual.section}
@@ -104,6 +109,63 @@ function SectionFrame({
       <div className="visual__body visual__body--section">
         <SectionBody section={visual.section} widgetCode={visual.widgetCode} sources={sources} />
       </div>
+    </section>
+  );
+}
+
+/** A visual or a section at `place`: on the dashboard's grid, or on its container's inner grid. */
+function PlacedVisual({
+  visual,
+  filters,
+  sources,
+  place,
+}: {
+  visual: VisualResult;
+  filters: PortfolioFilters;
+  sources: SectionSources;
+  place: CSSProperties;
+}): ReactElement {
+  return visual.visualType === 'SECTION' ? (
+    <SectionFrame visual={visual} sources={sources} place={place} />
+  ) : (
+    <VisualFrame visual={visual} filters={filters} place={place} />
+  );
+}
+
+/** A container: its frame and title over its visuals, each at its place on the container's inner grid. */
+function ContainerFrame({
+  container,
+  filters,
+  sources,
+}: {
+  container: VisualResult;
+  filters: PortfolioFilters;
+  sources: SectionSources;
+}): ReactElement {
+  const { language } = useI18n();
+  const titleId = useId();
+  return (
+    <section
+      className="visual-container"
+      style={gridPlace(container)}
+      aria-labelledby={titleId}
+      data-visual="CONTAINER"
+    >
+      <div className="visual-container__bar">
+        <h3 id={titleId} className="visual-container__title">
+          {container.title[language]}
+        </h3>
+      </div>
+      {childrenOf(container).map((child) => (
+        // No two children share a place in their container.
+        <PlacedVisual
+          key={placeKey(child)}
+          visual={child}
+          filters={filters}
+          sources={sources}
+          place={innerGridPlace(child)}
+        />
+      ))}
     </section>
   );
 }
@@ -199,14 +261,25 @@ export function DesignedVisuals({
   // Each visual where the designer placed it; what the caller may not see is left out, and a row it leaves empty is taken out. A design saved
   // with all the widgets in one section draws each widget as its own visual, packed as the designer packs that split.
   const split = hasWidgetsToSplit(design.data.visuals, view.widgets);
-  const visible = splitWidgets(design.data.visuals, view.widgets, (visual) => ({
-    ...visual,
-    groups: [],
-  })).filter((visual) =>
+  const isShown = (visual: VisualResult) =>
     visual.section === undefined || visual.section === null
       ? visual.groups !== null && !withheld(visual)
-      : sectionShown(visual, sources),
-  );
+      : sectionShown(visual, sources);
+  // A container keeps the visuals the caller may see, with the inner rows they leave empty taken out; one with none left is left out.
+  const visible = splitWidgets(
+    design.data.visuals,
+    view.widgets,
+    ({ children: _children, ...visual }) => ({
+      ...visual,
+      groups: [],
+    }),
+  ).flatMap((visual) => {
+    if (!isContainer(visual)) {
+      return isShown(visual) ? [visual] : [];
+    }
+    const children = childrenOf(visual).filter(isShown);
+    return children.length === 0 ? [] : [withoutEmptyInnerRows(visual, children)];
+  });
   const shown = split ? packed(visible) : withoutEmptyRows(visible);
   return shown.length === 0 ? null : (
     <section className="insights" aria-labelledby="designed-visuals">
@@ -216,10 +289,21 @@ export function DesignedVisuals({
       <div className="visual-grid" data-section="designed">
         {shown.map((visual) =>
           // No two visuals share a place, so the place names one.
-          visual.visualType === 'SECTION' ? (
-            <SectionFrame key={placeKey(visual)} visual={visual} sources={sources} />
+          isContainer(visual) ? (
+            <ContainerFrame
+              key={placeKey(visual)}
+              container={visual}
+              filters={filters}
+              sources={sources}
+            />
           ) : (
-            <VisualFrame key={placeKey(visual)} visual={visual} filters={filters} />
+            <PlacedVisual
+              key={placeKey(visual)}
+              visual={visual}
+              filters={filters}
+              sources={sources}
+              place={gridPlace(visual)}
+            />
           ),
         )}
       </div>

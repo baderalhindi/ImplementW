@@ -91,10 +91,11 @@ export const MAX_MEASURES: Record<VisualType, number> = {
   GAUGE: 1,
   LINE: 0,
   SECTION: 0,
+  CONTAINER: 0,
 };
 
 /** The size a new visual of a type takes, in columns of twelve and rows. */
-const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }> = {
+export const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }> = {
   CARD: { width: 4, height: 2 },
   BAR: { width: 6, height: 5 },
   COLUMN: { width: 6, height: 5 },
@@ -104,6 +105,7 @@ const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }> = {
   GAUGE: { width: 3, height: 4 },
   LINE: { width: 6, height: 5 },
   SECTION: { width: 12, height: 6 },
+  CONTAINER: { width: 6, height: 6 },
 };
 
 export const COLUMNS = 12;
@@ -112,7 +114,13 @@ export const MAX_VISUALS = 60;
 
 /** The groupings by a project attribute a type takes; a line groups by a field only. */
 export function groupBysFor(type: VisualType): readonly GroupBy[] {
-  if (type === 'CARD' || type === 'GAUGE' || type === 'LINE' || type === 'SECTION') {
+  if (
+    type === 'CARD' ||
+    type === 'GAUGE' ||
+    type === 'LINE' ||
+    type === 'SECTION' ||
+    type === 'CONTAINER'
+  ) {
     return ['NONE'];
   }
   return type === 'TABLE' ? GROUP_BYS : GROUP_BYS.filter((groupBy) => groupBy !== 'NONE');
@@ -129,7 +137,7 @@ const ADDITIVE_MEASURES: readonly Measure[] = [
 
 /** The measures a type may draw: a gauge a percentage, a pie or donut a total that adds up; a line draws fields only. */
 export function measuresFor(type: VisualType): readonly Measure[] {
-  if (type === 'SECTION' || type === 'LINE') {
+  if (type === 'SECTION' || type === 'LINE' || type === 'CONTAINER') {
     return [];
   }
   if (type === 'GAUGE') {
@@ -328,14 +336,14 @@ export function newVisual(
   };
 }
 
-interface Box {
+export interface Box {
   layoutColumn: number;
   layoutRow: number;
   layoutWidth: number;
   layoutHeight: number;
 }
 
-function overlaps(a: Box, b: Box): boolean {
+export function overlaps(a: Box, b: Box): boolean {
   return (
     a.layoutColumn < b.layoutColumn + b.layoutWidth &&
     b.layoutColumn < a.layoutColumn + a.layoutWidth &&

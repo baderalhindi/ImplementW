@@ -7,21 +7,30 @@ import { AxesFormat } from './AxesFormat.tsx';
 import { takesAxes } from './axes.ts';
 import { DataPanel } from './DataPanel.tsx';
 import { type FieldDescriptor, type Visual, type VisualType } from './designApi.ts';
-import { asLine, COLUMNS, MAX_HEIGHT, retitled, VISUAL_TYPES, withType } from './visuals.ts';
+import { asLine, MAX_HEIGHT, retitled, VISUAL_TYPES, withType } from './visuals.ts';
+
+/** The sizes a visual may take where it is: a container's least size, and a child's columns (its container's width). */
+export interface SizeBounds {
+  minWidth: number;
+  minHeight: number;
+  maxWidth: number;
+}
 
 /**
  * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters), a chart's axes (AxesFormat) and size. Only what the type takes is offered, so whatever is chosen
- * saves; a size that would cover another visual is refused by the designer, which says so.
+ * saves; a size that would cover another visual is refused by the designer, which says so. A container has its titles and size only.
  */
 export function VisualSettings({
   visual,
   fields,
+  bounds,
   onChange,
   onDuplicate,
   onRemove,
 }: {
   visual: Visual;
   fields: ApiResource<FieldDescriptor[]>;
+  bounds: SizeBounds;
   onChange: (next: Visual) => void;
   onDuplicate: () => void;
   onRemove: () => void;
@@ -30,6 +39,7 @@ export function VisualSettings({
   const id = useId();
   // A section shows the dashboard's own figures: only its titles and size are the designer's.
   const isSection = visual.visualType === 'SECTION';
+  const isContainer = visual.visualType === 'CONTAINER';
   // A change of type, values or grouping renames the visual while its titles are still the automatic ones.
   const change = (next: Visual) => {
     onChange(retitled(visual, next));
@@ -69,7 +79,9 @@ export function VisualSettings({
           }}
         />
       </div>
-      {isSection ? (
+      {isContainer ? (
+        <p className="designer__hint">{t('dashboards.designer.containerSettings')}</p>
+      ) : isSection ? (
         <p className="designer__hint">
           {t(
             visual.section === 'DASHBOARD_WIDGET'
@@ -120,8 +132,8 @@ export function VisualSettings({
             id={`${id}-width`}
             className="field__input"
             type="number"
-            min={1}
-            max={COLUMNS}
+            min={bounds.minWidth}
+            max={bounds.maxWidth}
             aria-describedby={`${id}-width-hint`}
             value={visual.layoutWidth}
             onChange={(event) => {
@@ -132,7 +144,7 @@ export function VisualSettings({
             }}
           />
           <p id={`${id}-width-hint`} className="field__hint">
-            {t('dashboards.designer.widthHint', { count: COLUMNS })}
+            {t('dashboards.designer.widthHint', { count: bounds.maxWidth })}
           </p>
         </div>
         <div className="field">
@@ -143,7 +155,7 @@ export function VisualSettings({
             id={`${id}-height`}
             className="field__input"
             type="number"
-            min={1}
+            min={bounds.minHeight}
             max={MAX_HEIGHT}
             aria-describedby={`${id}-height-hint`}
             value={visual.layoutHeight}
@@ -159,14 +171,23 @@ export function VisualSettings({
           </p>
         </div>
       </div>
+      {isContainer && (
+        <p className="designer__hint">{t('dashboards.designer.containerSizeHint')}</p>
+      )}
       <div className="form__actions">
-        {!isSection && (
+        {!isSection && !isContainer && (
           <button type="button" className="button" onClick={onDuplicate}>
             {t('dashboards.designer.duplicate')}
           </button>
         )}
         <button type="button" className="button button--danger" onClick={onRemove}>
-          {t(isSection ? 'dashboards.designer.removeSection' : 'dashboards.designer.remove')}
+          {t(
+            isContainer
+              ? 'dashboards.designer.removeContainer'
+              : isSection
+                ? 'dashboards.designer.removeSection'
+                : 'dashboards.designer.remove',
+          )}
         </button>
       </div>
     </div>

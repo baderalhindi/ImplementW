@@ -56,7 +56,8 @@ function visualsSent(body: unknown): Visual[] {
 }
 
 const echo = (visuals: Visual[]): VisualResult[] =>
-  visuals.map((visual) => ({ ...visual, groups: [] }));
+  // These designs hold no container, so a result has no children.
+  visuals.map(({ children: _children, ...visual }) => ({ ...visual, groups: [] }));
 
 /** The Portfolio dashboard's API with these widgets; the design read is the standard one (all the widgets in one section) unless given. */
 function api(design?: DesignView): MockApi {
@@ -137,6 +138,8 @@ describe('the designer splits the widgets section', () => {
     });
     const sent = visualsSent(mock.requestsTo('PUT', /^\/portfolio-insights\/design$/)[0]?.body);
     expect(sent.some((visual) => visual.section === 'DASHBOARD_WIDGETS')).toBe(false);
+    // The API takes `children` only on a container: no widget visual sends any, not even [].
+    expect(sent.filter((visual) => (visual.children ?? null) !== null)).toEqual([]);
     expect(
       sent
         .filter((visual) => visual.section === 'DASHBOARD_WIDGET')

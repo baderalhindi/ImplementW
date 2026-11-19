@@ -10,7 +10,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// reads the data catalogue, previews, saves and resets the one design everyone sees; local.r06 (R06, without it) is refused every design write and reads
 /// the saved design; a design breaking a rule is refused with 422 <c>PROJECT_PORTFOLIO_DESIGN_INVALID</c> and saves nothing. A bar's axes (the 19 Nov 2026
 /// axes) are saved and read back as set, titles trimmed; a chart drawn with the default axes stores none. Two DASHBOARD_WIDGET sections (the 19 Nov 2026
-/// widgets) are saved and read back with their widget codes; two naming the same widget are refused.
+/// widgets) are saved and read back with their widget codes; two naming the same widget are refused. A container (the 19 Nov 2026 containers) is saved with
+/// its children and read back with them nested in order, each with its figures; a child covering a sibling or outside its container is refused.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -151,6 +152,96 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
         Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
     }
 
+    [Fact]
+    public async Task AContainerIsSavedWithItsChildrenAndReadBackNestedInOrder()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+        string viewer = (await client.SignInOrFailAsync(6)).AccessToken;
+
+        object design = DesignOf(
+            Visual("Overview", "CONTAINER", 0, 0, 12, 7, children:
+            [
+                Visual("Projects", "CARD", 0, 0, 4, 2, measures: ["PROJECTS"]),
+                Visual("By status", "BAR", 4, 0, 8, 6, measures: ["PROJECTS"], groupBy: "STATUS"),
+            ]),
+            Visual("Below", "CARD", 0, 7, 4, 2, measures: ["IN_PROGRESS"]));
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        AssertNested((await saved.ReadObjectAsync())["visuals"]!.AsArray(), figures: true);
+
+        foreach (string reader in new[] { manager, viewer })
+        {
+            using HttpResponseMessage read = await client.GetAsync(Design, reader);
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+            AssertNested((await read.ReadObjectAsync())["visuals"]!.AsArray(), figures: reader == manager);
+        }
+
+        // The children are rows of their own, pointing at their container, after it in the reading order.
+        Assert.Equal(["1:CONTAINER:", "2:CARD:Overview", "3:BAR:Overview", "4:CARD:"], await host.Database.QueryAsync(
+            "SELECT v.sort_order || ':' || v.visual_type || ':' || coalesce(p.title_en, '') FROM project.portfolio_visual v "
+            + "LEFT JOIN project.portfolio_visual p ON p.id = v.parent_id ORDER BY v.sort_order"));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+        Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+
+        // Each child carries its figures as a top-level visual does; the viewer's depend on the insights permissions R06 holds, so only the manager's are checked.
+        static void AssertNested(JsonArray visuals, bool figures)
+        {
+            Assert.Equal(["Overview", "Below"], visuals.Select(v => v!["title"]!["en"]!.GetValue<string>()));
+            Assert.Equal("CONTAINER", visuals[0]!["visualType"]!.GetValue<string>());
+            Assert.Empty(visuals[0]!["groups"]!.AsArray());
+            Assert.Null(visuals[1]!["children"]);
+            JsonArray children = visuals[0]!["children"]!.AsArray();
+            Assert.Equal(["Projects", "By status"], children.Select(c => c!["title"]!["en"]!.GetValue<string>()));
+            Assert.Equal((4, 0, 8, 6), (Int(children[1]!, "layoutColumn"), Int(children[1]!, "layoutRow"), Int(children[1]!, "layoutWidth"), Int(children[1]!, "layoutHeight")));
+            if (figures)
+            {
+                Assert.Single(children[0]!["groups"]!.AsArray());
+                Assert.NotNull(children[1]!["groups"]!.AsArray());
+            }
+
+            Assert.All(children, c => Assert.Null(c!["children"]));
+        }
+    }
+
+    [Fact]
+    public async Task AChildCoveringASiblingOrOutsideItsContainerIsRefusedAndSavesNothing()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+
+        object overlapping = DesignOf(Visual("Box", "CONTAINER", 0, 0, 12, 6, children:
+        [
+            Visual("First", "CARD", 0, 0, 4, 2, measures: ["PROJECTS"]),
+            Visual("Second", "CARD", 3, 1, 4, 2, measures: ["IN_PROGRESS"]),
+        ]));
+        object outside = DesignOf(Visual("Box", "CONTAINER", 0, 0, 6, 6, children: [Visual("Too wide", "CARD", 4, 0, 4, 2, measures: ["PROJECTS"])]));
+        object belowTheBox = DesignOf(Visual("Box", "CONTAINER", 0, 0, 12, 4, children: [Visual("Too low", "CARD", 0, 2, 4, 2, measures: ["PROJECTS"])]));
+
+        foreach ((object design, string field, string code) in new[]
+        {
+            (overlapping, "visuals[0].children[1].layout", "IN_USE"),
+            (outside, "visuals[0].children[0].layout", "OUTSIDE_RANGE"),
+            (belowTheBox, "visuals[0].children[0].layout", "OUTSIDE_RANGE"),
+        })
+        {
+            using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, preview.StatusCode);
+            JsonObject body = await preview.ReadObjectAsync();
+            Assert.Equal("PROJECT_PORTFOLIO_DESIGN_INVALID", body["code"]!.GetValue<string>());
+            Assert.Equal((field, code), (body["errors"]![0]!["field"]!.GetValue<string>(), body["errors"]![0]!["code"]!.GetValue<string>()));
+            using HttpResponseMessage save = await client.PutAsync(Design, manager, design, ifMatch: null);
+            Assert.Equal((HttpStatusCode.UnprocessableEntity, "PROJECT_PORTFOLIO_DESIGN_INVALID"), (save.StatusCode, await save.CodeOfAsync()));
+        }
+
+        Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+    }
+
+    private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();
+
     private static object DesignOf(params object[] visuals) => new { visuals };
 
     private static object Widget(string title, string widgetCode, short column, short row, short width, short height) =>
@@ -158,7 +249,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
 
     private static object Visual(
         string title, string type, short column, short row, short width, short height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
-        object? axes = null, string? section = null, string? widgetCode = null) =>
+        object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null) =>
         new
         {
             title = new { ar = $"عنوان {title}", en = title },
@@ -173,5 +264,6 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             axes,
             section,
             widgetCode,
+            children,
         };
 }

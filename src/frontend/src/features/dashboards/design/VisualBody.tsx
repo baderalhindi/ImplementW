@@ -371,7 +371,8 @@ export function VisualBody({
         />
       );
     case 'SECTION':
-      // A section is drawn from the dashboard's own sources (SectionBody), never from a visual's figures.
+    case 'CONTAINER':
+      // A section is drawn from the dashboard's own sources (SectionBody), a container as a frame round its visuals: never from figures.
       return <p className="state">{t('dashboards.noData')}</p>;
     case 'LINE': {
       // The groups along the x axis in key order (a period runs left to right); the projects with no value have no place on it and are in the table.

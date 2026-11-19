@@ -50,12 +50,14 @@ public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Va
 /// <paramref name="Values"/> of the data catalogue instead of measures, be grouped by a CODE field (<paramref name="GroupField"/>) and narrowed by
 /// <paramref name="Filters"/>; grouped by a date field, it names the <paramref name="GroupDateUnit"/> (the 18 Nov 2026 more fields). A bar, column or line
 /// chart may set its <paramref name="Axes"/> (the 19 Nov 2026 axes). A <see cref="PortfolioSection.DashboardWidget"/> section names the governed widget it
-/// draws by its <paramref name="WidgetCode"/> (the 19 Nov 2026 widgets); any other visual names none.
+/// draws by its <paramref name="WidgetCode"/> (the 19 Nov 2026 widgets); any other visual names none. A <see cref="PortfolioVisualType.Container"/> draws
+/// nothing of its own and holds <paramref name="Children"/> (the 19 Nov 2026 containers), placed on its inner grid; any other visual holds none.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
-    IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null);
+    IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
+    IReadOnlyList<PortfolioVisualInput>? Children = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -63,7 +65,11 @@ public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescripto
 /// <summary>The whole design, in reading order.</summary>
 public sealed record PortfolioDesignInput(IReadOnlyList<PortfolioVisualInput> Visuals)
 {
+    /// <summary>The visuals of a design, the containers' children counted.</summary>
     public const int MaxVisuals = 60;
+
+    /// <summary>The children of one container.</summary>
+    public const int MaxChildren = 20;
 }
 
 /// <summary>
@@ -80,12 +86,13 @@ public sealed record PortfolioVisualGroup(
 /// A visual of field values has a value per entry of <c>Values</c>, in order, and <c>OnPlan</c> null; it echoes its values, grouping field and filters, and
 /// <c>ValueTypes</c> gives each value's field type, so a viewer without <c>DASHBOARD_DESIGN</c> (who cannot read the catalogue) formats it; null for fixed
 /// measures and a section. A bar, column or line chart echoes its <c>Axes</c> as set (null for the defaults); a <c>DASHBOARD_WIDGET</c> section its
-/// <c>WidgetCode</c>.
+/// <c>WidgetCode</c>. A container carries no groups of its own (an empty list) and its <c>Children</c>, in order, each calculated as a top-level visual is;
+/// <c>Children</c> is null on any other visual.
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
-    PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null);
+    PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -118,7 +125,7 @@ public interface IPortfolioVisualRepository
 {
     public Task<IReadOnlyList<PortfolioVisual>> ListAsync(CancellationToken cancellationToken);
 
-    /// <summary>Deletes every visual and adds <paramref name="visuals"/>, in one save.</summary>
+    /// <summary>Deletes every visual and adds <paramref name="visuals"/>, in one save: a container before its children.</summary>
     public Task ReplaceAsync(IReadOnlyList<PortfolioVisual> visuals, CancellationToken cancellationToken);
 }
 
@@ -186,7 +193,16 @@ internal sealed partial class PortfolioDesignService(
         IReadOnlyList<PortfolioVisual> saved = await repository.ListAsync(cancellationToken).ConfigureAwait(false);
         return saved.Count == 0
             ? await ViewAsync(callerId, StandardDesign, filters, isStandard: true, updatedAt: null, cancellationToken).ConfigureAwait(false)
-            : await ViewAsync(callerId, [.. saved.Select(InputOf)], filters, isStandard: false, saved.Max(v => v.UpdatedAt), cancellationToken).ConfigureAwait(false);
+            : await ViewAsync(callerId, Nested(saved), filters, isStandard: false, saved.Max(v => v.UpdatedAt), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The saved rows as the design: the top-level visuals in reading order, each container holding its children in theirs.</summary>
+    internal static IReadOnlyList<PortfolioVisualInput> Nested(IReadOnlyList<PortfolioVisual> saved)
+    {
+        ILookup<Guid?, PortfolioVisual> byParent = saved.OrderBy(v => v.SortOrder).ToLookup(v => v.ParentId);
+        return [.. byParent[null].Select(v => v.VisualType == PortfolioVisualType.Container
+            ? InputOf(v) with { Children = [.. byParent[v.Id].Select(InputOf)] }
+            : InputOf(v))];
     }
 
     public async Task<AdministrationResult<PortfolioDesignView>> PreviewAsync(
@@ -207,11 +223,27 @@ internal sealed partial class PortfolioDesignService(
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
-        await repository.ReplaceAsync(
-            [.. design.Visuals.Select((v, index) => new PortfolioVisual
+        List<PortfolioVisual> rows = [];
+        foreach (PortfolioVisualInput visual in design.Visuals)
+        {
+            PortfolioVisual container = RowOf(visual, parentId: null);
+            rows.Add(container);
+            foreach (PortfolioVisualInput child in visual.Children ?? [])
+            {
+                rows.Add(RowOf(child, container.Id));
+            }
+        }
+
+        await repository.ReplaceAsync(rows, cancellationToken).ConfigureAwait(false);
+        return await ViewAsync(callerId, design.Visuals, new PortfolioInsightFilters(), isStandard: false, now, cancellationToken).ConfigureAwait(false);
+
+        // The reading order runs over the whole design: a container, then its children, then the next visual.
+        PortfolioVisual RowOf(PortfolioVisualInput v, Guid? parentId) =>
+            new()
             {
                 Id = Guid.CreateVersion7(now),
-                SortOrder = (short)(index + 1),
+                SortOrder = (short)(rows.Count + 1),
+                ParentId = parentId,
                 TitleAr = v.Title.Ar.Trim(),
                 TitleEn = v.Title.En.Trim(),
                 VisualType = v.VisualType,
@@ -229,9 +261,7 @@ internal sealed partial class PortfolioDesignService(
                 CreatedBy = callerId,
                 UpdatedAt = now,
                 UpdatedBy = callerId,
-            })],
-            cancellationToken).ConfigureAwait(false);
-        return await ViewAsync(callerId, design.Visuals, new PortfolioInsightFilters(), isStandard: false, now, cancellationToken).ConfigureAwait(false);
+            };
     }
 
     public Task ResetAsync(CancellationToken cancellationToken) => repository.ReplaceAsync([], cancellationToken);
@@ -250,11 +280,13 @@ internal sealed partial class PortfolioDesignService(
 
     /// <summary>
     /// What is wrong with a design, or null. Visuals may not overlap; a card and a gauge show one figure, the others a figure per group. A field a visual names
-    /// is one of <paramref name="fields"/>, the catalogue the designer offers (the 18 Nov 2026 data fields, rule 6).
+    /// is one of <paramref name="fields"/>, the catalogue the designer offers (the 18 Nov 2026 data fields, rule 6). A container's children (the 19 Nov 2026
+    /// containers) obey every rule a top-level visual obeys, sections and widget codes staying unique over the whole design, and fit, without overlapping,
+    /// on the container's inner grid.
     /// </summary>
     internal static FieldIssue? Issue(PortfolioDesignInput design, IReadOnlyList<PortfolioFieldDescriptor> fields)
     {
-        if (design.Visuals is not { Count: > 0 and <= PortfolioDesignInput.MaxVisuals } visuals)
+        if (design.Visuals is not { Count: > 0 } visuals || visuals.Sum(v => 1 + (v.Children?.Count ?? 0)) > PortfolioDesignInput.MaxVisuals)
         {
             return new FieldIssue("visuals", design.Visuals is null || design.Visuals.Count == 0 ? FieldIssue.Required : FieldIssue.OutsideRange);
         }
@@ -267,49 +299,104 @@ internal sealed partial class PortfolioDesignService(
         {
             PortfolioVisualInput v = visuals[index];
             string at = $"visuals[{index}]";
-            if (v.Title is null || string.IsNullOrWhiteSpace(v.Title.Ar) || string.IsNullOrWhiteSpace(v.Title.En))
-            {
-                return new FieldIssue($"{at}.title", FieldIssue.Required);
-            }
-
-            if (v.Title.Ar.Trim().Length > MaxTitleLength || v.Title.En.Trim().Length > MaxTitleLength)
-            {
-                return new FieldIssue($"{at}.title", FieldIssue.OutsideRange);
-            }
-
-            if (!Enum.IsDefined(v.VisualType) || !Enum.IsDefined(v.GroupBy))
-            {
-                return new FieldIssue($"{at}.visualType", FieldIssue.NotAllowed);
-            }
-
-            if ((v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections) : DrawingIssue(v, catalogue)) is { } issue)
+            FieldIssue? issue = (v.Children is not null && v.VisualType != PortfolioVisualType.Container ? new FieldIssue("children", FieldIssue.NotAllowed) : null)
+                ?? VisualIssue(v, catalogue, sections, widgetCodes)
+                ?? PlaceIssue(v, Columns, rows: null, taken);
+            if (issue is not null)
             {
                 return new FieldIssue($"{at}.{issue.Field}", issue.Code);
             }
 
-            if (AxesIssue(v) is { } axesIssue)
+            if (ChildrenIssue(v, catalogue, sections, widgetCodes) is { } childIssue)
             {
-                return new FieldIssue($"{at}.{axesIssue.Field}", axesIssue.Code);
+                return new FieldIssue($"{at}.{childIssue.Field}", childIssue.Code);
             }
+        }
 
-            if (WidgetCodeIssue(v, widgetCodes) is { } widgetIssue)
+        return null;
+    }
+
+    /// <summary>
+    /// What is wrong with a container's children, or null (their field relative to the container): at most twenty; none a container itself (one level
+    /// only) or holding children; each a valid visual placed on the container's inner grid — its width's columns and its height less the title bar's row —
+    /// without covering a sibling.
+    /// </summary>
+    private static FieldIssue? ChildrenIssue(
+        PortfolioVisualInput container, Dictionary<string, PortfolioFieldDescriptor> catalogue, HashSet<PortfolioSection> sections, HashSet<string> widgetCodes)
+    {
+        if (container.Children is not { } children)
+        {
+            return null;
+        }
+
+        if (children.Count > PortfolioDesignInput.MaxChildren)
+        {
+            return new FieldIssue("children", FieldIssue.OutsideRange);
+        }
+
+        HashSet<(int Column, int Row)> taken = [];
+        for (int index = 0; index < children.Count; index++)
+        {
+            PortfolioVisualInput child = children[index];
+            FieldIssue? issue = child.VisualType == PortfolioVisualType.Container ? new FieldIssue("visualType", FieldIssue.NotAllowed)
+                : child.Children is not null ? new FieldIssue("children", FieldIssue.NotAllowed)
+                : VisualIssue(child, catalogue, sections, widgetCodes) ?? PlaceIssue(child, container.LayoutWidth, container.LayoutHeight - 1, taken);
+            if (issue is not null)
             {
-                return new FieldIssue($"{at}.{widgetIssue.Field}", widgetIssue.Code);
+                return new FieldIssue($"children[{index}].{issue.Field}", issue.Code);
             }
+        }
 
-            if (v.LayoutColumn < 0 || v.LayoutWidth < 1 || v.LayoutColumn + v.LayoutWidth > Columns || v.LayoutRow < 0 || v.LayoutHeight is < 1 or > MaxHeight)
-            {
-                return new FieldIssue($"{at}.layout", FieldIssue.OutsideRange);
-            }
+        return null;
+    }
 
-            for (int column = v.LayoutColumn; column < v.LayoutColumn + v.LayoutWidth; column++)
+    /// <summary>What is wrong with one visual apart from its place, or null (its field relative to the visual): its title, its type and what it draws.</summary>
+    private static FieldIssue? VisualIssue(
+        PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue, HashSet<PortfolioSection> sections, HashSet<string> widgetCodes) =>
+        v.Title is null || string.IsNullOrWhiteSpace(v.Title.Ar) || string.IsNullOrWhiteSpace(v.Title.En) ? new FieldIssue("title", FieldIssue.Required)
+        : v.Title.Ar.Trim().Length > MaxTitleLength || v.Title.En.Trim().Length > MaxTitleLength ? new FieldIssue("title", FieldIssue.OutsideRange)
+        : !Enum.IsDefined(v.VisualType) || !Enum.IsDefined(v.GroupBy) ? new FieldIssue("visualType", FieldIssue.NotAllowed)
+        : v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
+        : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections) : DrawingIssue(v, catalogue))
+            ?? AxesIssue(v)
+            ?? WidgetCodeIssue(v, widgetCodes);
+
+    /// <summary>
+    /// What is wrong with a container itself, or null (the 19 Nov 2026 containers): it draws nothing — no measure, value, grouping, filter, axes, section
+    /// or widget code — and is at least two rows tall, its title bar and a row for its children.
+    /// </summary>
+    private static FieldIssue? ContainerIssue(PortfolioVisualInput v) =>
+        (v.Measures?.Count ?? 0) != 0 ? new("measures", FieldIssue.NotAllowed)
+        : (v.Values?.Count ?? 0) != 0 ? new("values", FieldIssue.NotAllowed)
+        : v.GroupBy != PortfolioGroupBy.None ? new("groupBy", FieldIssue.NotAllowed)
+        : v.GroupField is not null ? new("groupField", FieldIssue.NotAllowed)
+        : v.GroupDateUnit is not null ? new("groupDateUnit", FieldIssue.NotAllowed)
+        : (v.Filters?.Count ?? 0) != 0 ? new("filters", FieldIssue.NotAllowed)
+        : v.Axes is not null ? new("axes", FieldIssue.NotAllowed)
+        : v.Section is not null ? new("section", FieldIssue.NotAllowed)
+        : v.WidgetCode is not null ? new("widgetCode", FieldIssue.NotAllowed)
+        : v.LayoutHeight < 2 ? new("layout", FieldIssue.OutsideRange)
+        : null;
+
+    /// <summary>
+    /// What is wrong with a visual's place, or null: inside <paramref name="columns"/> columns and, on a container's inner grid, <paramref name="rows"/>
+    /// rows (the dashboard itself has no last row); at most 24 rows tall; covering no cell of <paramref name="taken"/>, which it then takes.
+    /// </summary>
+    private static FieldIssue? PlaceIssue(PortfolioVisualInput v, int columns, int? rows, HashSet<(int Column, int Row)> taken)
+    {
+        if (v.LayoutColumn < 0 || v.LayoutWidth < 1 || v.LayoutColumn + v.LayoutWidth > columns || v.LayoutRow < 0 || v.LayoutHeight is < 1 or > MaxHeight
+            || v.LayoutRow + v.LayoutHeight > rows)
+        {
+            return new FieldIssue("layout", FieldIssue.OutsideRange);
+        }
+
+        for (int column = v.LayoutColumn; column < v.LayoutColumn + v.LayoutWidth; column++)
+        {
+            for (int row = v.LayoutRow; row < v.LayoutRow + v.LayoutHeight; row++)
             {
-                for (int row = v.LayoutRow; row < v.LayoutRow + v.LayoutHeight; row++)
+                if (!taken.Add((column, row)))
                 {
-                    if (!taken.Add((column, row)))
-                    {
-                        return new FieldIssue($"{at}.layout", FieldIssue.InUse);
-                    }
+                    return new FieldIssue("layout", FieldIssue.InUse);
                 }
             }
         }
@@ -421,7 +508,7 @@ internal sealed partial class PortfolioDesignService(
             PortfolioVisualType.Pie or PortfolioVisualType.Donut =>
                 first.Aggregation is PortfolioFieldAggregation.Count or PortfolioFieldAggregation.Sum or PortfolioFieldAggregation.CountTrue,
             PortfolioVisualType.Card or PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Table or PortfolioVisualType.Line
-                or PortfolioVisualType.Section => true,
+                or PortfolioVisualType.Section or PortfolioVisualType.Container => true,
             _ => true,
         };
         return fits ? null : new("values", FieldIssue.NotAllowed);
@@ -438,7 +525,7 @@ internal sealed partial class PortfolioDesignService(
         PortfolioVisualType.Column => 3,
         PortfolioVisualType.Table => fieldValues ? 6 : 3,
         PortfolioVisualType.Line => fieldValues ? 3 : 0,
-        PortfolioVisualType.Section => 0,
+        PortfolioVisualType.Section or PortfolioVisualType.Container => 0,
         _ => 0,
     };
 
@@ -577,22 +664,26 @@ internal sealed partial class PortfolioDesignService(
         Guid callerId, IReadOnlyList<PortfolioVisualInput> visuals, PortfolioInsightFilters filters, bool isStandard, DateTimeOffset? updatedAt, CancellationToken cancellationToken)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
+
+        // What is calculated: every visual drawing figures, a container's children as the top-level visuals; a section and a container draw none of their own.
+        List<PortfolioVisualInput> drawn = [.. visuals.SelectMany(v => (IEnumerable<PortfolioVisualInput>)[v, .. v.Children ?? []])
+            .Where(v => v.Section is null && v.VisualType != PortfolioVisualType.Container)];
         bool amounts = !(await engine.GetRecordScopeAsync(callerId, PermissionCatalogue.FinancialViewSensitive, cancellationToken).ConfigureAwait(false)).IsEmpty;
         OnPlanThresholds thresholds = await onPlanPolicy.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false);
-        ProjectStageSet? stages = visuals.Any(v => v.GroupBy == PortfolioGroupBy.Stage)
+        ProjectStageSet? stages = drawn.Any(v => v.GroupBy == PortfolioGroupBy.Stage)
             ? await resolver.ResolveStagesAsync(now, cancellationToken).ConfigureAwait(false)
             : null;
 
         // Each permission's projects are read once, however many visuals use it.
         Dictionary<string, IReadOnlyList<PortfolioProjectRow>?> rowsByPermission = new(StringComparer.Ordinal);
-        foreach (string permission in visuals.Where(v => v.Section is null).Select(v => PermissionOf(v.GroupBy)).Distinct(StringComparer.Ordinal))
+        foreach (string permission in drawn.Select(v => PermissionOf(v.GroupBy)).Distinct(StringComparer.Ordinal))
         {
             RecordScope scope = await engine.GetRecordScopeAsync(callerId, permission, cancellationToken).ConfigureAwait(false);
             rowsByPermission[permission] = scope.IsEmpty ? null : await projectRows.ListAsync(scope, filters, cancellationToken).ConfigureAwait(false);
         }
 
         // The data fields: one read for every field any visual names, over every project of the population, each cell authorised as a report cell.
-        List<string> keys = [.. visuals.Where(v => v.Section is null).SelectMany(FieldKeysOf).Distinct(StringComparer.Ordinal)];
+        List<string> keys = [.. drawn.SelectMany(FieldKeysOf).Distinct(StringComparer.Ordinal)];
         List<Guid> projectIds = [.. rowsByPermission.Values.OfType<IReadOnlyList<PortfolioProjectRow>>().SelectMany(rows => rows).Select(r => r.Project.Id).Distinct()];
         IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = keys.Count == 0 || projectIds.Count == 0
             ? new Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>>()
@@ -600,21 +691,28 @@ internal sealed partial class PortfolioDesignService(
 
         Dictionary<string, PortfolioFieldDescriptor> catalogue = fieldReader.Fields.ToDictionary(f => f.Key, StringComparer.Ordinal);
         Dictionary<string, PortfolioFieldType> types = catalogue.ToDictionary(f => f.Key, f => f.Value.Type, StringComparer.Ordinal);
-        return new PortfolioDesignView(isStandard, updatedAt, [.. visuals.Select(v =>
-        {
-            if (v.Section is { } section)
-            {
-                return new PortfolioVisualResult(
-                    v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [], section, WidgetCode: v.WidgetCode);
-            }
+        return new PortfolioDesignView(isStandard, updatedAt, [.. visuals.Select(v => ResultOf(v, GroupsOf, types))]);
 
-            IReadOnlyList<PortfolioProjectRow>? rows = rowsByPermission[PermissionOf(v.GroupBy)];
-            return new PortfolioVisualResult(
-                v.Title, v.VisualType, v.Measures, v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
-                rows is null ? null : Groups(v, rows, stages, amounts, thresholds, cells, catalogue), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types),
-                v.GroupDateUnit, v.Axes);
-        })]);
+        IReadOnlyList<PortfolioVisualGroup>? GroupsOf(PortfolioVisualInput v) =>
+            rowsByPermission[PermissionOf(v.GroupBy)] is { } rows ? Groups(v, rows, stages, amounts, thresholds, cells, catalogue) : null;
     }
+
+    /// <summary>
+    /// A visual with its figures, <paramref name="groupsOf"/> calculating them (null without the grouping's permission): a section and a container carry none
+    /// of their own; a container carries its children, each calculated as a top-level visual is.
+    /// </summary>
+    internal static PortfolioVisualResult ResultOf(
+        PortfolioVisualInput v, Func<PortfolioVisualInput, IReadOnlyList<PortfolioVisualGroup>?> groupsOf, IReadOnlyDictionary<string, PortfolioFieldType> types) =>
+        v.VisualType == PortfolioVisualType.Container
+            ? new PortfolioVisualResult(
+                v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [],
+                Children: [.. (v.Children ?? []).Select(child => ResultOf(child, groupsOf, types))])
+        : v.Section is { } section
+            ? new PortfolioVisualResult(
+                v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [], section, WidgetCode: v.WidgetCode)
+        : new PortfolioVisualResult(
+            v.Title, v.VisualType, v.Measures, v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, groupsOf(v), null, v.Values, v.GroupField,
+            v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes);
 
     /// <summary>
     /// Each value's field type, in order; null for a visual of fixed measures. A field the register no longer holds (a design saved before it went) has only
@@ -814,7 +912,7 @@ internal sealed partial class PortfolioDesignService(
             v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode);
     }
 
-    /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section).</summary>
+    /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section, a container).</summary>
     private static string? DataFieldsOf(PortfolioVisualInput v) =>
         v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null
             ? JsonSerializer.Serialize(new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit), StoredJson)
