@@ -123,6 +123,18 @@ describe('no white space (18 Nov 2026)', () => {
     expect(moved(['a', 'b', 'c'], 0, 2)).toEqual(['b', 'c', 'a']);
   });
 
+  test('a visual made smaller keeps its size when another is sized (19 Nov 2026)', () => {
+    // Two side by side; the left one made shorter, then the right one: the left one stays as it was set, never stretched back.
+    const shrunk = packed([box(6, 6), box(6, 10)]).map((v, index) =>
+      index === 0 ? { ...v, layoutHeight: 4 } : v,
+    );
+    const both = packed(shrunk.map((v, index) => (index === 1 ? { ...v, layoutHeight: 5 } : v)));
+    expect(both.map((v) => [v.layoutWidth, v.layoutHeight])).toEqual([
+      [6, 4],
+      [6, 5],
+    ]);
+  });
+
   test('a visual removed leaves no hole', () => {
     const three = packed([box(12, 2), box(12, 2), box(12, 2)]);
     expect(packed(three.filter((_, index) => index !== 1)).map((v) => v.layoutRow)).toEqual([0, 2]);

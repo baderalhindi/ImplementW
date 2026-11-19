@@ -227,23 +227,17 @@ export function DashboardDesignerPage(): ReactElement {
 
   /**
    * Lays the design out again after a change, from the latest design (pointer events come faster than renders): the others close up at once.
-   * `keep` is the visual whose size was just set, so the room it leaves is taken by the others.
+   * Each visual keeps the size it was given.
    */
-  const relayout = (change: (all: Draft[]) => Draft[], keep: string | null = null) => {
+  const relayout = (change: (all: Draft[]) => Draft[]) => {
     setPlaceProblem(null);
-    setVisuals((all) => {
-      const next = change(all);
-      return packed(next, keep === null ? null : next.findIndex((visual) => visual.key === keep));
-    });
+    setVisuals((all) => packed(change(all)));
   };
 
   /** Changes the visual at `index` (its settings or size), the others reflowing around it. */
   const place = (index: number, next: Visual) => {
     const key = visuals[index]?.key ?? null;
-    relayout(
-      (all) => all.map((visual) => (visual.key === key ? { ...visual, ...next } : visual)),
-      key,
-    );
+    relayout((all) => all.map((visual) => (visual.key === key ? { ...visual, ...next } : visual)));
   };
 
   const append = (visual: Visual | null) => {
@@ -337,22 +331,20 @@ export function DashboardDesignerPage(): ReactElement {
     if (active.gesture === 'resize') {
       const columns = Math.round(((clientX - active.startX) * (size.rtl ? -1 : 1)) / size.column);
       const rows = Math.round((clientY - active.startY) / size.row);
-      relayout(
-        (all) =>
-          all.map((visual) =>
-            visual.key === active.key
-              ? {
-                  ...visual,
-                  // Sizing stops at the grid's end edge; it never moves the visual.
-                  layoutWidth: Math.min(
-                    COLUMNS - visual.layoutColumn,
-                    Math.max(1, active.start.layoutWidth + columns),
-                  ),
-                  layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, active.start.layoutHeight + rows)),
-                }
-              : visual,
-          ),
-        active.key,
+      relayout((all) =>
+        all.map((visual) =>
+          visual.key === active.key
+            ? {
+                ...visual,
+                // Sizing stops at the grid's end edge; it never moves the visual.
+                layoutWidth: Math.min(
+                  COLUMNS - visual.layoutColumn,
+                  Math.max(1, active.start.layoutWidth + columns),
+                ),
+                layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, active.start.layoutHeight + rows)),
+              }
+            : visual,
+        ),
       );
       return;
     }

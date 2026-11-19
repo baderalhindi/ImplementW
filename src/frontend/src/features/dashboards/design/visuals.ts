@@ -555,11 +555,11 @@ function clamped(box: Box): Box {
 /**
  * The visuals laid out in their order with no room left between them (the user, 18 Nov 2026: "I don't want white spaces"): each, in turn,
  * takes the first place from the top, then from the reading start, where it fits beside those before it, so a gap is filled by whatever fits.
- * Room no visual fits is then taken by its neighbour: a visual widens toward the reading end, then grows down, into empty cells beside or under
- * it, never past the grid's bottom. `keep` (the visual just sized) keeps the size it was given. Every change of order, size or membership is
- * laid out again, so the others move at once; the dashboard lays out what the caller sees the same way.
+ * Every visual keeps the size it was given (the user, 19 Nov 2026: a visual made smaller must stay so when another is sized): room no visual
+ * fits stays empty. Every change of order, size or membership is laid out again, so the others move at once; the dashboard lays out what the
+ * caller sees the same way.
  */
-export function packed<T extends Box>(visuals: T[], keep: number | null = null): T[] {
+export function packed<T extends Box>(visuals: T[]): T[] {
   const placed: T[] = [];
   for (const visual of visuals) {
     const size = clamped(visual);
@@ -574,35 +574,7 @@ export function packed<T extends Box>(visuals: T[], keep: number | null = null):
     }
     placed.push({ ...visual, ...spot });
   }
-  return filled(placed, keep);
-}
-
-/** The cells no visual covers, closed by the visual beside (toward the reading end) or above them; see `packed`. */
-function filled<T extends Box>(visuals: T[], keep: number | null): T[] {
-  const next = [...visuals];
-  const bottom = rowsOf(next);
-  const free = (box: Box, self: number) =>
-    box.layoutColumn + box.layoutWidth <= COLUMNS &&
-    box.layoutRow + box.layoutHeight <= bottom &&
-    next.every((other, at) => at === self || !overlaps(box, other));
-  next.forEach((visual, at) => {
-    if (at === keep) {
-      return;
-    }
-    let grown: T = visual;
-    while (free({ ...grown, layoutWidth: grown.layoutWidth + 1 }, at)) {
-      grown = { ...grown, layoutWidth: grown.layoutWidth + 1 };
-      next[at] = grown;
-    }
-    while (
-      grown.layoutHeight < MAX_HEIGHT &&
-      free({ ...grown, layoutHeight: grown.layoutHeight + 1 }, at)
-    ) {
-      grown = { ...grown, layoutHeight: grown.layoutHeight + 1 };
-      next[at] = grown;
-    }
-  });
-  return next;
+  return placed;
 }
 
 /** The order with the visual at `from` moved to `to`, the others keeping theirs. */
