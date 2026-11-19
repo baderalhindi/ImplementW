@@ -27,13 +27,20 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
             t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
             // Only a bar, column or line chart has axes to set (19 Nov 2026).
             t.HasCheckConstraint("ck_portfolio_visual_axes", "axes IS NULL OR visual_type IN ('BAR', 'COLUMN', 'LINE')");
+            // A DASHBOARD_WIDGET section names the governed widget it draws, and no other visual names one (19 Nov 2026). COALESCE: a visual with no section
+            // compares as false, not null, so it may not carry a code.
+            t.HasCheckConstraint(
+                "ck_portfolio_visual_widget_code",
+                "COALESCE(section = 'DASHBOARD_WIDGET', FALSE) = (widget_code IS NOT NULL) AND (widget_code IS NULL OR widget_code ~ '^[A-Za-z0-9_.-]+$')");
         });
         builder.Property(e => e.TitleAr).HasMaxLength(100);
         builder.Property(e => e.TitleEn).HasMaxLength(100);
         builder.Property(e => e.DataFields).HasColumnType("jsonb");
         builder.Property(e => e.Axes).HasColumnType("jsonb");
+        builder.Property(e => e.WidgetCode).HasMaxLength(50);
         builder.HasIndex(e => e.SortOrder).IsUnique();
-        // A section is placed once.
-        builder.HasIndex(e => e.Section).IsUnique().HasFilter("section IS NOT NULL");
+        // A section is placed once; DASHBOARD_WIDGET once per widget (19 Nov 2026).
+        builder.HasIndex(e => e.Section).IsUnique().HasFilter("section IS NOT NULL AND section <> 'DASHBOARD_WIDGET'");
+        builder.HasIndex(e => e.WidgetCode).IsUnique().HasFilter("widget_code IS NOT NULL");
     }
 }

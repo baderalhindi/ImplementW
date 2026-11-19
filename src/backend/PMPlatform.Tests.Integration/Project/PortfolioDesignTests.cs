@@ -9,7 +9,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// The Portfolio dashboard designer (the 17 Nov 2026 designer, dashboard-designer.md) through the API: local.r02 (R02, <c>DASHBOARD_DESIGN</c> at ALL)
 /// reads the data catalogue, previews, saves and resets the one design everyone sees; local.r06 (R06, without it) is refused every design write and reads
 /// the saved design; a design breaking a rule is refused with 422 <c>PROJECT_PORTFOLIO_DESIGN_INVALID</c> and saves nothing. A bar's axes (the 19 Nov 2026
-/// axes) are saved and read back as set, titles trimmed; a chart drawn with the default axes stores none.
+/// axes) are saved and read back as set, titles trimmed; a chart drawn with the default axes stores none. Two DASHBOARD_WIDGET sections (the 19 Nov 2026
+/// widgets) are saved and read back with their widget codes; two naming the same widget are refused.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -40,13 +41,18 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
         object design = DesignOf(
             Visual("Projects", "CARD", 0, 0, 3, 2, measures: ["PROJECTS"]),
             Visual("By status", "BAR", 3, 0, 6, 4, measures: ["PROJECTS"], groupBy: "STATUS", axes: StatusAxes),
-            Visual("Field value", "CARD", 9, 0, 3, 2, values: [new { field = fieldKey, aggregation }]));
+            Visual("Field value", "CARD", 9, 0, 3, 2, values: [new { field = fieldKey, aggregation }]),
+            Widget("Open risks by rating", "OPEN_RISKS_BY_RATING", 0, 4, 6, 7),
+            Widget("Projects by lifecycle state", "PROJECTS_BY_LIFECYCLE_STATE", 6, 4, 6, 7));
 
         using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
         Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
         JsonObject previewed = await preview.ReadObjectAsync();
         Assert.False(previewed["isStandard"]!.GetValue<bool>());
-        Assert.Equal(3, previewed["visuals"]!.AsArray().Count);
+        Assert.Equal(5, previewed["visuals"]!.AsArray().Count);
+        Assert.Equal(
+            [null, null, null, "OPEN_RISKS_BY_RATING", "PROJECTS_BY_LIFECYCLE_STATE"],
+            previewed["visuals"]!.AsArray().Select(v => v!["widgetCode"]?.GetValue<string>()));
 
         using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
         Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
@@ -60,8 +66,12 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             Assert.False(view["isStandard"]!.GetValue<bool>());
             Assert.NotNull(view["updatedAt"]?.GetValue<DateTimeOffset>());
             JsonArray visuals = view["visuals"]!.AsArray();
-            Assert.Equal(["Projects", "By status", "Field value"], visuals.Select(v => v!["title"]!["en"]!.GetValue<string>()));
-            Assert.Equal(["CARD", "BAR", "CARD"], visuals.Select(v => v!["visualType"]!.GetValue<string>()));
+            Assert.Equal(
+                ["Projects", "By status", "Field value", "Open risks by rating", "Projects by lifecycle state"], visuals.Select(v => v!["title"]!["en"]!.GetValue<string>()));
+            Assert.Equal(["CARD", "BAR", "CARD", "SECTION", "SECTION"], visuals.Select(v => v!["visualType"]!.GetValue<string>()));
+            Assert.Equal(
+                [null, null, null, "DASHBOARD_WIDGET:OPEN_RISKS_BY_RATING", "DASHBOARD_WIDGET:PROJECTS_BY_LIFECYCLE_STATE"],
+                visuals.Select(v => v!["section"] is { } section ? $"{section.GetValue<string>()}:{v["widgetCode"]!.GetValue<string>()}" : null));
             Assert.Equal("STATUS", visuals[1]!["groupBy"]!.GetValue<string>());
             Assert.Equal(9, visuals[2]!["layoutColumn"]!.GetValue<int>());
             Assert.Equal(fieldKey, visuals[2]!["values"]![0]!["field"]!.GetValue<string>());
@@ -75,9 +85,9 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             Assert.Null(visuals[0]!["axes"]);
         }
 
-        Assert.Equal(["3"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
-        Assert.Equal(["CARD:", "BAR:Status", "CARD:"], await host.Database.QueryAsync(
-            "SELECT visual_type || ':' || coalesce(axes -> 'category' -> 'title' ->> 'en', '') FROM project.portfolio_visual ORDER BY sort_order"));
+        Assert.Equal(["5"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+        Assert.Equal(["CARD::", "BAR:Status:", "CARD::", "SECTION::OPEN_RISKS_BY_RATING", "SECTION::PROJECTS_BY_LIFECYCLE_STATE"], await host.Database.QueryAsync(
+            "SELECT visual_type || ':' || coalesce(axes -> 'category' -> 'title' ->> 'en', '') || ':' || coalesce(widget_code, '') FROM project.portfolio_visual ORDER BY sort_order"));
 
         using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
         Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
@@ -122,7 +132,15 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             axes: new { category = new { show = true }, value = new { show = true, min = 10, max = 10, gridlines = true } }));
         object cardAxes = DesignOf(Visual("Card axes", "CARD", 0, 0, 3, 2, measures: ["PROJECTS"], axes: StatusAxes));
 
-        foreach (object design in new[] { overlapping, groupedCard, emptyRange, cardAxes })
+        // Two visuals drawing the same governed widget.
+        object sameWidget = DesignOf(Widget("Risks", "OPEN_RISKS_BY_RATING", 0, 0, 6, 7), Widget("Risks again", "OPEN_RISKS_BY_RATING", 6, 0, 6, 7));
+        using (HttpResponseMessage duplicate = await client.PostAsync($"{Design}/preview", manager, sameWidget))
+        {
+            JsonNode error = (await duplicate.ReadObjectAsync())["errors"]![0]!;
+            Assert.Equal(("visuals[1].widgetCode", "DUPLICATE"), (error["field"]!.GetValue<string>(), error["code"]!.GetValue<string>()));
+        }
+
+        foreach (object design in new[] { overlapping, groupedCard, emptyRange, cardAxes, sameWidget })
         {
             using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
             Assert.Equal((HttpStatusCode.UnprocessableEntity, "PROJECT_PORTFOLIO_DESIGN_INVALID"), (preview.StatusCode, await preview.CodeOfAsync()));
@@ -135,9 +153,12 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
 
     private static object DesignOf(params object[] visuals) => new { visuals };
 
+    private static object Widget(string title, string widgetCode, short column, short row, short width, short height) =>
+        Visual(title, "SECTION", column, row, width, height, section: "DASHBOARD_WIDGET", widgetCode: widgetCode);
+
     private static object Visual(
         string title, string type, short column, short row, short width, short height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
-        object? axes = null) =>
+        object? axes = null, string? section = null, string? widgetCode = null) =>
         new
         {
             title = new { ar = $"عنوان {title}", en = title },
@@ -150,5 +171,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             layoutHeight = height,
             values,
             axes,
+            section,
+            widgetCode,
         };
 }

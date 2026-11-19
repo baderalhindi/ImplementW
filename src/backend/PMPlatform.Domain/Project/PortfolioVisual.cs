@@ -33,7 +33,8 @@ public enum PortfolioVisualType
 
 /// <summary>
 /// The Portfolio dashboard's own sections a design places (18 Nov 2026: the whole dashboard is designed): the tables and lists of the insights, the
-/// projects map and the governed widgets. Each keeps its own figures, links and permission; at most one of each in a design.
+/// projects map and the governed widgets. Each keeps its own figures, links and permission; at most one of each in a design, except
+/// <see cref="DashboardWidget"/>, at most one per widget.
 /// </summary>
 public enum PortfolioSection
 {
@@ -63,6 +64,12 @@ public enum PortfolioSection
 
     /// <summary>The table of update completion by entity, with its period (the 13 Nov 2026 review).</summary>
     EntityCompletionTable = 12,
+
+    /// <summary>
+    /// One governed widget of the dashboard, named by <see cref="PortfolioVisual.WidgetCode"/> (the 19 Nov 2026 widgets): unlike the other sections, a design
+    /// may hold several, one per widget.
+    /// </summary>
+    DashboardWidget = 13,
 }
 
 /// <summary>What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3).</summary>
@@ -155,4 +162,11 @@ public sealed class PortfolioVisual : AuditedEntity
     /// "min","max","gridlines"}}</c>. Null for the defaults (both shown, no titles, an automatic range, gridlines) and for any other type.
     /// </summary>
     public string? Axes { get; set; }
+
+    /// <summary>
+    /// The code of the governed widget a <see cref="PortfolioSection.DashboardWidget"/> section draws (the 19 Nov 2026 widgets), 1–50 characters of
+    /// <c>[A-Za-z0-9_.-]</c>, at most one visual per code; null for any other visual. The dashboard's definition is not read here, so a code it no longer has
+    /// draws nothing.
+    /// </summary>
+    public string? WidgetCode { get; set; }
 }

@@ -9519,17 +9519,27 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("visual_type");
 
+                    b.Property<string>("WidgetCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("widget_code");
+
                     b.HasKey("Id")
                         .HasName("pk_portfolio_visual");
 
                     b.HasIndex("Section")
                         .IsUnique()
                         .HasDatabaseName("ix_portfolio_visual_section")
-                        .HasFilter("section IS NOT NULL");
+                        .HasFilter("section IS NOT NULL AND section <> 'DASHBOARD_WIDGET'");
 
                     b.HasIndex("SortOrder")
                         .IsUnique()
                         .HasDatabaseName("ix_portfolio_visual_sort_order");
+
+                    b.HasIndex("WidgetCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_portfolio_visual_widget_code")
+                        .HasFilter("widget_code IS NOT NULL");
 
                     b.ToTable("portfolio_visual", "project", t =>
                         {
@@ -9541,11 +9551,13 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_portfolio_visual_measures", "(visual_type = 'SECTION' AND cardinality(measures) = 0 AND section IS NOT NULL AND group_by = 'NONE' AND data_fields IS NULL) OR (visual_type <> 'SECTION' AND section IS NULL AND ((cardinality(measures) BETWEEN 1 AND 3 AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', 'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS']::text[]) OR (cardinality(measures) = 0 AND data_fields IS NOT NULL)))");
 
-                            t.HasCheckConstraint("ck_portfolio_visual_section", "\"section\" IN ('PORTFOLIO_TABLE', 'INITIATIVE_TABLE', 'SECTOR_TABLE', 'STATUS_TABLE', 'CURRENT_STAGE_TABLE', 'ON_PLAN_COUNTS', 'FOLLOW_UP_REASONS', 'TOP_FOLLOW_UP', 'ENTITY_COMPLETION', 'PROJECT_LOCATIONS', 'DASHBOARD_WIDGETS', 'ENTITY_COMPLETION_TABLE')");
+                            t.HasCheckConstraint("ck_portfolio_visual_section", "\"section\" IN ('PORTFOLIO_TABLE', 'INITIATIVE_TABLE', 'SECTOR_TABLE', 'STATUS_TABLE', 'CURRENT_STAGE_TABLE', 'ON_PLAN_COUNTS', 'FOLLOW_UP_REASONS', 'TOP_FOLLOW_UP', 'ENTITY_COMPLETION', 'PROJECT_LOCATIONS', 'DASHBOARD_WIDGETS', 'ENTITY_COMPLETION_TABLE', 'DASHBOARD_WIDGET')");
 
                             t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
 
                             t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'SECTION', 'LINE')");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_widget_code", "COALESCE(section = 'DASHBOARD_WIDGET', FALSE) = (widget_code IS NOT NULL) AND (widget_code IS NULL OR widget_code ~ '^[A-Za-z0-9_.-]+$')");
                         });
                 });
 

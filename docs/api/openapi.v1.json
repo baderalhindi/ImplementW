@@ -38692,6 +38692,7 @@
           "PROJECT_LOCATIONS",
           "DASHBOARD_WIDGETS",
           "ENTITY_COMPLETION_TABLE",
+          "DASHBOARD_WIDGET",
           null
         ]
       },
@@ -39142,6 +39143,12 @@
                 "$ref": "#/components/schemas/PortfolioAxesRequest"
               }
             ]
+          },
+          "widgetCode": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -39276,6 +39283,12 @@
               {
                 "$ref": "#/components/schemas/PortfolioAxes"
               }
+            ]
+          },
+          "widgetCode": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         },

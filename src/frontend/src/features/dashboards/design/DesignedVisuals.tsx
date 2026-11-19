@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback, useId } from 'react';
 import { Link } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -19,6 +19,7 @@ import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import { drillPath, gridPlace, packed, placeKey } from './visuals.ts';
 import { VisualBody } from './VisualBody.tsx';
+import { splitWidgets } from './widgetVisuals.ts';
 
 /** One visual on the dashboard: its title over its figures. A card's or gauge's title opens the records its figure counts, as a headline card's did. */
 function VisualFrame({
@@ -84,16 +85,24 @@ function SectionFrame({
   sources: SectionSources;
 }): ReactElement | null {
   const { language } = useI18n();
+  const titleId = useId();
+  // A widget's visual is the region its card was, named by the visual's title.
+  const isWidget = visual.section === 'DASHBOARD_WIDGET';
   return visual.section === undefined || visual.section === null ? null : (
     <section
-      className="widget visual visual--section"
+      className={
+        isWidget ? 'widget visual visual--section visual--widget' : 'widget visual visual--section'
+      }
       style={gridPlace(visual)}
+      aria-labelledby={isWidget ? titleId : undefined}
       data-visual="SECTION"
       data-section-code={visual.section}
     >
-      <h3 className="widget__title">{visual.title[language]}</h3>
+      <h3 id={titleId} className="widget__title">
+        {visual.title[language]}
+      </h3>
       <div className="visual__body visual__body--section">
-        <SectionBody section={visual.section} sources={sources} />
+        <SectionBody section={visual.section} widgetCode={visual.widgetCode} sources={sources} />
       </div>
     </section>
   );
@@ -187,12 +196,14 @@ export function DesignedVisuals({
     );
   }
   const sources: SectionSources = { insights: insights.data, view, filters, showsCompletion, map };
-  // Laid out in the design's order with no gaps, as the designer laid it out; what the caller may not see leaves no hole.
+  // Laid out in the design's order with no gaps, as the designer laid it out; what the caller may not see leaves no hole. A design saved with
+  // all the widgets in one section draws each widget as its own visual, as the designer splits it.
   const shown = packed(
-    design.data.visuals.filter((visual) =>
-      visual.section === undefined || visual.section === null
-        ? visual.groups !== null && !withheld(visual)
-        : sectionShown(visual.section, sources),
+    splitWidgets(design.data.visuals, view.widgets, (visual) => ({ ...visual, groups: [] })).filter(
+      (visual) =>
+        visual.section === undefined || visual.section === null
+          ? visual.groups !== null && !withheld(visual)
+          : sectionShown(visual, sources),
     ),
   );
   return shown.length === 0 ? null : (

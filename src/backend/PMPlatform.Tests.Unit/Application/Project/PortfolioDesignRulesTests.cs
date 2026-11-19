@@ -14,7 +14,7 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// The 17 Nov 2026 dashboard designer: what a saved design may hold, and the permission each grouping is read under; and its 18 Nov 2026 data fields: the
 /// catalogue it offers, rules 1 to 6 and the aggregations' arithmetic; and its 18 Nov 2026 more fields: PROJECT.PROJECT_PROFILE, yes/no and date fields, the
 /// LINE visual, rule 7's grain and the period charts over the published history; and its 19 Nov 2026 axes: who takes them, their titles and range, and what is
-/// stored.
+/// stored; and its 19 Nov 2026 widgets: one DASHBOARD_WIDGET section per governed widget, named by its code.
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -129,9 +129,76 @@ public sealed class PortfolioDesignRulesTests
         Assert.Equal("visuals[0].section", Issue(Visual() with { Section = PortfolioSection.PortfolioTable })?.Field);
     }
 
+    /// <summary>Every section but DASHBOARD_WIDGET: the backend does not know the widget codes, so the standard design keeps DASHBOARD_WIDGETS for the designer to split.</summary>
     [Fact]
     public void TheStandardDesignPlacesEverySection() =>
-        Assert.Equal(Enum.GetValues<PortfolioSection>(), PortfolioDesignService.StandardDesign.Select(v => v.Section).OfType<PortfolioSection>().Order());
+        Assert.Equal(
+            Enum.GetValues<PortfolioSection>().Where(s => s != PortfolioSection.DashboardWidget),
+            PortfolioDesignService.StandardDesign.Select(v => v.Section).OfType<PortfolioSection>().Order());
+
+    private static PortfolioVisualInput Widget(string? widgetCode, short row = 0) => Placed(PortfolioSection.DashboardWidget, row) with { WidgetCode = widgetCode };
+
+    /// <summary>19 Nov 2026: a DASHBOARD_WIDGET section names the widget it draws.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ADashboardWidgetNamesItsWidget(string? widgetCode) =>
+        Assert.Equal(new FieldIssue("visuals[0].widgetCode", FieldIssue.Required), Issue(Widget(widgetCode)));
+
+    /// <summary>Only a DASHBOARD_WIDGET section names a widget: not another section, nor a chart.</summary>
+    [Fact]
+    public void OnlyADashboardWidgetNamesAWidget()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].widgetCode", FieldIssue.NotAllowed), Issue(Placed(PortfolioSection.DashboardWidgets, 0) with { WidgetCode = "OPEN_RISKS" }));
+        Assert.Equal(new FieldIssue("visuals[0].widgetCode", FieldIssue.NotAllowed), Issue(Visual() with { WidgetCode = "OPEN_RISKS" }));
+        Assert.Equal(new FieldIssue("visuals[0].widgetCode", FieldIssue.NotAllowed), Issue(Drawing() with { WidgetCode = "OPEN_RISKS" }));
+    }
+
+    /// <summary>A widget code is 1–50 characters of letters, digits, '_', '.' and '-'; only its shape is checked, not that the dashboard has it.</summary>
+    [Theory]
+    [InlineData("OPEN_RISKS_BY_RATING", null)]
+    [InlineData("fin.budget-vs-actual_2", null)]
+    [InlineData("a", null)]
+    [InlineData("OPEN RISKS", FieldIssue.NotAllowed)]
+    [InlineData("OPEN_RISKS\n", FieldIssue.NotAllowed)]
+    [InlineData("مخاطر", FieldIssue.NotAllowed)]
+    [InlineData("<script>", FieldIssue.NotAllowed)]
+    public void AWidgetCodeHasTheDashboardsShape(string widgetCode, string? code) =>
+        Assert.Equal(code is null ? null : new FieldIssue("visuals[0].widgetCode", code), Issue(Widget(Regex.Unescape(widgetCode))));
+
+    [Fact]
+    public void AWidgetCodeIsAtMostFiftyCharacters()
+    {
+        Assert.Null(Issue(Widget(new string('W', 50))));
+        Assert.Equal(new FieldIssue("visuals[0].widgetCode", FieldIssue.OutsideRange), Issue(Widget(new string('W', 51))));
+    }
+
+    /// <summary>Several DASHBOARD_WIDGET sections, one per widget; a second naming the same widget is refused (codes compare exactly).</summary>
+    [Fact]
+    public void ADesignPlacesManyWidgetsEachOnce()
+    {
+        Assert.Null(Issue(Widget("OPEN_RISKS_BY_RATING"), Widget("PROJECTS_BY_LIFECYCLE_STATE", 4), Widget("FINANCIAL_SUMMARY", 8), Widget("open_risks_by_rating", 12)));
+        Assert.Equal(
+            new FieldIssue("visuals[2].widgetCode", FieldIssue.Duplicate),
+            Issue(Widget("OPEN_RISKS_BY_RATING"), Widget("PROJECTS_BY_LIFECYCLE_STATE", 4), Widget("OPEN_RISKS_BY_RATING", 8)));
+    }
+
+    /// <summary>The whole-widgets section saved before 19 Nov 2026 stays valid, and still once per design, beside single widgets.</summary>
+    [Fact]
+    public void TheDashboardWidgetsSectionStaysValid()
+    {
+        Assert.Null(Issue(Placed(PortfolioSection.DashboardWidgets, 0), Widget("OPEN_RISKS_BY_RATING", 4)));
+        Assert.Equal(
+            new FieldIssue("visuals[1].section", FieldIssue.Duplicate), Issue(Placed(PortfolioSection.DashboardWidgets, 0), Placed(PortfolioSection.DashboardWidgets, 4)));
+    }
+
+    /// <summary>A DASHBOARD_WIDGET section is a section like the others: no measure, grouping or field values.</summary>
+    [Fact]
+    public void ADashboardWidgetDrawsNoFigureOfItsOwn()
+    {
+        Assert.Equal("visuals[0].section", Issue(Widget("OPEN_RISKS") with { Measures = [PortfolioMeasure.Projects] })?.Field);
+        Assert.Equal("visuals[0].section", Issue(Widget("OPEN_RISKS") with { VisualType = PortfolioVisualType.Card })?.Field);
+    }
 
     /// <summary>A grouping is read under the insights permission that shows that breakdown today, so the designer shows no one more than before.</summary>
     [Theory]

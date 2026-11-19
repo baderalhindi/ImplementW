@@ -819,9 +819,14 @@ describe('the gallery without the sections list (19 Nov 2026)', () => {
 
     const gallery = screen.getByRole('region', { name: en('dashboards.designer.gallery') });
     const types = ['CARD', 'BAR', 'COLUMN', 'LINE', 'PIE', 'DONUT', 'TABLE', 'GAUGE'];
+    // The visual types, and the Widgets group of the view's widgets no visual draws (its own test is below).
+    const widgets = within(gallery).getByRole('region', {
+      name: en('dashboards.designer.widgets'),
+    });
     expect(
       within(gallery)
         .getAllByRole('button')
+        .filter((button) => !widgets.contains(button))
         .map((button) => plain(button.textContent)),
     ).toEqual(types.map((type) => en(`dashboards.designer.type.${type}`)));
     expect(within(gallery).queryByRole('button', { name: new RegExp(sectionTitle) })).toBeNull();

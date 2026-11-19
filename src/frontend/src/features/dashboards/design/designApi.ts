@@ -12,9 +12,17 @@ import { type InsightSectionCode } from '../insights/insightSections.ts';
 export type VisualType =
   'CARD' | 'BAR' | 'COLUMN' | 'PIE' | 'DONUT' | 'TABLE' | 'GAUGE' | 'LINE' | 'SECTION';
 
-/** One of the dashboard's own sections a design places (18 Nov 2026): drawn as it always was, with its own figures and permission. */
+/**
+ * One of the dashboard's own sections a design places (18 Nov 2026): drawn as it always was, with its own figures and permission.
+ * DASHBOARD_WIDGET (19 Nov 2026) draws one governed widget, named by the visual's `widgetCode`; DASHBOARD_WIDGETS, all of them in one visual,
+ * stays valid for designs saved before.
+ */
 export type Section =
-  InsightSectionCode | 'PROJECT_LOCATIONS' | 'DASHBOARD_WIDGETS' | 'ENTITY_COMPLETION_TABLE';
+  | InsightSectionCode
+  | 'PROJECT_LOCATIONS'
+  | 'DASHBOARD_WIDGETS'
+  | 'DASHBOARD_WIDGET'
+  | 'ENTITY_COMPLETION_TABLE';
 
 export type Measure =
   | 'PROJECTS'
@@ -115,6 +123,8 @@ export interface Visual {
   layoutHeight: number;
   /** The section a SECTION places, with no measures and no grouping; absent for any other type. */
   section?: Section | null | undefined;
+  /** The governed widget (its `code` in the dashboard's view) a DASHBOARD_WIDGET section draws; absent or null for any other visual. */
+  widgetCode?: string | null | undefined;
   /** Field values the visual draws instead of `measures` (which is then empty); absent or null when it draws measures. */
   values?: FieldValue[] | null | undefined;
   /**

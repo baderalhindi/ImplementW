@@ -57,7 +57,8 @@ public sealed record PortfolioVisualRequest(
     string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilterRequest?>? Filters = null,
     PortfolioDateUnit? GroupDateUnit = null,
-    PortfolioAxesRequest? Axes = null)
+    PortfolioAxesRequest? Axes = null,
+    string? WidgetCode = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -95,7 +96,7 @@ public sealed record PortfolioVisualRequest(
     internal PortfolioVisualInput ToInput() =>
         new(Title!.ToLabel(), VisualType!.Value, Measures ?? [], GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value, Section,
             Values?.Select(v => new PortfolioFieldValue(v!.Field!, v.Aggregation!.Value)).ToList(), GroupField,
-            Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes());
+            Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes(), WidgetCode);
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct

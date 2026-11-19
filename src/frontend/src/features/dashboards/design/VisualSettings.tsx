@@ -70,7 +70,13 @@ export function VisualSettings({
         />
       </div>
       {isSection ? (
-        <p className="designer__hint">{t('dashboards.designer.sectionSettings')}</p>
+        <p className="designer__hint">
+          {t(
+            visual.section === 'DASHBOARD_WIDGET'
+              ? 'dashboards.designer.widgetSettings'
+              : 'dashboards.designer.sectionSettings',
+          )}
+        </p>
       ) : (
         <>
           <div className="field">

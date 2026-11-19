@@ -70,47 +70,40 @@ function WidgetBody({
   }
 }
 
-function WidgetCard({
+/**
+ * Where a widget card is drawn: on a dashboard's widget grid, with the columns it takes in the drawn order (`filledSpans`) and its own heading;
+ * or `visual`, filling a designed visual (19 Nov 2026) whose frame carries the title, so the card draws none.
+ */
+export type WidgetPlacement = { span: number; headingLevel: 2 | 3 } | 'visual';
+
+export function WidgetCard({
   widget,
-  span,
+  placement,
   projectId,
-  headingLevel,
   filters,
 }: {
   widget: DashboardWidgetResult;
-  /** Columns it takes in the drawn order (`filledSpans`). */
-  span: number;
+  placement: WidgetPlacement;
   projectId: string | null;
-  headingLevel: 2 | 3;
   filters: PortfolioFilters;
 }): ReactElement {
   const { t, language } = useI18n();
   const titleId = useId();
   const title = widget.title[language];
-  const Heading = headingLevel === 2 ? 'h2' : 'h3';
   const drill = drillPath(widget.drillTargetScreenId, projectId);
   const stale = widget.projection.freshness === 'STALE';
-  return (
-    <section
-      className="widget"
-      aria-labelledby={titleId}
-      data-widget={widget.code}
-      data-widget-type={widget.widgetType}
-      data-semantic-state={widget.projection.semanticState}
-      data-freshness={widget.projection.freshness}
-      style={{ '--widget-span': span } as CSSProperties}
-    >
-      <div className="widget__header">
-        <Heading id={titleId} className="widget__title">
-          {title}
-        </Heading>
-        <ProjectionStatus widget={widget} />
-        {drill !== null && (
-          <Link className="widget__drill" to={drill}>
-            {t('dashboards.widget.open')} <span className="visually-hidden">{title}</span>
-          </Link>
-        )}
-      </div>
+  const status = (
+    <>
+      <ProjectionStatus widget={widget} />
+      {drill !== null && (
+        <Link className="widget__drill" to={drill}>
+          {t('dashboards.widget.open')} <span className="visually-hidden">{title}</span>
+        </Link>
+      )}
+    </>
+  );
+  const content = (
+    <>
       {/* Always present, so the cards of a row keep the same four rows (header, notice, body, footer). */}
       <div className="widget__notice">
         {stale && (
@@ -126,6 +119,38 @@ function WidgetCard({
         {widget.coverageDetail !== null && <CoverageLine coverage={widget.coverageDetail} />}
         <ProjectionOrigin widget={widget} />
       </NoteList>
+    </>
+  );
+  const data = {
+    'data-widget': widget.code,
+    'data-widget-type': widget.widgetType,
+    'data-semantic-state': widget.projection.semanticState,
+    'data-freshness': widget.projection.freshness,
+  };
+  if (placement === 'visual') {
+    // The visual's frame is the named region; the card is its body.
+    return (
+      <div className="widget widget--in-visual" {...data}>
+        <div className="widget__header">{status}</div>
+        {content}
+      </div>
+    );
+  }
+  const Heading = placement.headingLevel === 2 ? 'h2' : 'h3';
+  return (
+    <section
+      className="widget"
+      aria-labelledby={titleId}
+      {...data}
+      style={{ '--widget-span': placement.span } as CSSProperties}
+    >
+      <div className="widget__header">
+        <Heading id={titleId} className="widget__title">
+          {title}
+        </Heading>
+        {status}
+      </div>
+      {content}
     </section>
   );
 }
@@ -148,9 +173,8 @@ export function DashboardCanvas({
         <WidgetCard
           key={widget.code}
           widget={widget}
-          span={spans[index] ?? widget.layoutSpan}
+          placement={{ span: spans[index] ?? widget.layoutSpan, headingLevel }}
           projectId={view.projectId}
-          headingLevel={headingLevel}
           filters={filters}
         />
       ))}

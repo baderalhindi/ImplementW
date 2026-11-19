@@ -32,6 +32,12 @@ import { VisualBody } from './VisualBody.tsx';
 import { VisualIcon } from './VisualIcon.tsx';
 import { VisualSettings } from './VisualSettings.tsx';
 import {
+  hasWidgetsToSplit,
+  newWidgetVisual,
+  splitWidgets,
+  unplacedWidgets,
+} from './widgetVisuals.ts';
+import {
   COLUMNS,
   gridPlace,
   MAX_HEIGHT,
@@ -83,6 +89,7 @@ function withoutFigures(visual: VisualResult): Visual {
     layoutWidth: visual.layoutWidth,
     layoutHeight: visual.layoutHeight,
     ...(visual.section === undefined || visual.section === null ? {} : { section: visual.section }),
+    widgetCode: visual.widgetCode,
     values: visual.values,
     groupField: visual.groupField,
     groupDateUnit: visual.groupDateUnit,
@@ -208,6 +215,14 @@ export function DashboardDesignerPage(): ReactElement {
     };
   }, [visuals, saved, t]);
 
+  // A design with all the widgets in one section (the standard one, or one saved before 19 Nov 2026) becomes one visual per widget once the
+  // dashboard's view says which widgets there are: an unsaved change, as any other, until it is saved. A discard goes back to the design as
+  // read, so it is split again. Adjusted while rendering, as React has state derived from other state adjusted.
+  const viewWidgets = view.data?.widgets;
+  if (viewWidgets !== undefined && hasWidgetsToSplit(visuals, viewWidgets)) {
+    setVisuals(packed(splitWidgets(visuals, viewWidgets, keyed)));
+  }
+
   if (loadError !== null) {
     return (
       <ErrorState
@@ -254,6 +269,9 @@ export function DashboardDesignerPage(): ReactElement {
   const add = (type: VisualType) => {
     append(newVisual(type, visuals, fields.data ?? []));
   };
+
+  // The view's widgets no visual draws: each can be placed again from the gallery.
+  const unplaced = view.data === undefined ? [] : unplacedWidgets(visuals, view.data.widgets);
 
   const remove = (index: number) => {
     const key = visuals[index]?.key;
@@ -549,8 +567,12 @@ export function DashboardDesignerPage(): ReactElement {
                   >
                     {visual.section === undefined || visual.section === null ? (
                       <VisualBody visual={figuresOf(visual)} fields={fields.data} />
-                    ) : sectionShown(visual.section, sources) ? (
-                      <SectionBody section={visual.section} sources={sources} />
+                    ) : sectionShown(visual, sources) ? (
+                      <SectionBody
+                        section={visual.section}
+                        widgetCode={visual.widgetCode}
+                        sources={sources}
+                      />
                     ) : (
                       <p className="state">{t('dashboards.noData')}</p>
                     )}
@@ -598,6 +620,34 @@ export function DashboardDesignerPage(): ReactElement {
                 </li>
               ))}
             </ul>
+            {unplaced.length > 0 && (
+              <section className="designer__widgets" aria-labelledby="designer-widgets">
+                <h3 id="designer-widgets" className="designer__subheading">
+                  {t('dashboards.designer.widgets')}
+                </h3>
+                <ul className="designer__widget-list">
+                  {unplaced.map((widget) => (
+                    <li key={widget.code}>
+                      <button
+                        type="button"
+                        className="designer__widget-tile"
+                        aria-label={t('dashboards.designer.addWidget', {
+                          title: widget.title[language],
+                        })}
+                        onClick={() => {
+                          append(newWidgetVisual(widget, visuals));
+                        }}
+                      >
+                        <span className="designer__widget-name">{widget.title[language]}</span>
+                        <span className="designer__widget-add" aria-hidden="true">
+                          {t('dashboards.designer.add')}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <p className="designer__hint">{t('dashboards.designer.keyboardHint')}</p>
           </section>
           <section className="designer__settings" aria-labelledby="designer-settings">

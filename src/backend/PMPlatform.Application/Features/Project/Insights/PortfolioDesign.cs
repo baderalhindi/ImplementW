@@ -49,12 +49,13 @@ public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Va
 /// <see cref="PortfolioVisualType.Section"/>, one of the dashboard's own sections and no measure. Since 18 Nov 2026 a visual may draw
 /// <paramref name="Values"/> of the data catalogue instead of measures, be grouped by a CODE field (<paramref name="GroupField"/>) and narrowed by
 /// <paramref name="Filters"/>; grouped by a date field, it names the <paramref name="GroupDateUnit"/> (the 18 Nov 2026 more fields). A bar, column or line
-/// chart may set its <paramref name="Axes"/> (the 19 Nov 2026 axes).
+/// chart may set its <paramref name="Axes"/> (the 19 Nov 2026 axes). A <see cref="PortfolioSection.DashboardWidget"/> section names the governed widget it
+/// draws by its <paramref name="WidgetCode"/> (the 19 Nov 2026 widgets); any other visual names none.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
-    IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null);
+    IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -78,12 +79,13 @@ public sealed record PortfolioVisualGroup(
 /// A section carries no groups of its own (an empty list): the dashboard draws it from the insights and the dashboard view, each under its own permission.
 /// A visual of field values has a value per entry of <c>Values</c>, in order, and <c>OnPlan</c> null; it echoes its values, grouping field and filters, and
 /// <c>ValueTypes</c> gives each value's field type, so a viewer without <c>DASHBOARD_DESIGN</c> (who cannot read the catalogue) formats it; null for fixed
-/// measures and a section. A bar, column or line chart echoes its <c>Axes</c> as set (null for the defaults).
+/// measures and a section. A bar, column or line chart echoes its <c>Axes</c> as set (null for the defaults); a <c>DASHBOARD_WIDGET</c> section its
+/// <c>WidgetCode</c>.
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
-    PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null);
+    PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -132,6 +134,7 @@ internal sealed partial class PortfolioDesignService(
     private const int MaxFilterValues = 20;
     private const int MaxAxisTitleLength = 60;
     private const decimal AxisLimit = 1_000_000_000_000m;
+    private const int MaxWidgetCodeLength = 50;
     private const string True = "TRUE";
     private const string False = "FALSE";
     private static readonly DateOnly UnixEpoch = new(1970, 1, 1);
@@ -221,6 +224,7 @@ internal sealed partial class PortfolioDesignService(
                 LayoutHeight = v.LayoutHeight,
                 DataFields = DataFieldsOf(v),
                 Axes = AxesOf(v),
+                WidgetCode = v.WidgetCode,
                 CreatedAt = now,
                 CreatedBy = callerId,
                 UpdatedAt = now,
@@ -258,6 +262,7 @@ internal sealed partial class PortfolioDesignService(
         Dictionary<string, PortfolioFieldDescriptor> catalogue = fields.ToDictionary(f => f.Key, StringComparer.Ordinal);
         HashSet<(int Column, int Row)> taken = [];
         HashSet<PortfolioSection> sections = [];
+        HashSet<string> widgetCodes = new(StringComparer.Ordinal);
         for (int index = 0; index < visuals.Count; index++)
         {
             PortfolioVisualInput v = visuals[index];
@@ -287,6 +292,11 @@ internal sealed partial class PortfolioDesignService(
                 return new FieldIssue($"{at}.{axesIssue.Field}", axesIssue.Code);
             }
 
+            if (WidgetCodeIssue(v, widgetCodes) is { } widgetIssue)
+            {
+                return new FieldIssue($"{at}.{widgetIssue.Field}", widgetIssue.Code);
+            }
+
             if (v.LayoutColumn < 0 || v.LayoutWidth < 1 || v.LayoutColumn + v.LayoutWidth > Columns || v.LayoutRow < 0 || v.LayoutHeight is < 1 or > MaxHeight)
             {
                 return new FieldIssue($"{at}.layout", FieldIssue.OutsideRange);
@@ -309,14 +319,15 @@ internal sealed partial class PortfolioDesignService(
 
     /// <summary>
     /// What is wrong with a section, or null: it names a section, once in the design, as a <see cref="PortfolioVisualType.Section"/>, with no measure, field
-    /// value, grouping or filter (it draws neither, rule 1).
+    /// value, grouping or filter (it draws neither, rule 1). <see cref="PortfolioSection.DashboardWidget"/> may be placed more than once, one per widget
+    /// (<see cref="WidgetCodeIssue"/>).
     /// </summary>
     private static FieldIssue? SectionIssue(PortfolioVisualInput v, HashSet<PortfolioSection> sections) =>
         v.VisualType != PortfolioVisualType.Section || v.Section is not { } section || !Enum.IsDefined(section) ? new("section", FieldIssue.NotAllowed)
         : (v.Measures?.Count ?? 0) != 0 || v.GroupBy != PortfolioGroupBy.None || (v.Values?.Count ?? 0) != 0 || v.GroupField is not null || (v.Filters?.Count ?? 0) != 0
             || v.GroupDateUnit is not null
             ? new("section", FieldIssue.NotAllowed)
-        : !sections.Add(section) ? new("section", FieldIssue.Duplicate)
+        : section != PortfolioSection.DashboardWidget && !sections.Add(section) ? new("section", FieldIssue.Duplicate)
         : null;
 
     /// <summary>
@@ -332,6 +343,19 @@ internal sealed partial class PortfolioDesignService(
             ?? (axes.Value.Min is { } min && Math.Abs(min) > AxisLimit ? new FieldIssue("axes.value.min", FieldIssue.OutsideRange) : null)
             ?? (axes.Value.Max is { } max && Math.Abs(max) > AxisLimit ? new FieldIssue("axes.value.max", FieldIssue.OutsideRange) : null)
             ?? (axes.Value is { Min: { } start, Max: { } end } && start >= end ? new FieldIssue("axes.value.max", FieldIssue.OutsideRange) : null);
+
+    /// <summary>
+    /// What is wrong with a visual's widget code, or null (the 19 Nov 2026 widgets): a <see cref="PortfolioSection.DashboardWidget"/> section names one, 1–50
+    /// characters of <c>[A-Za-z0-9_.-]</c>, no other visual of the design naming the same; any other visual names none. Only the shape is checked: the Project
+    /// module does not read the Dashboards module's definitions, and a code the dashboard no longer has draws nothing.
+    /// </summary>
+    private static FieldIssue? WidgetCodeIssue(PortfolioVisualInput v, HashSet<string> widgetCodes) =>
+        v.Section != PortfolioSection.DashboardWidget ? v.WidgetCode is null ? null : new("widgetCode", FieldIssue.NotAllowed)
+        : string.IsNullOrEmpty(v.WidgetCode) ? new("widgetCode", FieldIssue.Required)
+        : v.WidgetCode.Length > MaxWidgetCodeLength ? new("widgetCode", FieldIssue.OutsideRange)
+        : !WidgetCodeShape().IsMatch(v.WidgetCode) ? new("widgetCode", FieldIssue.NotAllowed)
+        : !widgetCodes.Add(v.WidgetCode) ? new("widgetCode", FieldIssue.Duplicate)
+        : null;
 
     /// <summary>A title is a <see cref="BilingualLabel"/>, so both languages are there and not blank; each fits once trimmed.</summary>
     private static FieldIssue? TitleIssue(BilingualLabel? title, string field) =>
@@ -581,7 +605,7 @@ internal sealed partial class PortfolioDesignService(
             if (v.Section is { } section)
             {
                 return new PortfolioVisualResult(
-                    v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [], section);
+                    v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [], section, WidgetCode: v.WidgetCode);
             }
 
             IReadOnlyList<PortfolioProjectRow>? rows = rowsByPermission[PermissionOf(v.GroupBy)];
@@ -787,7 +811,7 @@ internal sealed partial class PortfolioDesignService(
         return new(
             new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
             v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit,
-            v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null);
+            v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode);
     }
 
     /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section).</summary>
@@ -830,6 +854,10 @@ internal sealed partial class PortfolioDesignService(
     /// <summary>A filter value of a CODE field, a status, a stage or an on-plan label.</summary>
     [GeneratedRegex("^[A-Z0-9_-]{1,64}$", RegexOptions.CultureInvariant)]
     private static partial Regex CodeShape();
+
+    /// <summary>A governed widget's code, as the dashboard view carries it; its length is checked apart.</summary>
+    [GeneratedRegex(@"^[A-Za-z0-9_.-]+\z", RegexOptions.CultureInvariant)]
+    private static partial Regex WidgetCodeShape();
 
     /// <summary>A filter value of a date field: a year.</summary>
     [GeneratedRegex("^[0-9]{4}$", RegexOptions.CultureInvariant)]

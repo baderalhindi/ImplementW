@@ -147,8 +147,9 @@ describe('the sections', () => {
       [...document.querySelectorAll<HTMLElement>('[data-section-code]')].map(
         (element) => element.dataset.sectionCode,
       ),
-      // The entity completion donut and table answer under their own permission, whatever the insights do.
-    ).toEqual(['ENTITY_COMPLETION', 'DASHBOARD_WIDGETS', 'ENTITY_COMPLETION_TABLE']);
+      // The entity completion donut and table answer under their own permission, whatever the insights do; the widgets section is drawn as
+      // one visual per widget (the view has one).
+    ).toEqual(['ENTITY_COMPLETION', 'DASHBOARD_WIDGET', 'ENTITY_COMPLETION_TABLE']);
   });
 
   test('no project reads "no data", never zeros', async () => {
