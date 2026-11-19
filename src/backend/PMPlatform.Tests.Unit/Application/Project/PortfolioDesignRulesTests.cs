@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.Dashboards;
@@ -12,7 +13,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// <summary>
 /// The 17 Nov 2026 dashboard designer: what a saved design may hold, and the permission each grouping is read under; and its 18 Nov 2026 data fields: the
 /// catalogue it offers, rules 1 to 6 and the aggregations' arithmetic; and its 18 Nov 2026 more fields: PROJECT.PROJECT_PROFILE, yes/no and date fields, the
-/// LINE visual, rule 7's grain and the period charts over the published history.
+/// LINE visual, rule 7's grain and the period charts over the published history; and its 19 Nov 2026 axes: who takes them, their titles and range, and what is
+/// stored.
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -549,5 +551,94 @@ public sealed class PortfolioDesignRulesTests
         Assert.Equal(["2026-09", "2026-10"], red.Select(g => g.Key));
         Assert.Equal([30m, 30m], red.Select(g => g.Values[0]));
         Assert.Equal([2, 2], red.Select(g => g.Projects));
+    }
+
+    private static PortfolioAxes Axes(
+        BilingualLabel? categoryTitle = null, BilingualLabel? valueTitle = null, decimal? min = null, decimal? max = null, bool showCategory = true, bool gridlines = true) =>
+        new(new PortfolioAxis(showCategory, categoryTitle), new PortfolioValueAxis(Show: true, valueTitle, min, max, gridlines));
+
+    /// <summary>The 19 Nov 2026 axes: a bar, a column and a line take them, with titles, a range or neither.</summary>
+    [Fact]
+    public void ABarColumnOrLineTakesAxes()
+    {
+        PortfolioAxes axes = Axes(new BilingualLabel("المحفظة", "Portfolio"), new BilingualLabel("المشاريع", "Projects"), 0, 100, showCategory: false, gridlines: false);
+
+        Assert.Null(Issue(Visual(PortfolioVisualType.Bar) with { Axes = axes }));
+        Assert.Null(Issue(Visual(PortfolioVisualType.Column) with { Axes = axes }));
+        Assert.Null(Issue(Line() with { Axes = axes }));
+        Assert.Null(Issue(Visual(PortfolioVisualType.Column) with { Axes = PortfolioAxes.Default }));
+    }
+
+    /// <summary>Any other type, a section too, takes no axes.</summary>
+    [Fact]
+    public void OnlyABarColumnOrLineTakesAxes()
+    {
+        FieldIssue refused = new("visuals[0].axes", FieldIssue.NotAllowed);
+
+        Assert.Equal(refused, Issue(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, width: 4, height: 2) with { Axes = PortfolioAxes.Default }));
+        Assert.Equal(refused, Issue(Visual(PortfolioVisualType.Pie) with { Axes = PortfolioAxes.Default }));
+        Assert.Equal(refused, Issue(Visual(PortfolioVisualType.Donut) with { Axes = PortfolioAxes.Default }));
+        Assert.Equal(refused, Issue(Visual(PortfolioVisualType.Table) with { Axes = PortfolioAxes.Default }));
+        Assert.Equal(refused, Issue(Visual(PortfolioVisualType.Gauge, PortfolioGroupBy.None, measures: PortfolioMeasure.AverageActual) with { Axes = PortfolioAxes.Default }));
+        Assert.Equal(refused, Issue(Placed(PortfolioSection.PortfolioTable, 0) with { Axes = PortfolioAxes.Default }));
+    }
+
+    /// <summary>Both axes are named: a design read from a body that left one out is refused, not drawn with a guess.</summary>
+    [Fact]
+    public void AxesNameBothAxes()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].axes.category", FieldIssue.Required), Issue(Visual() with { Axes = PortfolioAxes.Default with { Category = null! } }));
+        Assert.Equal(new FieldIssue("visuals[0].axes.value", FieldIssue.Required), Issue(Visual() with { Axes = PortfolioAxes.Default with { Value = null! } }));
+    }
+
+    /// <summary>A title is one to sixty characters in each language once trimmed.</summary>
+    [Fact]
+    public void AnAxisTitleIsAtMostSixtyCharacters()
+    {
+        string sixty = new('a', 60);
+        string sixtyOne = new('a', 61);
+
+        Assert.Null(Issue(Visual() with { Axes = Axes(new BilingualLabel($"  {new string('ب', 60)}  ", $" {sixty} "), new BilingualLabel("ب", "b")) }));
+        Assert.Equal(new FieldIssue("visuals[0].axes.category.title", FieldIssue.OutsideRange),
+            Issue(Visual() with { Axes = Axes(new BilingualLabel("المحفظة", sixtyOne)) }));
+        Assert.Equal(new FieldIssue("visuals[0].axes.value.title", FieldIssue.OutsideRange),
+            Issue(Visual() with { Axes = Axes(valueTitle: new BilingualLabel(new string('ب', 61), "Projects")) }));
+    }
+
+    /// <summary>The value axis starts below where it ends; either alone is fine, the other then automatic.</summary>
+    [Theory]
+    [InlineData(5, 5)]
+    [InlineData(10, 5)]
+    public void TheValueAxisStartsBelowItsEnd(int min, int max) =>
+        Assert.Equal(new FieldIssue("visuals[0].axes.value.max", FieldIssue.OutsideRange), Issue(Visual() with { Axes = Axes(min: min, max: max) }));
+
+    [Fact]
+    public void TheValueAxisMayFixOnlyItsStartOrItsEnd()
+    {
+        Assert.Null(Issue(Visual() with { Axes = Axes(min: -20) }));
+        Assert.Null(Issue(Visual() with { Axes = Axes(max: 0.5m) }));
+        Assert.Null(Issue(Visual() with { Axes = Axes(min: -1_000_000_000_000m, max: 1_000_000_000_000m) }));
+    }
+
+    /// <summary>A start and an end lie within ±10¹².</summary>
+    [Fact]
+    public void TheValueAxisRangeStaysWithinATrillion()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].axes.value.min", FieldIssue.OutsideRange), Issue(Visual() with { Axes = Axes(min: -1_000_000_000_001m) }));
+        Assert.Equal(new FieldIssue("visuals[0].axes.value.max", FieldIssue.OutsideRange), Issue(Visual() with { Axes = Axes(max: 1_000_000_000_001m) }));
+    }
+
+    /// <summary>What is stored: nothing for the defaults or a type without axes; otherwise the API's camelCase shape with the titles trimmed.</summary>
+    [Fact]
+    public void AxesAreStoredOnlyWhenTheyDifferFromTheDefaults()
+    {
+        Assert.Null(PortfolioDesignService.AxesOf(Visual()));
+        Assert.Null(PortfolioDesignService.AxesOf(Visual() with { Axes = PortfolioAxes.Default }));
+        Assert.Null(PortfolioDesignService.AxesOf(Visual(PortfolioVisualType.Pie) with { Axes = Axes(min: 0) }));
+
+        // Compared as JSON: the serialiser escapes the Arabic, and jsonb stores it unescaped.
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("""{"category":{"show":true,"title":{"ar":"المحفظة","en":"Portfolio"}},"value":{"show":true,"title":null,"min":0,"max":100,"gridlines":false}}"""),
+            JsonNode.Parse(PortfolioDesignService.AxesOf(Visual() with { Axes = Axes(new BilingualLabel(" المحفظة ", "Portfolio  "), min: 0, max: 100, gridlines: false) })!)));
     }
 }

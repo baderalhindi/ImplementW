@@ -9441,6 +9441,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Axes")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("axes");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -9529,6 +9533,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("portfolio_visual", "project", t =>
                         {
+                            t.HasCheckConstraint("ck_portfolio_visual_axes", "axes IS NULL OR visual_type IN ('BAR', 'COLUMN', 'LINE')");
+
                             t.HasCheckConstraint("ck_portfolio_visual_group_by", "\"group_by\" IN ('NONE', 'PORTFOLIO', 'INITIATIVE', 'SECTOR', 'DEPARTMENT', 'ENTITY', 'STATUS', 'STAGE', 'ON_PLAN', 'REGION', 'CITY', 'PRIORITY')");
 
                             t.HasCheckConstraint("ck_portfolio_visual_layout", "layout_column BETWEEN 0 AND 11 AND layout_width BETWEEN 1 AND 12 AND layout_column + layout_width <= 12 AND layout_row >= 0 AND layout_height BETWEEN 1 AND 24");

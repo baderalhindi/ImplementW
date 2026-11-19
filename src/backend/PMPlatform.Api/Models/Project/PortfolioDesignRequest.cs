@@ -56,7 +56,8 @@ public sealed record PortfolioVisualRequest(
     IReadOnlyList<PortfolioFieldValueRequest?>? Values = null,
     string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilterRequest?>? Filters = null,
-    PortfolioDateUnit? GroupDateUnit = null)
+    PortfolioDateUnit? GroupDateUnit = null,
+    PortfolioAxesRequest? Axes = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -87,12 +88,14 @@ public sealed record PortfolioVisualRequest(
                 errors.Add(new FieldError($"{at}.filters[{i}]", FieldError.Required));
             }
         }
+
+        Axes?.Validate($"{at}.axes", errors);
     }
 
     internal PortfolioVisualInput ToInput() =>
         new(Title!.ToLabel(), VisualType!.Value, Measures ?? [], GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value, Section,
             Values?.Select(v => new PortfolioFieldValue(v!.Field!, v.Aggregation!.Value)).ToList(), GroupField,
-            Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit);
+            Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes());
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct
@@ -109,3 +112,60 @@ public sealed record PortfolioFieldValueRequest(string? Field, PortfolioFieldAgg
 
 /// <summary>A visual's filter: a CODE field key or a dimension key, and the values that pass; their shape is checked by the service.</summary>
 public sealed record PortfolioFieldFilterRequest(string? Field, IReadOnlyList<string>? Values);
+
+/// <summary>
+/// How a bar, column or line chart draws its axes (the 19 Nov 2026 axes): both axes, each saying whether it is shown; a title, when given, in both languages.
+/// Which types take axes, the titles' length and the range are checked by the service.
+/// </summary>
+public sealed record PortfolioAxesRequest(PortfolioAxisRequest? Category, PortfolioValueAxisRequest? Value)
+{
+    internal void Validate(string at, List<FieldError> errors)
+    {
+        if (Category is null)
+        {
+            errors.Add(new FieldError($"{at}.category", FieldError.Required));
+        }
+        else
+        {
+            RequireFlag(Category.Show, $"{at}.category.show", errors);
+            OptionalTitle(Category.Title, $"{at}.category.title", errors);
+        }
+
+        if (Value is null)
+        {
+            errors.Add(new FieldError($"{at}.value", FieldError.Required));
+        }
+        else
+        {
+            RequireFlag(Value.Show, $"{at}.value.show", errors);
+            RequireFlag(Value.Gridlines, $"{at}.value.gridlines", errors);
+            OptionalTitle(Value.Title, $"{at}.value.title", errors);
+        }
+    }
+
+    internal PortfolioAxes ToAxes() =>
+        new(new PortfolioAxis(Category!.Show!.Value, Category.Title?.ToLabel()),
+            new PortfolioValueAxis(Value!.Show!.Value, Value.Title?.ToLabel(), Value.Min, Value.Max, Value.Gridlines!.Value));
+
+    private static void RequireFlag(bool? value, string field, List<FieldError> errors)
+    {
+        if (value is null)
+        {
+            errors.Add(new FieldError(field, FieldError.Required));
+        }
+    }
+
+    private static void OptionalTitle(BilingualLabelRequest? title, string field, List<FieldError> errors)
+    {
+        if (title is not null)
+        {
+            RequestValidation.Label(title, field, errors);
+        }
+    }
+}
+
+/// <summary>The category axis: shown or not, and its title (null for none).</summary>
+public sealed record PortfolioAxisRequest(bool? Show, BilingualLabelRequest? Title = null);
+
+/// <summary>The value axis: shown or not, its title (null for none), its start and end (null = automatic) and whether gridlines are drawn.</summary>
+public sealed record PortfolioValueAxisRequest(bool? Show, bool? Gridlines, BilingualLabelRequest? Title = null, decimal? Min = null, decimal? Max = null);

@@ -3,12 +3,14 @@ import { type ReactElement, useId } from 'react';
 import { type ApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
+import { AxesFormat } from './AxesFormat.tsx';
+import { takesAxes } from './axes.ts';
 import { DataPanel } from './DataPanel.tsx';
 import { type FieldDescriptor, type Visual, type VisualType } from './designApi.ts';
 import { asLine, COLUMNS, MAX_HEIGHT, retitled, VISUAL_TYPES, withType } from './visuals.ts';
 
 /**
- * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters) and size. Only what the type takes is offered, so whatever is chosen
+ * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters), a chart's axes (AxesFormat) and size. Only what the type takes is offered, so whatever is chosen
  * saves; a size that would cover another visual is refused by the designer, which says so.
  */
 export function VisualSettings({
@@ -100,6 +102,7 @@ export function VisualSettings({
             </select>
           </div>
           <DataPanel visual={visual} fields={fields} onChange={change} />
+          {takesAxes(visual.visualType) && <AxesFormat visual={visual} onChange={onChange} />}
         </>
       )}
       <div className="designer__size">

@@ -24,13 +24,7 @@ import { PORTFOLIO_DASHBOARD_PATH } from '../paths.ts';
 import { dashboardProblemMessage } from '../problems.ts';
 import { dashboardsApi, type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { usePortfolioInsights, useShowsCompletion } from '../insights/insightSections.ts';
-import {
-  designApi,
-  type Section,
-  type Visual,
-  type VisualResult,
-  type VisualType,
-} from './designApi.ts';
+import { designApi, type Visual, type VisualResult, type VisualType } from './designApi.ts';
 import { lineStart, normalized } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
@@ -40,14 +34,12 @@ import { VisualSettings } from './VisualSettings.tsx';
 import {
   COLUMNS,
   gridPlace,
-  newSection,
   MAX_HEIGHT,
   MAX_VISUALS,
   moved,
   newVisual,
   packed,
   rowsOf,
-  SECTIONS,
   VISUAL_TYPES,
   visualAt,
 } from './visuals.ts';
@@ -95,6 +87,7 @@ function withoutFigures(visual: VisualResult): Visual {
     groupField: visual.groupField,
     groupDateUnit: visual.groupDateUnit,
     filters: visual.filters,
+    axes: visual.axes,
   });
 }
 
@@ -128,8 +121,8 @@ function sameDesign(a: Visual[], b: Visual[]): boolean {
 }
 
 /**
- * The Portfolio dashboard's designer (17 and 18 Nov 2026), under Dashboards and Reports: the Portfolio Manager adds visuals and sections from the
- * gallery, drags them by their bar to another place in the order and by their corner to size, and sets each one's values and grouping; the figures
+ * The Portfolio dashboard's designer (17 and 18 Nov 2026), under Dashboards and Reports: the Portfolio Manager adds visuals from the gallery (the
+ * dashboard's sections are no longer offered there, 19 Nov 2026: those on the design stay, and come back only with the standard design), drags them by their bar to another place in the order and by their corner to size, and sets each one's values and grouping; the figures
  * are calculated live. The grid is always packed (the user: no white space): every move, size or removal lays the others out again at once.
  * Saving changes the dashboard for everyone, with no approval. A keyboard moves a visual earlier or later with the arrow keys on its move handle
  * and sizes it on its size handle.
@@ -266,10 +259,6 @@ export function DashboardDesignerPage(): ReactElement {
 
   const add = (type: VisualType) => {
     append(newVisual(type, visuals, fields.data ?? []));
-  };
-
-  const addSection = (section: Section) => {
-    append(newSection(section, visuals));
   };
 
   const remove = (index: number) => {
@@ -616,36 +605,6 @@ export function DashboardDesignerPage(): ReactElement {
                   </button>
                 </li>
               ))}
-            </ul>
-            <h3 className="designer__subheading">{t('dashboards.designer.sections')}</h3>
-            <p className="designer__hint">{t('dashboards.designer.sectionsHint')}</p>
-            <ul className="designer__sections">
-              {SECTIONS.map((section) => {
-                const placed = visuals.some((visual) => visual.section === section);
-                return (
-                  <li key={section}>
-                    <button
-                      type="button"
-                      className="designer__section"
-                      disabled={placed}
-                      onClick={() => {
-                        addSection(section);
-                      }}
-                    >
-                      <span>{t(`dashboards.designer.section.${section}`)}</span>
-                      {placed ? (
-                        <span className="designer__section-placed">
-                          {t('dashboards.designer.sectionPlaced')}
-                        </span>
-                      ) : (
-                        <span className="designer__section-add" aria-hidden="true">
-                          {t('dashboards.designer.sectionAdd')}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
             </ul>
             <p className="designer__hint">{t('dashboards.designer.keyboardHint')}</p>
           </section>

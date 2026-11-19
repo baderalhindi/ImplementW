@@ -82,6 +82,27 @@ export interface FieldFilter {
   values: string[];
 }
 
+/** A chart's category axis (what it is grouped by): shown or not, and its title, none when null. */
+export interface CategoryAxis {
+  show: boolean;
+  title: BilingualLabel | null;
+}
+
+/** A chart's value axis: shown or not, its title, its range (null = automatic, from the figures) and its gridlines. */
+export interface ValueAxis {
+  show: boolean;
+  title: BilingualLabel | null;
+  min: number | null;
+  max: number | null;
+  gridlines: boolean;
+}
+
+/** A bar, column or line chart's axes (docs/architecture/dashboard-designer-axes.md); null or absent = the defaults. */
+export interface VisualAxes {
+  category: CategoryAxis;
+  value: ValueAxis;
+}
+
 /** A visual as the designer keeps and sends it. Columns and rows count from 0, from the reading start. */
 export interface Visual {
   title: BilingualLabel;
@@ -105,6 +126,8 @@ export interface Visual {
   groupDateUnit?: DateUnit | null | undefined;
   /** The visual's own filters, applied after the dashboard's; absent or null when it has none. */
   filters?: FieldFilter[] | null | undefined;
+  /** A bar, column or line chart's axes; null or absent when they are the defaults, and for any other type. */
+  axes?: VisualAxes | null | undefined;
 }
 
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */

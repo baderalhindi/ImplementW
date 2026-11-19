@@ -316,7 +316,8 @@ describe('the sections', () => {
       path: '/projects/follow-up',
       params: { period: '2026', mainReason: 'STALLED' },
     });
-    expect(link(document.querySelector('.bars__link'))).toEqual({
+    // The designed bar chart "Projects by portfolio": each bar opens its portfolio's projects.
+    expect(link(document.querySelector('.axis-chart__frame--bar a'))).toEqual({
       path: '/projects',
       params: { period: '2026', registered: 'true', strategicPortfolioItemId: PORTFOLIO_A },
     });

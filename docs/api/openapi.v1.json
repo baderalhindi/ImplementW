@@ -37600,6 +37600,100 @@
           }
         }
       },
+      "PortfolioAxes": {
+        "required": [
+          "category",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/PortfolioAxis"
+          },
+          "value": {
+            "$ref": "#/components/schemas/PortfolioValueAxis"
+          }
+        },
+        "description": "How a bar, column or line chart draws its axes (the 19 Nov 2026 axes, dashboard-designer-axes.md); absent means the defaults: both axes shown, no titles, an automatic range and gridlines."
+      },
+      "PortfolioAxesRequest": {
+        "required": [
+          "category",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioAxisRequest"
+              }
+            ]
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioValueAxisRequest"
+              }
+            ]
+          }
+        },
+        "description": "How a bar, column or line chart draws its axes (the 19 Nov 2026 axes): both axes, each saying whether it is shown; a title, when given, in both languages.\nWhich types take axes, the titles' length and the range are checked by the service."
+      },
+      "PortfolioAxis": {
+        "required": [
+          "show",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": "boolean"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          }
+        },
+        "description": "A chart's category axis (the 19 Nov 2026 axes): shown or hidden, and a title in both languages or none."
+      },
+      "PortfolioAxisRequest": {
+        "required": [
+          "show"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          }
+        },
+        "description": "The category axis: shown or not, and its title (null for none)."
+      },
       "PortfolioBreakdown": {
         "required": [
           "rows",
@@ -38733,6 +38827,103 @@
           }
         }
       },
+      "PortfolioValueAxis": {
+        "required": [
+          "show",
+          "title",
+          "min",
+          "max",
+          "gridlines"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": "boolean"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "min": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "max": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "gridlines": {
+            "type": "boolean"
+          }
+        },
+        "description": "A chart's value axis (the 19 Nov 2026 axes): shown or hidden, a title or none, a start and an end (null = automatic; the start below the end when both\nare given) and whether gridlines are drawn."
+      },
+      "PortfolioValueAxisRequest": {
+        "required": [
+          "show",
+          "gridlines"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "gridlines": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "min": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "max": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "The value axis: shown or not, its title (null for none), its start and end (null = automatic) and whether gridlines are drawn."
+      },
       "PortfolioVisualGroup": {
         "required": [
           "key",
@@ -38941,6 +39132,16 @@
                 "$ref": "#/components/schemas/PortfolioDateUnit"
               }
             ]
+          },
+          "axes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioAxesRequest"
+              }
+            ]
           }
         }
       },
@@ -39064,6 +39265,16 @@
               },
               {
                 "$ref": "#/components/schemas/PortfolioDateUnit"
+              }
+            ]
+          },
+          "axes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioAxes"
               }
             ]
           }

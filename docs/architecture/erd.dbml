@@ -769,6 +769,7 @@ Table project.portfolio_visual {
   layout_width smallint [not null, note: '1 to 12']
   layout_height smallint [not null, note: '1 to 24']
   data_fields jsonb [note: '{"values":[{"field","aggregation"}],"groupField","groupDateUnit","filters":[{"field","values"}]} in the API shape (camelCase, UPPER_SNAKE enums): registered projection field keys of the data catalogue, never a table, column or expression (BR-DSH-030); null when the visual names none and always for a SECTION (CHECK, 18 Nov 2026 data fields)']
+  axes jsonb [note: '{"category":{"show","title"},"value":{"show","title","min","max","gridlines"}} in the API shape (camelCase; title {"ar","en"} or null): how a BAR, COLUMN or LINE draws its axes; null for the defaults (both shown, no titles, automatic range, gridlines) and always for any other type (CHECK, 19 Nov 2026 axes)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2)']

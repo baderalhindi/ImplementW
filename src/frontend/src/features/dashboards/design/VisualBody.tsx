@@ -10,16 +10,25 @@ import { TableContainer } from '@/shared/ui/Layout.tsx';
 
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { bucketColors, type ChartBucket } from '../charts.ts';
-import { BarChart, DonutChart, GaugeChart, GroupedColumnChart } from '../components/Charts.tsx';
+import { DonutChart, GaugeChart } from '../components/Charts.tsx';
+import { drawnAxes, valueScale } from './axes.ts';
+import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx';
 import { LineChart } from './LineChart.tsx';
 import { Coverage } from '../insights/figures.tsx';
 import { isStatusScale, labelOfValue } from '../presentation.ts';
-import { type FieldDescriptor, type VisualGroup, type VisualResult } from './designApi.ts';
+import {
+  type FieldAggregation,
+  type FieldDescriptor,
+  type FieldType,
+  type VisualGroup,
+  type VisualResult,
+} from './designApi.ts';
 import {
   fieldName,
   fieldParts,
   fieldValueText,
   formatFieldValue,
+  isDateType,
   isPercentValue,
   valueTypeOf,
 } from './fields.ts';
@@ -42,6 +51,8 @@ interface Series {
   text: string;
   format: (value: number | null) => string;
   percent: boolean;
+  /** What its figures are, so a value axis writes its ticks as they read where every series reads alike: PERCENT, SAR, DATE, a count... */
+  unit: string;
   /** The figure's exact amount, for a card's tooltip; undefined where the short form is exact. */
   exact: (value: number) => string | undefined;
   drill: (key: string | null) => string | undefined;
@@ -88,6 +99,7 @@ export function VisualBody({
           format: (figure: number | null) =>
             formatFieldValue(value.aggregation, type, figure, t, language),
           percent: isPercentValue(value.aggregation, type),
+          unit: fieldUnit(value.aggregation, type),
           exact: (figure: number) =>
             value.aggregation !== 'COUNT' && type === 'SAR'
               ? sarExactLabel(String(figure), t)
@@ -100,6 +112,7 @@ export function VisualBody({
         text: t(`dashboards.designer.measure.${measure}`),
         format: (figure) => formatValue(measure, figure, t),
         percent: isPercent(measure),
+        unit: isPercent(measure) ? 'PERCENT' : measure,
         exact: (figure) => (measure === 'VALUE_SAR' ? sarExactLabel(String(figure), t) : undefined),
         drill: (key) =>
           filters === undefined ? undefined : drillPath(measure, visual.groupBy, key, filters),
@@ -129,6 +142,24 @@ export function VisualBody({
         ? null
         : t(`dashboards.designer.groupBy.${visual.groupBy}`)
       : fieldName(groupField, language);
+
+  /** The axes of a bar, column or line chart over `values`: a percentage from 0 to 100, a date from its earliest, any other from zero. */
+  const axisProps = (values: number[]): AxisProps => {
+    const axes = drawnAxes(visual);
+    const alike = series.every((one) => one.unit === first.unit);
+    return {
+      axes,
+      scale: valueScale(values, axes.value, {
+        percent: series.every((one) => one.percent),
+        zero: !(alike && first.unit === 'DATE'),
+      }),
+      tick: (value) => (alike ? first.format(value) : formatPoints(value)),
+      categoryTitle: axes.category.title?.[language] ?? null,
+      valueTitle: axes.value.title?.[language] ?? null,
+    };
+  };
+  const figuresOf = (rows: VisualGroup[]) =>
+    rows.flatMap((group) => group.values.filter((value): value is number => value !== null));
 
   switch (visual.visualType) {
     case 'CARD': {
@@ -194,11 +225,16 @@ export function VisualBody({
           : 0;
       return (
         <>
-          <BarChart
+          <AxisBarChart
+            {...axisProps(
+              groups.flatMap((group) =>
+                (group.values[0] ?? null) === null ? [] : [group.values[0] ?? 0],
+              ),
+            )}
             buckets={groups.map((group, index) => ({
               key: group.key ?? 'none',
-              count: Math.max(0, group.values[0] ?? 0),
-              value: first.format(group.values[0] ?? null),
+              value: group.values[0] ?? null,
+              figure: first.format(group.values[0] ?? null),
               text: text(index),
               color: 'var(--chart-single)',
               href: first.drill(group.key),
@@ -314,14 +350,10 @@ export function VisualBody({
         </div>
       );
     }
-    case 'COLUMN': {
-      const percent = series.every((one) => one.percent);
-      const largest = Math.max(
-        1,
-        ...groups.flatMap((group) => group.values.map((value) => value ?? 0)),
-      );
+    case 'COLUMN':
       return (
-        <GroupedColumnChart
+        <AxisColumnChart
+          {...axisProps(figuresOf(groups))}
           groups={groups.map((group, index) => ({
             key: group.key ?? 'none',
             text: text(index),
@@ -335,11 +367,9 @@ export function VisualBody({
             color: SERIES_COLORS[index] ?? 'var(--chart-single)',
           }))}
           missing={t('dashboards.insights.notAvailable')}
-          scale={percent ? 100 : largest}
           format={(value, index) => (series[index] ?? first).format(value)}
         />
       );
-    }
     case 'SECTION':
       // A section is drawn from the dashboard's own sources (SectionBody), never from a visual's figures.
       return <p className="state">{t('dashboards.noData')}</p>;
@@ -352,10 +382,10 @@ export function VisualBody({
             point.group.key !== null,
         )
         .sort((a, b) => a.group.key.localeCompare(b.group.key));
-      const percent = series.every((one) => one.percent);
       return (
         <>
           <LineChart
+            {...axisProps(figuresOf(points.map((point) => point.group)))}
             title={visual.title[language]}
             points={points.map((point) => ({
               key: point.group.key,
@@ -367,11 +397,7 @@ export function VisualBody({
               text: one.text,
               color: SERIES_COLORS[index] ?? 'var(--chart-single)',
             }))}
-            percent={percent}
             format={(value, index) => (series[index] ?? first).format(value)}
-            axis={(value) =>
-              percent || series.length === 1 ? first.format(value) : formatPoints(value)
-            }
           />
           <details className="widget__data">
             <summary>{t('dashboards.trend.showTable')}</summary>
@@ -399,6 +425,17 @@ export function VisualBody({
         />
       );
   }
+}
+
+/** What a field value's figures are: a count, a share in %, a date, or the field's own type. */
+function fieldUnit(aggregation: FieldAggregation, type: FieldType): string {
+  if (aggregation === 'COUNT' || aggregation === 'COUNT_TRUE') {
+    return 'COUNT';
+  }
+  if (aggregation === 'SHARE_TRUE') {
+    return 'PERCENT';
+  }
+  return isDateType(type) ? 'DATE' : type;
 }
 
 /** A visual's figures as a table: a row per group, a column per value; a table visual's body and a line's accessible fallback. */

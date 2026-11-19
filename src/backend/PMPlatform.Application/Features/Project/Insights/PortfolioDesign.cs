@@ -28,16 +28,33 @@ public enum PortfolioDateUnit
     Month = 2,
 }
 
+/// <summary>A chart's category axis (the 19 Nov 2026 axes): shown or hidden, and a title in both languages or none.</summary>
+public sealed record PortfolioAxis(bool Show, BilingualLabel? Title);
+
+/// <summary>
+/// A chart's value axis (the 19 Nov 2026 axes): shown or hidden, a title or none, a start and an end (null = automatic; the start below the end when both
+/// are given) and whether gridlines are drawn.
+/// </summary>
+public sealed record PortfolioValueAxis(bool Show, BilingualLabel? Title, decimal? Min, decimal? Max, bool Gridlines);
+
+/// <summary>How a bar, column or line chart draws its axes (the 19 Nov 2026 axes, dashboard-designer-axes.md); absent means the defaults: both axes shown, no titles, an automatic range and gridlines.</summary>
+public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Value)
+{
+    /// <summary>Both axes shown, no titles, an automatic range and gridlines.</summary>
+    public static PortfolioAxes Default { get; } = new(new PortfolioAxis(Show: true, Title: null), new PortfolioValueAxis(Show: true, Title: null, null, null, Gridlines: true));
+}
+
 /// <summary>
 /// A visual as the designer sends it: a title in both languages, a type, one to three measures, a grouping and a place on the grid; or, as a
 /// <see cref="PortfolioVisualType.Section"/>, one of the dashboard's own sections and no measure. Since 18 Nov 2026 a visual may draw
 /// <paramref name="Values"/> of the data catalogue instead of measures, be grouped by a CODE field (<paramref name="GroupField"/>) and narrowed by
-/// <paramref name="Filters"/>; grouped by a date field, it names the <paramref name="GroupDateUnit"/> (the 18 Nov 2026 more fields).
+/// <paramref name="Filters"/>; grouped by a date field, it names the <paramref name="GroupDateUnit"/> (the 18 Nov 2026 more fields). A bar, column or line
+/// chart may set its <paramref name="Axes"/> (the 19 Nov 2026 axes).
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
-    IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null);
+    IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -61,12 +78,12 @@ public sealed record PortfolioVisualGroup(
 /// A section carries no groups of its own (an empty list): the dashboard draws it from the insights and the dashboard view, each under its own permission.
 /// A visual of field values has a value per entry of <c>Values</c>, in order, and <c>OnPlan</c> null; it echoes its values, grouping field and filters, and
 /// <c>ValueTypes</c> gives each value's field type, so a viewer without <c>DASHBOARD_DESIGN</c> (who cannot read the catalogue) formats it; null for fixed
-/// measures and a section.
+/// measures and a section. A bar, column or line chart echoes its <c>Axes</c> as set (null for the defaults).
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
     short LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
-    PortfolioDateUnit? GroupDateUnit = null);
+    PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -113,6 +130,8 @@ internal sealed partial class PortfolioDesignService(
     private const int MaxHeight = 24;
     private const int MaxFilters = 5;
     private const int MaxFilterValues = 20;
+    private const int MaxAxisTitleLength = 60;
+    private const decimal AxisLimit = 1_000_000_000_000m;
     private const string True = "TRUE";
     private const string False = "FALSE";
     private static readonly DateOnly UnixEpoch = new(1970, 1, 1);
@@ -124,8 +143,8 @@ internal sealed partial class PortfolioDesignService(
     internal static IReadOnlyDictionary<string, PortfolioGroupBy> Dimensions { get; } = Enum.GetValues<PortfolioGroupBy>()
         .Where(g => g != PortfolioGroupBy.None).ToDictionary(g => $"PROJECT.{Code(g)}", StringComparer.Ordinal);
 
-    /// <summary><c>project.portfolio_visual.data_fields</c> as the API writes the same properties: camelCase, enumerations UPPER_SNAKE (R-19).</summary>
-    private static readonly JsonSerializerOptions DataFieldsJson = new(JsonSerializerDefaults.Web)
+    /// <summary><c>project.portfolio_visual.data_fields</c> and <c>axes</c> as the API writes the same properties: camelCase, enumerations UPPER_SNAKE (R-19).</summary>
+    private static readonly JsonSerializerOptions StoredJson = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper, allowIntegerValues: false) },
     };
@@ -201,6 +220,7 @@ internal sealed partial class PortfolioDesignService(
                 LayoutWidth = v.LayoutWidth,
                 LayoutHeight = v.LayoutHeight,
                 DataFields = DataFieldsOf(v),
+                Axes = AxesOf(v),
                 CreatedAt = now,
                 CreatedBy = callerId,
                 UpdatedAt = now,
@@ -262,6 +282,11 @@ internal sealed partial class PortfolioDesignService(
                 return new FieldIssue($"{at}.{issue.Field}", issue.Code);
             }
 
+            if (AxesIssue(v) is { } axesIssue)
+            {
+                return new FieldIssue($"{at}.{axesIssue.Field}", axesIssue.Code);
+            }
+
             if (v.LayoutColumn < 0 || v.LayoutWidth < 1 || v.LayoutColumn + v.LayoutWidth > Columns || v.LayoutRow < 0 || v.LayoutHeight is < 1 or > MaxHeight)
             {
                 return new FieldIssue($"{at}.layout", FieldIssue.OutsideRange);
@@ -293,6 +318,24 @@ internal sealed partial class PortfolioDesignService(
             ? new("section", FieldIssue.NotAllowed)
         : !sections.Add(section) ? new("section", FieldIssue.Duplicate)
         : null;
+
+    /// <summary>
+    /// What is wrong with a visual's axes, or null (the 19 Nov 2026 axes): only a bar, column or line takes them; a title has both languages, each at most 60
+    /// characters once trimmed; a start and an end lie within ±10¹², and the start is below the end when both are given.
+    /// </summary>
+    private static FieldIssue? AxesIssue(PortfolioVisualInput v) =>
+        v.Axes is not { } axes ? null
+        : v.VisualType is not (PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Line) ? new("axes", FieldIssue.NotAllowed)
+        : axes.Category is null ? new("axes.category", FieldIssue.Required)
+        : axes.Value is null ? new FieldIssue("axes.value", FieldIssue.Required)
+        : TitleIssue(axes.Category.Title, "axes.category.title") ?? TitleIssue(axes.Value.Title, "axes.value.title")
+            ?? (axes.Value.Min is { } min && Math.Abs(min) > AxisLimit ? new FieldIssue("axes.value.min", FieldIssue.OutsideRange) : null)
+            ?? (axes.Value.Max is { } max && Math.Abs(max) > AxisLimit ? new FieldIssue("axes.value.max", FieldIssue.OutsideRange) : null)
+            ?? (axes.Value is { Min: { } start, Max: { } end } && start >= end ? new FieldIssue("axes.value.max", FieldIssue.OutsideRange) : null);
+
+    /// <summary>A title is a <see cref="BilingualLabel"/>, so both languages are there and not blank; each fits once trimmed.</summary>
+    private static FieldIssue? TitleIssue(BilingualLabel? title, string field) =>
+        title is not null && (title.Ar.Trim().Length > MaxAxisTitleLength || title.En.Trim().Length > MaxAxisTitleLength) ? new(field, FieldIssue.OutsideRange) : null;
 
     /// <summary>
     /// What is wrong with what a chart, card, line or table draws, or null (its field relative to the visual): the fixed measures or the field values, never both
@@ -545,7 +588,7 @@ internal sealed partial class PortfolioDesignService(
             return new PortfolioVisualResult(
                 v.Title, v.VisualType, v.Measures, v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
                 rows is null ? null : Groups(v, rows, stages, amounts, thresholds, cells, catalogue), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types),
-                v.GroupDateUnit);
+                v.GroupDateUnit, v.Axes);
         })]);
     }
 
@@ -740,17 +783,37 @@ internal sealed partial class PortfolioDesignService(
 
     private static PortfolioVisualInput InputOf(PortfolioVisual v)
     {
-        PortfolioVisualDataFields? data = v.DataFields is { } json ? JsonSerializer.Deserialize<PortfolioVisualDataFields>(json, DataFieldsJson) : null;
+        PortfolioVisualDataFields? data = v.DataFields is { } json ? JsonSerializer.Deserialize<PortfolioVisualDataFields>(json, StoredJson) : null;
         return new(
             new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
-            v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit);
+            v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit,
+            v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null);
     }
 
     /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section).</summary>
     private static string? DataFieldsOf(PortfolioVisualInput v) =>
         v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null
-            ? JsonSerializer.Serialize(new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit), DataFieldsJson)
+            ? JsonSerializer.Serialize(new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit), StoredJson)
             : null;
+
+    /// <summary>
+    /// What <c>axes</c> holds: the axes with their titles trimmed, or null when they are the defaults (a bar, column or line drawn as standard) or the visual
+    /// takes none.
+    /// </summary>
+    internal static string? AxesOf(PortfolioVisualInput v)
+    {
+        if (v.Axes is not { } axes || v.VisualType is not (PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Line))
+        {
+            return null;
+        }
+
+        PortfolioAxes trimmed = new(
+            axes.Category with { Title = Trimmed(axes.Category.Title) },
+            axes.Value with { Title = Trimmed(axes.Value.Title) });
+        return trimmed == PortfolioAxes.Default ? null : JsonSerializer.Serialize(trimmed, StoredJson);
+
+        static BilingualLabel? Trimmed(BilingualLabel? title) => title is null ? null : new BilingualLabel(title.Ar.Trim(), title.En.Trim());
+    }
 
     private static PortfolioVisualInput Section(string ar, string en, PortfolioSection section, short column, short row, short width, short height) =>
         new(new BilingualLabel(ar, en), PortfolioVisualType.Section, [], PortfolioGroupBy.None, column, row, width, height, section);

@@ -789,3 +789,251 @@ describe('more fields: yes/no, dates and figures over time', () => {
     });
   });
 });
+
+describe('the gallery without the sections list (19 Nov 2026)', () => {
+  const sectionTitle = 'Top 10 to follow up';
+  const withSection: DesignView = {
+    isStandard: false,
+    updatedAt: '2026-11-18T09:00:00Z',
+    visuals: [
+      {
+        title: { ar: sectionTitle, en: sectionTitle },
+        visualType: 'SECTION',
+        measures: [],
+        groupBy: 'NONE',
+        section: 'TOP_FOLLOW_UP',
+        layoutColumn: 0,
+        layoutRow: 0,
+        layoutWidth: 12,
+        layoutHeight: 6,
+        groups: [],
+      },
+    ],
+  };
+
+  test('offers the visual types only; a section on the design can still be removed', async () => {
+    designerApi(withSection);
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await screen.findByRole('heading', { level: 1, name: en('dashboards.designer.title') });
+
+    const gallery = screen.getByRole('region', { name: en('dashboards.designer.gallery') });
+    const types = ['CARD', 'BAR', 'COLUMN', 'LINE', 'PIE', 'DONUT', 'TABLE', 'GAUGE'];
+    expect(
+      within(gallery)
+        .getAllByRole('button')
+        .map((button) => plain(button.textContent)),
+    ).toEqual(types.map((type) => en(`dashboards.designer.type.${type}`)));
+    expect(within(gallery).queryByRole('button', { name: new RegExp(sectionTitle) })).toBeNull();
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: (name) =>
+          plain(name) === plain(en('dashboards.designer.editVisual', { title: sectionTitle })),
+      }),
+    );
+    await user.click(
+      within(settings()).getByRole('button', { name: en('dashboards.designer.removeSection') }),
+    );
+    // Gone from the canvas, and the design is changed (a section comes back only with the standard design).
+    await waitFor(() => {
+      expect(screen.queryByRole('region', { name: sectionTitle })).toBeNull();
+    });
+    expect(screen.getByText(en('dashboards.designer.unsaved'))).toBeTruthy();
+  });
+});
+
+describe('chart axes (19 Nov 2026, axes contract)', () => {
+  const X = en('dashboards.designer.axisX');
+  const Y = en('dashboards.designer.axisY');
+  const format = () =>
+    within(settings()).getByRole('region', { name: en('dashboards.designer.format') });
+  /** The Format part's box of an axis, by its X-axis or Y-axis label. */
+  const formatBox = (label: string) => within(format()).getByRole('group', { name: label });
+  /** The Data panel's box of an axis: the first box of that label, before the Format part's. */
+  const dataBox = (label: string) =>
+    present(within(settings()).getAllByRole('group', { name: label })[0]);
+
+  test('a column chart groups on its X-axis and takes its values on the Y-axis; a bar chart the other way round', async () => {
+    designerApi();
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+
+    await addVisual(user, 'COLUMN');
+    expect(
+      within(dataBox(X)).getByRole('combobox', { name: en('dashboards.designer.groupByLabel') }),
+    ).toBeTruthy();
+    expect(within(dataBox(Y)).getByRole('searchbox')).toBeTruthy();
+    expect(formatBox(X)).toBeTruthy();
+
+    await addVisual(user, 'BAR');
+    expect(
+      within(dataBox(Y)).getByRole('combobox', { name: en('dashboards.designer.groupByLabel') }),
+    ).toBeTruthy();
+    expect(within(dataBox(X)).getByRole('searchbox')).toBeTruthy();
+
+    // Any other type keeps its one Data box and has no Format part.
+    await addVisual(user, 'TABLE');
+    expect(within(settings()).queryByRole('group', { name: X })).toBeNull();
+    expect(
+      within(settings()).queryByRole('region', { name: en('dashboards.designer.format') }),
+    ).toBeNull();
+  });
+
+  test('sends null for the default axes, then the titles, range and hidden axis set, in the preview and the save', async () => {
+    const api = designerApi();
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await addVisual(user, 'COLUMN');
+    await previewed(api, { visualType: 'COLUMN', axes: null });
+
+    const value = within(formatBox(Y));
+    await user.type(
+      value.getByRole('textbox', { name: en('dashboards.designer.axisTitleAr') }),
+      'التقدم',
+    );
+    await user.type(
+      value.getByRole('textbox', { name: en('dashboards.designer.axisTitleEn') }),
+      ' Progress ',
+    );
+    await user.type(
+      value.getByRole('spinbutton', { name: en('dashboards.designer.axisStart') }),
+      '0',
+    );
+    await user.type(
+      value.getByRole('spinbutton', { name: en('dashboards.designer.axisEnd') }),
+      '100',
+    );
+    await user.click(
+      within(formatBox(X)).getByRole('checkbox', { name: en('dashboards.designer.showAxis') }),
+    );
+    const axes = {
+      category: { show: false, title: null },
+      value: {
+        show: true,
+        title: { ar: 'التقدم', en: 'Progress' },
+        min: 0,
+        max: 100,
+        gridlines: true,
+      },
+    };
+    await previewed(api, { axes });
+
+    await user.click(screen.getByRole('button', { name: en('dashboards.designer.save') }));
+    await waitFor(() => {
+      expect(api.requestsTo('PUT', /^\/portfolio-insights\/design$/)).toHaveLength(1);
+    });
+    const put = present(api.requestsTo('PUT', /^\/portfolio-insights\/design$/)[0]);
+    expect(visualsSent(put.body).at(-1)?.axes).toEqual(axes);
+  });
+
+  test('a start not below the end is marked on the field and not sent', async () => {
+    const api = designerApi();
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await addVisual(user, 'LINE');
+
+    const value = within(formatBox(Y));
+    await user.click(value.getByRole('checkbox', { name: en('dashboards.designer.gridlines') }));
+    const start = value.getByRole('spinbutton', { name: en('dashboards.designer.axisStart') });
+    await user.type(start, '50');
+    await user.type(
+      value.getByRole('spinbutton', { name: en('dashboards.designer.axisEnd') }),
+      '10',
+    );
+
+    expect(await value.findByText(en('dashboards.designer.axisRangeOrder'))).toBeTruthy();
+    expect(start.getAttribute('aria-invalid')).toBe('true');
+    const valueAxisSent = async (expected: Record<string, unknown>) => {
+      await waitFor(() => {
+        expect(lastPreviewed(api)?.axes?.value).toMatchObject(expected);
+      });
+    };
+    await valueAxisSent({ gridlines: false, min: null, max: null });
+    // Put right, the range is sent.
+    await user.clear(start);
+    await user.type(start, '5');
+    await valueAxisSent({ min: 5, max: 10 });
+    expect(value.queryByText(en('dashboards.designer.axisRangeOrder'))).toBeNull();
+  });
+
+  describe('drawn', () => {
+    const chartTitle = 'Progress by portfolio';
+    const design = (axes: Visual['axes']): DesignView => ({
+      isStandard: false,
+      updatedAt: '2026-11-18T09:00:00Z',
+      visuals: [
+        {
+          title: { ar: chartTitle, en: chartTitle },
+          visualType: 'COLUMN',
+          measures: ['AVERAGE_PLANNED', 'AVERAGE_ACTUAL'],
+          groupBy: 'PORTFOLIO',
+          layoutColumn: 0,
+          layoutRow: 0,
+          layoutWidth: 12,
+          layoutHeight: 5,
+          axes,
+          groups: [
+            {
+              key: 'portfolio-a',
+              label: null,
+              projects: 4,
+              measured: 3,
+              valueEntered: 3,
+              values: [55, 30],
+              onPlan: null,
+            },
+          ],
+        },
+      ],
+    });
+    const chart = async () =>
+      present((await screen.findByText(chartTitle)).closest('section'), 'The chart');
+
+    test('the value axis writes round ticks in the values’ format, and each axis its title', async () => {
+      designerApi(
+        design({
+          category: { show: true, title: { ar: 'كل محفظة', en: 'Each portfolio' } },
+          value: {
+            show: true,
+            title: { ar: 'متوسط', en: 'Average progress' },
+            min: null,
+            max: null,
+            gridlines: true,
+          },
+        }),
+        true,
+        false,
+      );
+      renderApp({ path: DASHBOARD, session: session() });
+      const body = within(await chart());
+      expect(await body.findByText('80%')).toBeTruthy();
+      expect(body.getByText('100%')).toBeTruthy();
+      expect(body.getByText('Each portfolio')).toBeTruthy();
+      expect(body.getByText('Average progress')).toBeTruthy();
+    });
+
+    test('a hidden value axis draws no tick labels and no title; the columns keep their figures', async () => {
+      designerApi(
+        design({
+          category: { show: true, title: null },
+          value: {
+            show: false,
+            title: { ar: 'متوسط', en: 'Average progress' },
+            min: null,
+            max: null,
+            gridlines: true,
+          },
+        }),
+        true,
+        false,
+      );
+      renderApp({ path: DASHBOARD, session: session() });
+      const body = within(await chart());
+      expect(await body.findByText('55%')).toBeTruthy();
+      expect(body.queryByText('80%')).toBeNull();
+      expect(body.queryByText('100%')).toBeNull();
+      expect(body.queryByText('Average progress')).toBeNull();
+    });
+  });
+});

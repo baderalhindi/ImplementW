@@ -25,10 +25,13 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
                 + "AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', "
                 + "'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS']::text[]) OR (cardinality(measures) = 0 AND data_fields IS NOT NULL)))");
             t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
+            // Only a bar, column or line chart has axes to set (19 Nov 2026).
+            t.HasCheckConstraint("ck_portfolio_visual_axes", "axes IS NULL OR visual_type IN ('BAR', 'COLUMN', 'LINE')");
         });
         builder.Property(e => e.TitleAr).HasMaxLength(100);
         builder.Property(e => e.TitleEn).HasMaxLength(100);
         builder.Property(e => e.DataFields).HasColumnType("jsonb");
+        builder.Property(e => e.Axes).HasColumnType("jsonb");
         builder.HasIndex(e => e.SortOrder).IsUnique();
         // A section is placed once.
         builder.HasIndex(e => e.Section).IsUnique().HasFilter("section IS NOT NULL");

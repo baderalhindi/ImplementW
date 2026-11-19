@@ -8237,59 +8237,6 @@ tr[data-flagged='true'] {
   font-size: 0.9375rem;
 }
 
-.designer__sections {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.designer__section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  inline-size: 100%;
-  min-block-size: 2.5rem;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-size: 0.875rem;
-  text-align: start;
-  cursor: pointer;
-}
-
-.designer__section:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
-}
-
-.designer__section:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.designer__section:disabled {
-  cursor: default;
-  color: var(--color-text-muted);
-}
-
-.designer__section-placed {
-  flex: none;
-  font-size: 0.75rem;
-}
-
-.designer__section-add {
-  flex: none;
-  color: var(--color-primary);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
 /*
  * The Data panel (TASK-112): the chosen values over a searchable field list, grouped by source and opened per group, as Power BI's field list
  * reads; each chosen field carries its calculation. Filters reuse the rows. The list scrolls inside the pane, so the size fields stay in reach.
@@ -8627,4 +8574,319 @@ tr[data-flagged='true'] {
 .designer__type:disabled:hover {
   border-color: var(--color-border-subtle);
   background: var(--color-surface);
+}
+
+/*
+ * A designed chart's axes (TASK-112, 19 Nov 2026, docs/architecture/dashboard-designer-axes.md). The Data panel of a bar, column or line chart is
+ * two boxes, as Power BI's wells (the category axis, then the value axis), and a Format part under the filters.
+ */
+.designer-well {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.designer-well > .designer-well__label {
+  float: inline-start;
+  inline-size: 100%;
+  margin-block-end: var(--space-1);
+  padding: 0;
+}
+
+.designer-format {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/*
+ * The column and bar charts with axes: the value axis's ticks at the start (under the bars for a bar chart), gridlines behind the marks and each
+ * shown axis's line along the plot's edge. Ticks keep the width of their longest label (--tick-chars) so the plot never moves under them.
+ */
+.axis-chart {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.axis-chart__frame {
+  display: grid;
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
+  font-size: 0.75rem;
+}
+
+.axis-chart__frame--column {
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-rows: 10rem auto auto;
+  /* Room above the plot for a full column's figure and the top tick. */
+  padding-block-start: 1.25rem;
+}
+
+.axis-chart__title {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.axis-chart__frame--column > .axis-chart__title--value,
+.axis-chart__frame--bar > .axis-chart__title--category {
+  grid-column: 1;
+  align-self: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.axis-chart__frame--column > .axis-chart__title--value {
+  grid-row: 1;
+}
+
+.axis-chart__frame--column > .axis-chart__title--category {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.axis-chart__ticks {
+  position: relative;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.axis-chart__ticks--block {
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: calc(var(--tick-chars) * 1ch + 2px);
+}
+
+.axis-chart__ticks--block > .axis-chart__tick {
+  position: absolute;
+  inset-inline-end: 0;
+  line-height: 1;
+  white-space: nowrap;
+  translate: 0 50%;
+}
+
+.axis-chart__grid {
+  position: relative;
+  pointer-events: none;
+}
+
+.axis-chart__grid--block {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.axis-chart__gridline {
+  position: absolute;
+  border: 0 solid var(--color-border-subtle);
+}
+
+.axis-chart__grid--block > .axis-chart__gridline {
+  inset-inline: 0;
+  border-block-start-width: 1px;
+}
+
+.axis-chart__grid--inline > .axis-chart__gridline {
+  inset-block: 0;
+  border-inline-start-width: 1px;
+}
+
+.axis-chart__gridline.axis-chart__zero {
+  border-color: var(--color-border);
+}
+
+/* Each shown axis's line: the category axis along the groups, the value axis along the ticks. */
+.axis-chart__grid--block.has-category-line,
+.axis-chart__grid--inline.has-value-line {
+  border-block-end: 1px solid var(--color-border);
+}
+
+.axis-chart__grid--block.has-value-line,
+.axis-chart__grid--inline.has-category-line {
+  border-inline-start: 1px solid var(--color-border);
+}
+
+.axis-chart__plot {
+  display: grid;
+  grid-column: 3;
+  grid-row: 1 / 3;
+  grid-template-columns: repeat(var(--groups), minmax(0, 1fr));
+  grid-template-rows: subgrid;
+  column-gap: var(--space-2);
+}
+
+.axis-chart__group,
+.axis-chart__group > .axis-chart__link {
+  display: grid;
+  grid-row: 1 / 3;
+  grid-template-rows: subgrid;
+  min-inline-size: 0;
+}
+
+.axis-chart__link {
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+.axis-chart__link:hover {
+  background: color-mix(in srgb, var(--color-primary-tint) 60%, transparent);
+  color: inherit;
+}
+
+.axis-chart__columns {
+  display: flex;
+  gap: 2px;
+  padding-inline: 2px;
+}
+
+.axis-chart__track {
+  position: relative;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.axis-chart__column {
+  position: absolute;
+  inset-inline: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--chart-color, var(--chart-single));
+  transform-origin: bottom;
+  animation: chart-grow-block 0.6s ease-out both;
+}
+
+.axis-chart__column.is-below {
+  border-radius: 0 0 4px 4px;
+  transform-origin: top;
+}
+
+/* A figure just above its column (or on the base when it has none), centred over it; a narrow column's figure may run over its neighbours'. */
+.axis-chart__value {
+  position: absolute;
+  inset-inline: -1rem;
+  margin-block-end: 2px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.axis-chart__category {
+  justify-self: center;
+  padding-block-start: var(--space-1);
+}
+
+/* The bar chart: [category title] [group words] [plot] [figure] per row, then the ticks and the value axis's title under the plot. */
+.axis-chart__frame--bar {
+  grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr) auto;
+  row-gap: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.axis-chart__frame--bar > .axis-chart__grid--inline {
+  grid-column: 3;
+}
+
+.axis-chart__row,
+.axis-chart__row > .axis-chart__link {
+  display: grid;
+  grid-column: 2 / 5;
+  grid-template-columns: subgrid;
+}
+
+.axis-chart__row > .axis-chart__link {
+  grid-column: 1 / -1;
+}
+
+.axis-chart__row,
+.axis-chart__row > .axis-chart__link {
+  align-items: center;
+  transition: opacity 0.15s ease;
+}
+
+.axis-chart__row.is-dimmed {
+  opacity: 0.4;
+}
+
+.axis-chart__row .bars__label {
+  grid-column: 1;
+  max-inline-size: 12rem;
+}
+
+.axis-chart__row .bars__value {
+  grid-column: 3;
+}
+
+.axis-chart__bar-track {
+  position: relative;
+  grid-column: 2;
+  block-size: 0.75rem;
+}
+
+.axis-chart__bar.widget__bar {
+  position: absolute;
+  inset-block: 0;
+  block-size: auto;
+  min-inline-size: 0;
+}
+
+[dir='rtl'] .axis-chart__bar.widget__bar {
+  transform-origin: right center;
+}
+
+.axis-chart__ticks--inline {
+  grid-column: 3;
+  block-size: 1rem;
+  font-size: 0.75rem;
+}
+
+.axis-chart__ticks--inline > .axis-chart__tick {
+  position: absolute;
+  inset-block-start: 0;
+  white-space: nowrap;
+  translate: -50% 0;
+}
+
+[dir='rtl'] .axis-chart__ticks--inline > .axis-chart__tick {
+  translate: 50% 0;
+}
+
+.axis-chart__frame--bar > .axis-chart__title--value {
+  grid-column: 3;
+}
+
+/* The line chart's axes: lines and gridlines as the column chart's, the titles in the muted text. */
+.line-chart__gridline {
+  stroke: var(--color-border-subtle);
+}
+
+.line-chart__axis line {
+  stroke: var(--color-border);
+}
+
+.line-chart__axis text {
+  fill: var(--color-text-muted);
+}
+
+.line-chart__axis .line-chart__title {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .axis-chart__column {
+    animation: none;
+  }
+}
+
+.axis-chart__missing {
+  align-self: flex-end;
+  padding-block-end: var(--space-1);
+  inline-size: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: center;
 }

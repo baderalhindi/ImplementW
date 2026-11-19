@@ -9,7 +9,7 @@ import { anyLinked, type ChartBucket } from '../charts.ts';
 // Tab and opened by Enter; a donut's segments open on click, and its legend or table carries the same links.
 
 /** A value's marks, as a link to its records when it has one. */
-function Marks({
+export function Marks({
   href,
   hint,
   className,

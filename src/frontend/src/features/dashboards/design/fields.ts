@@ -6,6 +6,7 @@ import { DATE_LOCALES, type Language, translate, type TranslationKey } from '@/s
 import { type SelectOption } from '@/shared/ui/FormFields.tsx';
 
 import { labelOfValue } from '../presentation.ts';
+import { sentAxes } from './axes.ts';
 import {
   type DateUnit,
   type FieldAggregation,
@@ -329,11 +330,15 @@ export const NO_FIELD_DATA = {
   filters: null,
 } as const;
 
-/** A visual as it is compared and sent: its field data only where it has some, so a design read back equals the one sent. */
+/**
+ * A visual as it is compared and sent: its field data only where it has some, so a design read back equals the one sent; its axes as the API
+ * takes them, null for the defaults (axes.ts).
+ */
 export function normalized<T extends Visual>(visual: T): T {
-  const { values, groupField, groupDateUnit, filters, ...rest } = visual;
+  const { values, groupField, groupDateUnit, filters, axes: _axes, ...rest } = visual;
   return {
     ...rest,
+    axes: sentAxes(visual),
     ...(values === undefined || values === null || values.length === 0 ? {} : { values }),
     ...(groupField === undefined || groupField === null ? {} : { groupField }),
     ...(groupDateUnit === undefined || groupDateUnit === null ? {} : { groupDateUnit }),

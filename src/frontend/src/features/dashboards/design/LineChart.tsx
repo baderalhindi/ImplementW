@@ -1,21 +1,23 @@
-import { type CSSProperties, type ReactElement } from 'react';
+import { type CSSProperties, type ReactElement, useId } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
+import { type AxisProps } from './AxisCharts.tsx';
+
 // A designed line chart (TASK-112, more fields): one line per field value over the visual's groups, which run left to right in both languages
 // (a period's order is the clock's, not the reading direction). Series are told apart by line style as well as colour (solid, dashed, dotted)
-// and named in the legend; each point carries its value on hover; a group without a value breaks its line instead of dropping to 0. The chart
+// and named in the legend; each point carries its value on hover; a group without a value breaks its line instead of dropping to 0. Its axes
+// (axes.ts) are drawn as the bar and column charts' are; a value past a given start or end is clipped at the plot's edge. The chart
 // is a picture with a name: the table under it (VisualBody) carries the same figures for a screen reader.
 
 const WIDTH = 640;
-const HEIGHT = 220;
 const TOP = 12;
-const BOTTOM = 184;
-const LEFT = 64;
+/** The plot's height; the room under it holds the groups' words and the category axis's title. */
+const PLOT = 172;
+const BOTTOM = TOP + PLOT;
 const RIGHT = 16;
 /** Above this many groups only every n-th is labelled, so the labels do not overlap. */
 const MAX_LABELS = 8;
-const TICKS = 4;
 const DASHES = [undefined, '7 4', '2 4'];
 
 export interface LinePoint {
@@ -24,20 +26,16 @@ export interface LinePoint {
   values: (number | null)[];
 }
 
-/** The smallest round step (1, 2, 2.5 or 5 times a power of ten) at least `raw`. */
-function roundStep(raw: number): number {
-  const power = 10 ** Math.floor(Math.log10(raw));
-  return (
-    [1, 2, 2.5, 5, 10].map((factor) => factor * power).find((candidate) => candidate >= raw) ??
-    10 * power
-  );
-}
-
-const x = (index: number, count: number) =>
-  count === 1 ? (LEFT + WIDTH - RIGHT) / 2 : LEFT + ((WIDTH - LEFT - RIGHT) * index) / (count - 1);
+/** A group's place along the plot, from `left` to the right edge. */
+const xAt = (left: number, index: number, count: number) =>
+  count === 1 ? (left + WIDTH - RIGHT) / 2 : left + ((WIDTH - left - RIGHT) * index) / (count - 1);
 
 /** Consecutive points with a value form a run; a point without one breaks the line. */
-function runs(values: (number | null)[], y: (value: number) => number): string[] {
+function runs(
+  values: (number | null)[],
+  x: (index: number) => number,
+  y: (value: number) => number,
+): string[] {
   const result: string[] = [];
   let current: string[] = [];
   const close = () => {
@@ -51,7 +49,7 @@ function runs(values: (number | null)[], y: (value: number) => number): string[]
       close();
       return;
     }
-    current.push(`${String(x(index, values.length))} ${String(y(value))}`);
+    current.push(`${String(x(index))} ${String(y(value))}`);
   });
   close();
   return result;
@@ -61,36 +59,31 @@ export function LineChart({
   title,
   points,
   series,
-  percent,
   format,
-  axis,
-}: {
+  scale,
+  tick,
+  axes,
+  categoryTitle,
+  valueTitle,
+}: AxisProps & {
   title: string;
   points: LinePoint[];
   series: { key: string; text: string; color: string }[];
-  /** Every series is a percentage: the scale runs from 0 to 100. */
-  percent: boolean;
   /** Writes a value of the series at `index`. */
   format: (value: number, index: number) => string;
-  /** Writes a value on the scale: as the series write theirs where they all read alike, else as a plain number. */
-  axis: (value: number) => string;
 }): ReactElement {
   const { t } = useI18n();
-  const all = points.flatMap((point) =>
-    point.values.filter((value): value is number => value !== null),
-  );
-  // The scale: 0 to 100 for percentages, else from 0 (or the lowest value below it) to the highest, in round steps.
-  const step = percent
-    ? 100 / TICKS
-    : roundStep((Math.max(1, ...all) - Math.min(0, ...all)) / TICKS);
-  const low = percent ? 0 : Math.floor(Math.min(0, ...all) / step) * step;
-  const high = percent ? 100 : Math.max(low + step, Math.ceil(Math.max(...all, 0) / step) * step);
-  const y = (value: number) =>
-    BOTTOM - ((Math.min(high, Math.max(low, value)) - low) / (high - low)) * (BOTTOM - TOP);
-  const ticks = Array.from(
-    { length: Math.round((high - low) / step) + 1 },
-    (_, index) => low + step * index,
-  );
+  const clip = `line-plot-${useId().replace(/[^a-zA-Z0-9-]/g, '')}`;
+  const valueShown = axes.value.show;
+  const categoryShown = axes.category.show;
+  const valueTitleShown = valueShown && valueTitle !== null;
+  const categoryTitleShown = categoryShown && categoryTitle !== null;
+  // Room at the start for the ticks and the value axis's title, and under the plot for the groups' words and the category axis's title.
+  const left = valueShown ? 64 + (valueTitleShown ? 20 : 0) : RIGHT;
+  const height = BOTTOM + (categoryShown ? 36 + (categoryTitleShown ? 20 : 0) : 12);
+  const x = (index: number) => xAt(left, index, points.length);
+  // A value past a given start or end is drawn outside the plot, which clips it.
+  const y = (value: number) => BOTTOM - ((value - scale.low) / (scale.high - scale.low)) * PLOT;
   const every = Math.ceil(points.length / MAX_LABELS);
 
   return (
@@ -115,70 +108,116 @@ export function LineChart({
       </ul>
       <svg
         className="trend__chart line-chart__chart"
-        viewBox={`0 0 ${String(WIDTH)} ${String(HEIGHT)}`}
+        viewBox={`0 0 ${String(WIDTH)} ${String(height)}`}
         role="img"
         aria-label={t('dashboards.designer.lineLabel', { title, count: points.length })}
       >
-        {ticks.map((tick) => (
-          <g key={tick} className="trend__tick">
-            <line x1={LEFT} x2={WIDTH - RIGHT} y1={y(tick)} y2={y(tick)} />
-            <text x={LEFT - 8} y={y(tick) + 4} textAnchor="end">
-              {axis(Math.round(tick * 100) / 100)}
-            </text>
+        <defs>
+          <clipPath id={clip}>
+            <rect x={left} y={TOP - 6} width={WIDTH - RIGHT - left} height={PLOT + 12} />
+          </clipPath>
+        </defs>
+        {axes.value.gridlines &&
+          scale.ticks.map((value) => (
+            <line
+              key={value}
+              className="line-chart__gridline"
+              x1={left}
+              x2={WIDTH - RIGHT}
+              y1={y(value)}
+              y2={y(value)}
+            />
+          ))}
+        {valueShown && (
+          <g className="line-chart__axis">
+            <line x1={left} x2={left} y1={TOP} y2={BOTTOM} />
+            {scale.ticks.map((value) => (
+              <text key={value} x={left - 8} y={y(value) + 4} textAnchor="end">
+                {tick(value)}
+              </text>
+            ))}
+            {valueTitleShown && (
+              <text
+                className="line-chart__title"
+                transform="rotate(-90)"
+                x={-(TOP + BOTTOM) / 2}
+                y={14}
+                textAnchor="middle"
+              >
+                {valueTitle}
+              </text>
+            )}
           </g>
-        ))}
-        {points.map((point, index) =>
-          index % every === 0 || index === points.length - 1 ? (
-            <text
-              key={point.key}
-              className="trend__label"
-              x={x(index, points.length)}
-              y={HEIGHT - 12}
-              textAnchor={
-                points.length === 1
-                  ? 'middle'
-                  : index === 0
-                    ? 'start'
-                    : index === points.length - 1
-                      ? 'end'
-                      : 'middle'
-              }
-            >
-              {point.text}
-            </text>
-          ) : null,
         )}
-        {series.map((entry, column) => {
-          const values = points.map((point) => point.values[column] ?? null);
-          const style = { '--chart-color': entry.color } as CSSProperties;
-          return (
-            <g key={entry.key}>
-              {runs(values, y).map((path) => (
-                <path
-                  key={path}
-                  d={path}
-                  className="line-chart__line"
-                  style={style}
-                  strokeDasharray={DASHES[column]}
-                />
-              ))}
-              {values.map((value, index) =>
-                value === null ? null : (
-                  <circle
-                    key={points[index]?.key ?? index}
-                    className="line-chart__point"
+        {categoryShown && (
+          <g className="line-chart__axis">
+            <line x1={left} x2={WIDTH - RIGHT} y1={BOTTOM} y2={BOTTOM} />
+            {points.map((point, index) =>
+              index % every === 0 || index === points.length - 1 ? (
+                <text
+                  key={point.key}
+                  className="trend__label"
+                  x={x(index)}
+                  y={BOTTOM + 24}
+                  textAnchor={
+                    points.length === 1
+                      ? 'middle'
+                      : index === 0
+                        ? 'start'
+                        : index === points.length - 1
+                          ? 'end'
+                          : 'middle'
+                  }
+                >
+                  {point.text}
+                </text>
+              ) : null,
+            )}
+            {categoryTitleShown && (
+              <text
+                className="line-chart__title"
+                x={(left + WIDTH - RIGHT) / 2}
+                y={BOTTOM + 48}
+                textAnchor="middle"
+              >
+                {categoryTitle}
+              </text>
+            )}
+          </g>
+        )}
+        <g clipPath={`url(#${clip})`}>
+          {series.map((entry, column) => {
+            const values = points.map((point) => point.values[column] ?? null);
+            const style = { '--chart-color': entry.color } as CSSProperties;
+            return (
+              <g key={entry.key}>
+                {runs(values, x, y).map((path) => (
+                  <path
+                    key={path}
+                    d={path}
+                    className="line-chart__line"
                     style={style}
-                    cx={x(index, values.length)}
-                    cy={y(value)}
-                    r={4}
-                  >
-                    <title>{`${points[index]?.text ?? ''} · ${entry.text}: ${format(value, column)}`}</title>
-                  </circle>
-                ),
-              )}
-            </g>
-          );
-        })}
+                    strokeDasharray={DASHES[column]}
+                  />
+                ))}
+                {values.map((value, index) =>
+                  value === null ? null : (
+                    <circle
+                      key={points[index]?.key ?? index}
+                      className="line-chart__point"
+                      style={style}
+                      cx={x(index)}
+                      cy={y(value)}
+                      r={4}
+                    >
+                      <title>{`${points[index]?.text ?? ''} · ${entry.text}: ${format(value, column)}`}</title>
+                    </circle>
+                  ),
+                )}
+              </g>
+            );
+          })}
+        </g>
       </svg>
     </div>
   );

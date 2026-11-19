@@ -149,4 +149,10 @@ public sealed class PortfolioVisual : AuditedEntity
     /// (BR-DSH-030); the design service checks the content, and this column holds only what it wrote.
     /// </summary>
     public string? DataFields { get; set; }
+
+    /// <summary>
+    /// How a bar, column or line chart draws its axes (the 19 Nov 2026 axes), as JSON in the API's shape: <c>{"category":{"show","title"},"value":{"show","title",
+    /// "min","max","gridlines"}}</c>. Null for the defaults (both shown, no titles, an automatic range, gridlines) and for any other type.
+    /// </summary>
+    public string? Axes { get; set; }
 }

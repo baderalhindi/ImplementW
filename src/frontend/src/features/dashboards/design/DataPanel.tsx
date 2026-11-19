@@ -34,6 +34,7 @@ import {
   sourceName,
   withFilter,
 } from './fields.ts';
+import { axisLabels, takesAxes } from './axes.ts';
 import {
   firstGrouping,
   GROUP_BYS,
@@ -171,11 +172,28 @@ export function DataPanel({
   };
 
   const sourceOpen = (group: string) => query !== '' || !closed.has(group);
+  // A bar, column or line chart's data is two boxes, as Power BI's wells: the category axis (the grouping), then the value axis (the values).
+  const wells = takesAxes(type) ? axisLabels(type) : null;
+  const groupBy = <GroupBySelect visual={visual} catalogue={catalogue} onChange={onChange} />;
 
   return (
     <>
-      <fieldset className="field field--group designer-data" aria-describedby={`${id}-limit`}>
-        <legend className="field__label">{t('dashboards.designer.dataLabel')}</legend>
+      {wells !== null && (
+        <fieldset className="field field--group designer-well" aria-describedby={`${id}-category`}>
+          <legend className="field__label designer-well__label">{t(wells.category)}</legend>
+          <p id={`${id}-category`} className="field__hint">
+            {t('dashboards.designer.categoryAxisHint')}
+          </p>
+          {groupBy}
+        </fieldset>
+      )}
+      <fieldset
+        className={`field field--group designer-data${wells === null ? '' : ' designer-well'}`}
+        aria-describedby={`${id}-limit`}
+      >
+        <legend className={`field__label${wells === null ? '' : ' designer-well__label'}`}>
+          {t(wells === null ? 'dashboards.designer.dataLabel' : wells.value)}
+        </legend>
         <p id={`${id}-limit`} className="field__hint">
           {t(max === 1 ? 'dashboards.designer.measuresOne' : 'dashboards.designer.measuresHint', {
             count: max,
@@ -320,7 +338,7 @@ export function DataPanel({
           <p className="designer__hint">{t('dashboards.designer.fieldsUnavailable')}</p>
         )}
       </fieldset>
-      <GroupBySelect visual={visual} catalogue={catalogue} onChange={onChange} />
+      {wells === null && groupBy}
       {onFields ? (
         <FiltersEditor visual={visual} catalogue={catalogue} onChange={onChange} />
       ) : (

@@ -13,7 +13,6 @@ import {
   type FieldValue,
   type GroupBy,
   type Measure,
-  type Section,
   type Visual,
   type VisualGroup,
   type VisualType,
@@ -540,44 +539,6 @@ export function drillPath(
     case 'PROJECTS':
       return registerPath(filters, group);
   }
-}
-
-/** The dashboard's own sections, in the order the gallery offers them (18 Nov 2026). */
-export const SECTIONS: readonly Section[] = [
-  'PORTFOLIO_TABLE',
-  'INITIATIVE_TABLE',
-  'SECTOR_TABLE',
-  'STATUS_TABLE',
-  'CURRENT_STAGE_TABLE',
-  'ON_PLAN_COUNTS',
-  'FOLLOW_UP_REASONS',
-  'TOP_FOLLOW_UP',
-  'ENTITY_COMPLETION',
-  'PROJECT_LOCATIONS',
-  'DASHBOARD_WIDGETS',
-  'ENTITY_COMPLETION_TABLE',
-];
-
-/** A section at the first free place, titled as the dashboard names it; null when the grid has no room. */
-export function newSection(section: Section, visuals: Visual[]): Visual | null {
-  const { width, height } = DEFAULT_SIZE.SECTION;
-  const place = freePlace(visuals, width, height);
-  if (place === null) {
-    return null;
-  }
-  const title = (language: Language) =>
-    translate(language, `dashboards.designer.section.${section}`).replace(/[\u2068\u2069]/g, '');
-  return {
-    title: { ar: title('ar'), en: title('en') },
-    visualType: 'SECTION',
-    measures: [],
-    groupBy: 'NONE',
-    section,
-    layoutColumn: place.column,
-    layoutRow: place.row,
-    layoutWidth: width,
-    layoutHeight: height,
-  };
 }
 
 /** A box kept inside the grid: one to twelve columns starting within it, one to twelve rows from the top. */

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { designFieldsFixture, FIELD } from '@/test/portfolioInsightFixtures.ts';
 
+import { DEFAULT_AXES, sentAxes, valueScale } from './axes.ts';
 import { type Visual } from './designApi.ts';
 import { dateKeyText, formatDayNumber } from './fields.ts';
 import {
@@ -167,5 +168,62 @@ describe('lines and figures over time (more fields contract)', () => {
     expect(formatDayNumber(20515, 'ar')).toMatch(/2026/);
     expect(dateKeyText('2026-03', 'MONTH', 'en')).toBe('Mar 2026');
     expect(dateKeyText('2026', 'YEAR', 'en')).toBe('2026');
+  });
+});
+
+describe('axes (19 Nov 2026, axes contract)', () => {
+  const column: Visual = { ...card, visualType: 'COLUMN', groupBy: 'PORTFOLIO' };
+
+  test('the value axis runs in round steps: from zero, 0 to 100 for percentages, from the earliest for dates', () => {
+    expect(
+      valueScale([3, 7], { min: null, max: null }, { percent: false, zero: true }).ticks,
+    ).toEqual([0, 2, 4, 6, 8]);
+    expect(
+      valueScale([55, 30], { min: null, max: null }, { percent: true, zero: true }).ticks,
+    ).toEqual([0, 20, 40, 60, 80, 100]);
+    const dates = valueScale(
+      [20515, 20600],
+      { min: null, max: null },
+      { percent: false, zero: false },
+    );
+    expect(dates.low).toBeGreaterThan(20000);
+    expect(dates.base).toBe(dates.low);
+    // Below zero, the scale reaches the lowest value and a bar starts from zero.
+    const signed = valueScale([-3, 9], { min: null, max: null }, { percent: false, zero: true });
+    expect(signed.low).toBeLessThan(0);
+    expect(signed.base).toBe(0);
+  });
+
+  test('a given start and end are kept, and a figure past them sits on the edge', () => {
+    const scale = valueScale([150, 20], { min: 10, max: 100 }, { percent: false, zero: true });
+    expect([scale.low, scale.high]).toEqual([10, 100]);
+    expect(scale.at(150)).toBe(1);
+    expect(scale.at(0)).toBe(0);
+    expect(scale.base).toBe(10);
+  });
+
+  test('null is sent for the defaults and for a type without axes; a half title or a reversed range is not sent', () => {
+    expect(sentAxes({ ...column, axes: DEFAULT_AXES })).toBeNull();
+    const titled = {
+      ...DEFAULT_AXES,
+      category: { show: true, title: { ar: ' المحفظة ', en: 'Portfolio ' } },
+    };
+    expect(sentAxes({ ...column, axes: titled })?.category.title).toEqual({
+      ar: 'المحفظة',
+      en: 'Portfolio',
+    });
+    expect(sentAxes({ ...column, visualType: 'PIE', axes: titled })).toBeNull();
+    expect(
+      sentAxes({
+        ...column,
+        axes: { ...DEFAULT_AXES, category: { show: true, title: { ar: '', en: 'x' } } },
+      }),
+    ).toBeNull();
+    expect(
+      sentAxes({
+        ...column,
+        axes: { ...DEFAULT_AXES, value: { ...DEFAULT_AXES.value, min: 5, max: 5 } },
+      }),
+    ).toBeNull();
   });
 });
