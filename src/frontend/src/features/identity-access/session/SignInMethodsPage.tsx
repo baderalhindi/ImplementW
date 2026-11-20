@@ -76,11 +76,13 @@ function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
       }
       return signInMethodsApi.addPasskey(transaction, credentialJson(credential), name.trim());
     });
+    // The sign-in page offers Face ID / Touch ID in one press on a device that has it saved. "Already on this device" proves it is
+    // saved too: the device refused only because it holds one of this account's passkeys (one saved before the page kept notes).
+    const savedHere = result.ok || isPasskeyAlreadyOnDevice(result.error);
+    if (savedHere && session !== null) {
+      await rememberAccountDeviceUnlock(session.user.id);
+    }
     if (result.ok) {
-      // The sign-in page offers Face ID / Touch ID in one press on a device that has it saved.
-      if (session !== null) {
-        await rememberAccountDeviceUnlock(session.user.id);
-      }
       onAdded();
     }
   };

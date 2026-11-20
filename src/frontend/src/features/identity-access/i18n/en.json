@@ -618,7 +618,7 @@
     "sendVerificationCode": "Send verification code",
     "verify": "Verify",
     "smsUnavailable": "SMS is not available in this environment yet.",
-    "passkeyAlreadyOnDevice": "This device already has a passkey for your account (it is in the list above), so it cannot add another. To set it up again, remove it from the list first.",
+    "passkeyAlreadyOnDevice": "This device already has a passkey for your account (it is in the list above), so it cannot add another. You can already use it: on the sign-in page, press Sign in with Face ID / Touch ID under the Microsoft sign-in. To set it up again, remove it from the list first.",
     "passkeyRefusedForSite": "Your browser does not allow a passkey from this address. Open the platform at its usual address and try again."
   },
   "stepUp": {

@@ -531,6 +531,10 @@ describe('the sign-in methods page', () => {
       await screen.findByText(en('identityAccess.signInMethods.passkeyAlreadyOnDevice')),
     ).toBeTruthy();
     expect(api.requestsTo('POST', /^\/users\/current\/passkeys$/)).toHaveLength(0);
+    // The device holds this account's passkey: the sign-in page now offers it in one press.
+    await waitFor(() => {
+      expect(hasAnyDeviceUnlock()).toBe(true);
+    });
   });
 
   test('verifies the mobile number with the code sent to it', async () => {
