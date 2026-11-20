@@ -7221,6 +7221,13 @@ tr[data-flagged='true'] {
   min-block-size: 18.5rem;
   padding-block: var(--space-8, 3rem);
   background: var(--color-rail);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The pills sit at the banner's foot, under the picture's open space (20 Nov 2026, the user: "make the buttons down"). */
+.home__hero--image > .home__actions-bar {
+  margin-block-start: auto;
 }
 
 /* The greeting and the pills above the picture; the caption, the dots and the pin are placed on it. */
