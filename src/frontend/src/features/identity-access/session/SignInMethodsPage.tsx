@@ -20,7 +20,9 @@ import {
   credentialJson,
   deviceName,
   deviceUnlock,
+  isPasskeyAlreadyOnDevice,
   isPasskeyCancelled,
+  isPasskeyRefusedForSite,
   platformPasskeysAvailable,
 } from './webAuthn.ts';
 
@@ -34,7 +36,11 @@ function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
   const save = useSaveAction((error, translate) =>
     isPasskeyCancelled(error)
       ? translate('identityAccess.signInMethods.passkeyCancelled')
-      : problemMessage(error, translate),
+      : isPasskeyAlreadyOnDevice(error)
+        ? translate('identityAccess.signInMethods.passkeyAlreadyOnDevice')
+        : isPasskeyRefusedForSite(error)
+          ? translate('identityAccess.signInMethods.passkeyRefusedForSite')
+          : problemMessage(error, translate),
   );
   useFocusFirstError(formRef, save.fieldErrors);
   const [name, setName] = useState(deviceName(unlock));

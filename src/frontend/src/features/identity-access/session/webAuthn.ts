@@ -130,6 +130,19 @@ export function deviceName(unlock: DeviceUnlock = deviceUnlock()): string {
   return DEVICE_NAMES[unlock];
 }
 
+/**
+ * The device already holds a passkey for this account (the browser refuses a second one there: InvalidStateError, 20 Nov 2026 — it showed as
+ * "Something went wrong").
+ */
+export function isPasskeyAlreadyOnDevice(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'InvalidStateError';
+}
+
+/** The browser refused the request for this site's address (SecurityError): a passkey cannot be made from this address. */
+export function isPasskeyRefusedForSite(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'SecurityError';
+}
+
 /** The person closed the device's prompt, or the device had no passkey for this site. */
 export function isPasskeyCancelled(error: unknown): boolean {
   return (

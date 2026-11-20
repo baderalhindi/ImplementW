@@ -491,6 +491,46 @@ describe('the sign-in methods page', () => {
     });
   });
 
+  test('a device that already has a passkey for the account says so, not that something went wrong', async () => {
+    // The browser refuses a second passkey on a device already holding one for this account (20 Nov 2026).
+    credentials.create.mockRejectedValue(
+      new DOMException('already registered', 'InvalidStateError'),
+    );
+    const api = mockApi()
+      .on('GET', /^\/users\/current\/passkeys$/, {
+        body: {
+          items: [{ id: 'p1', name: 'Mac', createdAt: '2026-11-16T00:52:00Z', lastUsedAt: null }],
+        },
+      })
+      .on('GET', /^\/users\/current\/passkeys\/registration-options$/, {
+        body: {
+          options: {
+            challenge: 'AQ',
+            user: { id: 'Ag', name: 'local.r03', displayName: 'Local R03' },
+            excludeCredentials: [{ id: 'Aw', type: 'public-key' }],
+          },
+          transaction: 'sealed',
+        },
+      })
+      .on('GET', /^\/users\/current\/mobile-number$/, {
+        body: { mobileNumber: null, verifiedAt: null, verificationAvailable: true },
+      });
+    const user = userEvent.setup();
+    renderApp({ path: '/account/sign-in-methods', session: sessionFor(['R03']) });
+    const add = await screen.findByRole('button', {
+      name: /^Add (Face ID|Touch ID|Windows Hello|fingerprint|a passkey) for this device$/,
+    });
+    await waitFor(() => {
+      expect((add as HTMLButtonElement).disabled).toBe(false);
+    });
+    await user.click(add);
+
+    expect(
+      await screen.findByText(en('identityAccess.signInMethods.passkeyAlreadyOnDevice')),
+    ).toBeTruthy();
+    expect(api.requestsTo('POST', /^\/users\/current\/passkeys$/)).toHaveLength(0);
+  });
+
   test('verifies the mobile number with the code sent to it', async () => {
     let verified = false;
     const api = mockApi()
