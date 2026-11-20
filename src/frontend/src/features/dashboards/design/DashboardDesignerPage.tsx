@@ -60,6 +60,7 @@ import {
 import { TextBoxBody } from './TextBoxBody.tsx';
 import { VisualBody } from './VisualBody.tsx';
 import { edgeScroller } from './edgeScroll.ts';
+import { type Guide, guidesFor, snappedPlace, snappedSize } from './guides.ts';
 import { VisualBodyBox } from './FitToBox.tsx';
 import { VisualIcon } from './VisualIcon.tsx';
 import { type SizeBounds, VisualSettings } from './VisualSettings.tsx';
@@ -234,6 +235,8 @@ export function DashboardDesignerPage(): ReactElement {
   const [refusal, setRefusal] = useState<{ sent: Draft[]; issues: FieldIssue[] } | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  // The alignment guides of the visual being moved or sized (20 Nov 2026, Power BI's red lines).
+  const [guides, setGuides] = useState<Guide[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -534,6 +537,7 @@ export function DashboardDesignerPage(): ReactElement {
       window.removeEventListener('pointercancel', onEnd);
       drag.current = null;
       setDraggingKey(null);
+      setGuides([]);
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onEnd);
@@ -634,6 +638,7 @@ export function DashboardDesignerPage(): ReactElement {
       window.removeEventListener('pointercancel', onEnd);
       drag.current = null;
       setDraggingKey(null);
+      setGuides([]);
       setGhost(null);
     }
     window.addEventListener('pointermove', onMove);
@@ -662,26 +667,52 @@ export function DashboardDesignerPage(): ReactElement {
       const rows = tenth((clientY - active.startY) / size.row);
       // Sizing stops at the grid's (or the container's) end edge, never at what the visual holds (a container's visuals scale with it); it
       // never moves the visual.
-      const across = containerOf(active.before, active.from)?.layoutWidth ?? COLUMNS;
-      relayout(() =>
-        changedAt(active.before, active.from, {
-          ...active.start,
-          layoutWidth: Math.min(
-            tenth(across - active.start.layoutColumn),
-            Math.max(1, tenth(active.start.layoutWidth + columns)),
-          ),
-          layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, tenth(active.start.layoutHeight + rows))),
-        }),
-      );
+      const container = containerOf(active.before, active.from);
+      const across = container?.layoutWidth ?? COLUMNS;
+      const sized = {
+        ...active.start,
+        layoutWidth: Math.min(
+          tenth(across - active.start.layoutColumn),
+          Math.max(1, tenth(active.start.layoutWidth + columns)),
+        ),
+        layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, tenth(active.start.layoutHeight + rows))),
+      };
+      // On the dashboard (not inside a container) its end edges are pulled onto the other visuals' lines, which then show.
+      const others =
+        container === undefined ? active.before.filter((visual) => visual.key !== active.key) : [];
+      const pulled = others.length === 0 ? null : snappedSize(sized, others);
+      const fitted =
+        pulled === null
+          ? sized
+          : {
+              ...sized,
+              layoutWidth: Math.min(tenth(across - sized.layoutColumn), Math.max(1, pulled.width)),
+              layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, pulled.height)),
+            };
+      setGuides(others.length === 0 ? [] : guidesFor(fitted, others));
+      relayout(() => changedAt(active.before, active.from, fitted));
       return;
     }
     // Moving is free: the point it was grabbed by stays under the pointer, snapped to a tenth of a column and of a row, and where the pointer
     // is decides where it goes: into the container whose inner grid it is on, or onto the dashboard (`moved`).
     const pointer = cellAt(clientX, clientY, size);
-    const result = moved(active.before, active.from, pointer, {
+    const place = {
       column: tenth(pointer.column - active.grabColumn),
       row: tenth(pointer.row - active.grabRow),
-    });
+    };
+    // On the dashboard its edges and centre near another visual's are pulled onto them, and the lines that then align show.
+    const others = active.before.filter((visual) => visual.key !== active.key);
+    const pulled = snappedPlace(
+      { ...active.start, layoutColumn: place.column, layoutRow: place.row },
+      others,
+    );
+    let result = moved(active.before, active.from, pointer, pulled);
+    const placed = result.visuals.find((visual) => visual.key === active.key);
+    if (placed === undefined) {
+      // Dropped into a container: its own place, not pulled to the dashboard's lines.
+      result = moved(active.before, active.from, pointer, place);
+    }
+    setGuides(placed === undefined ? [] : guidesFor(placed, others));
     setPlaceProblem(result.noRoom ? t('dashboards.designer.noRoomInContainer') : null);
     setVisuals(result.visuals);
   };
@@ -1023,6 +1054,15 @@ export function DashboardDesignerPage(): ReactElement {
                 ? renderContainer(visual)
                 : renderVisual(visual, gridPlace(visual)),
             )}
+            {draggingKey !== null &&
+              guides.map((guide) => (
+                <span
+                  key={`${guide.axis}-${String(guide.at)}`}
+                  className={`designer__guide designer__guide--${guide.axis} designer__guide--${guide.line}`}
+                  style={{ '--guide-at': String(guide.at) } as CSSProperties}
+                  aria-hidden="true"
+                />
+              ))}
           </div>
         </div>
         <aside className="designer__pane">

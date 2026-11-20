@@ -9864,3 +9864,45 @@ tr[data-flagged='true'] {
   border-radius: 999px;
   white-space: nowrap;
 }
+
+/*
+ * Alignment guides (20 Nov 2026, "thin red lines like in Power BI"): while a visual is moved or sized, a line across the canvas where one of
+ * its edges or its centre lines up with another visual's. --guide-at is the line in columns (x) or rows (y): an edge that starts a visual sits
+ * on its column's start, an end edge at the end of the cell before it, a centre in the middle of its gap.
+ */
+@media (min-width: 48rem) {
+  .designer__guide {
+    --guide-offset: 0px;
+
+    position: absolute;
+    z-index: 40;
+    background: #e5484d;
+    pointer-events: none;
+  }
+
+  .designer__guide--end {
+    --guide-offset: var(--grid-gap);
+  }
+
+  .designer__guide--center {
+    --guide-offset: calc(var(--grid-gap) / 2);
+  }
+
+  .designer__guide--x {
+    inset-block: 0;
+    inset-inline-start: calc(
+      var(--grid-inset) + var(--guide-at) * (var(--grid-column) + var(--grid-gap)) -
+        var(--guide-offset)
+    );
+    inline-size: 1px;
+  }
+
+  .designer__guide--y {
+    inset-inline: 0;
+    inset-block-start: calc(
+      var(--grid-inset) + var(--guide-at) * (var(--grid-row) + var(--grid-gap)) -
+        var(--guide-offset)
+    );
+    block-size: 1px;
+  }
+}
