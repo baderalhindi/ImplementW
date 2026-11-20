@@ -25,15 +25,31 @@ describe('fit to box', () => {
     expect(fitScale({ width: 400, height: 320 }, { width: 0, height: 0 })).toBe(1);
   });
 
-  test('cards, gauges, tables, pies, donuts, sections and widgets are fitted; bars, columns, lines and the map draw at their size', () => {
-    for (const visualType of ['CARD', 'GAUGE', 'TABLE', 'PIE', 'DONUT', 'SECTION']) {
+  test('cards, gauges, pies, donuts, box sections and widgets are fitted; charts, tables, list sections and the map are not', () => {
+    for (const visualType of ['CARD', 'GAUGE', 'PIE', 'DONUT']) {
       expect(fitsToBox({ visualType }), visualType).toBe(true);
     }
-    expect(fitsToBox({ visualType: 'SECTION', section: 'DASHBOARD_WIDGET' })).toBe(true);
-    for (const visualType of ['BAR', 'COLUMN', 'LINE']) {
+    for (const section of [
+      'ON_PLAN_COUNTS',
+      'FOLLOW_UP_REASONS',
+      'ENTITY_COMPLETION',
+      'DASHBOARD_WIDGET',
+    ]) {
+      expect(fitsToBox({ visualType: 'SECTION', section }), section).toBe(true);
+    }
+    for (const visualType of ['BAR', 'COLUMN', 'LINE', 'TABLE']) {
       expect(fitsToBox({ visualType }), visualType).toBe(false);
     }
-    expect(fitsToBox({ visualType: 'SECTION', section: 'PROJECT_LOCATIONS' })).toBe(false);
+    // A table at half size was too small to read (20 Nov 2026): tables and lists scroll at full size.
+    for (const section of [
+      'SECTOR_TABLE',
+      'PORTFOLIO_TABLE',
+      'TOP_FOLLOW_UP',
+      'ENTITY_COMPLETION_TABLE',
+      'PROJECT_LOCATIONS',
+    ]) {
+      expect(fitsToBox({ visualType: 'SECTION', section }), section).toBe(false);
+    }
   });
 
   test('laid out wider as it is drawn smaller, content takes the largest scale that still fits', () => {

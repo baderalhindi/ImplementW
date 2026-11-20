@@ -34,12 +34,28 @@ export function fitsToBox(visual: {
   section?: string | null | undefined;
 }): boolean {
   return (
-    visual.visualType !== 'BAR' &&
-    visual.visualType !== 'COLUMN' &&
-    visual.visualType !== 'LINE' &&
-    visual.section !== 'PROJECT_LOCATIONS'
+    !DRAWN_AT_BOX_SIZE.has(visual.visualType) &&
+    (visual.section === undefined || visual.section === null || !SCROLLED.has(visual.section))
   );
 }
+
+/** Charts that draw at their box's size already. */
+const DRAWN_AT_BOX_SIZE: ReadonlySet<string> = new Set(['BAR', 'COLUMN', 'LINE', 'TABLE']);
+
+/**
+ * Sections never drawn smaller (20 Nov 2026: a table at half size was too small to read): the tables and lists, which scroll in their visual
+ * at full size, and the map, whose panning and zooming read the pointer on an unscaled map.
+ */
+const SCROLLED: ReadonlySet<string> = new Set([
+  'PORTFOLIO_TABLE',
+  'INITIATIVE_TABLE',
+  'SECTOR_TABLE',
+  'STATUS_TABLE',
+  'CURRENT_STAGE_TABLE',
+  'TOP_FOLLOW_UP',
+  'ENTITY_COMPLETION_TABLE',
+  'PROJECT_LOCATIONS',
+]);
 
 /** How many halvings the search for the largest scale makes: within 1/128 of the range, finer than a pixel at a visual's size. */
 const SEARCH_STEPS = 7;
