@@ -54,15 +54,46 @@ export async function rememberDeviceUnlock(nationalId: string): Promise<void> {
   }
 }
 
+const SAVED_PASSKEYS_KEY = 'pmplatform.signInMethodPasskeys';
+
 /**
- * Face ID / Touch ID was added from Sign-in methods (20 Nov 2026): no National ID is in hand there, so the account's id stands for it.
- * Enough for the sign-in page to offer the one-press button; a National ID sign-in still asks for the number.
+ * The passkeys this browser saved from Sign-in methods (20 Nov 2026: "only if the user saved Face ID / Touch ID from Sign-in methods
+ * can they sign in with this button"), by credential id, a public identifier. The button under the Microsoft sign-in shows only when
+ * there is one, and asks the device for these alone, so other passkeys the device keeps for the site are not offered.
  */
-export async function rememberAccountDeviceUnlock(userId: string): Promise<void> {
-  const hash = await hashOf(`pmplatform:user:${userId}`);
-  if (hash !== null && !read().includes(hash)) {
-    write([...read(), hash]);
+export function savedPasskeyIds(): string[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(SAVED_PASSKEYS_KEY) ?? '[]');
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : [];
+  } catch {
+    return [];
   }
+}
+
+function writeSavedPasskeys(ids: string[]): void {
+  try {
+    if (ids.length === 0) {
+      localStorage.removeItem(SAVED_PASSKEYS_KEY);
+    } else {
+      localStorage.setItem(SAVED_PASSKEYS_KEY, JSON.stringify(ids));
+    }
+  } catch {
+    // Not remembered: the button stays hidden until Face ID / Touch ID is added here again.
+  }
+}
+
+export function rememberSavedPasskey(credentialId: string): void {
+  const ids = savedPasskeyIds();
+  if (!ids.includes(credentialId)) {
+    writeSavedPasskeys([...ids, credentialId]);
+  }
+}
+
+/** The API knew none of them (they were removed from the account): the button goes until one is added again. */
+export function forgetSavedPasskeys(): void {
+  writeSavedPasskeys([]);
 }
 
 /** The server did not know the key this device offered (it was removed): nothing here is set up any more. */

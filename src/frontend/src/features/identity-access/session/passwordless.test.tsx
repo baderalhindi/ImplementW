@@ -7,7 +7,12 @@ import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixture
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
 
-import { hasAnyDeviceUnlock, hasDeviceUnlock, rememberDeviceUnlock } from './deviceUnlockMemory.ts';
+import {
+  hasDeviceUnlock,
+  rememberDeviceUnlock,
+  rememberSavedPasskey,
+  savedPasskeyIds,
+} from './deviceUnlockMemory.ts';
 import { deviceUnlock } from './webAuthn.ts';
 
 // Sign-in with biometrics (13 Nov 2026 review): the National ID, then the passkey on this device or a code by SMS. The
@@ -474,8 +479,8 @@ describe('the sign-in methods page', () => {
     await user.click(add);
 
     expect(await screen.findByText('My phone')).toBeTruthy();
-    // The sign-in page now offers Face ID / Touch ID in one press on this device.
-    expect(hasAnyDeviceUnlock()).toBe(true);
+    // The sign-in page's button now offers this passkey, by its credential id.
+    expect(savedPasskeyIds()).toEqual(['CQ']);
     const asked = credentials.create.mock.calls[0]?.[0] as {
       publicKey: PublicKeyCredentialCreationOptions;
     };
@@ -531,10 +536,8 @@ describe('the sign-in methods page', () => {
       await screen.findByText(en('identityAccess.signInMethods.passkeyAlreadyOnDevice')),
     ).toBeTruthy();
     expect(api.requestsTo('POST', /^\/users\/current\/passkeys$/)).toHaveLength(0);
-    // The device holds this account's passkey: the sign-in page now offers it in one press.
-    await waitFor(() => {
-      expect(hasAnyDeviceUnlock()).toBe(true);
-    });
+    // Nothing was saved here, so the sign-in page's button does not offer it.
+    expect(savedPasskeyIds()).toEqual([]);
   });
 
   test('verifies the mobile number with the code sent to it', async () => {
@@ -594,7 +597,7 @@ describe('Face ID / Touch ID under the Microsoft sign-in', () => {
     },
   };
 
-  test('is not offered on a device with nothing saved', async () => {
+  test('is not offered on a device with nothing saved from Sign-in methods', async () => {
     offerPasswordless(mockApi());
     renderApp({ path: '/sign-in' });
     await deviceChecked();
@@ -602,8 +605,17 @@ describe('Face ID / Touch ID under the Microsoft sign-in', () => {
     expect(screen.queryByRole('button', { name: deviceButtonName() })).toBeNull();
   });
 
-  test('where this device has it saved, one press signs in with nothing typed', async () => {
+  test('is not offered for Face ID / Touch ID set up at a biometric sign-in only', async () => {
     await rememberDeviceUnlock(NATIONAL_ID);
+    offerPasswordless(mockApi());
+    renderApp({ path: '/sign-in' });
+    await deviceChecked();
+
+    expect(screen.queryByRole('button', { name: deviceButtonName() })).toBeNull();
+  });
+
+  test('saved from Sign-in methods, one press asks the device for that passkey alone and signs in', async () => {
+    rememberSavedPasskey('AQID');
     credentials.get.mockResolvedValue(deviceAnswer);
     const api = offerPasswordless(withIdentityAccessData(mockApi()))
       .on('POST', /^\/sessions\/passkey-challenge$/, passkeyChallenge)
@@ -618,10 +630,16 @@ describe('Face ID / Touch ID under the Microsoft sign-in', () => {
       expect(router.state.location.pathname).toBe('/');
     });
     expect(api.requestsTo('POST', /^\/sessions\/passkey-challenge$/)[0]?.body).toEqual({});
+    const asked = credentials.get.mock.calls[0]?.[0] as {
+      publicKey: PublicKeyCredentialRequestOptions;
+    };
+    const allowed = asked.publicKey.allowCredentials ?? [];
+    expect(allowed).toHaveLength(1);
+    expect(new Uint8Array(allowed[0]?.id as ArrayBuffer)).toEqual(new Uint8Array([1, 2, 3]));
   });
 
   test('is not offered where the API has passkey sign-in off', async () => {
-    await rememberDeviceUnlock(NATIONAL_ID);
+    rememberSavedPasskey('AQID');
     offerPasswordless(mockApi(), { passkey: false });
     renderApp({ path: '/sign-in' });
     await deviceChecked();
@@ -629,8 +647,8 @@ describe('Face ID / Touch ID under the Microsoft sign-in', () => {
     expect(screen.queryByRole('button', { name: deviceButtonName() })).toBeNull();
   });
 
-  test('a key no account knows any more is forgotten, and the button goes', async () => {
-    await rememberDeviceUnlock(NATIONAL_ID);
+  test('a passkey no account knows any more is forgotten, and the button goes', async () => {
+    rememberSavedPasskey('AQID');
     credentials.get.mockResolvedValue(deviceAnswer);
     offerPasswordless(mockApi())
       .on('POST', /^\/sessions\/passkey-challenge$/, passkeyChallenge)
@@ -640,13 +658,9 @@ describe('Face ID / Touch ID under the Microsoft sign-in', () => {
 
     await user.click(await screen.findByRole('button', { name: deviceButtonName() }));
 
-    expect(
-      await screen.findByText(
-        en(`identityAccess.signIn.passwordless.notRecognised.${deviceUnlock()}`),
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByText(en('identityAccess.signIn.deviceUnlockGone'))).toBeTruthy();
     expect(screen.queryByRole('button', { name: deviceButtonName() })).toBeNull();
-    expect(hasAnyDeviceUnlock()).toBe(false);
+    expect(savedPasskeyIds()).toEqual([]);
   });
 });
 

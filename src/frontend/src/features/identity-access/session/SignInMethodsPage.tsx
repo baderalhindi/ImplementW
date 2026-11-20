@@ -9,14 +9,13 @@ import { FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 
 import { useFocusFirstError, useSaveAction } from '../forms.ts';
 import { problemMessage } from '../problems.ts';
-import { rememberAccountDeviceUnlock } from './deviceUnlockMemory.ts';
+import { rememberSavedPasskey } from './deviceUnlockMemory.ts';
 import {
   type MobileNumberStatus,
   type MobileVerificationChallenge,
   type PasskeySummary,
   signInMethodsApi,
 } from './signInMethodsApi.ts';
-import { useSession } from './useSession.ts';
 import {
   creationOptions,
   credentialJson,
@@ -28,12 +27,13 @@ import {
   platformPasskeysAvailable,
 } from './webAuthn.ts';
 
+const credentialIdOf = (answer: unknown) => (answer as { rawId: string }).rawId;
+
 const loadPasskeys = (signal: AbortSignal) => signInMethodsApi.listPasskeys(signal);
 const loadMobileNumber = (signal: AbortSignal) => signInMethodsApi.getMobileNumber(signal);
 
 function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
   const { t } = useI18n();
-  const { session } = useSession();
   const formRef = useRef<HTMLFormElement>(null);
   const unlock = deviceUnlock();
   const save = useSaveAction((error, translate) =>
@@ -74,15 +74,13 @@ function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
       if (credential === null) {
         throw new DOMException('No passkey was created.', 'NotAllowedError');
       }
-      return signInMethodsApi.addPasskey(transaction, credentialJson(credential), name.trim());
+      const answer = credentialJson(credential);
+      const added = await signInMethodsApi.addPasskey(transaction, answer, name.trim());
+      return { added, credentialId: credentialIdOf(answer) };
     });
-    // The sign-in page offers Face ID / Touch ID in one press on a device that has it saved. "Already on this device" proves it is
-    // saved too: the device refused only because it holds one of this account's passkeys (one saved before the page kept notes).
-    const savedHere = result.ok || isPasskeyAlreadyOnDevice(result.error);
-    if (savedHere && session !== null) {
-      await rememberAccountDeviceUnlock(session.user.id);
-    }
     if (result.ok) {
+      // The sign-in page's Face ID / Touch ID button offers this passkey, and only passkeys saved here.
+      rememberSavedPasskey(result.value.credentialId);
       onAdded();
     }
   };

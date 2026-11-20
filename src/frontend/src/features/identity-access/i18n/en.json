@@ -584,7 +584,8 @@
       "windowsHello": "Sign in with Windows Hello",
       "fingerprint": "Sign in with your fingerprint",
       "deviceUnlock": "Sign in with this device's unlock"
-    }
+    },
+    "deviceUnlockGone": "The Face ID / Touch ID saved in this browser is no longer on an account. Sign in another way, then add it again under Sign-in methods in the account menu."
   },
   "signInMethods": {
     "menu": "Sign-in methods",
@@ -618,7 +619,7 @@
     "sendVerificationCode": "Send verification code",
     "verify": "Verify",
     "smsUnavailable": "SMS is not available in this environment yet.",
-    "passkeyAlreadyOnDevice": "This device already has a passkey for your account (it is in the list above), so it cannot add another. You can already use it: on the sign-in page, press Sign in with Face ID / Touch ID under the Microsoft sign-in. To set it up again, remove it from the list first.",
+    "passkeyAlreadyOnDevice": "This device already has a passkey for your account (it is in the list above), so it cannot add another. To use it with the Face ID / Touch ID button on the sign-in page, remove it from the list, then add it again here.",
     "passkeyRefusedForSite": "Your browser does not allow a passkey from this address. Open the platform at its usual address and try again."
   },
   "stepUp": {

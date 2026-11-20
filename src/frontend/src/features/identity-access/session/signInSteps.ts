@@ -57,12 +57,22 @@ export const describePasskeyRefusal: ProblemDescriber = (error, t) =>
 
 /**
  * Signs in with the passkey this device holds (Face ID / Touch ID). With a National ID only its owner's verifies; without one,
- * whoever the device's passkey belongs to signs in.
+ * whoever the device's passkey belongs to signs in. `onlyCredentialIds` limits what the device may offer.
  */
-export async function signInWithPasskey(nationalId: string | null): Promise<SignInStep> {
+export async function signInWithPasskey(
+  nationalId: string | null,
+  onlyCredentialIds: readonly string[] = [],
+): Promise<SignInStep> {
   const { options, transaction } = await sessionApi.beginPasskeySignIn(nationalId);
   const credential = (await navigator.credentials.get({
-    publicKey: requestOptions(options),
+    publicKey: requestOptions(
+      onlyCredentialIds.length === 0
+        ? options
+        : {
+            ...options,
+            allowCredentials: onlyCredentialIds.map((id) => ({ id, type: 'public-key' })),
+          },
+    ),
   })) as PublicKeyCredential | null;
   if (credential === null) {
     throw new DOMException('Nothing was chosen.', 'NotAllowedError');
