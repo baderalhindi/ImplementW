@@ -9,6 +9,7 @@ import { sarExactLabel } from '@/shared/format/money.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
+import { type DashboardPlace } from '../api/types.ts';
 import { bucketColors, type ChartBucket } from '../charts.ts';
 import { GaugeChart } from '../components/Charts.tsx';
 import { DonutWithLegend } from '../components/DonutWithLegend.tsx';
@@ -16,6 +17,7 @@ import { drawnAxes, valueScale } from './axes.ts';
 import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx';
 import { ColumnTable } from './ColumnTable.tsx';
 import { LineChart } from './LineChart.tsx';
+import { MapVisual } from './MapVisual.tsx';
 import { hasColumns } from './tableColumns.ts';
 import { Coverage } from '../insights/figures.tsx';
 import { isStatusScale, labelOfValue } from '../presentation.ts';
@@ -70,16 +72,19 @@ const SERIES_COLORS = [
 /**
  * A visual's figures drawn as its type says. With `filters` (on the dashboard, not in the designer) each figure opens the records it counts, as
  * round 8 point 01 has every count do; a field's value opens nothing, as no list filters by it. A field value reads by the type the API
- * returns with it (`valueTypes`); `fields`, the designer's catalogue, stands in where none came.
+ * returns with it (`valueTypes`); `fields`, the designer's catalogue, stands in where none came. A map places its groups by the dashboard's
+ * `places`.
  */
 export function VisualBody({
   visual,
   filters,
   fields = [],
+  places = [],
 }: {
   visual: VisualResult;
   filters?: PortfolioFilters | undefined;
   fields?: readonly FieldDescriptor[] | undefined;
+  places?: DashboardPlace[] | undefined;
 }): ReactElement {
   const { t, language } = useI18n();
   const lookups = useProjectLookups();
@@ -363,6 +368,20 @@ export function VisualBody({
           }))}
           missing={t('dashboards.insights.notAvailable')}
           format={(value, index) => (series[index] ?? first).format(value)}
+        />
+      );
+    case 'MAP':
+      return (
+        <MapVisual
+          visual={visual}
+          places={places}
+          figureName={first.text}
+          format={first.format}
+          drill={(groupBy, key) =>
+            measure === null || filters === undefined
+              ? undefined
+              : drillPath(measure, groupBy, key, filters)
+          }
         />
       );
     case 'SECTION':

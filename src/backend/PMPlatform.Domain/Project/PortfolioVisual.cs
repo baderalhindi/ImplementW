@@ -41,6 +41,12 @@ public enum PortfolioVisualType
     /// nothing, and may be a container's child.
     /// </summary>
     Text = 11,
+
+    /// <summary>
+    /// A map of one figure per place (the 20 Nov 2026 map visual): a fixed count or amount, or one field value, per city or region, narrowed by the visual's
+    /// filters; placed as often as the designer likes, and may be a container's child.
+    /// </summary>
+    Map = 12,
 }
 
 /// <summary>
@@ -201,8 +207,9 @@ public sealed class PortfolioVisual : AuditedEntity
     public decimal LayoutHeight { get; set; }
 
     /// <summary>
-    /// The data catalogue's fields the visual names (the 18 Nov 2026 data fields), as JSON in the API's shape: <c>{"values":[…],"groupField":…,"filters":[…]}</c>.
-    /// Null for a visual that names none (fixed measures, a section). Each field is a registered projection's field, never a table, column or expression
+    /// The data catalogue's fields the visual names (the 18 Nov 2026 data fields), as JSON in the API's shape: <c>{"values":[…],"groupField":…,"filters":[…]}</c>;
+    /// a MAP visual's options too (<c>"map":{"showList","showCounts"}</c>, the 20 Nov 2026 map visual), so a MAP always has it. Null for a visual that names
+    /// none (fixed measures, a section). Each field is a registered projection's field, never a table, column or expression
     /// (BR-DSH-030); the design service checks the content, and this column holds only what it wrote.
     /// </summary>
     public string? DataFields { get; set; }

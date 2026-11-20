@@ -20,7 +20,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// codes' shape (dashboard-designer-table-columns.md); and its 20 Nov 2026 Power BI-style table: the columns' rules and the table's calculation
 /// (dashboard-designer-power-table.md); and its 20 Nov 2026 box sections: the on-plan indicator's and the follow-up reasons' boxes as figures
 /// (dashboard-designer-box-sections.md); and its 20 Nov 2026 text box: what a TEXT visual says, what it may not hold, and what is stored
-/// (dashboard-designer-map-text.md).
+/// (dashboard-designer-map-text.md); and its 20 Nov 2026 map visual: what a MAP draws, its places and options, and its figures per place
+/// (dashboard-designer-map-visual.md).
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -1852,5 +1853,305 @@ public sealed class PortfolioDesignRulesTests
         Assert.Equal(Words(), read);
         Assert.Equal(PortfolioTextBox.NoBackground, read.Background);
         Assert.Null(Issue(TextBox(text: read)));
+    }
+
+    /// <summary>A map of projects per city (the Map tile's new visual), 12 by 7, its options as given.</summary>
+    private static PortfolioVisualInput MapOf(
+        PortfolioGroupBy groupBy = PortfolioGroupBy.City, decimal column = 0, decimal row = 0, decimal width = 12, decimal height = 7, PortfolioMapOptions? options = null,
+        params PortfolioMeasure[] measures) =>
+        new(new BilingualLabel("المشاريع حسب الموقع", "Projects by location"), PortfolioVisualType.Map, measures.Length == 0 ? [PortfolioMeasure.Projects] : measures,
+            groupBy, column, row, width, height, Map: options);
+
+    /// <summary>A map of one field value per city.</summary>
+    private static PortfolioVisualInput ValueMap(PortfolioFieldValue value) => MapOf() with { Measures = [], Values = [value] };
+
+    /// <summary>20 Nov 2026 map visual: a MAP draws any count or amount per city or region, on the dashboard, in a container, as often as the designer likes.</summary>
+    [Fact]
+    public void AMapDrawsOneFigurePerCityOrRegion()
+    {
+        Assert.Null(Issue(MapOf()));
+        Assert.Null(Issue(MapOf(PortfolioGroupBy.Region)));
+        Assert.Null(Issue(MapOf(options: new PortfolioMapOptions(ShowList: false, ShowCounts: false))));
+        Assert.Null(Issue(MapOf(), MapOf(row: 7, measures: PortfolioMeasure.ValueSar), MapOf(PortfolioGroupBy.Region, row: 14) with
+        {
+            Filters = [new PortfolioFieldFilter("PROJECT.SECTOR", [Guid.NewGuid().ToString()])],
+        }));
+        Assert.Null(Issue(Container(height: 8, children: [MapOf(width: 8), SmallCard(8, 0)])));
+    }
+
+    public static TheoryData<PortfolioMeasure> MapMeasures =>
+        [.. Enum.GetValues<PortfolioMeasure>().Where(m => m is not (PortfolioMeasure.AveragePlanned or PortfolioMeasure.AverageActual or PortfolioMeasure.GapPoints))];
+
+    [Theory]
+    [MemberData(nameof(MapMeasures))]
+    public void AMapDrawsAnyCountOrAmount(PortfolioMeasure measure) => Assert.Null(Issue(MapOf(measures: measure)));
+
+    [Theory]
+    [InlineData(PortfolioMeasure.AveragePlanned)]
+    [InlineData(PortfolioMeasure.AverageActual)]
+    [InlineData(PortfolioMeasure.GapPoints)]
+    public void AMapDrawsNoAverageOrGap(PortfolioMeasure measure) =>
+        Assert.Equal(new FieldIssue("visuals[0].measures", FieldIssue.NotAllowed), Issue(MapOf(measures: measure)));
+
+    [Fact]
+    public void AMapDrawsExactlyOneFigure()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].measures", FieldIssue.NotAllowed), Issue(MapOf(measures: [PortfolioMeasure.Projects, PortfolioMeasure.InProgress])));
+        Assert.Equal(
+            new FieldIssue("visuals[0].measures", FieldIssue.NotAllowed),
+            Issue(MapOf(measures: [PortfolioMeasure.Projects, PortfolioMeasure.InProgress, PortfolioMeasure.ValueSar, PortfolioMeasure.Late])));
+        Assert.Equal(new FieldIssue("visuals[0].measures", FieldIssue.NotAllowed), Issue(MapOf(measures: (PortfolioMeasure)99)));
+        Assert.Equal(new FieldIssue("visuals[0].measures", FieldIssue.Required), Issue(MapOf() with { Measures = [] }));
+        Assert.Equal(
+            new FieldIssue("visuals[0].values", FieldIssue.NotAllowed), Issue(MapOf() with { Values = [Value(Budget, PortfolioFieldAggregation.Sum)] }));
+        Assert.Equal(
+            new FieldIssue("visuals[0].values", FieldIssue.NotAllowed),
+            Issue(ValueMap(Value(Budget, PortfolioFieldAggregation.Sum)) with { Values = [Value(Budget, PortfolioFieldAggregation.Sum), Value(Strategic, PortfolioFieldAggregation.CountTrue)] }));
+    }
+
+    [Theory]
+    [InlineData(Budget, PortfolioFieldAggregation.Sum)]
+    [InlineData(Budget, PortfolioFieldAggregation.Count)]
+    [InlineData(Strategic, PortfolioFieldAggregation.CountTrue)]
+    [InlineData(Health, PortfolioFieldAggregation.Count)]
+    [InlineData(Spend, PortfolioFieldAggregation.Sum)]
+    public void AMapDrawsAFieldCountedOrSummed(string field, PortfolioFieldAggregation aggregation) => Assert.Null(Issue(ValueMap(Value(field, aggregation))));
+
+    [Theory]
+    [InlineData(Budget, PortfolioFieldAggregation.Average)]
+    [InlineData(Budget, PortfolioFieldAggregation.Max)]
+    [InlineData(ActualPercent, PortfolioFieldAggregation.Average)]
+    [InlineData(Strategic, PortfolioFieldAggregation.ShareTrue)]
+    [InlineData(Health, PortfolioFieldAggregation.Sum)] // the field does not take it
+    [InlineData(HistoryActual, PortfolioFieldAggregation.Count)] // a snapshot field
+    [InlineData("PROJECT.NO_SUCH.FIELD", PortfolioFieldAggregation.Count)]
+    public void AMapRefusesAnyOtherValue(string field, PortfolioFieldAggregation aggregation) =>
+        Assert.Equal(new FieldIssue("visuals[0].values", FieldIssue.NotAllowed), Issue(ValueMap(Value(field, aggregation))));
+
+    [Theory]
+    [InlineData(PortfolioGroupBy.None)]
+    [InlineData(PortfolioGroupBy.Sector)]
+    [InlineData(PortfolioGroupBy.Portfolio)]
+    [InlineData(PortfolioGroupBy.Status)]
+    [InlineData(PortfolioGroupBy.Entity)]
+    public void AMapIsGroupedByCityOrRegionOnly(PortfolioGroupBy groupBy) =>
+        Assert.Equal(new FieldIssue("visuals[0].groupBy", FieldIssue.NotAllowed), Issue(MapOf(groupBy)));
+
+    public static TheoryData<string, PortfolioVisualInput> MapsHoldingSomethingElse => new()
+    {
+        { "groupField", MapOf() with { GroupField = Health } },
+        { "groupDateUnit", MapOf() with { GroupDateUnit = PortfolioDateUnit.Year } },
+        { "axes", MapOf() with { Axes = PortfolioAxes.Default } },
+        { "section", MapOf() with { Section = PortfolioSection.ProjectLocations } },
+        { "widgetCode", MapOf() with { WidgetCode = "OPEN_RISKS" } },
+        { "hiddenColumns", MapOf() with { HiddenColumns = ["VALUE"] } },
+        { "columns", MapOf() with { Columns = [Dim("CITY")] } },
+        { "text", MapOf() with { Text = Words() } },
+        { "children", MapOf() with { Children = [] } },
+    };
+
+    [Theory]
+    [MemberData(nameof(MapsHoldingSomethingElse))]
+    public void AMapHoldsNothingElse(string field, PortfolioVisualInput map)
+    {
+        Assert.Equal(new FieldIssue($"visuals[0].{field}", FieldIssue.NotAllowed), Issue(map));
+        Assert.Equal(new FieldIssue($"visuals[0].children[0].{field}", FieldIssue.NotAllowed), Issue(Container(height: 8, children: [map])));
+    }
+
+    [Fact]
+    public void AMapsFiltersAreAnyVisualsFilters()
+    {
+        Assert.Null(Issue(MapOf() with { Filters = [new PortfolioFieldFilter("PROJECT.STATUS", ["ACTIVE"]), new PortfolioFieldFilter(Strategic, ["TRUE"])] }));
+        Assert.Equal(new FieldIssue("visuals[0].filters", FieldIssue.NotAllowed), Issue(MapOf() with { Filters = [new PortfolioFieldFilter("PROJECT.SECTOR", ["not-an-id"])] }));
+        Assert.Equal(new FieldIssue("visuals[0].filters", FieldIssue.NotAllowed), Issue(MapOf() with { Filters = [new PortfolioFieldFilter(HistoryHealth, ["RED"])] }));
+    }
+
+    /// <summary>Only a map has map options; on any other visual, a container's child too, they are refused.</summary>
+    [Fact]
+    public void OnlyAMapHasMapOptions()
+    {
+        PortfolioMapOptions options = PortfolioMapOptions.Default;
+        Assert.Equal(new FieldIssue("visuals[0].map", FieldIssue.NotAllowed), Issue(Visual() with { Map = options }));
+        Assert.Equal(new FieldIssue("visuals[0].map", FieldIssue.NotAllowed), Issue(SmallCard(0, 0) with { Map = options }));
+        Assert.Equal(new FieldIssue("visuals[0].map", FieldIssue.NotAllowed), Issue(TextBox() with { Map = options }));
+        Assert.Equal(new FieldIssue("visuals[0].map", FieldIssue.NotAllowed), Issue(Container() with { Map = options }));
+        Assert.Equal(new FieldIssue("visuals[0].map", FieldIssue.NotAllowed), Issue(Placed(PortfolioSection.ProjectLocations, 0) with { Map = options }));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].map", FieldIssue.NotAllowed), Issue(Container(children: [SmallCard(0, 0) with { Map = options }])));
+    }
+
+    /// <summary>A map's options default to both shown; it echoes them, the defaults when sent none; no other visual echoes any.</summary>
+    [Fact]
+    public void AMapEchoesItsOptionsTheDefaultsWhenSentNone()
+    {
+        Assert.Equal(new PortfolioMapOptions(ShowList: true, ShowCounts: true), PortfolioMapOptions.Default);
+        IReadOnlyDictionary<string, PortfolioFieldType> types = new Dictionary<string, PortfolioFieldType>(StringComparer.Ordinal);
+        IReadOnlyList<PortfolioVisualGroup> groups = [new("city", null, 1, 0, 0, [1m], null)];
+
+        PortfolioVisualResult plain = PortfolioDesignService.ResultOf(MapOf(), _ => groups, types);
+        Assert.Equal(PortfolioMapOptions.Default, plain.Map);
+        Assert.Equal(PortfolioVisualType.Map, plain.VisualType);
+        Assert.Equal(PortfolioGroupBy.City, plain.GroupBy);
+        Assert.Equal([PortfolioMeasure.Projects], plain.Measures);
+        Assert.Same(groups, plain.Groups);
+
+        PortfolioMapOptions set = new(ShowList: false, ShowCounts: true);
+        Assert.Equal(set, PortfolioDesignService.ResultOf(MapOf(options: set), _ => groups, types).Map);
+        Assert.Equal(set, PortfolioDesignService.ResultOf(Container(children: [MapOf(options: set)]), _ => groups, types).Children!.Single().Map);
+        Assert.Null(PortfolioDesignService.ResultOf(Visual(), _ => groups, types).Map);
+        Assert.Null(PortfolioDesignService.ResultOf(Container(), _ => groups, types).Map);
+    }
+
+    /// <summary>A map without its grouping's permission has no groups, as any visual; it is read under the city grouping's and its figure's permissions.</summary>
+    [Fact]
+    public void AMapIsReadUnderItsGroupingsAndFiguresPermissions()
+    {
+        Assert.Null(PortfolioDesignService.ResultOf(MapOf(), _ => null, new Dictionary<string, PortfolioFieldType>()).Groups);
+        Assert.Equal([PermissionCatalogue.PortfolioBreakdownView], PortfolioDesignService.PermissionsOf(MapOf()));
+        Assert.Equal([PermissionCatalogue.PortfolioBreakdownView], PortfolioDesignService.PermissionsOf(MapOf(PortfolioGroupBy.Region)));
+        Assert.Equal(
+            [PermissionCatalogue.PortfolioBreakdownView, PermissionCatalogue.PortfolioFollowUpView],
+            PortfolioDesignService.PermissionsOf(MapOf(measures: PortfolioMeasure.FollowUpLate)));
+    }
+
+    /// <summary>What <c>data_fields</c> holds for a map: its options (the defaults when sent none) beside its values and filters; read back as saved.</summary>
+    [Fact]
+    public void AMapsOptionsAreStoredInItsDataFieldsAndReadBack()
+    {
+        string plain = PortfolioDesignService.DataFieldsOf(MapOf())!;
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("""{"values":null,"groupField":null,"filters":null,"groupDateUnit":null,"columns":null,"showTotals":null,"map":{"showList":true,"showCounts":true}}"""),
+            JsonNode.Parse(plain)));
+
+        PortfolioFieldFilter sector = new("PROJECT.SECTOR", [Guid.NewGuid().ToString()]);
+        PortfolioVisualInput sent = ValueMap(Value(Budget, PortfolioFieldAggregation.Sum)) with
+        {
+            GroupBy = PortfolioGroupBy.Region,
+            Filters = [sector],
+            Map = new PortfolioMapOptions(ShowList: false, ShowCounts: false),
+        };
+        string stored = PortfolioDesignService.DataFieldsOf(sent)!;
+        Assert.False(JsonNode.Parse(stored)!["map"]!["showList"]!.GetValue<bool>());
+        Assert.Null(PortfolioDesignService.DataFieldsOf(Visual()));
+        Assert.DoesNotContain("\"map\":{", PortfolioDesignService.DataFieldsOf(Drawing())!, StringComparison.Ordinal);
+
+        PortfolioVisual container = Saved(1, PortfolioVisualType.Container, "Container");
+        PortfolioVisual map = Saved(2, PortfolioVisualType.Map, "Map", container.Id);
+        map.Measures = [];
+        map.GroupBy = PortfolioGroupBy.Region;
+        map.DataFields = stored;
+        PortfolioVisual top = Saved(3, PortfolioVisualType.Map, "Map", row: 6);
+        top.GroupBy = PortfolioGroupBy.City;
+        top.DataFields = plain;
+        IReadOnlyList<PortfolioVisualInput> design = PortfolioDesignService.Nested([container, map, top]);
+
+        PortfolioVisualInput child = design[0].Children!.Single();
+        Assert.Equal(new PortfolioMapOptions(ShowList: false, ShowCounts: false), child.Map);
+        Assert.Equal([Value(Budget, PortfolioFieldAggregation.Sum)], child.Values);
+        Assert.Equal(sector.Values, child.Filters!.Single().Values);
+        Assert.Equal(PortfolioMapOptions.Default, design[1].Map);
+        Assert.Equal([PortfolioMeasure.Projects], design[1].Measures);
+        Assert.Null(design[0].Map);
+    }
+
+    private static readonly Guid Riyadh = Guid.NewGuid(), Jeddah = Guid.NewGuid(), Dammam = Guid.NewGuid();
+    private static readonly Guid Central = Guid.NewGuid(), Western = Guid.NewGuid(), Eastern = Guid.NewGuid();
+
+    private static PortfolioProjectRow Located(Guid? city, Guid? region, Guid sector, decimal? budget = null, ProjectLifecycleState state = ProjectLifecycleState.Active) =>
+        new(new PMPlatform.Domain.Project.Project
+        {
+            Id = Guid.NewGuid(),
+            Title = new NarrativeText("مشروع", Language.Ar),
+            LifecycleState = state,
+            ClassificationItemId = sector,
+            CityItemId = city,
+            RegionItemId = region,
+            RegistrationBudgetSar = budget is { } b ? new Money(b) : null,
+        }, ProjectIndicators.None);
+
+    private static readonly Guid HealthSector = Guid.NewGuid(), EducationSector = Guid.NewGuid();
+
+    /// <summary>Seven projects over three cities in three regions, one with no place, in two sectors.</summary>
+    private static readonly IReadOnlyList<PortfolioProjectRow> Places =
+    [
+        Located(Riyadh, Central, HealthSector, 100m), Located(Riyadh, Central, EducationSector, 50m), Located(Riyadh, Central, HealthSector, null, ProjectLifecycleState.Draft),
+        Located(Jeddah, Western, EducationSector, 70m), Located(Jeddah, Western, HealthSector, 30m),
+        Located(Dammam, Eastern, HealthSector, 20m),
+        Located(null, null, EducationSector, 10m),
+    ];
+
+    private static (string? Key, int Projects, decimal? Value)[] Figures(IReadOnlyList<PortfolioVisualGroup> groups) =>
+        [.. groups.Select(g => (g.Key, g.Projects, g.Values.Single()))];
+
+    /// <summary>
+    /// A map's groups are a bar chart's by the same place with the same figure and filters (the 20 Nov 2026 map visual): a group per city (its item id), the
+    /// projects with none under a null key, last.
+    /// </summary>
+    [Theory]
+    [InlineData(PortfolioMeasure.Projects)]
+    [InlineData(PortfolioMeasure.ValueSar)]
+    [InlineData(PortfolioMeasure.InProgress)]
+    public void AMapsGroupsPerCityAreABarsByCity(PortfolioMeasure measure)
+    {
+        IReadOnlyList<PortfolioVisualGroup> map = Groups(MapOf(measures: measure), Places, []);
+        IReadOnlyList<PortfolioVisualGroup> bar = Groups(Visual(PortfolioVisualType.Bar, PortfolioGroupBy.City, measures: measure), Places, []);
+
+        Assert.Equal(Figures(bar), Figures(map));
+        Assert.Equal([Riyadh.ToString(), Jeddah.ToString(), Dammam.ToString(), null], map.Select(g => g.Key));
+        Assert.Equal([3, 2, 1, 1], map.Select(g => g.Projects));
+    }
+
+    [Fact]
+    public void AMapCountsProjectsAndSumsValuePerCity()
+    {
+        Assert.Equal([3m, 2m, 1m, 1m], Groups(MapOf(), Places, []).Select(g => g.Values.Single()));
+        Assert.Equal([150m, 100m, 20m, 10m], Groups(MapOf(measures: PortfolioMeasure.ValueSar), Places, []).Select(g => g.Values.Single()));
+    }
+
+    [Fact]
+    public void AMapGroupsPerRegion()
+    {
+        IReadOnlyList<PortfolioVisualGroup> map = Groups(MapOf(PortfolioGroupBy.Region), Places, []);
+
+        Assert.Equal(Figures(Groups(Visual(PortfolioVisualType.Bar, PortfolioGroupBy.Region), Places, [])), Figures(map));
+        Assert.Equal([Central.ToString(), Western.ToString(), Eastern.ToString(), null], map.Select(g => g.Key));
+        Assert.Equal([3m, 2m, 1m, 1m], map.Select(g => g.Values.Single()));
+    }
+
+    /// <summary>A map's filters narrow its projects before they are placed, as a bar's do: one sector's map has that sector's cities only.</summary>
+    [Fact]
+    public void AMapsFilterNarrowsItsPlaces()
+    {
+        IReadOnlyList<PortfolioFieldFilter> healthOnly = [new("PROJECT.SECTOR", [HealthSector.ToString()])];
+        IReadOnlyList<PortfolioVisualGroup> map = Groups(MapOf() with { Filters = healthOnly }, Places, []);
+
+        Assert.Equal(Figures(Groups(Visual(PortfolioVisualType.Bar, PortfolioGroupBy.City) with { Filters = healthOnly }, Places, [])), Figures(map));
+        Assert.Equal(
+            new Dictionary<string, decimal?> { [Riyadh.ToString()] = 2m, [Jeddah.ToString()] = 1m, [Dammam.ToString()] = 1m },
+            map.ToDictionary(g => g.Key!, g => g.Values.Single()));
+
+        IReadOnlyList<PortfolioFieldFilter> active = [new("PROJECT.STATUS", ["ACTIVE"]), new("PROJECT.SECTOR", [EducationSector.ToString()])];
+        IReadOnlyList<PortfolioVisualGroup> activeEducation = Groups(MapOf(measures: PortfolioMeasure.ValueSar) with { Filters = active }, Places, []);
+        Assert.Null(activeEducation[^1].Key); // the projects with no place, last
+        Assert.Equal(10m, activeEducation[^1].Values.Single());
+        Assert.Equal(
+            new Dictionary<string, decimal?> { [Riyadh.ToString()] = 50m, [Jeddah.ToString()] = 70m },
+            activeEducation.SkipLast(1).ToDictionary(g => g.Key!, g => g.Values.Single()));
+    }
+
+    /// <summary>A map of a field value: the value per city over the revealed cells, as a bar of the same value by city.</summary>
+    [Fact]
+    public void AMapOfAFieldValueIsCalculatedPerCity()
+    {
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = Places.ToDictionary(
+            r => r.Project.Id,
+            IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>> (r) => Cells((Strategic, r.Project.ClassificationItemId == HealthSector ? "true" : "false")));
+        PortfolioFieldValue strategic = Value(Strategic, PortfolioFieldAggregation.CountTrue);
+
+        IReadOnlyList<PortfolioVisualGroup> map = Groups(ValueMap(strategic), Places, cells);
+        IReadOnlyList<PortfolioVisualGroup> bar = Groups(
+            new(new BilingualLabel("استراتيجي", "Strategic"), PortfolioVisualType.Bar, [], PortfolioGroupBy.City, 0, 0, 6, 5, Values: [strategic]), Places, cells);
+
+        Assert.Equal(Figures(bar), Figures(map));
+        Assert.Equal([2m, 1m, 1m, 0m], map.Select(g => g.Values.Single()));
     }
 }

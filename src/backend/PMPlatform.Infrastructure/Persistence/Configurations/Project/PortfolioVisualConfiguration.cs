@@ -18,12 +18,17 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
             // Measures are codes from a fixed list, never an expression (BR-DSH-030); the box sections' figures joined it on 20 Nov 2026.
             // A section names one of the dashboard's own parts and no measure or data field; any other visual no section, and one to three
             // measures or, drawing the data catalogue's fields instead (18 Nov 2026), no measure and its data fields. A container is checked apart; a text box
-            // (20 Nov 2026) draws no figure and names no field.
+            // (20 Nov 2026) draws no figure and names no field. A map (20 Nov 2026) draws one count or amount per city or region, or one field value, and always
+            // has data_fields (its options).
             t.HasCheckConstraint(
                 "ck_portfolio_visual_measures",
                 "visual_type = 'CONTAINER' OR (visual_type = 'SECTION' AND cardinality(measures) = 0 AND section IS NOT NULL AND group_by = 'NONE' AND data_fields IS NULL) "
                 + "OR (visual_type = 'TEXT' AND cardinality(measures) = 0 AND section IS NULL AND group_by = 'NONE' AND data_fields IS NULL) "
-                + "OR (visual_type NOT IN ('SECTION', 'TEXT') AND section IS NULL AND ((cardinality(measures) BETWEEN 1 AND 3 "
+                + "OR (visual_type = 'MAP' AND section IS NULL AND group_by IN ('CITY', 'REGION') AND data_fields IS NOT NULL AND (cardinality(measures) = 0 "
+                + "OR (cardinality(measures) = 1 AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS', 'ON_TRACK', "
+                + "'LATE', 'STALLED', 'NOT_MEASURED', 'FOLLOW_UP_STALLED', 'FOLLOW_UP_SUSPENDED', 'FOLLOW_UP_LATE', 'FOLLOW_UP_ACTION_OVERDUE', "
+                + "'FOLLOW_UP_OPEN_OBSTACLE']::text[]))) "
+                + "OR (visual_type NOT IN ('SECTION', 'TEXT', 'MAP') AND section IS NULL AND ((cardinality(measures) BETWEEN 1 AND 3 "
                 + "AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', "
                 + "'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS', 'ON_TRACK', 'LATE', 'STALLED', 'NOT_MEASURED', 'FOLLOW_UP_STALLED', "
                 + "'FOLLOW_UP_SUSPENDED', 'FOLLOW_UP_LATE', 'FOLLOW_UP_ACTION_OVERDUE', 'FOLLOW_UP_OPEN_OBSTACLE']::text[]) "

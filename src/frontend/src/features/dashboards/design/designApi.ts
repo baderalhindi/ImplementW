@@ -11,7 +11,8 @@ import { type InsightSectionCode } from '../insights/insightSections.ts';
 
 /**
  * CONTAINER (19 Nov 2026, docs/architecture/dashboard-designer-containers.md): a framed, titled box holding visuals, one level deep. TEXT (20 Nov
- * 2026, docs/architecture/dashboard-designer-map-text.md): the designer's own words, a heading or a note.
+ * 2026, docs/architecture/dashboard-designer-map-text.md): the designer's own words, a heading or a note. MAP (20 Nov 2026,
+ * docs/architecture/dashboard-designer-map-visual.md): one figure per city or region on the map.
  */
 export type VisualType =
   | 'CARD'
@@ -24,7 +25,14 @@ export type VisualType =
   | 'LINE'
   | 'SECTION'
   | 'CONTAINER'
-  | 'TEXT';
+  | 'TEXT'
+  | 'MAP';
+
+/** A map visual's options: the list of regions and cities beside the map, and the figure on each marker. */
+export interface MapOptions {
+  showList: boolean;
+  showCounts: boolean;
+}
 
 /** A text box's size: about 0.875, 1, 1.25 and 1.5 rem, the heading bold. */
 export type TextSize = 'SMALL' | 'NORMAL' | 'LARGE' | 'HEADING';
@@ -289,6 +297,8 @@ export interface Visual {
   showTotals?: boolean | null | undefined;
   /** A TEXT visual's words; absent or null on any other visual. */
   text?: TextBox | null | undefined;
+  /** A MAP visual's options; absent or null on any other visual, and on a map that shows both. */
+  map?: MapOptions | null | undefined;
 }
 
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */

@@ -16,6 +16,7 @@ import {
   sectionTables,
   withColumnShown,
 } from './sectionColumns.ts';
+import { mapOptionsOf } from './mapVisual.ts';
 import { isEditableSection, madeEditable } from './tableColumns.ts';
 import { TextBoxSettings } from './TextBoxSettings.tsx';
 import { asLine, MAX_HEIGHT, retitled, tenth, VISUAL_TYPES, withType } from './visuals.ts';
@@ -135,6 +136,45 @@ function ColumnChoice({
   );
 }
 
+/** A map's options (docs/architecture/dashboard-designer-map-visual.md): the list beside the map, and the figure on each marker. */
+function MapOptionsChoice({
+  visual,
+  onChange,
+}: {
+  visual: Visual;
+  onChange: (next: Visual) => void;
+}): ReactElement {
+  const { t } = useI18n();
+  const options = mapOptionsOf(visual);
+  return (
+    <fieldset className="field field--group designer-well">
+      <legend className="field__label designer-well__label">
+        {t('dashboards.designer.mapOptions')}
+      </legend>
+      <label className="field__checkbox">
+        <input
+          type="checkbox"
+          checked={options.showList}
+          onChange={(event) => {
+            onChange({ ...visual, map: { ...options, showList: event.target.checked } });
+          }}
+        />
+        {t('dashboards.designer.mapShowList')}
+      </label>
+      <label className="field__checkbox">
+        <input
+          type="checkbox"
+          checked={options.showCounts}
+          onChange={(event) => {
+            onChange({ ...visual, map: { ...options, showCounts: event.target.checked } });
+          }}
+        />
+        {t('dashboards.designer.mapShowCounts')}
+      </label>
+    </fieldset>
+  );
+}
+
 /**
  * Make editable (20 Nov 2026, docs/architecture/dashboard-designer-power-table.md): the table section becomes a table visual with the same
  * columns, at the same place, size and titles, whose columns and calculations can then be changed; a box section becomes a container of a card
@@ -167,7 +207,7 @@ function MakeEditable({
 /**
  * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters), a chart's axes (AxesFormat) and size. Only what the type takes is offered, so whatever is chosen
  * saves; a size that would cover another visual is refused by the designer, which says so. A container has its titles and size only; a text
- * box its titles, words and their look (TextBoxSettings), and size.
+ * box its titles, words and their look (TextBoxSettings), and size; a map its data, places and filters (DataPanel) and its options, no type.
  */
 export function VisualSettings({
   visual,
@@ -198,6 +238,8 @@ export function VisualSettings({
   const isContainer = visual.visualType === 'CONTAINER';
   // A text box has its words, not data: its titles are its name.
   const isText = visual.visualType === 'TEXT';
+  // A map is a map: it changes its figure, places, filters and options, not its type.
+  const isMap = visual.visualType === 'MAP';
   // A change of type, values or grouping renames the visual while its titles are still the automatic ones.
   const change = (next: Visual) => {
     onChange(retitled(visual, next));
@@ -280,35 +322,38 @@ export function VisualSettings({
         </>
       ) : (
         <>
-          <div className="field">
-            <label className="field__label" htmlFor={`${id}-type`}>
-              {t('dashboards.designer.typeLabel')}
-            </label>
-            <select
-              id={`${id}-type`}
-              className="field__input"
-              value={visual.visualType}
-              onChange={(event) => {
-                change(withType(visual, event.target.value as VisualType, fields.data ?? []));
-              }}
-            >
-              {VISUAL_TYPES.map((type) => (
-                <option
-                  key={type}
-                  value={type}
-                  // A line draws fields only: it is offered once the catalogue gives it one.
-                  disabled={
-                    type === 'LINE' &&
-                    visual.visualType !== 'LINE' &&
-                    asLine(visual, fields.data ?? []) === null
-                  }
-                >
-                  {t(`dashboards.designer.type.${type}`)}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!isMap && (
+            <div className="field">
+              <label className="field__label" htmlFor={`${id}-type`}>
+                {t('dashboards.designer.typeLabel')}
+              </label>
+              <select
+                id={`${id}-type`}
+                className="field__input"
+                value={visual.visualType}
+                onChange={(event) => {
+                  change(withType(visual, event.target.value as VisualType, fields.data ?? []));
+                }}
+              >
+                {VISUAL_TYPES.map((type) => (
+                  <option
+                    key={type}
+                    value={type}
+                    // A line draws fields only: it is offered once the catalogue gives it one.
+                    disabled={
+                      type === 'LINE' &&
+                      visual.visualType !== 'LINE' &&
+                      asLine(visual, fields.data ?? []) === null
+                    }
+                  >
+                    {t(`dashboards.designer.type.${type}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <DataPanel visual={visual} fields={fields} onChange={change} />
+          {isMap && <MapOptionsChoice visual={visual} onChange={onChange} />}
           {takesAxes(visual.visualType) && <AxesFormat visual={visual} onChange={onChange} />}
         </>
       )}

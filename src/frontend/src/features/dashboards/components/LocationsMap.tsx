@@ -7,13 +7,17 @@ import { type ReactElement, useEffect, useRef, useState } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
-/** One circle: a place with projects. Its area grows with the count, so a large place does not swallow its neighbours. */
+/**
+ * One circle: a place and its figure (a project count, or a map visual's figure). Its area grows with `value`, so a large place does not swallow its
+ * neighbours; it is labelled with `figure`, the value as it reads.
+ */
 export interface MapPoint {
   id: string;
   name: string;
   latitude: number;
   longitude: number;
-  projectCount: number;
+  value: number;
+  figure: string;
 }
 
 type MapLibre = typeof MapLibreLibrary;
@@ -34,6 +38,8 @@ const INITIAL_ZOOM = 6;
 const SELECTED_ZOOM = 9;
 const FIT_MAX_ZOOM = 10;
 const MAX_ZOOM = 16;
+/** The longest figure a circle holds as it is; a longer one widens it. */
+const SHORT_FIGURE = 3;
 
 /** The style's numbered road signs: on Saudi roads the data often has no number, which draws an empty box. */
 const ROAD_SIGN_LAYERS = new Set([
@@ -52,9 +58,10 @@ const SOFTER_COLOURS: [
   ['landcover_sand', 'fill-color', '#f4efe1'],
 ];
 
-function diameterOf(count: number, largest: number): number {
+function diameterOf(value: number, largest: number): number {
   return Math.round(
-    MIN_DIAMETER + (MAX_DIAMETER - MIN_DIAMETER) * Math.sqrt(count / Math.max(1, largest)),
+    MIN_DIAMETER +
+      (MAX_DIAMETER - MIN_DIAMETER) * Math.sqrt(Math.max(0, value) / Math.max(1, largest)),
   );
 }
 
@@ -94,18 +101,20 @@ function markSelected(bubbles: Map<string, PlacedBubble>, selectedId: string | n
  * The map of the projects' places (MapLibre over OpenFreeMap's vector map), labelled in the person's language. Each place is a circle holding its
  * count; pressing one, by pointer or keyboard, selects it. The smaller circles sit above the larger, so a close neighbour can still be pressed. If the
  * map's style cannot load, the circles still draw on a plain background; a browser without WebGL gets a note instead. The list beside the map says the
- * same to a screen reader.
+ * same to a screen reader. Without `showCounts` the circles hold no figure; each still names it to a screen reader and in its tooltip.
  */
 export function LocationsMap({
   points,
   selectedId,
   label,
   onSelect,
+  showCounts = true,
 }: {
   points: MapPoint[];
   selectedId: string | null;
   label: string;
   onSelect: (id: string | null) => void;
+  showCounts?: boolean;
 }): ReactElement {
   const { language, t } = useI18n();
   const container = useRef<HTMLDivElement>(null);
@@ -120,7 +129,9 @@ export function LocationsMap({
     select.current = onSelect;
   }, [onSelect]);
   // The place set, not the array: a re-render with the same places keeps the person's pan and zoom.
-  const placed = points.map((point) => `${point.id}:${String(point.projectCount)}`).join(',');
+  const placed = `${String(showCounts)};${points
+    .map((point) => `${point.id}:${String(point.value)}:${point.figure}`)
+    .join(',')}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -187,17 +198,23 @@ export function LocationsMap({
       marker.remove();
     }
     bubbles.current.clear();
-    const largest = Math.max(1, ...points.map((point) => point.projectCount));
+    const largest = Math.max(1, ...points.map((point) => point.value));
     for (const point of points) {
-      const diameter = diameterOf(point.projectCount, largest);
-      const name = `${point.name}: ${String(point.projectCount)}`;
+      const diameter = diameterOf(point.value, largest);
+      const name = `${point.name}: ${point.figure}`;
       const element = document.createElement('button');
       element.type = 'button';
       element.className = 'map-bubble';
-      element.textContent = String(point.projectCount);
+      element.textContent = showCounts ? point.figure : '';
       element.setAttribute('aria-label', name);
-      element.style.inlineSize = `${String(diameter)}px`;
       element.style.blockSize = `${String(diameter)}px`;
+      if (showCounts && point.figure.length > SHORT_FIGURE) {
+        // A longer figure (an amount, "1.2M SAR") widens its circle into a pill rather than spilling out of it.
+        element.classList.add('map-bubble--wide');
+        element.style.minInlineSize = `${String(diameter)}px`;
+      } else {
+        element.style.inlineSize = `${String(diameter)}px`;
+      }
       element.addEventListener('click', () => {
         select.current(point.id);
       });

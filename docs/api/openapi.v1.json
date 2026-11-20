@@ -38622,6 +38622,38 @@
         },
         "description": "What the Excel's dashboard answers (the 5 Nov 2026 review §3). A section is null when the caller holds no permission for it: permissions decide, never a role code. Averages are simple\naverages of project percentages. A project without both percentages is unmeasured, never zero."
       },
+      "PortfolioMapOptions": {
+        "type": "object",
+        "properties": {
+          "showList": {
+            "type": "boolean",
+            "default": true
+          },
+          "showCounts": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "description": "How a PortfolioVisualType.Map visual is drawn (the 20 Nov 2026 map visual, dashboard-designer-map-visual.md): whether the list of regions and\ncities is shown beside the map, and whether each marker carries its number. Absent, both are shown."
+      },
+      "PortfolioMapOptionsRequest": {
+        "type": "object",
+        "properties": {
+          "showList": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "showCounts": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "How a MAP visual is drawn (the 20 Nov 2026 map visual): the list of regions and cities beside the map, and the number on each marker; each absent or null\nproperty is shown (true). Whether the visual is a map is checked by the service."
+      },
       "PortfolioMeasure": {
         "enum": [
           "PROJECTS",
@@ -39610,6 +39642,16 @@
                 "$ref": "#/components/schemas/PortfolioTextBoxRequest"
               }
             ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioMapOptionsRequest"
+              }
+            ]
           }
         }
       },
@@ -39804,6 +39846,16 @@
                 "$ref": "#/components/schemas/PortfolioTextBox"
               }
             ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioMapOptions"
+              }
+            ]
           }
         },
         "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."
@@ -39820,7 +39872,8 @@
           "SECTION",
           "LINE",
           "CONTAINER",
-          "TEXT"
+          "TEXT",
+          "MAP"
         ],
         "description": "How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer)."
       },

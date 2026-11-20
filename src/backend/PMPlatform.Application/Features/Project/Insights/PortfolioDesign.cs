@@ -99,6 +99,16 @@ public sealed record PortfolioTextBox(
 }
 
 /// <summary>
+/// How a <see cref="PortfolioVisualType.Map"/> visual is drawn (the 20 Nov 2026 map visual, dashboard-designer-map-visual.md): whether the list of regions and
+/// cities is shown beside the map, and whether each marker carries its number. Absent, both are shown.
+/// </summary>
+public sealed record PortfolioMapOptions(bool ShowList = true, bool ShowCounts = true)
+{
+    /// <summary>The list and the numbers both shown: a map sent without options.</summary>
+    public static PortfolioMapOptions Default { get; } = new();
+}
+
+/// <summary>
 /// A visual as the designer sends it: a title in both languages, a type, one to three measures, a grouping and a place on the grid; or, as a
 /// <see cref="PortfolioVisualType.Section"/>, one of the dashboard's own sections and no measure. Since 18 Nov 2026 a visual may draw
 /// <paramref name="Values"/> of the data catalogue instead of measures, be grouped by a CODE field (<paramref name="GroupField"/>) and narrowed by
@@ -109,14 +119,15 @@ public sealed record PortfolioTextBox(
 /// section names the columns it does not show in <paramref name="HiddenColumns"/> (the 20 Nov 2026 table columns); null or empty shows them all. A
 /// <see cref="PortfolioVisualType.Table"/> may draw <paramref name="Columns"/> instead of measures or values (the 20 Nov 2026 Power BI-style table), with
 /// a totals row unless <paramref name="ShowTotals"/> is false; null or empty draws none. A <see cref="PortfolioVisualType.Text"/> visual says its
-/// <paramref name="Text"/> and draws nothing else (the 20 Nov 2026 text box); any other visual has none.
+/// <paramref name="Text"/> and draws nothing else (the 20 Nov 2026 text box); any other visual has none. A <see cref="PortfolioVisualType.Map"/> draws one
+/// figure per city or region and may set its <paramref name="Map"/> options (the 20 Nov 2026 map visual); any other visual has none.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
     IReadOnlyList<PortfolioVisualInput>? Children = null, IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null,
-    bool? ShowTotals = null, PortfolioTextBox? Text = null);
+    bool? ShowTotals = null, PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -148,14 +159,16 @@ public sealed record PortfolioVisualGroup(
 /// <c>WidgetCode</c>. A container carries no groups of its own (an empty list) and its <c>Children</c>, in order, each calculated as a top-level visual is;
 /// <c>Children</c> is null on any other visual. A table section echoes its <c>HiddenColumns</c> (null when it shows every column). A column table echoes
 /// its <c>Columns</c> and <c>ShowTotals</c>, has no groups (an empty list) and its figures in <c>Table</c>; both are null without its permissions. A text box
-/// has no groups (an empty list) and echoes its <c>Text</c>, null on any other visual.
+/// has no groups (an empty list) and echoes its <c>Text</c>, null on any other visual. A map has a group per place (the place's item id; null for the
+/// projects with none) as a bar chart grouped by city or region has, and echoes its <c>Map</c> options, the defaults when it was sent none; null on any
+/// other visual.
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
     PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null,
     IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioTableResult? Table = null,
-    PortfolioTextBox? Text = null);
+    PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -211,6 +224,14 @@ internal sealed partial class PortfolioDesignService(
     private const int MaxHiddenColumns = 20;
     private const string True = "TRUE";
     private const string False = "FALSE";
+
+    /// <summary>
+    /// The fixed measures a map draws (the 20 Nov 2026 map visual): any count or amount, never an average or the gap, which mean nothing summed over a place.
+    /// </summary>
+    private static readonly HashSet<PortfolioMeasure> MapMeasures =
+    [
+        .. Enum.GetValues<PortfolioMeasure>().Where(m => m is not (PortfolioMeasure.AveragePlanned or PortfolioMeasure.AverageActual or PortfolioMeasure.GapPoints)),
+    ];
     private static readonly DateOnly UnixEpoch = new(1970, 1, 1);
 
     /// <summary>The sections drawn as a table whose columns a design may hide (the 20 Nov 2026 table columns).</summary>
@@ -448,9 +469,12 @@ internal sealed partial class PortfolioDesignService(
         : !Enum.IsDefined(v.VisualType) || !Enum.IsDefined(v.GroupBy) ? new FieldIssue("visualType", FieldIssue.NotAllowed)
         : v.Columns is { Count: > 0 } && v.VisualType != PortfolioVisualType.Table ? new FieldIssue("columns", FieldIssue.NotAllowed)
         : v.Text is not null && v.VisualType != PortfolioVisualType.Text ? new FieldIssue("text", FieldIssue.NotAllowed)
+        : v.Map is not null && v.VisualType != PortfolioVisualType.Map ? new FieldIssue("map", FieldIssue.NotAllowed)
         : (v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
             : v.VisualType == PortfolioVisualType.Text ? TextBoxIssue(v.Text) ?? DrawsNothingIssue(v)
-            : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections) : DrawingIssue(v, catalogue))
+            : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections)
+                : v.VisualType == PortfolioVisualType.Map ? MapIssue(v, catalogue)
+                : DrawingIssue(v, catalogue))
                 ?? AxesIssue(v)
                 ?? WidgetCodeIssue(v, widgetCodes))
             ?? HiddenColumnsIssue(v);
@@ -612,6 +636,31 @@ internal sealed partial class PortfolioDesignService(
     }
 
     /// <summary>
+    /// What is wrong with what a map draws, or null (the 20 Nov 2026 map visual): exactly one figure — one of <see cref="MapMeasures"/>, or one value of a
+    /// project-grain field counted, summed or its yeses counted — never both; grouped by city or region and no field; then its filters as any visual's. Its
+    /// axes, section, widget code, children and hidden columns are refused where every visual's are.
+    /// </summary>
+    private static FieldIssue? MapIssue(PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue) =>
+        (v.Values is { Count: > 0 } values
+            ? (v.Measures?.Count ?? 0) != 0 || values.Count != 1 || !MapValueFits(values[0], catalogue) ? new FieldIssue("values", FieldIssue.NotAllowed) : null
+            : v.Measures is not { Count: > 0 } measures ? new FieldIssue("measures", FieldIssue.Required)
+            : measures.Count != 1 || !MapMeasures.Contains(measures[0]) ? new FieldIssue("measures", FieldIssue.NotAllowed)
+            : null)
+        ?? (v.GroupField is not null ? new FieldIssue("groupField", FieldIssue.NotAllowed)
+            : v.GroupDateUnit is not null ? new FieldIssue("groupDateUnit", FieldIssue.NotAllowed)
+            : v.GroupBy is not (PortfolioGroupBy.City or PortfolioGroupBy.Region) ? new FieldIssue("groupBy", FieldIssue.NotAllowed)
+            : null)
+        ?? FiltersIssue(v, catalogue);
+
+    /// <summary>Whether a map may draw a field value: a project-grain field the designer offers, counted, summed or its yeses counted, as its field allows.</summary>
+    private static bool MapValueFits(PortfolioFieldValue? value, Dictionary<string, PortfolioFieldDescriptor> catalogue) =>
+        value?.Field is not null
+        && catalogue.TryGetValue(value.Field, out PortfolioFieldDescriptor? field)
+        && field.Grain != PortfolioFieldGrain.Snapshot
+        && value.Aggregation is PortfolioFieldAggregation.Count or PortfolioFieldAggregation.Sum or PortfolioFieldAggregation.CountTrue
+        && field.Aggregations.Contains(value.Aggregation);
+
+    /// <summary>
     /// What is wrong with the measures, or null: one to three, each once; a bar, pie, donut and gauge draw one measure, a card two (the second under the
     /// first), columns and a table three; a gauge draws a percentage, a pie and a donut a total that adds up (a share of an average means nothing).
     /// </summary>
@@ -658,7 +707,7 @@ internal sealed partial class PortfolioDesignService(
             PortfolioVisualType.Pie or PortfolioVisualType.Donut =>
                 first.Aggregation is PortfolioFieldAggregation.Count or PortfolioFieldAggregation.Sum or PortfolioFieldAggregation.CountTrue,
             PortfolioVisualType.Card or PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Table or PortfolioVisualType.Line
-                or PortfolioVisualType.Section or PortfolioVisualType.Container or PortfolioVisualType.Text => true,
+                or PortfolioVisualType.Section or PortfolioVisualType.Container or PortfolioVisualType.Text or PortfolioVisualType.Map => true,
             _ => true,
         };
         return fits ? null : new("values", FieldIssue.NotAllowed);
@@ -670,7 +719,7 @@ internal sealed partial class PortfolioDesignService(
     /// </summary>
     private static int MaxDrawn(PortfolioVisualType type, bool fieldValues) => type switch
     {
-        PortfolioVisualType.Bar or PortfolioVisualType.Pie or PortfolioVisualType.Donut or PortfolioVisualType.Gauge => 1,
+        PortfolioVisualType.Bar or PortfolioVisualType.Pie or PortfolioVisualType.Donut or PortfolioVisualType.Gauge or PortfolioVisualType.Map => 1,
         PortfolioVisualType.Card => 2,
         PortfolioVisualType.Column => 3,
         PortfolioVisualType.Table => fieldValues ? 6 : 3,
@@ -891,7 +940,11 @@ internal sealed partial class PortfolioDesignService(
             ? ColumnTableResultOf(v, tableOf?.Invoke(v))
         : new PortfolioVisualResult(
             v.Title, v.VisualType, v.Measures, v.GroupBy, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
-            groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes);
+            groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes, Map: MapOptionsOf(v));
+
+    /// <summary>A map's options as stored and echoed: as sent, or the defaults when it was sent none; null on any other visual.</summary>
+    internal static PortfolioMapOptions? MapOptionsOf(PortfolioVisualInput v) =>
+        v.VisualType == PortfolioVisualType.Map ? v.Map ?? PortfolioMapOptions.Default : null;
 
     private static PortfolioVisualResult ColumnTableResultOf(PortfolioVisualInput v, PortfolioTableResult? table) =>
         new(v.Title, v.VisualType, [], PortfolioGroupBy.None, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
@@ -1122,17 +1175,23 @@ internal sealed partial class PortfolioDesignService(
             v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit,
             v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode, HiddenColumns: v.HiddenColumns,
             Columns: data?.Columns, ShowTotals: data?.ShowTotals,
-            Text: v.TextBox is { } text ? JsonSerializer.Deserialize<PortfolioTextBox>(text, StoredJson) : null);
+            Text: v.TextBox is { } text ? JsonSerializer.Deserialize<PortfolioTextBox>(text, StoredJson) : null, Map: data?.Map);
     }
 
     /// <summary>A table section's hidden columns as saved and echoed: null when it hides none (an empty list or null), so a design reads back as it was drawn.</summary>
     private static List<string>? HiddenColumnsOf(PortfolioVisualInput v) => v.HiddenColumns is { Count: > 0 } codes ? [.. codes] : null;
 
-    /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section, a container).</summary>
-    private static string? DataFieldsOf(PortfolioVisualInput v) =>
+    /// <summary>
+    /// What <c>data_fields</c> holds for a visual that names any data field, and for every map (its options); null for one that names none (fixed measures, a
+    /// section, a container).
+    /// </summary>
+    internal static string? DataFieldsOf(PortfolioVisualInput v) =>
         v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null || IsColumnTable(v)
+            || v.VisualType == PortfolioVisualType.Map
             ? JsonSerializer.Serialize(
-                new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit, IsColumnTable(v) ? v.Columns : null, IsColumnTable(v) ? v.ShowTotals : null), StoredJson)
+                new PortfolioVisualDataFields(
+                    v.Values, v.GroupField, v.Filters, v.GroupDateUnit, IsColumnTable(v) ? v.Columns : null, IsColumnTable(v) ? v.ShowTotals : null, MapOptionsOf(v)),
+                StoredJson)
             : null;
 
     /// <summary>What <c>text_box</c> holds: a text box as <see cref="Normalised(PortfolioTextBox)"/>; null for any other visual.</summary>
@@ -1206,11 +1265,11 @@ internal sealed partial class PortfolioDesignService(
 
     /// <summary>
     /// The JSON of <c>data_fields</c>: the visual's values, grouping field and its date unit, and filters, and a column table's columns and totals switch, as
-    /// the API carries them.
+    /// the API carries them; a map's options.
     /// </summary>
     private sealed record PortfolioVisualDataFields(
         IReadOnlyList<PortfolioFieldValue>? Values, string? GroupField, IReadOnlyList<PortfolioFieldFilter>? Filters, PortfolioDateUnit? GroupDateUnit = null,
-        IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null);
+        IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioMapOptions? Map = null);
 
     /// <summary>A row a visual of fields calculates over: a project, or one published snapshot of it; <see cref="Cell"/> reads a field key's revealed value.</summary>
     private sealed record FieldRow(PortfolioProjectRow Project, Func<string, string?> Cell);

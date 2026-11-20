@@ -131,6 +131,8 @@ export function DataPanel({
       onChange({
         ...visual,
         ...NO_FIELD_DATA,
+        // A map's filters apply to its figures too, so they stay.
+        ...(type === 'MAP' ? { filters: visual.filters ?? null } : {}),
         measures: [measure],
         groupBy:
           visual.groupField === undefined || visual.groupField === null
@@ -205,7 +207,13 @@ export function DataPanel({
         aria-describedby={`${id}-limit`}
       >
         <legend className={`field__label${wells === null ? '' : ' designer-well__label'}`}>
-          {t(wells === null ? 'dashboards.designer.dataLabel' : wells.value)}
+          {t(
+            wells !== null
+              ? wells.value
+              : type === 'MAP'
+                ? 'dashboards.designer.mapFigure'
+                : 'dashboards.designer.dataLabel',
+          )}
         </legend>
         <p id={`${id}-limit`} className="field__hint">
           {t(max === 1 ? 'dashboards.designer.measuresOne' : 'dashboards.designer.measuresHint', {
@@ -352,7 +360,8 @@ export function DataPanel({
         )}
       </fieldset>
       {wells === null && groupBy}
-      {onFields ? (
+      {onFields || type === 'MAP' ? (
+        // A map filters its figures whatever they are (docs/architecture/dashboard-designer-map-visual.md).
         <FiltersEditor visual={visual} catalogue={catalogue} onChange={onChange} />
       ) : (
         <div className="field">
@@ -430,7 +439,11 @@ function GroupBySelect({
   return (
     <div className="field">
       <label className="field__label" htmlFor={`${id}-group`}>
-        {t('dashboards.designer.groupByLabel')}
+        {t(
+          visual.visualType === 'MAP'
+            ? 'dashboards.designer.mapPlaces'
+            : 'dashboards.designer.groupByLabel',
+        )}
       </label>
       <div className={dateField ? 'designer-data__group-by' : undefined}>
         <select

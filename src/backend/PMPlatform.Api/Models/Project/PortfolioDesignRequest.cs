@@ -65,7 +65,8 @@ public sealed record PortfolioVisualRequest(
     IReadOnlyList<string?>? HiddenColumns = null,
     IReadOnlyList<PortfolioTableColumnRequest?>? Columns = null,
     bool? ShowTotals = null,
-    PortfolioTextBoxRequest? Text = null)
+    PortfolioTextBoxRequest? Text = null,
+    PortfolioMapOptionsRequest? Map = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -133,7 +134,8 @@ public sealed record PortfolioVisualRequest(
             Values?.Select(v => new PortfolioFieldValue(v!.Field!, v.Aggregation!.Value)).ToList(), GroupField,
             Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes(), WidgetCode,
             Children?.Select(c => c!.ToInput()).ToList(), HiddenColumns?.Select(c => c!).ToList(),
-            Columns?.Select(c => new PortfolioTableColumn(c!.Kind!.Value, c.Key!, c.Aggregation)).ToList(), ShowTotals, Text?.ToTextBox());
+            Columns?.Select(c => new PortfolioTableColumn(c!.Kind!.Value, c.Key!, c.Aggregation)).ToList(), ShowTotals, Text?.ToTextBox(),
+            Map?.ToOptions());
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct
@@ -204,6 +206,15 @@ public sealed record PortfolioTextBoxRequest(
             errors.Add(new FieldError(field, FieldError.InvalidCharacter));
         }
     }
+}
+
+/// <summary>
+/// How a MAP visual is drawn (the 20 Nov 2026 map visual): the list of regions and cities beside the map, and the number on each marker; each absent or null
+/// property is shown (true). Whether the visual is a map is checked by the service.
+/// </summary>
+public sealed record PortfolioMapOptionsRequest(bool? ShowList = null, bool? ShowCounts = null)
+{
+    internal PortfolioMapOptions ToOptions() => new(ShowList ?? true, ShowCounts ?? true);
 }
 
 /// <summary>A value a visual draws: a field key of the data catalogue and its aggregation; how they fit the visual is checked by the service.</summary>

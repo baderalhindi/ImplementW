@@ -39,8 +39,18 @@ export function fitsToBox(visual: {
   );
 }
 
-/** Visuals that draw at their box's size already: the charts, and a text box, whose words wrap in its box and scroll when longer. */
-const DRAWN_AT_BOX_SIZE: ReadonlySet<string> = new Set(['BAR', 'COLUMN', 'LINE', 'TABLE', 'TEXT']);
+/**
+ * Visuals that draw at their box's size already: the charts, a text box, whose words wrap in its box and scroll when longer, and a map visual, as
+ * the map section is not fitted.
+ */
+const DRAWN_AT_BOX_SIZE: ReadonlySet<string> = new Set([
+  'BAR',
+  'COLUMN',
+  'LINE',
+  'TABLE',
+  'TEXT',
+  'MAP',
+]);
 
 /**
  * Sections never drawn smaller (20 Nov 2026: a table at half size was too small to read): the tables and lists, which scroll in their visual

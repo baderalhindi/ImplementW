@@ -6,7 +6,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { EmptyState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
-import { type DashboardView } from '../api/types.ts';
+import { type DashboardPlace, type DashboardView } from '../api/types.ts';
 import {
   projectCountOf,
   usePortfolioInsights,
@@ -56,10 +56,13 @@ function drillHint(
 function VisualFrame({
   visual,
   filters,
+  places,
   place,
 }: {
   visual: VisualResult;
   filters: PortfolioFilters;
+  /** The dashboard's regions and cities, where a map visual places its figures. */
+  places: DashboardPlace[];
   place: CSSProperties;
 }): ReactElement {
   const { t, language } = useI18n();
@@ -89,8 +92,14 @@ function VisualFrame({
           </Link>
         )}
       </h3>
-      <VisualBodyBox visual={visual} className="visual__body">
-        <VisualBody visual={visual} filters={filters} />
+      <VisualBodyBox
+        visual={visual}
+        // A map visual is laid out as the map section is.
+        className={
+          visual.visualType === 'MAP' ? 'visual__body visual__body--section' : 'visual__body'
+        }
+      >
+        <VisualBody visual={visual} filters={filters} places={places} />
       </VisualBodyBox>
     </section>
   );
@@ -188,7 +197,12 @@ function PlacedVisual({
   ) : isTextBox(visual) ? (
     <TextFrame visual={visual} place={place} />
   ) : (
-    <VisualFrame visual={visual} filters={filters} place={place} />
+    <VisualFrame
+      visual={visual}
+      filters={filters}
+      places={sources.view?.places ?? []}
+      place={place}
+    />
   );
 }
 

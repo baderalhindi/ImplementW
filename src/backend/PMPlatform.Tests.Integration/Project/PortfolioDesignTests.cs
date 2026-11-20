@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json.Nodes;
+using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.MasterDataConfig;
 
@@ -17,7 +18,9 @@ namespace PMPlatform.Tests.Integration.Project;
 /// BI-style table) previews, saves and reads back with its table of figures; a card with columns is refused. A container of a card per box of the on-plan
 /// indicator and the follow-up reasons (the 20 Nov 2026 box sections) previews, saves and reads back each box's count as GET /portfolio-insights has it. A
 /// TEXT visual (the 20 Nov 2026 text box), on the dashboard and in a container, previews, saves and reads back its words exactly, line breaks kept; words on
-/// a card, a text box without words or in the wrong language are refused and save nothing.
+/// a card, a text box without words or in the wrong language are refused and save nothing. Two MAP visuals (the 20 Nov 2026 map visual) with different
+/// filters, one in a container with its options set, preview, save and read back with their groups per city — an approved project in the test city among
+/// them — each a bar's by city with the same filters, and none for local.r06, who lacks the city grouping's permission; map options on a card, a map grouped by sector or drawing an average are refused and save nothing.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -623,6 +626,98 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
         }
     }
 
+    [Fact]
+    public async Task TwoMapsWithDifferentFiltersAreSavedAndReadBackWithTheirGroups()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        // An approved project in the test city: the portfolio leaves out projects still registering.
+        Sessions sessions = await client.SignInAsync();
+        await host.DecideAndDeliverAsync(await host.UnderReviewAsync(client, sessions), ApprovalTaskDecision.Approve);
+        string manager = sessions.Approver;
+        string viewer = (await client.SignInOrFailAsync(6)).AccessToken;
+
+        object[] inCity = [new { field = "PROJECT.CITY", values = new[] { ProjectTestHost.CityId.ToString() } }];
+        object[] approved = [new { field = "PROJECT.STATUS", values = new[] { "APPROVED_PLANNED" } }];
+        // Each map beside a bar by the same place with the same figure and filters: the map's groups are the bar's.
+        object design = DesignOf(
+            Visual("In the city", "MAP", 0, 0, 12, 7, measures: ["PROJECTS"], groupBy: "CITY", filters: inCity),
+            Visual("In the city by city", "BAR", 0, 7, 6, 5, measures: ["PROJECTS"], groupBy: "CITY", filters: inCity),
+            Visual("Approved by city", "BAR", 6, 7, 6, 5, measures: ["PROJECTS"], groupBy: "CITY", filters: approved),
+            Visual("Box", "CONTAINER", 0, 12, 12, 8, children:
+            [
+                Visual("Approved projects", "MAP", 0, 0, 12, 7, measures: ["PROJECTS"], groupBy: "CITY", filters: approved, map: new { showList = false, showCounts = true }),
+            ]));
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        AssertMaps(await preview.ReadObjectAsync());
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        AssertMaps(await saved.ReadObjectAsync());
+        using (HttpResponseMessage read = await client.GetAsync(Design, manager))
+        {
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+            AssertMaps(await read.ReadObjectAsync());
+        }
+
+        // local.r06 reads the maps with their options and, without PORTFOLIO_BREAKDOWN_VIEW (the city grouping's permission), no groups, as the bars.
+        using (HttpResponseMessage read = await client.GetAsync(Design, viewer))
+        {
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+            JsonArray visuals = (await read.ReadObjectAsync())["visuals"]!.AsArray();
+            JsonNode?[] maps = [visuals[0], visuals[3]!["children"]![0]];
+            Assert.Equal([true, false], maps.Select(m => m!["map"]!["showList"]!.GetValue<bool>()));
+            Assert.All([.. maps, visuals[1], visuals[2]], v => Assert.Null(v!["groups"]));
+        }
+
+        // The options are stored in data_fields beside the filters; a map sent without options stores the defaults.
+        Assert.Equal(["1:MAP:true:true:1", "5:MAP:false:true:1"], await host.Database.QueryAsync(
+            "SELECT sort_order || ':' || visual_type || ':' || (data_fields->'map'->>'showList') || ':' || (data_fields->'map'->>'showCounts') || ':' "
+            + "|| coalesce(jsonb_array_length(data_fields->'filters'), 0) FROM project.portfolio_visual WHERE visual_type = 'MAP' ORDER BY sort_order"));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        foreach ((object refused, string field) in new[]
+        {
+            (DesignOf(Visual("Projects", "CARD", 0, 0, 4, 2, measures: ["PROJECTS"], map: new { showList = true, showCounts = true })), "visuals[0].map"),
+            (DesignOf(Visual("By sector", "MAP", 0, 0, 12, 7, measures: ["PROJECTS"], groupBy: "SECTOR")), "visuals[0].groupBy"),
+            (DesignOf(Visual("Average", "MAP", 0, 0, 12, 7, measures: ["AVERAGE_ACTUAL"], groupBy: "CITY")), "visuals[0].measures"),
+        })
+        {
+            using HttpResponseMessage save = await client.PutAsync(Design, manager, refused, ifMatch: null);
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, save.StatusCode);
+            JsonObject body = await save.ReadObjectAsync();
+            Assert.Equal(("PROJECT_PORTFOLIO_DESIGN_INVALID", field, "NOT_ALLOWED"), (body["code"]!.GetValue<string>(), body["errors"]![0]!["field"]!.GetValue<string>(),
+                body["errors"]![0]!["code"]!.GetValue<string>()));
+        }
+
+        Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+
+        static void AssertMaps(JsonObject view)
+        {
+            JsonArray visuals = view["visuals"]!.AsArray();
+            JsonNode city = visuals[0]!, approvedMap = visuals[3]!["children"]![0]!;
+            Assert.Equal(("MAP", "CITY"), (city["visualType"]!.GetValue<string>(), city["groupBy"]!.GetValue<string>()));
+            Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"showList\":true,\"showCounts\":true}"), city["map"]));
+            Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"showList\":false,\"showCounts\":true}"), approvedMap["map"]));
+            Assert.Null(visuals[1]!["map"]);
+            Assert.Null(visuals[3]!["map"]);
+            Assert.Equal("APPROVED_PLANNED", approvedMap["filters"]![0]!["values"]![0]!.GetValue<string>());
+            Assert.True(JsonNode.DeepEquals(visuals[1]!["groups"], city["groups"]));
+            Assert.True(JsonNode.DeepEquals(visuals[2]!["groups"], approvedMap["groups"]));
+
+            // The city filter keeps the test city's group alone; the approved map has it too, its count the projects counted (a count of projects, a whole number).
+            JsonNode cityGroup = Assert.Single(city["groups"]!.AsArray())!;
+            Assert.Equal(ProjectTestHost.CityId.ToString(), cityGroup["key"]!.GetValue<string>());
+            Assert.True(cityGroup["projects"]!.GetValue<int>() >= 1);
+            Assert.Equal(cityGroup["projects"]!.GetValue<int>(), cityGroup["values"]![0]!.GetValue<int>());
+            JsonNode approvedInCity = approvedMap["groups"]!.AsArray().Single(g => g!["key"]?.GetValue<string>() == ProjectTestHost.CityId.ToString())!;
+            Assert.True(approvedInCity["values"]![0]!.GetValue<int>() >= 1);
+        }
+    }
+
     private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();
 
     private static object DesignOf(params object[] visuals) => new { visuals };
@@ -633,7 +728,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
     private static object Visual(
         string title, string type, decimal column, decimal row, decimal width, decimal height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
         object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null, string[]? hiddenColumns = null, object[]? columns = null,
-        object? text = null) =>
+        object? text = null, object[]? filters = null, object? map = null) =>
         new
         {
             title = new { ar = $"عنوان {title}", en = title },
@@ -652,5 +747,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             hiddenColumns,
             columns,
             text,
+            filters,
+            map,
         };
 }

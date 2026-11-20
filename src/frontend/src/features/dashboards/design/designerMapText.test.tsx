@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import { dashboardView, withDashboards } from '@/test/dashboardFixtures.ts';
@@ -18,9 +18,9 @@ import {
   type VisualResult,
 } from './designApi.ts';
 
-// The gallery's Map and Text box (20 Nov 2026, docs/architecture/dashboard-designer-map-text.md). The map places the Projects by location section,
-// once per design; a text box is a TEXT visual carrying `text` (and only it does), drawn in the page's language without a title bar on the
-// dashboard. The API is mocked: it echoes what it is sent, as the backend does.
+// The gallery's Text box (20 Nov 2026, docs/architecture/dashboard-designer-map-text.md; its Map is in designerMapVisual.test.tsx): a TEXT
+// visual carrying `text` (and only it does), drawn in the page's language without a title bar on the dashboard. The API is mocked: it echoes
+// what it is sent, as the backend does.
 
 const en = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
 const ar = (key: string) => translate('ar', key);
@@ -156,7 +156,6 @@ function expectTextOnlyOnTextBoxes(visuals: readonly Visual[]) {
   }
 }
 
-const mapTile = () => screen.getByRole('button', { name: en('dashboards.designer.type.MAP') });
 const textTile = () => screen.getByRole('button', { name: en('dashboards.designer.type.TEXT') });
 
 async function openDesigner(language: 'en' | 'ar' = 'en') {
@@ -196,174 +195,6 @@ function dragTile(tile: HTMLElement, x: number, y: number) {
   fireEvent.pointerUp(window, { clientX: x, clientY: y });
   fireEvent.click(tile);
 }
-
-describe('the gallery places the map', () => {
-  test('Map sits after Gauge and before Text box and Container', async () => {
-    api();
-    await openDesigner();
-    const names = within(screen.getByRole('region', { name: en('dashboards.designer.gallery') }))
-      .getAllByRole('button')
-      .map((button) => plain(button.textContent).trim());
-    const at = (key: string) => names.indexOf(en(`dashboards.designer.type.${key}`));
-    expect(at('GAUGE')).toBeGreaterThanOrEqual(0);
-    expect(at('MAP')).toBe(at('GAUGE') + 1);
-    expect(at('TEXT')).toBe(at('MAP') + 1);
-    expect(at('CONTAINER')).toBe(at('TEXT') + 1);
-  });
-
-  test('a click adds the Projects by location section, 12 by 8, titled as the dashboard names it', async () => {
-    const mock = api();
-    const user = userEvent.setup();
-    await openDesigner();
-
-    await user.click(mapTile());
-
-    await waitFor(() => {
-      expect(lastPreviewed(mock).at(-1)).toMatchObject({
-        visualType: 'SECTION',
-        section: 'PROJECT_LOCATIONS',
-        measures: [],
-        groupBy: 'NONE',
-        layoutWidth: 12,
-        layoutHeight: 7,
-        title: { en: en('dashboards.locations.title'), ar: ar('dashboards.locations.title') },
-      });
-    });
-    expectTextOnlyOnTextBoxes(lastPreviewed(mock));
-  });
-
-  test('a drag places the map at the cell it is dropped on', async () => {
-    const mock = api();
-    await openDesigner();
-    measuredCanvas();
-
-    // Column 0 (the map is the grid's width), row 4: 4 × 72 px down, past the card.
-    dragTile(mapTile(), 30, 4 * 72 + 2);
-
-    await waitFor(() => {
-      const map = lastPreviewed(mock).find((visual) => visual.section === 'PROJECT_LOCATIONS');
-      expect(map).toMatchObject({ layoutColumn: 0, layoutRow: 4, layoutWidth: 12 });
-    });
-    // Added once: the click that ends the drag adds nothing more.
-    expect(
-      lastPreviewed(mock).filter((visual) => visual.section === 'PROJECT_LOCATIONS'),
-    ).toHaveLength(1);
-  });
-
-  test('while the map is on the design the tile stays usable and says where the map is; removing the map makes it add one again', async () => {
-    api(design([CARD, MAP]));
-    const user = userEvent.setup();
-    await openDesigner();
-    await screen.findByRole('region', { name: 'Projects by location' });
-
-    const tile = mapTile();
-    expect((tile as HTMLButtonElement).disabled).toBe(false);
-    expect(tile.getAttribute('title')).toBe(
-      `${en('dashboards.designer.mapGoTo')}\n${en('dashboards.designer.mapDragToMove')}`,
-    );
-    const note = present(document.getElementById(tile.getAttribute('aria-describedby') ?? ''));
-    expect(note.textContent).toBe(en('dashboards.designer.mapPlacedHint'));
-
-    await user.click(
-      screen.getByRole('button', {
-        name: (name) =>
-          plain(name) ===
-          plain(en('dashboards.designer.editVisual', { title: 'Projects by location' })),
-      }),
-    );
-    await user.click(
-      within(settings()).getByRole('button', { name: en('dashboards.designer.removeSection') }),
-    );
-
-    await waitFor(() => {
-      expect(mapTile().getAttribute('title')).toBeNull();
-    });
-    expect(mapTile().getAttribute('aria-describedby')).toBeNull();
-  });
-});
-
-describe('the Map tile while the map is placed', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  test('a click selects the map and scrolls it into view, adding nothing', async () => {
-    const mock = api(design([CARD, MAP]));
-    const scrolled: Element[] = [];
-    Element.prototype.scrollIntoView = vi.fn(function (this: Element) {
-      scrolled.push(this);
-    });
-    const user = userEvent.setup();
-    await openDesigner();
-    const map = await screen.findByRole('region', { name: 'Projects by location' });
-
-    await user.click(mapTile());
-
-    expect(map.getAttribute('aria-current')).toBe('true');
-    expect(scrolled).toEqual([map]);
-    // Its settings are open: a section's.
-    expect(
-      within(settings()).getByRole('button', { name: en('dashboards.designer.removeSection') }),
-    ).toBeTruthy();
-    await waitFor(() => {
-      expect(
-        lastPreviewed(mock).filter((visual) => visual.section === 'PROJECT_LOCATIONS'),
-      ).toHaveLength(1);
-    });
-  });
-
-  test('a drag moves the map to the cell it is dropped on', async () => {
-    const mock = api(design([CARD, MAP]));
-    await openDesigner();
-    await screen.findByRole('region', { name: 'Projects by location' });
-    measuredCanvas();
-
-    // Row 12: 12 × 72 px down.
-    dragTile(mapTile(), 30, 12 * 72 + 2);
-
-    await waitFor(() => {
-      const map = lastPreviewed(mock).find((visual) => visual.section === 'PROJECT_LOCATIONS');
-      expect(map).toMatchObject({ layoutColumn: 0, layoutRow: 12, layoutWidth: 12 });
-    });
-    expect(
-      lastPreviewed(mock).filter((visual) => visual.section === 'PROJECT_LOCATIONS'),
-    ).toHaveLength(1);
-    expect(lastPreviewed(mock).map((visual) => visual.title.en)).toContain('All projects');
-    expect(
-      screen.getByRole('region', { name: 'Projects by location' }).getAttribute('aria-current'),
-    ).toBe('true');
-  });
-
-  test('a drag onto a container moves the map into it', async () => {
-    const mock = api(design([CARD, CONTAINER, { ...MAP, layoutRow: 7 }]));
-    await openDesigner();
-    await screen.findByRole('region', { name: 'Notes' });
-    measuredCanvas();
-
-    dragTile(mapTile(), 110, 3 * 72 + 30);
-
-    await waitFor(() => {
-      const box = lastPreviewed(mock).find((visual) => visual.visualType === 'CONTAINER');
-      expect(box?.children?.map((child) => child.section)).toEqual(['PROJECT_LOCATIONS']);
-    });
-    expect(
-      lastPreviewed(mock).filter((visual) => visual.section === 'PROJECT_LOCATIONS'),
-    ).toHaveLength(0);
-  });
-
-  test('dropped outside the dashboard the map stays where it was', async () => {
-    api(design([CARD, MAP]));
-    await openDesigner();
-    await screen.findByRole('region', { name: 'Projects by location' });
-    measuredCanvas();
-
-    dragTile(mapTile(), 1500, 2500);
-
-    expect(
-      screen.getByRole('button', { name: en('dashboards.designer.save') }).hasAttribute('disabled'),
-    ).toBe(true);
-  });
-});
 
 describe('the gallery places a text box', () => {
   test('a click sends a TEXT visual, 6 by 2, titled "Text box", with its text in both languages, normal, at the start, not bold, on the card colour', async () => {

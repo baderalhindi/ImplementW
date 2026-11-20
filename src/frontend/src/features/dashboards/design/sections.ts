@@ -1,14 +1,10 @@
-import { translate } from '@/shared/i18n/i18n.ts';
-
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { type PortfolioInsights } from '../api/insightTypes.ts';
 import { type DashboardView, type DashboardWidgetResult } from '../api/types.ts';
 import { insightBlockShown } from '../insights/insightSections.ts';
 import { visibleWidgets } from '../layout.ts';
 import { hasNoData } from '../presentation.ts';
-import { type Nestable, pathWhere, type VisualPath } from './containers.ts';
 import { type Visual } from './designApi.ts';
-import { freePlace } from './visuals.ts';
 
 /**
  * What the dashboard's own sections are drawn from: the insights and the dashboard's view (its map and governed widgets), both under the
@@ -69,38 +65,4 @@ export function sectionShown(
         insightBlockShown(section, sources.insights, sources.showsCompletion)
       );
   }
-}
-
-/** The map's size when placed from the gallery: the grid's width, eight rows. */
-export const MAP_SIZE = { width: 12, height: 7 };
-
-/** Where the map (Projects by location) is, top-level or in a container; null when the design has none. Sections are once per design. */
-export function mapPath<T extends Nestable<T> & Pick<Visual, 'section'>>(
-  visuals: readonly T[],
-): VisualPath | null {
-  return pathWhere(visuals, (visual) => visual.section === 'PROJECT_LOCATIONS');
-}
-
-/**
- * The gallery's Map (20 Nov 2026, docs/architecture/dashboard-designer-map-text.md): the Projects by location section at the first free place,
- * titled as the dashboard names it; null when the grid has no room.
- */
-export function newMapVisual(visuals: Visual[]): Visual | null {
-  const place = freePlace(visuals, MAP_SIZE.width, MAP_SIZE.height);
-  return place === null
-    ? null
-    : {
-        title: {
-          ar: translate('ar', 'dashboards.locations.title'),
-          en: translate('en', 'dashboards.locations.title'),
-        },
-        visualType: 'SECTION',
-        measures: [],
-        groupBy: 'NONE',
-        section: 'PROJECT_LOCATIONS',
-        layoutColumn: place.column,
-        layoutRow: place.row,
-        layoutWidth: MAP_SIZE.width,
-        layoutHeight: MAP_SIZE.height,
-      };
 }

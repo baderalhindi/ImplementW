@@ -37,6 +37,7 @@ import {
   NO_FIELD_DATA,
   valuesFor,
 } from './fields.ts';
+import { MAP_PLACES, mapVisual } from './mapVisual.ts';
 import { textBoxVisual } from './textBox.ts';
 import {
   asColumnTable,
@@ -135,6 +136,7 @@ export const MAX_MEASURES: Record<VisualType, number> = {
   SECTION: 0,
   CONTAINER: 0,
   TEXT: 0,
+  MAP: 1,
 };
 
 /** The size a new visual of a type takes, in columns of twelve and rows. */
@@ -150,14 +152,18 @@ export const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }>
   SECTION: { width: 12, height: 6 },
   CONTAINER: { width: 6, height: 6 },
   TEXT: { width: 6, height: 2 },
+  MAP: { width: 12, height: 7 },
 };
 
 export const COLUMNS = 12;
 export const MAX_HEIGHT = 24;
 export const MAX_VISUALS = 60;
 
-/** The groupings by a project attribute a type takes; a line groups by a field only. */
+/** The groupings by a project attribute a type takes; a line groups by a field only, a map by a place. */
 export function groupBysFor(type: VisualType): readonly GroupBy[] {
+  if (type === 'MAP') {
+    return MAP_PLACES;
+  }
   if (
     type === 'CARD' ||
     type === 'GAUGE' ||
@@ -182,7 +188,7 @@ const ADDITIVE_MEASURES: readonly Measure[] = [
   ...FOLLOW_UP_MEASURES,
 ];
 
-/** The measures a type may draw: a gauge a percentage, a pie or donut a total that adds up; a line draws fields only. */
+/** The measures a type may draw: a gauge a percentage, a pie, donut or map a total that adds up; a line draws fields only. */
 export function measuresFor(type: VisualType): readonly Measure[] {
   if (type === 'SECTION' || type === 'LINE' || type === 'CONTAINER' || type === 'TEXT') {
     return [];
@@ -190,7 +196,7 @@ export function measuresFor(type: VisualType): readonly Measure[] {
   if (type === 'GAUGE') {
     return PERCENT_MEASURES;
   }
-  return type === 'PIE' || type === 'DONUT' ? ADDITIVE_MEASURES : MEASURES;
+  return type === 'PIE' || type === 'DONUT' || type === 'MAP' ? ADDITIVE_MEASURES : MEASURES;
 }
 
 export function isPercent(measure: Measure): boolean {
@@ -291,13 +297,37 @@ export function withType(
 }
 
 /**
+ * A map's automatic title: "Projects by location", as the dashboard names its map, for the project count; "Total value by location" for
+ * another figure, whether it is placed by city or by region.
+ */
+function mapTitle(visual: Pick<Visual, 'measures' | 'values'>, language: Language): string {
+  const [value] = visual.values ?? [];
+  const measure = visual.measures[0] ?? 'PROJECTS';
+  if (value === undefined && measure === 'PROJECTS') {
+    return translate(language, 'dashboards.locations.title');
+  }
+  return translate(language, 'dashboards.designer.titleByGroup', {
+    measure:
+      value === undefined
+        ? translate(language, `dashboards.designer.measure.${measure}`)
+        : fieldValueText(value, language),
+    group: translate(language, 'dashboards.designer.mapLocation'),
+  }).replace(/[⁨⁩]/g, '');
+}
+
+/**
  * "Projects by portfolio", "Sum of Actual expenditure to date by Overall health": the title a visual takes from its first measure or field value
  * and its grouping until someone writes another.
  */
 export function autoTitle(
-  visual: Pick<Visual, 'measures' | 'groupBy' | 'values' | 'groupField' | 'columns'>,
+  visual: Pick<Visual, 'measures' | 'groupBy' | 'values' | 'groupField' | 'columns'> & {
+    visualType?: VisualType;
+  },
   language: Language,
 ): string {
+  if (visual.visualType === 'MAP') {
+    return mapTitle(visual, language);
+  }
   if ((visual.columns?.length ?? 0) > 0) {
     // A column table: its first calculated column by its first grouping one, "Projects by Sector".
     const columns = visual.columns ?? [];
@@ -345,9 +375,10 @@ export function retitled(before: Visual, after: Visual): Visual {
   };
 }
 
-/** The grouping a visual of `type` starts with: by portfolio where the type is grouped, as the dashboard's charts are. */
+/** The grouping a visual of `type` starts with: by portfolio where the type is grouped, as the dashboard's charts are; a map by city. */
 export function firstGrouping(type: VisualType): GroupBy {
-  return groupBysFor(type).includes('PORTFOLIO') ? 'PORTFOLIO' : 'NONE';
+  const groupings = groupBysFor(type);
+  return groupings.includes('PORTFOLIO') ? 'PORTFOLIO' : (groupings[0] ?? 'NONE');
 }
 
 /**
@@ -366,6 +397,9 @@ export function newVisual(
   }
   if (type === 'TEXT') {
     return textBoxVisual(place, width, height);
+  }
+  if (type === 'MAP') {
+    return mapVisual(place, width, height);
   }
   if (type === 'LINE') {
     const line = asLine(

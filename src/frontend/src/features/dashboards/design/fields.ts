@@ -21,6 +21,7 @@ import {
   type VisualResult,
   type VisualType,
 } from './designApi.ts';
+import { mapOptionsOf } from './mapVisual.ts';
 import { sentText } from './textBox.ts';
 
 // The governed fields a designed visual draws (TASK-112, data fields contract): their names, the calculations each visual type takes, how a
@@ -148,6 +149,7 @@ export const MAX_VALUES: Record<VisualType, number> = {
   SECTION: 0,
   CONTAINER: 0,
   TEXT: 0,
+  MAP: 1,
 };
 
 const GAUGE_AGGREGATIONS: readonly FieldAggregation[] = ['AVERAGE', 'MIN', 'MAX'];
@@ -176,6 +178,7 @@ export function aggregationsFor(field: FieldDescriptor, type: VisualType): Field
       );
     case 'PIE':
     case 'DONUT':
+    case 'MAP':
       return field.aggregations.filter((aggregation) => SHARE_AGGREGATIONS.includes(aggregation));
     default:
       return field.aggregations;
@@ -298,9 +301,9 @@ export function drawsFields(visual: Pick<Visual, 'values'>): boolean {
   return (visual.values?.length ?? 0) > 0;
 }
 
-/** The types that group their projects, by a project attribute or a status, yes/no or date field. */
+/** The types that group their projects, by a project attribute or a status, yes/no or date field; a map groups by a place only. */
 export function groupsByField(type: VisualType): boolean {
-  return type !== 'CARD' && type !== 'GAUGE' && type !== 'SECTION';
+  return type !== 'CARD' && type !== 'GAUGE' && type !== 'SECTION' && type !== 'MAP';
 }
 
 /** The field values that still fit a visual of `type`: each with a calculation the type takes, up to the type's count. */
@@ -337,7 +340,7 @@ export const NO_FIELD_DATA = {
 /**
  * A visual as it is compared and sent: its field data and widget code only where it has some, so a design read back equals the one sent; its axes as the API
  * takes them, null for the defaults (axes.ts); a table section's hidden columns, null when none (sectionColumns.ts); a column table's columns and
- * totals choice (tableColumns.ts); a container's children, each so; a text box's words, only on a text box.
+ * totals choice (tableColumns.ts); a container's children, each so; a text box's words, only on a text box; a map's options, only on a map.
  */
 export function normalized<T extends Visual>(visual: T): T {
   const {
@@ -352,6 +355,7 @@ export function normalized<T extends Visual>(visual: T): T {
     columns,
     showTotals: _showTotals,
     text,
+    map,
     ...rest
   } = visual;
   const hiddenColumns = sentHiddenColumns(visual);
@@ -363,6 +367,8 @@ export function normalized<T extends Visual>(visual: T): T {
     ...(visual.visualType === 'TEXT' && text !== undefined && text !== null
       ? { text: sentText(text) }
       : {}),
+    // A map's options only on a map, both always (an absent one is at its default).
+    ...(visual.visualType === 'MAP' ? { map: mapOptionsOf({ map }) } : {}),
     axes: sentAxes(visual),
     ...(widgetCode === undefined || widgetCode === null ? {} : { widgetCode }),
     ...(values === undefined || values === null || values.length === 0 ? {} : { values }),

@@ -9844,3 +9844,18 @@ tr[data-flagged='true'] {
   margin: 0;
   color: var(--color-warning);
 }
+
+/*
+ * A map visual (TASK-112, 20 Nov 2026, docs/architecture/dashboard-designer-map-visual.md): the Projects by location map drawn from the
+ * visual's figure, laid out as the map section is (.visual__body--section). Without its list the map takes the row; a figure longer than a
+ * circle holds (an amount) widens its circle into a pill.
+ */
+.locations__map-row--wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.map-bubble--wide {
+  padding-inline: 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
