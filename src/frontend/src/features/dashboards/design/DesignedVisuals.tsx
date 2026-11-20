@@ -32,6 +32,8 @@ import {
   withoutEmptyRows,
 } from './visuals.ts';
 import { hasColumns } from './tableColumns.ts';
+import { isTextBox } from './textBox.ts';
+import { TextBoxBody } from './TextBoxBody.tsx';
 import { VisualBody } from './VisualBody.tsx';
 import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
 
@@ -142,6 +144,32 @@ function SectionFrame({
   );
 }
 
+/**
+ * A text box on the dashboard: its words only, with no title bar and no card round them, so it reads as text (its title is its accessible
+ * name); longer than its visual, it scrolls.
+ */
+function TextFrame({
+  visual,
+  place,
+}: {
+  visual: VisualResult;
+  place: CSSProperties;
+}): ReactElement {
+  const { language } = useI18n();
+  return (
+    <section
+      className="visual visual--text"
+      style={place}
+      aria-label={visual.title[language]}
+      data-visual="TEXT"
+    >
+      <div className="visual__body visual__body--text">
+        <TextBoxBody text={visual.text} />
+      </div>
+    </section>
+  );
+}
+
 /** A visual or a section at `place`: on the dashboard's grid, or on its container's inner grid. */
 function PlacedVisual({
   visual,
@@ -156,6 +184,8 @@ function PlacedVisual({
 }): ReactElement {
   return visual.visualType === 'SECTION' ? (
     <SectionFrame visual={visual} sources={sources} place={place} />
+  ) : isTextBox(visual) ? (
+    <TextFrame visual={visual} place={place} />
   ) : (
     <VisualFrame visual={visual} filters={filters} place={place} />
   );
@@ -291,12 +321,14 @@ export function DesignedVisuals({
   // with all the widgets in one section draws each widget as its own visual, packed as the designer packs that split.
   const split = hasWidgetsToSplit(design.data.visuals, view.widgets);
   const isShown = (visual: VisualResult) =>
-    visual.section === undefined || visual.section === null
+    // A text box is the designer's words, for everyone.
+    isTextBox(visual) ||
+    (visual.section === undefined || visual.section === null
       ? visual.groups !== null &&
         !withheld(visual) &&
         // A column table the caller may not see comes back with no table.
         (!hasColumns(visual) || (visual.table !== null && visual.table !== undefined))
-      : sectionShown(visual, sources);
+      : sectionShown(visual, sources));
   // A container keeps the visuals the caller may see, with the inner rows they leave empty taken out; one with none left is left out.
   const visible = splitWidgets(
     design.data.visuals,

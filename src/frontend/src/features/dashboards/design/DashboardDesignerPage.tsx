@@ -14,6 +14,8 @@ import {
   ConfirmDialog,
   type Confirmation,
 } from '@/features/identity-access/components/ConfirmDialog.tsx';
+import { fieldMessage } from '@/features/identity-access/problems.ts';
+import { ApiError, type FieldIssue } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
@@ -47,7 +49,9 @@ import { designApi, type Visual, type VisualResult, type VisualType } from './de
 import { lineStart, normalized } from './fields.ts';
 import { hiddenColumnsOf } from './sectionColumns.ts';
 import { SectionBody } from './SectionBody.tsx';
-import { sectionShown, type SectionSources } from './sections.ts';
+import { hasMap, newMapVisual, sectionShown, type SectionSources } from './sections.ts';
+import { isTextBox, TEXT_ISSUE_MESSAGES, type TextIssue, withoutRefusedText } from './textBox.ts';
+import { TextBoxBody } from './TextBoxBody.tsx';
 import { VisualBody } from './VisualBody.tsx';
 import { edgeScroller } from './edgeScroll.ts';
 import { VisualBodyBox } from './FitToBox.tsx';
@@ -146,6 +150,7 @@ function withoutFigures(visual: VisualResult): Visual {
     hiddenColumns: visual.hiddenColumns,
     columns: visual.columns,
     showTotals: visual.showTotals,
+    text: visual.text,
     ...(visual.children === undefined || visual.children === null
       ? {}
       : { children: visual.children.map(withoutFigures) }),
@@ -215,6 +220,8 @@ export function DashboardDesignerPage(): ReactElement {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [figures, setFigures] = useState<ReadonlyMap<string, VisualResult>>(new Map());
   const [previewError, setPreviewError] = useState<string | null>(null);
+  /** The field issues of the last refused preview or save, with the design sent, so a text box's settings can say what was refused. */
+  const [refusal, setRefusal] = useState<{ sent: Draft[]; issues: FieldIssue[] } | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -271,21 +278,24 @@ export function DashboardDesignerPage(): ReactElement {
   useEffect(load, [load]);
 
   // The figures follow the design: a short while after the last change, the API calculates the design as it stands, unsaved.
+  // A text box whose words would be refused is left out (it has no figures), so the rest is still calculated.
   useEffect(() => {
-    if (saved === null || visuals.length === 0) {
+    const sent = withoutRefusedText(visuals);
+    if (saved === null || sent.length === 0) {
       return undefined;
     }
     const controller = new AbortController();
-    const sent = visuals;
     const timer = window.setTimeout(() => {
       designApi.preview(plain(sent), controller.signal).then(
         (design) => {
           setFigures(figuresByKey(sent, design.visuals));
           setPreviewError(null);
+          setRefusal(null);
         },
         (error: unknown) => {
           if (!controller.signal.aborted) {
             setPreviewError(dashboardProblemMessage(error, t));
+            setRefusal(error instanceof ApiError ? { sent, issues: error.fieldIssues } : null);
           }
         },
       );
@@ -394,6 +404,10 @@ export function DashboardDesignerPage(): ReactElement {
   const add = (type: VisualType) => {
     append(newVisual(type, visuals, fields.data ?? []));
   };
+
+  // The map is once per design: while it is on it, the gallery's Map is disabled and says so.
+  const mapPlaced = hasMap(visuals);
+  const mapPlacedId = 'designer-map-placed';
 
   // The view's widgets no visual draws: each can be placed again from the gallery.
   const unplaced = view.data === undefined ? [] : unplacedWidgets(visuals, view.data.widgets);
@@ -725,6 +739,7 @@ export function DashboardDesignerPage(): ReactElement {
       setNotice({ tone: 'success', message: t('dashboards.designer.saved') });
     } catch (error) {
       setPreviewError(dashboardProblemMessage(error, t));
+      setRefusal(error instanceof ApiError ? { sent: visuals, issues: error.fieldIssues } : null);
     } finally {
       setBusy(false);
     }
@@ -821,12 +836,16 @@ export function DashboardDesignerPage(): ReactElement {
       <VisualBodyBox
         visual={visual}
         className={
-          visual.section === undefined || visual.section === null
-            ? 'visual__body'
-            : 'visual__body visual__body--section'
+          isTextBox(visual)
+            ? 'visual__body visual__body--text'
+            : visual.section === undefined || visual.section === null
+              ? 'visual__body'
+              : 'visual__body visual__body--section'
         }
       >
-        {visual.section === undefined || visual.section === null ? (
+        {isTextBox(visual) ? (
+          <TextBoxBody text={visual.text} />
+        ) : visual.section === undefined || visual.section === null ? (
           <VisualBody visual={figuresOf(visual)} fields={fields.data} />
         ) : sectionShown(visual, sources) ? (
           <SectionBody
@@ -873,6 +892,26 @@ export function DashboardDesignerPage(): ReactElement {
         {renderResizeHandle(container)}
       </section>
     );
+  };
+
+  /** What the API refused in a text box's words, by language: its issues at `visuals[i].text.ar` (a child's at `visuals[i].children[j]…`). */
+  const textRefusedOf = (key: string): Partial<Record<'ar' | 'en', string>> => {
+    const at = refusal === null ? null : pathOf(refusal.sent, key);
+    if (refusal === null || at === null) {
+      return {};
+    }
+    const prefix = `visuals[${String(at.index)}]${at.child === null ? '' : `.children[${String(at.child)}]`}.text.`;
+    const messageOf = (language: 'ar' | 'en') => {
+      const issue = refusal.issues.find((one) => one.field === `${prefix}${language}`);
+      return issue === undefined
+        ? undefined
+        : issue.code in TEXT_ISSUE_MESSAGES
+          ? t(TEXT_ISSUE_MESSAGES[issue.code as TextIssue])
+          : fieldMessage(issue.code, t);
+    };
+    const ar = messageOf('ar');
+    const en = messageOf('en');
+    return { ...(ar === undefined ? {} : { ar }), ...(en === undefined ? {} : { en }) };
   };
 
   /** The sizes the selected visual may take where it is. */
@@ -1004,6 +1043,55 @@ export function DashboardDesignerPage(): ReactElement {
                 <button
                   type="button"
                   className="designer__type"
+                  // Sections are once per design: the map is placed again only once it is removed.
+                  disabled={mapPlaced}
+                  title={mapPlaced ? t('dashboards.designer.mapPlaced') : undefined}
+                  aria-describedby={mapPlaced ? mapPlacedId : undefined}
+                  onPointerDown={(event) => {
+                    if (!mapPlaced) {
+                      startGalleryDrag(event, t('dashboards.designer.type.MAP'), () =>
+                        newMapVisual(visuals),
+                      );
+                    }
+                  }}
+                  onClick={() => {
+                    clickedTile(() => {
+                      append(newMapVisual(visuals));
+                    });
+                  }}
+                >
+                  <VisualIcon type="MAP" />
+                  <span className="designer__type-name">{t('dashboards.designer.type.MAP')}</span>
+                </button>
+                {mapPlaced && (
+                  <span id={mapPlacedId} className="visually-hidden">
+                    {t('dashboards.designer.mapPlaced')}
+                  </span>
+                )}
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="designer__type"
+                  onPointerDown={(event) => {
+                    startGalleryDrag(event, t('dashboards.designer.type.TEXT'), () =>
+                      newVisual('TEXT', visuals),
+                    );
+                  }}
+                  onClick={() => {
+                    clickedTile(() => {
+                      add('TEXT');
+                    });
+                  }}
+                >
+                  <VisualIcon type="TEXT" />
+                  <span className="designer__type-name">{t('dashboards.designer.type.TEXT')}</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="designer__type"
                   onPointerDown={(event) => {
                     startGalleryDrag(event, t('dashboards.designer.type.CONTAINER'), () =>
                       newContainer(visuals),
@@ -1071,6 +1159,7 @@ export function DashboardDesignerPage(): ReactElement {
                 visual={current}
                 fields={fields}
                 bounds={boundsOf(current)}
+                textRefused={textRefusedOf(current.key)}
                 onChange={(next) => {
                   place(current.key, next);
                 }}

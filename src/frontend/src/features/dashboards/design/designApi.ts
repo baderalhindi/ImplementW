@@ -9,7 +9,10 @@ import { type InsightSectionCode } from '../insights/insightSections.ts';
 // measures and a grouping — never a formula (BR-DSH-030) — on a twelve-column grid. The API calculates every figure over the same projects as the
 // insights; a visual whose grouping the caller may not see comes back with `groups` null and is left out.
 
-/** CONTAINER (19 Nov 2026, docs/architecture/dashboard-designer-containers.md): a framed, titled box holding visuals, one level deep. */
+/**
+ * CONTAINER (19 Nov 2026, docs/architecture/dashboard-designer-containers.md): a framed, titled box holding visuals, one level deep. TEXT (20 Nov
+ * 2026, docs/architecture/dashboard-designer-map-text.md): the designer's own words, a heading or a note.
+ */
 export type VisualType =
   | 'CARD'
   | 'BAR'
@@ -20,7 +23,23 @@ export type VisualType =
   | 'GAUGE'
   | 'LINE'
   | 'SECTION'
-  | 'CONTAINER';
+  | 'CONTAINER'
+  | 'TEXT';
+
+/** A text box's size: about 0.875, 1, 1.25 and 1.5 rem, the heading bold. */
+export type TextSize = 'SMALL' | 'NORMAL' | 'LARGE' | 'HEADING';
+
+/** A text box's alignment, logical: the start and end mirror in Arabic. */
+export type TextAlign = 'START' | 'CENTER' | 'END';
+
+/** A text box's words in both languages (each 1–2000 characters, line breaks kept) and how they are drawn. */
+export interface TextBox {
+  ar: string;
+  en: string;
+  size: TextSize;
+  align: TextAlign;
+  bold: boolean;
+}
 
 /**
  * One of the dashboard's own sections a design places (18 Nov 2026): drawn as it always was, with its own figures and permission.
@@ -248,6 +267,8 @@ export interface Visual {
   columns?: TableColumn[] | null | undefined;
   /** Whether a column table draws its totals row; absent or null means it does. */
   showTotals?: boolean | null | undefined;
+  /** A TEXT visual's words; absent or null on any other visual. */
+  text?: TextBox | null | undefined;
 }
 
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */

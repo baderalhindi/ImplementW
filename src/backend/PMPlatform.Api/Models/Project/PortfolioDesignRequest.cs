@@ -1,5 +1,6 @@
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Models.IdentityAccess;
+using PMPlatform.Application.Common.Validation;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.Insights;
 using PMPlatform.Domain.Project;
@@ -63,7 +64,8 @@ public sealed record PortfolioVisualRequest(
     IReadOnlyList<PortfolioVisualRequest?>? Children = null,
     IReadOnlyList<string?>? HiddenColumns = null,
     IReadOnlyList<PortfolioTableColumnRequest?>? Columns = null,
-    bool? ShowTotals = null)
+    bool? ShowTotals = null,
+    PortfolioTextBoxRequest? Text = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -74,7 +76,7 @@ public sealed record PortfolioVisualRequest(
         Require(LayoutRow, $"{at}.layoutRow", errors);
         Require(LayoutWidth, $"{at}.layoutWidth", errors);
         Require(LayoutHeight, $"{at}.layoutHeight", errors);
-        if (Measures is null && Section is null && Values is null && Columns is null && VisualType != PortfolioVisualType.Container)
+        if (Measures is null && Section is null && Values is null && Columns is null && VisualType is not (PortfolioVisualType.Container or PortfolioVisualType.Text))
         {
             errors.Add(new FieldError($"{at}.measures", FieldError.Required));
         }
@@ -112,6 +114,7 @@ public sealed record PortfolioVisualRequest(
         }
 
         Axes?.Validate($"{at}.axes", errors);
+        Text?.Validate($"{at}.text", errors);
         for (int i = 0; i < (Children?.Count ?? 0); i++)
         {
             if (Children![i] is { } child)
@@ -130,7 +133,7 @@ public sealed record PortfolioVisualRequest(
             Values?.Select(v => new PortfolioFieldValue(v!.Field!, v.Aggregation!.Value)).ToList(), GroupField,
             Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes(), WidgetCode,
             Children?.Select(c => c!.ToInput()).ToList(), HiddenColumns?.Select(c => c!).ToList(),
-            Columns?.Select(c => new PortfolioTableColumn(c!.Kind!.Value, c.Key!, c.Aggregation)).ToList(), ShowTotals);
+            Columns?.Select(c => new PortfolioTableColumn(c!.Kind!.Value, c.Key!, c.Aggregation)).ToList(), ShowTotals, Text?.ToTextBox());
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct
@@ -138,6 +141,50 @@ public sealed record PortfolioVisualRequest(
         if (value is null)
         {
             errors.Add(new FieldError(field, FieldError.Required));
+        }
+    }
+}
+
+/// <summary>
+/// What a TEXT visual says (the 20 Nov 2026 text box): its words in both languages as a visual's title is (R-17: present, not blank, each in its own
+/// language), its line breaks kept and no other control character; its size, alignment and bold. Whether the visual is a text box and the trimmed length
+/// (2000) are checked by the service.
+/// </summary>
+public sealed record PortfolioTextBoxRequest(string? Ar, string? En, PortfolioTextSize? Size, PortfolioTextAlign? Align, bool? Bold)
+{
+    /// <summary>What the request may carry in each language before trimming: twice the trimmed limit, as a title's 200 to its 100.</summary>
+    private const int MaxLength = 2 * PortfolioTextBox.MaxLength;
+
+    internal void Validate(string at, List<FieldError> errors)
+    {
+        Words(Ar, $"{at}.ar", TextScript.Arabic, errors);
+        Words(En, $"{at}.en", TextScript.English, errors);
+        if (Size is null)
+        {
+            errors.Add(new FieldError($"{at}.size", FieldError.Required));
+        }
+
+        if (Align is null)
+        {
+            errors.Add(new FieldError($"{at}.align", FieldError.Required));
+        }
+
+        if (Bold is null)
+        {
+            errors.Add(new FieldError($"{at}.bold", FieldError.Required));
+        }
+    }
+
+    internal PortfolioTextBox ToTextBox() => new(Ar!, En!, Size!.Value, Align!.Value, Bold!.Value);
+
+    /// <summary>A title's rules, and no control character but the line break (a tab or carriage return is refused; every request already refuses the rest).</summary>
+    private static void Words(string? value, string field, TextScript script, List<FieldError> errors)
+    {
+        int before = errors.Count;
+        RequestValidation.RequireText(value, field, MaxLength, script, errors);
+        if (errors.Count == before && value!.Any(c => char.IsControl(c) && c != '\n'))
+        {
+            errors.Add(new FieldError(field, FieldError.InvalidCharacter));
         }
     }
 }

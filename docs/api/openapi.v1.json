@@ -38967,6 +38967,102 @@
         },
         "description": "A row: its projects, the project when the row is one project (grouped by its title or ID), and a cell per column in order."
       },
+      "PortfolioTextAlign": {
+        "enum": [
+          "START",
+          "CENTER",
+          "END"
+        ],
+        "description": "Where a text box's lines are aligned, counted from the reading start: PortfolioTextAlign.Start is the right in Arabic."
+      },
+      "PortfolioTextBox": {
+        "required": [
+          "ar",
+          "en",
+          "size",
+          "align",
+          "bold"
+        ],
+        "type": "object",
+        "properties": {
+          "ar": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          },
+          "size": {
+            "$ref": "#/components/schemas/PortfolioTextSize"
+          },
+          "align": {
+            "$ref": "#/components/schemas/PortfolioTextAlign"
+          },
+          "bold": {
+            "type": "boolean"
+          }
+        },
+        "description": "What a PortfolioVisualType.Text visual says (the 20 Nov 2026 text box, dashboard-designer-map-text.md): its words in both languages, each\n1–2000 characters once trimmed with its line breaks (`\\n`) kept, how large and where they are drawn, and whether in bold."
+      },
+      "PortfolioTextBoxRequest": {
+        "required": [
+          "ar",
+          "en",
+          "size",
+          "align",
+          "bold"
+        ],
+        "type": "object",
+        "properties": {
+          "ar": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "en": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "size": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextSize"
+              }
+            ]
+          },
+          "align": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextAlign"
+              }
+            ]
+          },
+          "bold": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "What a TEXT visual says (the 20 Nov 2026 text box): its words in both languages as a visual's title is (R-17: present, not blank, each in its own\nlanguage), its line breaks kept and no other control character; its size, alignment and bold. Whether the visual is a text box and the trimmed length\n(2000) are checked by the service."
+      },
+      "PortfolioTextSize": {
+        "enum": [
+          "SMALL",
+          "NORMAL",
+          "LARGE",
+          "HEADING"
+        ],
+        "description": "How large a text box's words are drawn (the 20 Nov 2026 text box), from small to a heading."
+      },
       "PortfolioTopProject": {
         "required": [
           "projectId",
@@ -39400,6 +39496,16 @@
               "null",
               "boolean"
             ]
+          },
+          "text": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextBoxRequest"
+              }
+            ]
           }
         }
       },
@@ -39584,6 +39690,16 @@
                 "$ref": "#/components/schemas/PortfolioTableResult"
               }
             ]
+          },
+          "text": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextBox"
+              }
+            ]
           }
         },
         "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."
@@ -39599,7 +39715,8 @@
           "GAUGE",
           "SECTION",
           "LINE",
-          "CONTAINER"
+          "CONTAINER",
+          "TEXT"
         ],
         "description": "How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer)."
       },

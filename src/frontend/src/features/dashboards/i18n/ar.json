@@ -381,7 +381,9 @@
       "GAUGE": "مؤشر نسبة",
       "SECTION": "قسم من اللوحة",
       "LINE": "مخطط خطي",
-      "CONTAINER": "حاوية"
+      "CONTAINER": "حاوية",
+      "MAP": "خريطة",
+      "TEXT": "مربع نص"
     },
     "measure": {
       "PROJECTS": "عدد المشاريع",
@@ -676,6 +678,29 @@
     "moveColumnUp": "نقل {column} للأعلى",
     "moveColumnDown": "نقل {column} للأسفل",
     "removeColumn": "إزالة {column}",
-    "columnsFull": "في الجدول {count} عمودًا، وهو الحد الأقصى."
+    "columnsFull": "في الجدول {count} عمودًا، وهو الحد الأقصى.",
+    "mapPlaced": "الخريطة موجودة في لوحة المعلومات",
+    "textDefaultTitle": "مربع نص",
+    "textDefault": "نص",
+    "textSettings": "يسمّي العنوانان مربع النص في المصمم ولقارئات الشاشة، ولا تعرض لوحة المعلومات إلا نصه.",
+    "textAr": "النص (عربي)",
+    "textEn": "النص (إنجليزي)",
+    "textRequired": "اكتب النص.",
+    "textSize": "الحجم",
+    "textSizes": {
+      "SMALL": "صغير",
+      "NORMAL": "عادي",
+      "LARGE": "كبير",
+      "HEADING": "عنوان"
+    },
+    "textAlign": "المحاذاة",
+    "textAligns": {
+      "START": "البداية",
+      "CENTER": "الوسط",
+      "END": "النهاية"
+    },
+    "textBold": "عريض",
+    "textTooLong": "اختصر النص إلى 2000 حرف أو أقل.",
+    "textInvalidCharacter": "احذف علامة الجدولة أو أي حرف تحكم آخر: لا يُحتفظ إلا بفواصل الأسطر."
   }
 }

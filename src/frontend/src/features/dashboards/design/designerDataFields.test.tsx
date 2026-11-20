@@ -821,9 +821,21 @@ describe('the gallery without the sections list (19 Nov 2026)', () => {
     await screen.findByRole('heading', { level: 1, name: en('dashboards.designer.title') });
 
     const gallery = screen.getByRole('region', { name: en('dashboards.designer.gallery') });
-    const types = ['CARD', 'BAR', 'COLUMN', 'LINE', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'CONTAINER'];
-    // The visual types, then the Container tile (19 Nov 2026), and the Widgets group of the view's widgets no visual draws (its own test
-    // is below).
+    const types = [
+      'CARD',
+      'BAR',
+      'COLUMN',
+      'LINE',
+      'PIE',
+      'DONUT',
+      'TABLE',
+      'GAUGE',
+      'MAP',
+      'TEXT',
+      'CONTAINER',
+    ];
+    // The visual types, the Map and Text box tiles (20 Nov 2026), the Container tile (19 Nov 2026), and the Widgets group of the view's
+    // widgets no visual draws (its own test is below). The Map places the one section the gallery offers (designerMapText.test.tsx).
     const widgets = within(gallery).getByRole('region', {
       name: en('dashboards.designer.widgets'),
     });

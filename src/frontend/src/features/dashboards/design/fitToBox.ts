@@ -26,7 +26,7 @@ export function fitScale(natural: BoxSize, box: BoxSize): number {
 }
 
 /**
- * Whether a visual's body is fitted to its box: all but the charts that draw at their box's size already (bars, columns, lines) and the map,
+ * Whether a visual's body is fitted to its box: all but the charts that draw at their box's size already (bars, columns, lines), a text box and the map,
  * whose panning and zooming read the pointer on an unscaled map.
  */
 export function fitsToBox(visual: {
@@ -39,8 +39,8 @@ export function fitsToBox(visual: {
   );
 }
 
-/** Charts that draw at their box's size already. */
-const DRAWN_AT_BOX_SIZE: ReadonlySet<string> = new Set(['BAR', 'COLUMN', 'LINE', 'TABLE']);
+/** Visuals that draw at their box's size already: the charts, and a text box, whose words wrap in its box and scroll when longer. */
+const DRAWN_AT_BOX_SIZE: ReadonlySet<string> = new Set(['BAR', 'COLUMN', 'LINE', 'TABLE', 'TEXT']);
 
 /**
  * Sections never drawn smaller (20 Nov 2026: a table at half size was too small to read): the tables and lists, which scroll in their visual

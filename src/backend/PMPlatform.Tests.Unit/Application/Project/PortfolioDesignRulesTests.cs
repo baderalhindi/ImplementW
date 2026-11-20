@@ -19,7 +19,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// and sizes in steps of 0.1, overlaps by area (dashboard-designer-decimal-layout.md); and its 20 Nov 2026 table columns: which visuals hide columns and the
 /// codes' shape (dashboard-designer-table-columns.md); and its 20 Nov 2026 Power BI-style table: the columns' rules and the table's calculation
 /// (dashboard-designer-power-table.md); and its 20 Nov 2026 box sections: the on-plan indicator's and the follow-up reasons' boxes as figures
-/// (dashboard-designer-box-sections.md).
+/// (dashboard-designer-box-sections.md); and its 20 Nov 2026 text box: what a TEXT visual says, what it may not hold, and what is stored
+/// (dashboard-designer-map-text.md).
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -1561,5 +1562,153 @@ public sealed class PortfolioDesignRulesTests
         Assert.Equal(
             [PermissionCatalogue.PortfolioSummaryView, followUp],
             PortfolioDesignService.PermissionsOf(ColumnTable(Msr("FOLLOW_UP_LATE"), Fld(Budget, PortfolioTableAggregation.Sum))));
+    }
+
+    private const string ArabicWords = "عنوان القسم\nملاحظة على سطر ثانٍ";
+    private const string EnglishWords = "Section heading\nA note on a second line";
+
+    private static PortfolioTextBox Words(string ar = ArabicWords, string en = EnglishWords) =>
+        new(ar, en, PortfolioTextSize.Heading, PortfolioTextAlign.Center, Bold: true);
+
+    /// <summary>A text box: its title and its words, no figure.</summary>
+    private static PortfolioVisualInput TextBox(decimal column = 0, decimal row = 0, decimal width = 6, decimal height = 2, PortfolioTextBox? text = null) =>
+        new(new BilingualLabel("مربع نص", "Text box"), PortfolioVisualType.Text, [], PortfolioGroupBy.None, column, row, width, height, Text: text ?? Words());
+
+    /// <summary>20 Nov 2026 text box: a TEXT visual says its words, on the dashboard or in a container, beside other visuals.</summary>
+    [Fact]
+    public void ATextBoxSaysItsWords()
+    {
+        Assert.Null(Issue(TextBox()));
+        Assert.Null(Issue(TextBox(height: 1), Visual(row: 1)));
+        Assert.Null(Issue(Container(children: [TextBox(), SmallCard(6, 0)])));
+        Assert.Null(Issue(TextBox() with { Measures = [], Values = [], Filters = [], HiddenColumns = [], Columns = [] }));
+        foreach (PortfolioTextSize size in Enum.GetValues<PortfolioTextSize>())
+        {
+            foreach (PortfolioTextAlign align in Enum.GetValues<PortfolioTextAlign>())
+            {
+                Assert.Null(Issue(TextBox(text: new PortfolioTextBox(ArabicWords, EnglishWords, size, align, Bold: false))));
+            }
+        }
+    }
+
+    [Fact]
+    public void ATextBoxNeedsItsWordsAndNoOtherVisualHasAny()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].text", FieldIssue.Required), Issue(TextBox() with { Text = null }));
+        Assert.Equal(new FieldIssue("visuals[0].text", FieldIssue.NotAllowed), Issue(Visual() with { Text = Words() }));
+        Assert.Equal(new FieldIssue("visuals[0].text", FieldIssue.NotAllowed), Issue(Container() with { Text = Words() }));
+        Assert.Equal(new FieldIssue("visuals[0].text", FieldIssue.NotAllowed), Issue(Placed(PortfolioSection.TopFollowUp, 0) with { Text = Words() }));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].text", FieldIssue.Required), Issue(Container(children: [TextBox() with { Text = null }])));
+        Assert.Equal(new FieldIssue("visuals[0].children[0].text", FieldIssue.NotAllowed), Issue(Container(children: [SmallCard(0, 0) with { Text = Words() }])));
+    }
+
+    public static TheoryData<string, PortfolioVisualInput> TextBoxesDrawingSomething => new()
+    {
+        { "measures", TextBox() with { Measures = [PortfolioMeasure.Projects] } },
+        { "values", TextBox() with { Values = [new PortfolioFieldValue(Spend, PortfolioFieldAggregation.Sum)] } },
+        { "groupBy", TextBox() with { GroupBy = PortfolioGroupBy.Sector } },
+        { "groupField", TextBox() with { GroupField = Health } },
+        { "groupDateUnit", TextBox() with { GroupDateUnit = PortfolioDateUnit.Year } },
+        { "filters", TextBox() with { Filters = [new PortfolioFieldFilter("PROJECT.STATUS", ["ACTIVE"])] } },
+        { "axes", TextBox() with { Axes = PortfolioAxes.Default } },
+        { "section", TextBox() with { Section = PortfolioSection.PortfolioTable } },
+        { "widgetCode", TextBox() with { WidgetCode = "OPEN_RISKS" } },
+        { "hiddenColumns", TextBox() with { HiddenColumns = ["VALUE"] } },
+        { "columns", TextBox() with { Columns = [Dim("SECTOR")] } },
+        { "children", TextBox() with { Children = [] } },
+    };
+
+    [Theory]
+    [MemberData(nameof(TextBoxesDrawingSomething))]
+    public void ATextBoxHoldsNothingElse(string field, PortfolioVisualInput textBox)
+    {
+        Assert.Equal(new FieldIssue($"visuals[0].{field}", FieldIssue.NotAllowed), Issue(textBox));
+        Assert.Equal(new FieldIssue($"visuals[0].children[0].{field}", FieldIssue.NotAllowed), Issue(Container(children: [textBox])));
+    }
+
+    [Theory]
+    [InlineData("", EnglishWords, "text.ar", FieldIssue.Required)]
+    [InlineData(" \n ", EnglishWords, "text.ar", FieldIssue.Required)]
+    [InlineData(ArabicWords, "", "text.en", FieldIssue.Required)]
+    [InlineData(ArabicWords, "\n", "text.en", FieldIssue.Required)]
+    [InlineData("Section heading", EnglishWords, "text.ar", "NOT_ARABIC")]
+    [InlineData(ArabicWords, "عنوان Heading", "text.en", "NOT_ENGLISH")]
+    [InlineData(ArabicWords, "123", "text.en", "NOT_ENGLISH")]
+    [InlineData("عنوان\tالقسم", EnglishWords, "text.ar", "INVALID_CHARACTER")]
+    [InlineData(ArabicWords, "Heading\r\nNote", "text.en", "INVALID_CHARACTER")]
+    [InlineData(ArabicWords, "Heading\u0007", "text.en", "INVALID_CHARACTER")]
+    public void TheWordsObeyTheTitleRulesKeepingLineBreaks(string ar, string en, string field, string code) =>
+        Assert.Equal(new FieldIssue($"visuals[0].{field}", code), Issue(TextBox(text: Words(ar, en))));
+
+    [Fact]
+    public void TheWordsAreAtMostTwoThousandCharactersOnceTrimmed()
+    {
+        string arabic = "ن" + new string('\n', 1998) + "ص";
+        string english = "T" + new string('x', 1998) + "t";
+        Assert.Null(Issue(TextBox(text: Words(arabic, english))));
+        Assert.Null(Issue(TextBox(text: Words($"\n  {arabic}  \n", $"  {english}\n")))); // the surrounding blanks are trimmed
+        Assert.Equal(new FieldIssue("visuals[0].text.ar", FieldIssue.OutsideRange), Issue(TextBox(text: Words(arabic + "ص", english))));
+        Assert.Equal(new FieldIssue("visuals[0].text.en", FieldIssue.OutsideRange), Issue(TextBox(text: Words(arabic, english + "t"))));
+    }
+
+    [Fact]
+    public void ATextBoxHasAKnownSizeAndAlignment()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].text.size", FieldIssue.NotAllowed), Issue(TextBox(text: Words() with { Size = (PortfolioTextSize)9 })));
+        Assert.Equal(new FieldIssue("visuals[0].text.align", FieldIssue.NotAllowed), Issue(TextBox(text: Words() with { Align = (PortfolioTextAlign)7 })));
+    }
+
+    [Fact]
+    public void ATextBoxIsPlacedAsAnyVisual()
+    {
+        Assert.Equal(new FieldIssue("visuals[1].layout", FieldIssue.InUse), Issue(Visual(), TextBox(row: 3)));
+        Assert.Equal(new FieldIssue("visuals[0].layout", FieldIssue.OutsideRange), Issue(TextBox(column: 7)));
+        Assert.Equal(
+            new FieldIssue("visuals[0].children[0].layout", FieldIssue.OutsideRange), Issue(Container(width: 6, height: 3, children: [TextBox(height: 3)])));
+    }
+
+    /// <summary>A text box carries no figures and echoes its words as sent, line breaks and all; no other visual has words.</summary>
+    [Fact]
+    public void ATextBoxEchoesItsWords()
+    {
+        IReadOnlyDictionary<string, PortfolioFieldType> types = new Dictionary<string, PortfolioFieldType>(StringComparer.Ordinal);
+        PortfolioVisualResult result = PortfolioDesignService.ResultOf(TextBox(column: 1.5m), _ => throw new InvalidOperationException("A text box is not calculated."), types);
+
+        Assert.Equal(PortfolioVisualType.Text, result.VisualType);
+        Assert.Equal(Words(), result.Text);
+        Assert.Contains('\n', result.Text!.En);
+        Assert.Empty(result.Groups!);
+        Assert.Empty(result.Measures);
+        Assert.Equal(PortfolioGroupBy.None, result.GroupBy);
+        Assert.Equal(1.5m, result.LayoutColumn);
+        Assert.Null(result.Children);
+
+        PortfolioVisualResult container = PortfolioDesignService.ResultOf(Container(children: [TextBox()]), _ => [], types);
+        Assert.Equal(Words(), container.Children!.Single().Text);
+        Assert.Null(container.Text);
+        Assert.Null(PortfolioDesignService.ResultOf(SmallCard(0, 0), _ => [], types).Text);
+    }
+
+    /// <summary>What <c>text_box</c> holds: the words trimmed, their line breaks kept, in the API's shape; nothing for another visual. It reads back as saved.</summary>
+    [Fact]
+    public void TheWordsAreStoredTrimmedAndReadBack()
+    {
+        string stored = PortfolioDesignService.TextBoxOf(TextBox(text: Words($"\n {ArabicWords} ", $"{EnglishWords}\n\n")))!;
+
+        // Compared as JSON: the serialiser escapes the Arabic, and jsonb stores it unescaped.
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("""{"ar":"عنوان القسم\nملاحظة على سطر ثانٍ","en":"Section heading\nA note on a second line","size":"HEADING","align":"CENTER","bold":true}"""),
+            JsonNode.Parse(stored)));
+        Assert.Null(PortfolioDesignService.TextBoxOf(SmallCard(0, 0)));
+        Assert.Null(PortfolioDesignService.TextBoxOf(Container()));
+
+        PortfolioVisual container = Saved(1, PortfolioVisualType.Container, "Container");
+        PortfolioVisual text = Saved(2, PortfolioVisualType.Text, "Text box", container.Id);
+        text.Measures = [];
+        text.TextBox = stored;
+        IReadOnlyList<PortfolioVisualInput> design = PortfolioDesignService.Nested([container, text]);
+
+        Assert.Equal(Words(), design.Single().Children!.Single().Text);
+        Assert.Null(design.Single().Text);
     }
 }

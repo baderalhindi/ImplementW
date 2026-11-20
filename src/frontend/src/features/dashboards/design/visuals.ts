@@ -37,6 +37,7 @@ import {
   NO_FIELD_DATA,
   valuesFor,
 } from './fields.ts';
+import { textBoxVisual } from './textBox.ts';
 import {
   asColumnTable,
   columnHeading,
@@ -133,6 +134,7 @@ export const MAX_MEASURES: Record<VisualType, number> = {
   LINE: 0,
   SECTION: 0,
   CONTAINER: 0,
+  TEXT: 0,
 };
 
 /** The size a new visual of a type takes, in columns of twelve and rows. */
@@ -147,6 +149,7 @@ export const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }>
   LINE: { width: 6, height: 5 },
   SECTION: { width: 12, height: 6 },
   CONTAINER: { width: 6, height: 6 },
+  TEXT: { width: 6, height: 2 },
 };
 
 export const COLUMNS = 12;
@@ -160,7 +163,8 @@ export function groupBysFor(type: VisualType): readonly GroupBy[] {
     type === 'GAUGE' ||
     type === 'LINE' ||
     type === 'SECTION' ||
-    type === 'CONTAINER'
+    type === 'CONTAINER' ||
+    type === 'TEXT'
   ) {
     return ['NONE'];
   }
@@ -180,7 +184,7 @@ const ADDITIVE_MEASURES: readonly Measure[] = [
 
 /** The measures a type may draw: a gauge a percentage, a pie or donut a total that adds up; a line draws fields only. */
 export function measuresFor(type: VisualType): readonly Measure[] {
-  if (type === 'SECTION' || type === 'LINE' || type === 'CONTAINER') {
+  if (type === 'SECTION' || type === 'LINE' || type === 'CONTAINER' || type === 'TEXT') {
     return [];
   }
   if (type === 'GAUGE') {
@@ -359,6 +363,9 @@ export function newVisual(
   const place = freePlace(visuals, width, height);
   if (place === null) {
     return null;
+  }
+  if (type === 'TEXT') {
+    return textBoxVisual(place, width, height);
   }
   if (type === 'LINE') {
     const line = asLine(

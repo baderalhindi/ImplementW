@@ -2,8 +2,11 @@ import { type ReactElement } from 'react';
 
 import { type VisualType } from './designApi.ts';
 
+/** What a gallery tile places: a visual type, or the map (a section). */
+export type GalleryIcon = VisualType | 'MAP';
+
 /** Each visual type's picture in the gallery: what it draws, in the current colour, beside its name (which carries the meaning). */
-const SHAPES: Record<VisualType, ReactElement> = {
+const SHAPES: Record<GalleryIcon, ReactElement> = {
   CARD: (
     <>
       <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -57,9 +60,28 @@ const SHAPES: Record<VisualType, ReactElement> = {
       <rect x="13" y="11" width="5.5" height="6.5" rx="0.8" />
     </>
   ),
+  // A map pin over a folded map.
+  MAP: (
+    <>
+      <path d="M3 8.5l5-2 8 3 5-2v12l-5 2-8-3-5 2z" />
+      <path d="M8 6.5v12M16 9.5v12" />
+      <path
+        d="M12 12.5s3.5-3.4 3.5-6a3.5 3.5 0 0 0-7 0c0 2.6 3.5 6 3.5 6z"
+        fill="var(--color-background, #fff)"
+      />
+      <circle cx="12" cy="6.5" r="1.1" />
+    </>
+  ),
+  // A "T" over lines of text.
+  TEXT: (
+    <>
+      <path d="M4 4.5h10M9 4.5v9" />
+      <path d="M4 17h16M4 20.5h11" />
+    </>
+  ),
 };
 
-export function VisualIcon({ type }: { type: VisualType }): ReactElement {
+export function VisualIcon({ type }: { type: GalleryIcon }): ReactElement {
   return (
     <svg
       className="designer__type-icon"

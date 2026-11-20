@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.Validation;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Project.Contracts;
@@ -44,6 +45,33 @@ public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Va
     public static PortfolioAxes Default { get; } = new(new PortfolioAxis(Show: true, Title: null), new PortfolioValueAxis(Show: true, Title: null, null, null, Gridlines: true));
 }
 
+/// <summary>How large a text box's words are drawn (the 20 Nov 2026 text box), from small to a heading.</summary>
+public enum PortfolioTextSize
+{
+    Small = 1,
+    Normal = 2,
+    Large = 3,
+    Heading = 4,
+}
+
+/// <summary>Where a text box's lines are aligned, counted from the reading start: <see cref="Start"/> is the right in Arabic.</summary>
+public enum PortfolioTextAlign
+{
+    Start = 1,
+    Center = 2,
+    End = 3,
+}
+
+/// <summary>
+/// What a <see cref="PortfolioVisualType.Text"/> visual says (the 20 Nov 2026 text box, dashboard-designer-map-text.md): its words in both languages, each
+/// 1–2000 characters once trimmed with its line breaks (<c>\n</c>) kept, how large and where they are drawn, and whether in bold.
+/// </summary>
+public sealed record PortfolioTextBox(string Ar, string En, PortfolioTextSize Size, PortfolioTextAlign Align, bool Bold)
+{
+    /// <summary>The longest the words are in each language, once trimmed.</summary>
+    public const int MaxLength = 2000;
+}
+
 /// <summary>
 /// A visual as the designer sends it: a title in both languages, a type, one to three measures, a grouping and a place on the grid; or, as a
 /// <see cref="PortfolioVisualType.Section"/>, one of the dashboard's own sections and no measure. Since 18 Nov 2026 a visual may draw
@@ -54,14 +82,15 @@ public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Va
 /// nothing of its own and holds <paramref name="Children"/> (the 19 Nov 2026 containers), placed on its inner grid; any other visual holds none. A table
 /// section names the columns it does not show in <paramref name="HiddenColumns"/> (the 20 Nov 2026 table columns); null or empty shows them all. A
 /// <see cref="PortfolioVisualType.Table"/> may draw <paramref name="Columns"/> instead of measures or values (the 20 Nov 2026 Power BI-style table), with
-/// a totals row unless <paramref name="ShowTotals"/> is false; null or empty draws none.
+/// a totals row unless <paramref name="ShowTotals"/> is false; null or empty draws none. A <see cref="PortfolioVisualType.Text"/> visual says its
+/// <paramref name="Text"/> and draws nothing else (the 20 Nov 2026 text box); any other visual has none.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
     IReadOnlyList<PortfolioVisualInput>? Children = null, IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null,
-    bool? ShowTotals = null);
+    bool? ShowTotals = null, PortfolioTextBox? Text = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -92,13 +121,15 @@ public sealed record PortfolioVisualGroup(
 /// measures and a section. A bar, column or line chart echoes its <c>Axes</c> as set (null for the defaults); a <c>DASHBOARD_WIDGET</c> section its
 /// <c>WidgetCode</c>. A container carries no groups of its own (an empty list) and its <c>Children</c>, in order, each calculated as a top-level visual is;
 /// <c>Children</c> is null on any other visual. A table section echoes its <c>HiddenColumns</c> (null when it shows every column). A column table echoes
-/// its <c>Columns</c> and <c>ShowTotals</c>, has no groups (an empty list) and its figures in <c>Table</c>; both are null without its permissions.
+/// its <c>Columns</c> and <c>ShowTotals</c>, has no groups (an empty list) and its figures in <c>Table</c>; both are null without its permissions. A text box
+/// has no groups (an empty list) and echoes its <c>Text</c>, null on any other visual.
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
     PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null,
-    IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioTableResult? Table = null);
+    IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioTableResult? Table = null,
+    PortfolioTextBox? Text = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -170,7 +201,7 @@ internal sealed partial class PortfolioDesignService(
     internal static IReadOnlyDictionary<string, PortfolioGroupBy> Dimensions { get; } = Enum.GetValues<PortfolioGroupBy>()
         .Where(g => g != PortfolioGroupBy.None).ToDictionary(g => $"PROJECT.{Code(g)}", StringComparer.Ordinal);
 
-    /// <summary><c>project.portfolio_visual.data_fields</c> and <c>axes</c> as the API writes the same properties: camelCase, enumerations UPPER_SNAKE (R-19).</summary>
+    /// <summary><c>project.portfolio_visual.data_fields</c>, <c>axes</c> and <c>text_box</c> as the API writes the same properties: camelCase, enumerations UPPER_SNAKE (R-19).</summary>
     private static readonly JsonSerializerOptions StoredJson = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper, allowIntegerValues: false) },
@@ -275,6 +306,7 @@ internal sealed partial class PortfolioDesignService(
                 Axes = AxesOf(v),
                 WidgetCode = v.WidgetCode,
                 HiddenColumns = HiddenColumnsOf(v),
+                TextBox = TextBoxOf(v),
                 CreatedAt = now,
                 CreatedBy = callerId,
                 UpdatedAt = now,
@@ -389,17 +421,43 @@ internal sealed partial class PortfolioDesignService(
         : v.Title.Ar.Trim().Length > MaxTitleLength || v.Title.En.Trim().Length > MaxTitleLength ? new FieldIssue("title", FieldIssue.OutsideRange)
         : !Enum.IsDefined(v.VisualType) || !Enum.IsDefined(v.GroupBy) ? new FieldIssue("visualType", FieldIssue.NotAllowed)
         : v.Columns is { Count: > 0 } && v.VisualType != PortfolioVisualType.Table ? new FieldIssue("columns", FieldIssue.NotAllowed)
+        : v.Text is not null && v.VisualType != PortfolioVisualType.Text ? new FieldIssue("text", FieldIssue.NotAllowed)
         : (v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
+            : v.VisualType == PortfolioVisualType.Text ? TextBoxIssue(v.Text) ?? DrawsNothingIssue(v)
             : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections) : DrawingIssue(v, catalogue))
                 ?? AxesIssue(v)
                 ?? WidgetCodeIssue(v, widgetCodes))
             ?? HiddenColumnsIssue(v);
 
     /// <summary>
-    /// What is wrong with a container itself, or null (the 19 Nov 2026 containers): it draws nothing — no measure, value, grouping, filter, axes, section
-    /// or widget code — and is at least two rows tall, its title bar and a row for its children.
+    /// What is wrong with a container itself, or null (the 19 Nov 2026 containers): it draws nothing (<see cref="DrawsNothingIssue"/>) and is at least two
+    /// rows tall, its title bar and a row for its children.
     /// </summary>
     private static FieldIssue? ContainerIssue(PortfolioVisualInput v) =>
+        DrawsNothingIssue(v) ?? (v.LayoutHeight < 2 ? new("layout", FieldIssue.OutsideRange) : null);
+
+    /// <summary>
+    /// What is wrong with a text box's words, or null (the 20 Nov 2026 text box): both languages, each present and not blank, at most 2000 characters once
+    /// trimmed, no control character but the line break, and in its own language as a visual's title is (R-17); a known size and alignment.
+    /// </summary>
+    private static FieldIssue? TextBoxIssue(PortfolioTextBox? text) =>
+        text is null ? new("text", FieldIssue.Required)
+        : TextIssue(text.Ar, "text.ar", TextScript.Arabic) ?? TextIssue(text.En, "text.en", TextScript.English)
+            ?? (!Enum.IsDefined(text.Size) ? new FieldIssue("text.size", FieldIssue.NotAllowed) : null)
+            ?? (!Enum.IsDefined(text.Align) ? new FieldIssue("text.align", FieldIssue.NotAllowed) : null);
+
+    private static FieldIssue? TextIssue(string? value, string field, TextScript script) =>
+        string.IsNullOrWhiteSpace(value) ? new(field, FieldIssue.Required)
+        : value.Trim().Length > PortfolioTextBox.MaxLength ? new(field, FieldIssue.OutsideRange)
+        : value.Any(c => char.IsControl(c) && c != '\n') ? new(field, ValidationCode.InvalidCharacter)
+        : !TextShape.IsInScript(value, script) ? new(field, TextShape.NotInScript(script))
+        : null;
+
+    /// <summary>
+    /// What is wrong with a visual that draws no figure of its own — a container or a text box — or null: no measure, value, grouping, filter, axes, section or
+    /// widget code.
+    /// </summary>
+    private static FieldIssue? DrawsNothingIssue(PortfolioVisualInput v) =>
         (v.Measures?.Count ?? 0) != 0 ? new("measures", FieldIssue.NotAllowed)
         : (v.Values?.Count ?? 0) != 0 ? new("values", FieldIssue.NotAllowed)
         : v.GroupBy != PortfolioGroupBy.None ? new("groupBy", FieldIssue.NotAllowed)
@@ -409,7 +467,6 @@ internal sealed partial class PortfolioDesignService(
         : v.Axes is not null ? new("axes", FieldIssue.NotAllowed)
         : v.Section is not null ? new("section", FieldIssue.NotAllowed)
         : v.WidgetCode is not null ? new("widgetCode", FieldIssue.NotAllowed)
-        : v.LayoutHeight < 2 ? new("layout", FieldIssue.OutsideRange)
         : null;
 
     /// <summary>
@@ -560,7 +617,7 @@ internal sealed partial class PortfolioDesignService(
             PortfolioVisualType.Pie or PortfolioVisualType.Donut =>
                 first.Aggregation is PortfolioFieldAggregation.Count or PortfolioFieldAggregation.Sum or PortfolioFieldAggregation.CountTrue,
             PortfolioVisualType.Card or PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Table or PortfolioVisualType.Line
-                or PortfolioVisualType.Section or PortfolioVisualType.Container => true,
+                or PortfolioVisualType.Section or PortfolioVisualType.Container or PortfolioVisualType.Text => true,
             _ => true,
         };
         return fits ? null : new("values", FieldIssue.NotAllowed);
@@ -577,7 +634,7 @@ internal sealed partial class PortfolioDesignService(
         PortfolioVisualType.Column => 3,
         PortfolioVisualType.Table => fieldValues ? 6 : 3,
         PortfolioVisualType.Line => fieldValues ? 3 : 0,
-        PortfolioVisualType.Section or PortfolioVisualType.Container => 0,
+        PortfolioVisualType.Section or PortfolioVisualType.Container or PortfolioVisualType.Text => 0,
         _ => 0,
     };
 
@@ -717,9 +774,10 @@ internal sealed partial class PortfolioDesignService(
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
 
-        // What is calculated: every visual drawing figures, a container's children as the top-level visuals; a section and a container draw none of their own.
+        // What is calculated: every visual drawing figures, a container's children as the top-level visuals; a section, a container and a text box draw none
+        // of their own.
         List<PortfolioVisualInput> drawn = [.. visuals.SelectMany(v => (IEnumerable<PortfolioVisualInput>)[v, .. v.Children ?? []])
-            .Where(v => v.Section is null && v.VisualType != PortfolioVisualType.Container)];
+            .Where(v => v.Section is null && v.VisualType is not (PortfolioVisualType.Container or PortfolioVisualType.Text))];
         bool amounts = !(await engine.GetRecordScopeAsync(callerId, PermissionCatalogue.FinancialViewSensitive, cancellationToken).ConfigureAwait(false)).IsEmpty;
         OnPlanThresholds thresholds = await onPlanPolicy.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false);
         ProjectStageSet? stages = drawn.Any(v => v.GroupBy == PortfolioGroupBy.Stage || (v.Columns ?? []).Any(c => c is { Kind: PortfolioTableColumnKind.Dimension, Key: "STAGE" }))
@@ -768,8 +826,8 @@ internal sealed partial class PortfolioDesignService(
     }
 
     /// <summary>
-    /// A visual with its figures, <paramref name="groupsOf"/> calculating them (null without the grouping's permission): a section and a container carry none
-    /// of their own; a container carries its children, each calculated as a top-level visual is. Its layout numbers are written shortest (<see cref="Shortest"/>).
+    /// A visual with its figures, <paramref name="groupsOf"/> calculating them (null without the grouping's permission): a section, a container and a text box
+    /// carry none of their own; a container carries its children, each calculated as a top-level visual is; a text box its words. Its layout numbers are written shortest (<see cref="Shortest"/>).
     /// </summary>
     internal static PortfolioVisualResult ResultOf(
         PortfolioVisualInput v, Func<PortfolioVisualInput, IReadOnlyList<PortfolioVisualGroup>?> groupsOf, IReadOnlyDictionary<string, PortfolioFieldType> types,
@@ -779,6 +837,10 @@ internal sealed partial class PortfolioDesignService(
                 v.Title, v.VisualType, [], PortfolioGroupBy.None,
                 Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [],
                 Children: [.. (v.Children ?? []).Select(child => ResultOf(child, groupsOf, types, tableOf))])
+        : v.VisualType == PortfolioVisualType.Text
+            ? new PortfolioVisualResult(
+                v.Title, v.VisualType, [], PortfolioGroupBy.None,
+                Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [], Text: v.Text)
         : v.Section is { } section
             ? new PortfolioVisualResult(
                 v.Title, v.VisualType, [], PortfolioGroupBy.None,
@@ -1018,7 +1080,8 @@ internal sealed partial class PortfolioDesignService(
             new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
             v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit,
             v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode, HiddenColumns: v.HiddenColumns,
-            Columns: data?.Columns, ShowTotals: data?.ShowTotals);
+            Columns: data?.Columns, ShowTotals: data?.ShowTotals,
+            Text: v.TextBox is { } text ? JsonSerializer.Deserialize<PortfolioTextBox>(text, StoredJson) : null);
     }
 
     /// <summary>A table section's hidden columns as saved and echoed: null when it hides none (an empty list or null), so a design reads back as it was drawn.</summary>
@@ -1029,6 +1092,12 @@ internal sealed partial class PortfolioDesignService(
         v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null || IsColumnTable(v)
             ? JsonSerializer.Serialize(
                 new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit, IsColumnTable(v) ? v.Columns : null, IsColumnTable(v) ? v.ShowTotals : null), StoredJson)
+            : null;
+
+    /// <summary>What <c>text_box</c> holds: a text box's words trimmed, as its title is; null for any other visual.</summary>
+    internal static string? TextBoxOf(PortfolioVisualInput v) =>
+        v.VisualType == PortfolioVisualType.Text && v.Text is { } text
+            ? JsonSerializer.Serialize(text with { Ar = text.Ar.Trim(), En = text.En.Trim() }, StoredJson)
             : null;
 
     /// <summary>

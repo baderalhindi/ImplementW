@@ -146,6 +146,7 @@ export const MAX_VALUES: Record<VisualType, number> = {
   LINE: 3,
   SECTION: 0,
   CONTAINER: 0,
+  TEXT: 0,
 };
 
 const GAUGE_AGGREGATIONS: readonly FieldAggregation[] = ['AVERAGE', 'MIN', 'MAX'];
@@ -335,7 +336,7 @@ export const NO_FIELD_DATA = {
 /**
  * A visual as it is compared and sent: its field data and widget code only where it has some, so a design read back equals the one sent; its axes as the API
  * takes them, null for the defaults (axes.ts); a table section's hidden columns, null when none (sectionColumns.ts); a column table's columns and
- * totals choice (tableColumns.ts); a container's children, each so.
+ * totals choice (tableColumns.ts); a container's children, each so; a text box's words, only on a text box.
  */
 export function normalized<T extends Visual>(visual: T): T {
   const {
@@ -349,6 +350,7 @@ export function normalized<T extends Visual>(visual: T): T {
     hiddenColumns: _hiddenColumns,
     columns,
     showTotals: _showTotals,
+    text,
     ...rest
   } = visual;
   const hiddenColumns = sentHiddenColumns(visual);
@@ -356,6 +358,8 @@ export function normalized<T extends Visual>(visual: T): T {
     ...rest,
     // Children only on a container, which always sends its list (empty or not), each child as a top-level visual is sent.
     ...(visual.visualType === 'CONTAINER' ? { children: (children ?? []).map(normalized) } : {}),
+    // A text box's words only on a text box.
+    ...(visual.visualType === 'TEXT' && text !== undefined && text !== null ? { text } : {}),
     axes: sentAxes(visual),
     ...(widgetCode === undefined || widgetCode === null ? {} : { widgetCode }),
     ...(values === undefined || values === null || values.length === 0 ? {} : { values }),

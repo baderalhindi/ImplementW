@@ -9483,3 +9483,107 @@ tr[data-flagged='true'] {
     opacity: 0;
   }
 }
+
+/*
+ * A text box (TASK-112, 20 Nov 2026, docs/architecture/dashboard-designer-map-text.md): the designer's own words, in the page's language, line
+ * breaks kept, at its size, alignment (logical: start and end mirror in Arabic) and weight. Never fitted to its box: longer, it scrolls. On the
+ * dashboard it reads as text: no title bar, no card round it. In the designer it keeps its bar (its name, handle and pencil, quieter than a
+ * visual's title) and a light dashed outline, so it can be found and moved.
+ */
+.visual-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.visual-text--small {
+  font-size: 0.875rem;
+}
+
+.visual-text--large {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+.visual-text--heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.visual-text--bold {
+  font-weight: 700;
+}
+
+.visual-text--start {
+  text-align: start;
+}
+
+.visual-text--center {
+  text-align: center;
+}
+
+.visual-text--end {
+  text-align: end;
+}
+
+.visual__body--text {
+  overflow: auto;
+}
+
+.visual--text {
+  padding: var(--space-2) var(--space-1);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Inside a container, too, a text box is text: no box of its own. */
+.visual-container > .visual--text {
+  border-color: transparent;
+  background: transparent;
+}
+
+.designer__visual[data-visual='TEXT'] {
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--color-border-subtle);
+  background: transparent;
+  box-shadow: none;
+}
+
+.visual-container > .designer__visual[data-visual='TEXT'] {
+  border-style: dashed;
+  background: transparent;
+}
+
+.designer__visual[data-visual='TEXT'] .designer__visual-bar .widget__title {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.designer__visual[data-visual='TEXT'] .designer__handle--move,
+.designer__visual[data-visual='TEXT'] .designer__edit {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.designer-text__words {
+  min-block-size: 6rem;
+  resize: vertical;
+}
+
+.designer-text__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+/* The alignment's legend lines up with the other fields' labels (a legend has inline padding of its own). */
+.designer-text__align > legend {
+  padding: 0;
+}

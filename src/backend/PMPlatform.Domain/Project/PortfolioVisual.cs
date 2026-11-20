@@ -35,6 +35,12 @@ public enum PortfolioVisualType
     /// level only.
     /// </summary>
     Container = 10,
+
+    /// <summary>
+    /// The designer's own words (the 20 Nov 2026 text box): a heading, a note or an explanation in both languages, drawn as text; it draws no figure and holds
+    /// nothing, and may be a container's child.
+    /// </summary>
+    Text = 11,
 }
 
 /// <summary>
@@ -220,4 +226,10 @@ public sealed class PortfolioVisual : AuditedEntity
     /// only the shape is checked, and a code the table does not have hides nothing.
     /// </summary>
     public List<string>? HiddenColumns { get; set; }
+
+    /// <summary>
+    /// What a <see cref="PortfolioVisualType.Text"/> visual says and how (the 20 Nov 2026 text box), as JSON in the API's shape:
+    /// <c>{"ar","en","size","align","bold"}</c>, each text 1–2000 characters, line breaks kept. Null on any other visual; the design service checks the content.
+    /// </summary>
+    public string? TextBox { get; set; }
 }

@@ -381,7 +381,9 @@
       "GAUGE": "Gauge",
       "SECTION": "Dashboard section",
       "LINE": "Line chart",
-      "CONTAINER": "Container"
+      "CONTAINER": "Container",
+      "MAP": "Map",
+      "TEXT": "Text box"
     },
     "measure": {
       "PROJECTS": "Projects",
@@ -676,6 +678,29 @@
     "moveColumnUp": "Move {column} up",
     "moveColumnDown": "Move {column} down",
     "removeColumn": "Remove {column}",
-    "columnsFull": "The table has {count} columns, the most it takes."
+    "columnsFull": "The table has {count} columns, the most it takes.",
+    "mapPlaced": "The map is already on the dashboard",
+    "textDefaultTitle": "Text box",
+    "textDefault": "Text",
+    "textSettings": "The titles name the text box in the designer and for screen readers; the dashboard shows only its text.",
+    "textAr": "Text (Arabic)",
+    "textEn": "Text (English)",
+    "textRequired": "Write the text.",
+    "textSize": "Size",
+    "textSizes": {
+      "SMALL": "Small",
+      "NORMAL": "Normal",
+      "LARGE": "Large",
+      "HEADING": "Heading"
+    },
+    "textAlign": "Alignment",
+    "textAligns": {
+      "START": "Start",
+      "CENTER": "Center",
+      "END": "End"
+    },
+    "textBold": "Bold",
+    "textTooLong": "Shorten the text to 2000 characters or fewer.",
+    "textInvalidCharacter": "Remove the tab or other control character: only line breaks are kept."
   }
 }

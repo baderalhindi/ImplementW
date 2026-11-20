@@ -15,7 +15,9 @@ namespace PMPlatform.Tests.Integration.Project;
 /// with decimal places and sizes (the 20 Nov 2026 decimal layout) is saved and read back exactly; one with two decimal places is refused. A table section's
 /// hidden columns (the 20 Nov 2026 table columns) are saved and read back; a card hiding columns is refused. A TABLE of columns (the 20 Nov 2026 Power
 /// BI-style table) previews, saves and reads back with its table of figures; a card with columns is refused. A container of a card per box of the on-plan
-/// indicator and the follow-up reasons (the 20 Nov 2026 box sections) previews, saves and reads back each box's count as GET /portfolio-insights has it.
+/// indicator and the follow-up reasons (the 20 Nov 2026 box sections) previews, saves and reads back each box's count as GET /portfolio-insights has it. A
+/// TEXT visual (the 20 Nov 2026 text box), on the dashboard and in a container, previews, saves and reads back its words exactly, line breaks kept; words on
+/// a card, a text box without words or in the wrong language are refused and save nothing.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -436,6 +438,79 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             [.. view["visuals"]![0]!["children"]!.AsArray().Select(card => card!["groups"]![0]!["values"]![0]!.GetValue<int>())];
     }
 
+    [Fact]
+    public async Task ATextBoxIsSavedAndReadBackExactly()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+        string viewer = (await client.SignInOrFailAsync(6)).AccessToken;
+
+        var heading = new { ar = "عنوان اللوحة\nسطر ثانٍ", en = "Dashboard heading\nA second line", size = "HEADING", align = "CENTER", bold = true };
+        var note = new { ar = "ملاحظة", en = "A note", size = "SMALL", align = "END", bold = false };
+        object design = DesignOf(
+            Visual("Heading", "TEXT", 0, 0, 6, 2, text: heading),
+            Visual("Box", "CONTAINER", 0, 2, 12, 4, children: [Visual("Note", "TEXT", 0, 0, 6, 2, text: note), Visual("Projects", "CARD", 6, 0, 4, 2, measures: ["PROJECTS"])]));
+        JsonNode expectedHeading = JsonNode.Parse("""{"ar":"عنوان اللوحة\nسطر ثانٍ","en":"Dashboard heading\nA second line","size":"HEADING","align":"CENTER","bold":true}""")!;
+        JsonNode expectedNote = JsonNode.Parse("""{"ar":"ملاحظة","en":"A note","size":"SMALL","align":"END","bold":false}""")!;
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        AssertText(await preview.ReadObjectAsync());
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        AssertText(await saved.ReadObjectAsync());
+        foreach (string reader in new[] { manager, viewer })
+        {
+            using HttpResponseMessage read = await client.GetAsync(Design, reader);
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+            AssertText(await read.ReadObjectAsync());
+        }
+
+        // Only the text boxes carry text_box; its line breaks are stored as line breaks.
+        Assert.Equal(["1:TEXT:HEADING:true", "2:CONTAINER::false", "3:TEXT:SMALL:false", "4:CARD::false"], await host.Database.QueryAsync(
+            "SELECT sort_order || ':' || visual_type || ':' || coalesce(text_box->>'size', '') || ':' || (strpos(coalesce(text_box->>'en', ''), E'\\n') > 0)::text "
+            + "FROM project.portfolio_visual ORDER BY sort_order"));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        foreach ((object refused, HttpStatusCode status, string code, string field, string fieldCode) in new[]
+        {
+            (DesignOf(Visual("Projects", "CARD", 0, 0, 4, 2, measures: ["PROJECTS"], text: note)), HttpStatusCode.UnprocessableEntity,
+                "PROJECT_PORTFOLIO_DESIGN_INVALID", "visuals[0].text", "NOT_ALLOWED"),
+            (DesignOf(Visual("Empty", "TEXT", 0, 0, 6, 2)), HttpStatusCode.UnprocessableEntity, "PROJECT_PORTFOLIO_DESIGN_INVALID", "visuals[0].text", "REQUIRED"),
+            (DesignOf(Visual("Long", "TEXT", 0, 0, 6, 2, text: note with { en = "A" + new string('x', 2000) })), HttpStatusCode.UnprocessableEntity,
+                "PROJECT_PORTFOLIO_DESIGN_INVALID", "visuals[0].text.en", "OUTSIDE_RANGE"),
+            (DesignOf(Visual("Swapped", "TEXT", 0, 0, 6, 2, text: note with { en = "ملاحظة" })), HttpStatusCode.BadRequest, "VALIDATION_FAILED",
+                "visuals[0].text.en", "NOT_ENGLISH"),
+            (DesignOf(Visual("Tab", "TEXT", 0, 0, 6, 2, text: note with { en = "A\tnote" })), HttpStatusCode.BadRequest, "VALIDATION_FAILED",
+                "visuals[0].text.en", "INVALID_CHARACTER"),
+        })
+        {
+            using HttpResponseMessage save = await client.PutAsync(Design, manager, refused, ifMatch: null);
+            Assert.Equal(status, save.StatusCode);
+            JsonObject body = await save.ReadObjectAsync();
+            Assert.Equal((code, field, fieldCode), (body["code"]!.GetValue<string>(), body["errors"]![0]!["field"]!.GetValue<string>(),
+                body["errors"]![0]!["code"]!.GetValue<string>()));
+        }
+
+        Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+
+        void AssertText(JsonObject view)
+        {
+            JsonArray visuals = view["visuals"]!.AsArray();
+            Assert.Equal("TEXT", visuals[0]!["visualType"]!.GetValue<string>());
+            Assert.True(JsonNode.DeepEquals(expectedHeading, visuals[0]!["text"]));
+            Assert.Empty(visuals[0]!["groups"]!.AsArray());
+            Assert.Empty(visuals[0]!["measures"]!.AsArray());
+            Assert.Null(visuals[1]!["text"]);
+            JsonArray children = visuals[1]!["children"]!.AsArray();
+            Assert.True(JsonNode.DeepEquals(expectedNote, children[0]!["text"]));
+            Assert.Null(children[1]!["text"]);
+        }
+    }
+
     private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();
 
     private static object DesignOf(params object[] visuals) => new { visuals };
@@ -445,7 +520,8 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
 
     private static object Visual(
         string title, string type, decimal column, decimal row, decimal width, decimal height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
-        object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null, string[]? hiddenColumns = null, object[]? columns = null) =>
+        object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null, string[]? hiddenColumns = null, object[]? columns = null,
+        object? text = null) =>
         new
         {
             title = new { ar = $"عنوان {title}", en = title },
@@ -463,5 +539,6 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             children,
             hiddenColumns,
             columns,
+            text,
         };
 }

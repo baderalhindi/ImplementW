@@ -17,6 +17,7 @@ import {
   withColumnShown,
 } from './sectionColumns.ts';
 import { isEditableSection, madeEditable } from './tableColumns.ts';
+import { TextBoxSettings } from './TextBoxSettings.tsx';
 import { asLine, MAX_HEIGHT, retitled, tenth, VISUAL_TYPES, withType } from './visuals.ts';
 
 /** The sizes a visual may take where it is: a container's least size, and a child's columns (its container's width). */
@@ -165,12 +166,14 @@ function MakeEditable({
 
 /**
  * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters), a chart's axes (AxesFormat) and size. Only what the type takes is offered, so whatever is chosen
- * saves; a size that would cover another visual is refused by the designer, which says so. A container has its titles and size only.
+ * saves; a size that would cover another visual is refused by the designer, which says so. A container has its titles and size only; a text
+ * box its titles, words and their look (TextBoxSettings), and size.
  */
 export function VisualSettings({
   visual,
   fields,
   bounds,
+  textRefused,
   onChange,
   onReplace,
   onDuplicate,
@@ -179,6 +182,8 @@ export function VisualSettings({
   visual: Visual;
   fields: ApiResource<FieldDescriptor[]>;
   bounds: SizeBounds;
+  /** What the API refused in a text box's words, by language. */
+  textRefused?: Partial<Record<'ar' | 'en', string>> | undefined;
   onChange: (next: Visual) => void;
   /** Replaces the visual by another, children included: a box section made a container; absent where that cannot go (inside a container). */
   onReplace?: ((next: Visual) => void) | undefined;
@@ -191,6 +196,8 @@ export function VisualSettings({
   const isSection = visual.visualType === 'SECTION';
   const isTable = isSection && isTableSection(visual.section);
   const isContainer = visual.visualType === 'CONTAINER';
+  // A text box has its words, not data: its titles are its name.
+  const isText = visual.visualType === 'TEXT';
   // A change of type, values or grouping renames the visual while its titles are still the automatic ones.
   const change = (next: Visual) => {
     onChange(retitled(visual, next));
@@ -232,6 +239,14 @@ export function VisualSettings({
       </div>
       {isContainer ? (
         <p className="designer__hint">{t('dashboards.designer.containerSettings')}</p>
+      ) : isText ? (
+        <TextBoxSettings
+          text={visual.text}
+          {...(textRefused === undefined ? {} : { refused: textRefused })}
+          onChange={(text) => {
+            onChange({ ...visual, text });
+          }}
+        />
       ) : isSection ? (
         <>
           <p className="designer__hint">
