@@ -147,10 +147,24 @@ public sealed record PortfolioVisualRequest(
 
 /// <summary>
 /// What a TEXT visual says (the 20 Nov 2026 text box): its words in both languages as a visual's title is (R-17: present, not blank, each in its own
-/// language), its line breaks kept and no other control character; its size, alignment and bold. Whether the visual is a text box and the trimmed length
-/// (2000) are checked by the service.
+/// language), its line breaks kept and no other control character; its size, alignment and bold. Its formatting (the 20 Nov 2026 text formatting) is optional,
+/// each absent or null property its default: no custom font size, no italic or underline, the theme's text and border colours, no background, no border, at
+/// the top. Whether the visual is a text box, the trimmed length (2000), the font size's range and the colours' shape are checked by the service.
 /// </summary>
-public sealed record PortfolioTextBoxRequest(string? Ar, string? En, PortfolioTextSize? Size, PortfolioTextAlign? Align, bool? Bold)
+public sealed record PortfolioTextBoxRequest(
+    string? Ar,
+    string? En,
+    PortfolioTextSize? Size,
+    PortfolioTextAlign? Align,
+    bool? Bold,
+    decimal? FontSize = null,
+    bool? Italic = null,
+    bool? Underline = null,
+    string? Color = null,
+    string? Background = null,
+    bool? Border = null,
+    string? BorderColor = null,
+    PortfolioTextVerticalAlign? VerticalAlign = null)
 {
     /// <summary>What the request may carry in each language before trimming: twice the trimmed limit, as a title's 200 to its 100.</summary>
     private const int MaxLength = 2 * PortfolioTextBox.MaxLength;
@@ -175,7 +189,10 @@ public sealed record PortfolioTextBoxRequest(string? Ar, string? En, PortfolioTe
         }
     }
 
-    internal PortfolioTextBox ToTextBox() => new(Ar!, En!, Size!.Value, Align!.Value, Bold!.Value);
+    internal PortfolioTextBox ToTextBox() =>
+        new(
+            Ar!, En!, Size!.Value, Align!.Value, Bold!.Value, FontSize, Italic ?? false, Underline ?? false, Color, Background ?? PortfolioTextBox.NoBackground,
+            Border ?? false, BorderColor, VerticalAlign ?? PortfolioTextVerticalAlign.Top);
 
     /// <summary>A title's rules, and no control character but the line break (a tab or carriage return is refused; every request already refuses the rest).</summary>
     private static void Words(string? value, string field, TextScript script, List<FieldError> errors)

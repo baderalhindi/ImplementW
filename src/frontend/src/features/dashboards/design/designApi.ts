@@ -32,13 +32,33 @@ export type TextSize = 'SMALL' | 'NORMAL' | 'LARGE' | 'HEADING';
 /** A text box's alignment, logical: the start and end mirror in Arabic. */
 export type TextAlign = 'START' | 'CENTER' | 'END';
 
-/** A text box's words in both languages (each 1–2000 characters, line breaks kept) and how they are drawn. */
+/** A text box's place in its box, top to bottom. */
+export type TextVerticalAlign = 'TOP' | 'MIDDLE' | 'BOTTOM';
+
+/** A text box's background: `CARD` (the visuals' card colour), `NONE` (transparent), or a colour `#RRGGBB`. */
+export type TextBackground = string;
+
+/**
+ * A text box's words in both languages (each 1–2000 characters, line breaks kept) and how they are drawn. The format (20 Nov 2026,
+ * docs/architecture/dashboard-designer-text-format.md) is optional: a text box saved before has none and draws as it did (textBox.ts).
+ */
 export interface TextBox {
   ar: string;
   en: string;
   size: TextSize;
   align: TextAlign;
   bold: boolean;
+  /** 8–96 px; null for the `size` preset's. */
+  fontSize?: number | null;
+  italic?: boolean;
+  underline?: boolean;
+  /** `#RRGGBB`; null for the theme's text colour. */
+  color?: string | null;
+  background?: TextBackground;
+  border?: boolean;
+  /** `#RRGGBB`; null for the theme's border colour. */
+  borderColor?: string | null;
+  verticalAlign?: TextVerticalAlign;
 }
 
 /**

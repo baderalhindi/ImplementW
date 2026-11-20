@@ -9587,3 +9587,260 @@ tr[data-flagged='true'] {
 .designer-text__align > legend {
   padding: 0;
 }
+
+/*
+ * A text box's format (TASK-112, 20 Nov 2026, docs/architecture/dashboard-designer-text-format.md). Drawn: its own font size, style and colour
+ * (inline), its place down its box (the words' block margins in the body's column), and its frame: the card colour drawn as the visuals' cards
+ * are (their radius, no shadow), a colour, or none; a 1px border in its colour or the theme's.
+ */
+.visual-text--middle {
+  margin-block: auto;
+}
+
+.visual-text--bottom {
+  margin-block-start: auto;
+}
+
+.visual--text.visual--text-card,
+.visual--text.visual--text-fill {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-widget);
+}
+
+.visual--text.visual--text-card,
+.designer__visual[data-visual='TEXT'].visual--text-card {
+  background: var(--color-background);
+}
+
+.visual--text.visual--text-fill,
+.designer__visual[data-visual='TEXT'].visual--text-fill {
+  background: var(--text-box-fill);
+}
+
+.visual--text.visual--text-border,
+.designer__visual[data-visual='TEXT'].visual--text-border {
+  border: 1px solid var(--text-box-border, var(--color-border));
+  border-radius: var(--radius-widget);
+}
+
+.visual--text.visual--text-border:not(.visual--text-card, .visual--text-fill) {
+  padding: var(--space-3) var(--space-4);
+}
+
+.designer__visual[data-visual='TEXT']:is(
+    .visual--text-card,
+    .visual--text-fill,
+    .visual--text-border
+  ) {
+  border-radius: var(--radius-widget);
+}
+
+/* The format pane: groups framed under their legends, each a column of compact rows. */
+.designer-text {
+  gap: var(--space-3);
+}
+
+.designer-text__group {
+  gap: var(--space-3);
+}
+
+.designer-text__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.designer-text__row-label {
+  min-inline-size: 5.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.designer-text__size > .field__input {
+  inline-size: 5rem;
+  min-block-size: 2rem;
+  padding-block: 0;
+}
+
+.designer-text__size > .designer-text__size-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+/* Toggle buttons in a segmented row: the pressed one filled with the primary tint. */
+.designer-toggles {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.designer-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.designer-toggles > .designer-toggle + .designer-toggle {
+  margin-inline-start: -1px;
+}
+
+.designer-toggles > .designer-toggle:first-child {
+  border-start-start-radius: var(--radius);
+  border-end-start-radius: var(--radius);
+}
+
+.designer-toggles > .designer-toggle:last-child {
+  border-start-end-radius: var(--radius);
+  border-end-end-radius: var(--radius);
+}
+
+.designer-toggle--glyph {
+  inline-size: 2.25rem;
+  padding: 0;
+  font-size: 0.9375rem;
+}
+
+.designer-toggle:hover {
+  background: var(--color-surface);
+}
+
+.designer-toggle[aria-pressed='true'] {
+  position: relative;
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.designer-toggle:focus-visible {
+  position: relative;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.designer-toggle__icon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+/* Start and end lines mirror in Arabic, as the alignment does. */
+[dir='rtl'] .designer-toggle__icon--mirrored {
+  transform: scaleX(-1);
+}
+
+/* A colour chooser: its label and the chosen colour's name over a row of specials, swatches and Custom. */
+.designer-colour {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.designer-colour__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.designer-colour__label > .field__label {
+  margin: 0;
+}
+
+.designer-colour__chosen {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.designer-colour__row,
+.designer-colour__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.designer-colour__swatches {
+  gap: 0.3125rem;
+}
+
+.designer-colour__special {
+  border-radius: var(--radius);
+}
+
+.designer-colour__swatch {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.designer-colour__swatch[aria-pressed='true'],
+.designer-colour__custom.is-chosen {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.designer-colour__swatch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer-colour__custom {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: 2rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+/* The browser's picker covers the whole chip, unseen: the dot shows the custom colour, or a colour wheel before one is chosen. */
+.designer-colour__picker {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.designer-colour__dot {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: conic-gradient(#e0564d, #e2a12b, #3fb27f, #3b78c4, #8a5cc9, #e0564d);
+}
+
+.designer-colour__custom:has(.designer-colour__picker:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer-colour__note {
+  margin: 0;
+  color: var(--color-warning);
+}

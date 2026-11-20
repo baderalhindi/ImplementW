@@ -21,6 +21,7 @@ import {
   type VisualResult,
   type VisualType,
 } from './designApi.ts';
+import { sentText } from './textBox.ts';
 
 // The governed fields a designed visual draws (TASK-112, data fields contract): their names, the calculations each visual type takes, how a
 // calculated value reads and what a visual's filters may test. The API checks the same rules (PortfolioDesignService); nothing here
@@ -358,8 +359,10 @@ export function normalized<T extends Visual>(visual: T): T {
     ...rest,
     // Children only on a container, which always sends its list (empty or not), each child as a top-level visual is sent.
     ...(visual.visualType === 'CONTAINER' ? { children: (children ?? []).map(normalized) } : {}),
-    // A text box's words only on a text box.
-    ...(visual.visualType === 'TEXT' && text !== undefined && text !== null ? { text } : {}),
+    // A text box's words only on a text box, with its whole format (sentText).
+    ...(visual.visualType === 'TEXT' && text !== undefined && text !== null
+      ? { text: sentText(text) }
+      : {}),
     axes: sentAxes(visual),
     ...(widgetCode === undefined || widgetCode === null ? {} : { widgetCode }),
     ...(values === undefined || values === null || values.length === 0 ? {} : { values }),

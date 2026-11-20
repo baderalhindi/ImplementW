@@ -1697,7 +1697,10 @@ public sealed class PortfolioDesignRulesTests
 
         // Compared as JSON: the serialiser escapes the Arabic, and jsonb stores it unescaped.
         Assert.True(JsonNode.DeepEquals(
-            JsonNode.Parse("""{"ar":"عنوان القسم\nملاحظة على سطر ثانٍ","en":"Section heading\nA note on a second line","size":"HEADING","align":"CENTER","bold":true}"""),
+            JsonNode.Parse("""
+                {"ar":"عنوان القسم\nملاحظة على سطر ثانٍ","en":"Section heading\nA note on a second line","size":"HEADING","align":"CENTER","bold":true,
+                 "fontSize":null,"italic":false,"underline":false,"color":null,"background":"NONE","border":false,"borderColor":null,"verticalAlign":"TOP"}
+                """),
             JsonNode.Parse(stored)));
         Assert.Null(PortfolioDesignService.TextBoxOf(SmallCard(0, 0)));
         Assert.Null(PortfolioDesignService.TextBoxOf(Container()));
@@ -1710,5 +1713,144 @@ public sealed class PortfolioDesignRulesTests
 
         Assert.Equal(Words(), design.Single().Children!.Single().Text);
         Assert.Null(design.Single().Text);
+    }
+
+    /// <summary>A text box formatted as Power BI's format pane offers (the 20 Nov 2026 text formatting): every property set.</summary>
+    private static PortfolioTextBox Formatted() =>
+        Words() with
+        {
+            FontSize = 32,
+            Italic = true,
+            Underline = true,
+            Color = "#1F4E79",
+            Background = "#FFF2CC",
+            Border = true,
+            BorderColor = "#BF9000",
+            VerticalAlign = PortfolioTextVerticalAlign.Middle,
+        };
+
+    /// <summary>20 Nov 2026 text formatting: the formatting is optional; absent, a text box draws at its size preset, in the theme's colours, on no background, at the top.</summary>
+    [Fact]
+    public void ATextBoxWithoutFormattingHasTheDefaults()
+    {
+        PortfolioTextBox text = Words();
+
+        Assert.Null(text.FontSize);
+        Assert.False(text.Italic);
+        Assert.False(text.Underline);
+        Assert.Null(text.Color);
+        Assert.Equal(PortfolioTextBox.NoBackground, text.Background);
+        Assert.False(text.Border);
+        Assert.Null(text.BorderColor);
+        Assert.Equal(PortfolioTextVerticalAlign.Top, text.VerticalAlign);
+        Assert.Null(Issue(TextBox(text: text)));
+    }
+
+    /// <summary>A fully formatted text box is accepted, at the edges of its font size, in either case of colour, on each background and vertical alignment.</summary>
+    [Fact]
+    public void ATextBoxTakesItsFormatting()
+    {
+        Assert.Null(Issue(TextBox(text: Formatted())));
+        Assert.Null(Issue(Container(children: [TextBox(text: Formatted())])));
+        foreach (decimal size in new[] { 8m, 96m, 14.0m })
+        {
+            Assert.Null(Issue(TextBox(text: Words() with { FontSize = size })));
+        }
+
+        foreach (string background in new[] { PortfolioTextBox.CardBackground, PortfolioTextBox.NoBackground, "#ffffff", "#0A0b0C" })
+        {
+            Assert.Null(Issue(TextBox(text: Words() with { Background = background })));
+        }
+
+        foreach (PortfolioTextVerticalAlign align in Enum.GetValues<PortfolioTextVerticalAlign>())
+        {
+            Assert.Null(Issue(TextBox(text: Words() with { VerticalAlign = align })));
+        }
+
+        Assert.Null(Issue(TextBox(text: Words() with { Color = "#abcdef", BorderColor = "#ABCDEF" })));
+    }
+
+    public static TheoryData<decimal> FontSizesOutsideRange => [7m, 97m, 0m, -14m, 14.5m, 8.01m, 100m];
+
+    /// <summary>A custom font size is a whole 8–96 px.</summary>
+    [Theory]
+    [MemberData(nameof(FontSizesOutsideRange))]
+    public void ATextBoxFontSizeIsWholeAndInRange(decimal size)
+    {
+        Assert.Equal(new FieldIssue("visuals[0].text.fontSize", FieldIssue.OutsideRange), Issue(TextBox(text: Words() with { FontSize = size })));
+        Assert.Equal(
+            new FieldIssue("visuals[0].children[0].text.fontSize", FieldIssue.OutsideRange),
+            Issue(Container(children: [TextBox(text: Words() with { FontSize = size })])));
+    }
+
+    public static TheoryData<string> NotColours => ["red", "#FFF", "#FFFFFFF", "#GGGGGG", "FFFFFF", "#FFFFFF\n", " #FFFFFF", "", "#ＦＦＦＦＦＦ"];
+
+    /// <summary>The text and border colours are <c>#RRGGBB</c>; the background is CARD, NONE or such a colour (the codes in upper case, as every code).</summary>
+    [Theory]
+    [MemberData(nameof(NotColours))]
+    public void ATextBoxColourIsHex(string colour)
+    {
+        Assert.Equal(new FieldIssue("visuals[0].text.color", FieldIssue.NotAllowed), Issue(TextBox(text: Words() with { Color = colour })));
+        Assert.Equal(new FieldIssue("visuals[0].text.background", FieldIssue.NotAllowed), Issue(TextBox(text: Words() with { Background = colour })));
+        Assert.Equal(new FieldIssue("visuals[0].text.borderColor", FieldIssue.NotAllowed), Issue(TextBox(text: Words() with { BorderColor = colour })));
+    }
+
+    /// <summary>A background is one of the two codes or a colour, never another word, a lower-case code or nothing at all.</summary>
+    [Fact]
+    public void ATextBoxBackgroundIsACodeOrAColour()
+    {
+        foreach (string background in new[] { "card", "None", "WHITE", "TRANSPARENT" })
+        {
+            Assert.Equal(new FieldIssue("visuals[0].text.background", FieldIssue.NotAllowed), Issue(TextBox(text: Words() with { Background = background })));
+        }
+
+        Assert.Equal(new FieldIssue("visuals[0].text.background", FieldIssue.NotAllowed), Issue(TextBox(text: Words() with { Background = null! })));
+    }
+
+    /// <summary>The vertical alignment is top, middle or bottom.</summary>
+    [Fact]
+    public void ATextBoxHasAKnownVerticalAlignment() =>
+        Assert.Equal(
+            new FieldIssue("visuals[0].text.verticalAlign", FieldIssue.NotAllowed),
+            Issue(TextBox(text: Words() with { VerticalAlign = (PortfolioTextVerticalAlign)4 })));
+
+    /// <summary>A formatted text box is stored and echoed with its colours upper-case and its font size written shortest, and reads back exactly.</summary>
+    [Fact]
+    public void AFormattedTextBoxIsStoredNormalisedAndReadBack()
+    {
+        PortfolioTextBox sent = Formatted() with { FontSize = 32.0m, Color = "#1f4e79", Background = "#fff2cc", BorderColor = "#bf9000" };
+        string stored = PortfolioDesignService.TextBoxOf(TextBox(text: sent))!;
+
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("""
+                {"ar":"عنوان القسم\nملاحظة على سطر ثانٍ","en":"Section heading\nA note on a second line","size":"HEADING","align":"CENTER","bold":true,
+                 "fontSize":32,"italic":true,"underline":true,"color":"#1F4E79","background":"#FFF2CC","border":true,"borderColor":"#BF9000","verticalAlign":"MIDDLE"}
+                """),
+            JsonNode.Parse(stored)));
+        Assert.Contains("\"fontSize\":32,", stored, StringComparison.Ordinal);
+
+        IReadOnlyDictionary<string, PortfolioFieldType> types = new Dictionary<string, PortfolioFieldType>(StringComparer.Ordinal);
+        Assert.Equal(Formatted(), PortfolioDesignService.ResultOf(TextBox(text: sent), _ => [], types).Text);
+        Assert.Equal(PortfolioTextBox.CardBackground, PortfolioDesignService.Normalised(Words() with { Background = PortfolioTextBox.CardBackground }).Background);
+
+        PortfolioVisual text = Saved(1, PortfolioVisualType.Text, "Text box");
+        text.Measures = [];
+        text.TextBox = stored;
+        Assert.Equal(Formatted(), PortfolioDesignService.Nested([text]).Single().Text);
+    }
+
+    /// <summary>A text box saved before its formatting (its <c>text_box</c> without the new properties) reads back unchanged, with the defaults: no background.</summary>
+    [Fact]
+    public void ATextBoxSavedBeforeItsFormattingReadsWithTheDefaults()
+    {
+        PortfolioVisual text = Saved(1, PortfolioVisualType.Text, "Text box");
+        text.Measures = [];
+        text.TextBox = """{"ar":"عنوان القسم\nملاحظة على سطر ثانٍ","en":"Section heading\nA note on a second line","size":"HEADING","align":"CENTER","bold":true}""";
+
+        PortfolioTextBox read = PortfolioDesignService.Nested([text]).Single().Text!;
+
+        Assert.Equal(Words(), read);
+        Assert.Equal(PortfolioTextBox.NoBackground, read.Background);
+        Assert.Null(Issue(TextBox(text: read)));
     }
 }

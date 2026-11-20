@@ -450,8 +450,8 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
         object design = DesignOf(
             Visual("Heading", "TEXT", 0, 0, 6, 2, text: heading),
             Visual("Box", "CONTAINER", 0, 2, 12, 4, children: [Visual("Note", "TEXT", 0, 0, 6, 2, text: note), Visual("Projects", "CARD", 6, 0, 4, 2, measures: ["PROJECTS"])]));
-        JsonNode expectedHeading = JsonNode.Parse("""{"ar":"عنوان اللوحة\nسطر ثانٍ","en":"Dashboard heading\nA second line","size":"HEADING","align":"CENTER","bold":true}""")!;
-        JsonNode expectedNote = JsonNode.Parse("""{"ar":"ملاحظة","en":"A note","size":"SMALL","align":"END","bold":false}""")!;
+        JsonNode expectedHeading = JsonNode.Parse("""{"ar":"عنوان اللوحة\nسطر ثانٍ","en":"Dashboard heading\nA second line","size":"HEADING","align":"CENTER","bold":true,"fontSize":null,"italic":false,"underline":false,"color":null,"background":"NONE","border":false,"borderColor":null,"verticalAlign":"TOP"}""")!;
+        JsonNode expectedNote = JsonNode.Parse("""{"ar":"ملاحظة","en":"A note","size":"SMALL","align":"END","bold":false,"fontSize":null,"italic":false,"underline":false,"color":null,"background":"NONE","border":false,"borderColor":null,"verticalAlign":"TOP"}""")!;
 
         using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
         Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
@@ -508,6 +508,118 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             JsonArray children = visuals[1]!["children"]!.AsArray();
             Assert.True(JsonNode.DeepEquals(expectedNote, children[0]!["text"]));
             Assert.Null(children[1]!["text"]);
+        }
+    }
+
+    /// <summary>
+    /// 20 Nov 2026 text formatting: a fully formatted text box previews, saves and reads back exactly (its colours upper-case); one saved before its formatting
+    /// reads back with the defaults (no background); a colour not #RRGGBB, a font size outside 8–96 or not whole, a background not CARD, NONE or a colour are
+    /// refused and save nothing.
+    /// </summary>
+    [Fact]
+    public async Task AFormattedTextBoxIsSavedAndReadBackExactly()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+        string viewer = (await client.SignInOrFailAsync(6)).AccessToken;
+
+        var words = new { ar = "ملاحظة", en = "A note", size = "NORMAL", align = "START", bold = false };
+        var formatted = new
+        {
+            ar = "عنوان\nسطر ثانٍ",
+            en = "Heading\nA second line",
+            size = "LARGE",
+            align = "CENTER",
+            bold = true,
+            fontSize = 32,
+            italic = true,
+            underline = true,
+            color = "#1f4e79",
+            background = "#FFF2cc",
+            border = true,
+            borderColor = "#BF9000",
+            verticalAlign = "BOTTOM",
+        };
+        object design = DesignOf(
+            Visual("Formatted", "TEXT", 0, 0, 6, 2, text: formatted),
+            Visual("Box", "CONTAINER", 0, 2, 12, 4, children: [Visual("Card", "TEXT", 0, 0, 6, 2, text: new
+            {
+                words.ar,
+                words.en,
+                words.size,
+                words.align,
+                words.bold,
+                background = "CARD",
+                verticalAlign = "MIDDLE",
+            })]));
+        JsonNode expected = JsonNode.Parse("""
+            {"ar":"عنوان\nسطر ثانٍ","en":"Heading\nA second line","size":"LARGE","align":"CENTER","bold":true,"fontSize":32,"italic":true,"underline":true,
+             "color":"#1F4E79","background":"#FFF2CC","border":true,"borderColor":"#BF9000","verticalAlign":"BOTTOM"}
+            """)!;
+        JsonNode expectedCard = JsonNode.Parse("""
+            {"ar":"ملاحظة","en":"A note","size":"NORMAL","align":"START","bold":false,"fontSize":null,"italic":false,"underline":false,"color":null,
+             "background":"CARD","border":false,"borderColor":null,"verticalAlign":"MIDDLE"}
+            """)!;
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        AssertFormatted(await preview.ReadObjectAsync());
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        AssertFormatted(await saved.ReadObjectAsync());
+        foreach (string reader in new[] { manager, viewer })
+        {
+            using HttpResponseMessage read = await client.GetAsync(Design, reader);
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+            AssertFormatted(await read.ReadObjectAsync());
+        }
+
+        Assert.Equal(["1:#1F4E79:#FFF2CC:32", "3::CARD:"], await host.Database.QueryAsync(
+            "SELECT sort_order || ':' || coalesce(text_box->>'color', '') || ':' || (text_box->>'background') || ':' || coalesce(text_box->>'fontSize', '') "
+            + "FROM project.portfolio_visual WHERE visual_type = 'TEXT' ORDER BY sort_order"));
+
+        // A text box saved before its formatting: its text_box without the new properties reads back with the defaults.
+        await host.Database.ExecuteAsync(
+            "UPDATE project.portfolio_visual SET text_box = '{\"ar\":\"ملاحظة\",\"en\":\"A note\",\"size\":\"NORMAL\",\"align\":\"START\",\"bold\":false}'::jsonb "
+            + "WHERE sort_order = 1");
+        using (HttpResponseMessage before = await client.GetAsync(Design, viewer))
+        {
+            Assert.Equal(HttpStatusCode.OK, before.StatusCode);
+            JsonNode? text = (await before.ReadObjectAsync())["visuals"]![0]!["text"];
+            Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""
+                {"ar":"ملاحظة","en":"A note","size":"NORMAL","align":"START","bold":false,"fontSize":null,"italic":false,"underline":false,"color":null,
+                 "background":"NONE","border":false,"borderColor":null,"verticalAlign":"TOP"}
+                """), text));
+        }
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        foreach ((object text, string field, string code) in new (object, string, string)[]
+        {
+            (new { words.ar, words.en, words.size, words.align, words.bold, color = "red" }, "visuals[0].text.color", "NOT_ALLOWED"),
+            (new { words.ar, words.en, words.size, words.align, words.bold, borderColor = "#12345" }, "visuals[0].text.borderColor", "NOT_ALLOWED"),
+            (new { words.ar, words.en, words.size, words.align, words.bold, background = "white" }, "visuals[0].text.background", "NOT_ALLOWED"),
+            (new { words.ar, words.en, words.size, words.align, words.bold, fontSize = 100 }, "visuals[0].text.fontSize", "OUTSIDE_RANGE"),
+            (new { words.ar, words.en, words.size, words.align, words.bold, fontSize = 7 }, "visuals[0].text.fontSize", "OUTSIDE_RANGE"),
+            (new { words.ar, words.en, words.size, words.align, words.bold, fontSize = 14.5m }, "visuals[0].text.fontSize", "OUTSIDE_RANGE"),
+        })
+        {
+            using HttpResponseMessage save = await client.PutAsync(Design, manager, DesignOf(Visual("Refused", "TEXT", 0, 0, 6, 2, text: text)), ifMatch: null);
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, save.StatusCode);
+            JsonObject body = await save.ReadObjectAsync();
+            Assert.Equal(("PROJECT_PORTFOLIO_DESIGN_INVALID", field, code), (body["code"]!.GetValue<string>(), body["errors"]![0]!["field"]!.GetValue<string>(),
+                body["errors"]![0]!["code"]!.GetValue<string>()));
+        }
+
+        Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+
+        void AssertFormatted(JsonObject view)
+        {
+            JsonArray visuals = view["visuals"]!.AsArray();
+            Assert.True(JsonNode.DeepEquals(expected, visuals[0]!["text"]));
+            Assert.True(JsonNode.DeepEquals(expectedCard, visuals[1]!["children"]![0]!["text"]));
         }
     }
 

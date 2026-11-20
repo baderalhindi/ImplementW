@@ -32,7 +32,7 @@ import {
   withoutEmptyRows,
 } from './visuals.ts';
 import { hasColumns } from './tableColumns.ts';
-import { isTextBox } from './textBox.ts';
+import { frameOf, isTextBox } from './textBox.ts';
 import { TextBoxBody } from './TextBoxBody.tsx';
 import { VisualBody } from './VisualBody.tsx';
 import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
@@ -156,10 +156,11 @@ function TextFrame({
   place: CSSProperties;
 }): ReactElement {
   const { language } = useI18n();
+  const frame = frameOf(visual.text);
   return (
     <section
-      className="visual visual--text"
-      style={place}
+      className={`visual visual--text${frame.className}`}
+      style={{ ...place, ...frame.style }}
       aria-label={visual.title[language]}
       data-visual="TEXT"
     >

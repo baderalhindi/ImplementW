@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import { dashboardView, withDashboards } from '@/test/dashboardFixtures.ts';
@@ -250,17 +250,19 @@ describe('the gallery places the map', () => {
     ).toHaveLength(1);
   });
 
-  test('while the map is on the design the tile is disabled and says so; removing the map enables it again', async () => {
+  test('while the map is on the design the tile stays usable and says where the map is; removing the map makes it add one again', async () => {
     api(design([CARD, MAP]));
     const user = userEvent.setup();
     await openDesigner();
     await screen.findByRole('region', { name: 'Projects by location' });
 
     const tile = mapTile();
-    expect((tile as HTMLButtonElement).disabled).toBe(true);
-    expect(tile.getAttribute('title')).toBe(en('dashboards.designer.mapPlaced'));
+    expect((tile as HTMLButtonElement).disabled).toBe(false);
+    expect(tile.getAttribute('title')).toBe(
+      `${en('dashboards.designer.mapGoTo')}\n${en('dashboards.designer.mapDragToMove')}`,
+    );
     const note = present(document.getElementById(tile.getAttribute('aria-describedby') ?? ''));
-    expect(note.textContent).toBe(en('dashboards.designer.mapPlaced'));
+    expect(note.textContent).toBe(en('dashboards.designer.mapPlacedHint'));
 
     await user.click(
       screen.getByRole('button', {
@@ -274,15 +276,97 @@ describe('the gallery places the map', () => {
     );
 
     await waitFor(() => {
-      expect((mapTile() as HTMLButtonElement).disabled).toBe(false);
+      expect(mapTile().getAttribute('title')).toBeNull();
     });
-    expect(mapTile().getAttribute('title')).toBeNull();
     expect(mapTile().getAttribute('aria-describedby')).toBeNull();
   });
 });
 
+describe('the Map tile while the map is placed', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('a click selects the map and scrolls it into view, adding nothing', async () => {
+    const mock = api(design([CARD, MAP]));
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element) {
+      scrolled.push(this);
+    });
+    const user = userEvent.setup();
+    await openDesigner();
+    const map = await screen.findByRole('region', { name: 'Projects by location' });
+
+    await user.click(mapTile());
+
+    expect(map.getAttribute('aria-current')).toBe('true');
+    expect(scrolled).toEqual([map]);
+    // Its settings are open: a section's.
+    expect(
+      within(settings()).getByRole('button', { name: en('dashboards.designer.removeSection') }),
+    ).toBeTruthy();
+    await waitFor(() => {
+      expect(
+        lastPreviewed(mock).filter((visual) => visual.section === 'PROJECT_LOCATIONS'),
+      ).toHaveLength(1);
+    });
+  });
+
+  test('a drag moves the map to the cell it is dropped on', async () => {
+    const mock = api(design([CARD, MAP]));
+    await openDesigner();
+    await screen.findByRole('region', { name: 'Projects by location' });
+    measuredCanvas();
+
+    // Row 12: 12 × 72 px down.
+    dragTile(mapTile(), 30, 12 * 72 + 2);
+
+    await waitFor(() => {
+      const map = lastPreviewed(mock).find((visual) => visual.section === 'PROJECT_LOCATIONS');
+      expect(map).toMatchObject({ layoutColumn: 0, layoutRow: 12, layoutWidth: 12 });
+    });
+    expect(
+      lastPreviewed(mock).filter((visual) => visual.section === 'PROJECT_LOCATIONS'),
+    ).toHaveLength(1);
+    expect(lastPreviewed(mock).map((visual) => visual.title.en)).toContain('All projects');
+    expect(
+      screen.getByRole('region', { name: 'Projects by location' }).getAttribute('aria-current'),
+    ).toBe('true');
+  });
+
+  test('a drag onto a container moves the map into it', async () => {
+    const mock = api(design([CARD, CONTAINER, { ...MAP, layoutRow: 7 }]));
+    await openDesigner();
+    await screen.findByRole('region', { name: 'Notes' });
+    measuredCanvas();
+
+    dragTile(mapTile(), 110, 3 * 72 + 30);
+
+    await waitFor(() => {
+      const box = lastPreviewed(mock).find((visual) => visual.visualType === 'CONTAINER');
+      expect(box?.children?.map((child) => child.section)).toEqual(['PROJECT_LOCATIONS']);
+    });
+    expect(
+      lastPreviewed(mock).filter((visual) => visual.section === 'PROJECT_LOCATIONS'),
+    ).toHaveLength(0);
+  });
+
+  test('dropped outside the dashboard the map stays where it was', async () => {
+    api(design([CARD, MAP]));
+    await openDesigner();
+    await screen.findByRole('region', { name: 'Projects by location' });
+    measuredCanvas();
+
+    dragTile(mapTile(), 1500, 2500);
+
+    expect(
+      screen.getByRole('button', { name: en('dashboards.designer.save') }).hasAttribute('disabled'),
+    ).toBe(true);
+  });
+});
+
 describe('the gallery places a text box', () => {
-  test('a click sends a TEXT visual, 6 by 2, titled "Text box", with its text in both languages, normal, at the start, not bold', async () => {
+  test('a click sends a TEXT visual, 6 by 2, titled "Text box", with its text in both languages, normal, at the start, not bold, on the card colour', async () => {
     const mock = api();
     const user = userEvent.setup();
     await openDesigner();
@@ -306,6 +390,15 @@ describe('the gallery places a text box', () => {
           size: 'NORMAL',
           align: 'START',
           bold: false,
+          // A new text box is on the card colour (the user: "background to be white"), every part of its format sent.
+          fontSize: null,
+          italic: false,
+          underline: false,
+          color: null,
+          background: 'CARD',
+          border: false,
+          borderColor: null,
+          verticalAlign: 'TOP',
         } satisfies TextBox,
       });
     });
@@ -344,17 +437,23 @@ describe('the gallery places a text box', () => {
     await user.type(english, 'Quarter review{Enter}Second line');
     await user.clear(arabic);
     await user.type(arabic, 'مراجعة الربع{Enter}السطر الثاني');
-    await user.selectOptions(
-      pane.getByLabelText(en('dashboards.designer.textSize')),
-      en('dashboards.designer.textSizes.HEADING'),
+    await user.click(
+      pane.getByRole('button', { name: en('dashboards.designer.textSizes.HEADING') }),
     );
     await user.click(
-      pane.getByRole('radio', { name: en('dashboards.designer.textAligns.CENTER') }),
+      pane.getByRole('button', { name: en('dashboards.designer.textAligns.CENTER') }),
     );
-    await user.click(pane.getByRole('checkbox', { name: en('dashboards.designer.textBold') }));
+    await user.click(pane.getByRole('button', { name: en('dashboards.designer.textBold') }));
+    expect(
+      pane
+        .getByRole('button', { name: en('dashboards.designer.textBold') })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
 
     await waitFor(() => {
-      expect(lastPreviewed(mock).find((visual) => visual.visualType === 'TEXT')?.text).toEqual({
+      expect(
+        lastPreviewed(mock).find((visual) => visual.visualType === 'TEXT')?.text,
+      ).toMatchObject({
         en: 'Quarter review\nSecond line',
         ar: 'مراجعة الربع\nالسطر الثاني',
         size: 'HEADING',
@@ -568,5 +667,313 @@ describe('the dashboard draws a text box', () => {
     renderApp({ path: DASHBOARD, session: session(), language: 'ar' });
     const box = await screen.findByRole('region', { name: 'مقدمة' });
     expect(box.querySelector('.visual-text')?.textContent).toBe('مرحبًا\nبالجميع');
+  });
+});
+
+describe("a text box's format", () => {
+  const sentText = (mock: MockApi) =>
+    lastPreviewed(mock).find((visual) => visual.visualType === 'TEXT')?.text;
+  const textBox = () =>
+    screen.getByRole('region', { name: en('dashboards.designer.textDefaultTitle') });
+  const words = () => present(textBox().querySelector<HTMLElement>('.visual-text'), 'The text');
+  const chooser = (label: string) => within(within(settings()).getByRole('group', { name: label }));
+
+  async function withTextBox() {
+    const mock = api();
+    const user = userEvent.setup();
+    await openDesigner();
+    await user.click(textTile());
+    await waitFor(() => {
+      expect(sentText(mock)).toBeTruthy();
+    });
+    return { mock, user, pane: within(settings()) };
+  }
+
+  test('a custom font size is sent and drawn; a size outside 8–96 says so and is not sent; a preset clears it', async () => {
+    const { mock, user, pane } = await withTextBox();
+    const size = pane.getByLabelText(en('dashboards.designer.textCustomSize'));
+
+    await user.type(size, '32');
+    await waitFor(() => {
+      expect(sentText(mock)?.fontSize).toBe(32);
+    });
+    expect(words().style.fontSize).toBe('32px');
+    // No preset is pressed while a size of its own is set.
+    expect(
+      pane
+        .getByRole('button', { name: en('dashboards.designer.textSizes.NORMAL') })
+        .getAttribute('aria-pressed'),
+    ).toBe('false');
+
+    // Outside 8–96: said under the field, and the size it had is kept.
+    fireEvent.change(size, { target: { value: '120' } });
+    expect(pane.getByText(en('dashboards.designer.textCustomSizeError'))).toBeTruthy();
+    expect(size.getAttribute('aria-invalid')).toBe('true');
+    expect(words().style.fontSize).toBe('32px');
+
+    await user.click(pane.getByRole('button', { name: en('dashboards.designer.textSizes.LARGE') }));
+    await waitFor(() => {
+      expect(sentText(mock)).toMatchObject({ size: 'LARGE', fontSize: null });
+    });
+    expect((size as HTMLInputElement).value).toBe('');
+    expect(words().style.fontSize).toBe('');
+    expect(words().className).toContain('visual-text--large');
+  });
+
+  test('italic and underline are sent and drawn', async () => {
+    const { mock, user, pane } = await withTextBox();
+    await user.click(pane.getByRole('button', { name: en('dashboards.designer.textItalic') }));
+    await user.click(pane.getByRole('button', { name: en('dashboards.designer.textUnderline') }));
+    await waitFor(() => {
+      expect(sentText(mock)).toMatchObject({ italic: true, underline: true });
+    });
+    expect(words().style.fontStyle).toBe('italic');
+    expect(words().style.textDecoration).toBe('underline');
+    expect(
+      pane
+        .getByRole('button', { name: en('dashboards.designer.textItalic') })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+  });
+
+  test('a text colour from the swatches, a custom one, and the default', async () => {
+    const { mock, user } = await withTextBox();
+    const colour = () => chooser(en('dashboards.designer.textColour'));
+
+    await user.click(colour().getByRole('button', { name: en('dashboards.designer.colours.RED') }));
+    await waitFor(() => {
+      expect(sentText(mock)?.color).toBe('#B8322A');
+    });
+    expect(words().style.color).toBe('rgb(184, 50, 42)');
+    expect(colour().getByText(en('dashboards.designer.colours.RED'))).toBeTruthy();
+
+    fireEvent.change(
+      colour().getByLabelText(
+        en('dashboards.designer.colourCustomLabel', {
+          label: en('dashboards.designer.textColour'),
+        }),
+      ),
+      { target: { value: '#12ab34' } },
+    );
+    await waitFor(() => {
+      expect(sentText(mock)?.color).toBe('#12AB34');
+    });
+
+    await user.click(
+      colour().getByRole('button', { name: en('dashboards.designer.colourDefault') }),
+    );
+    await waitFor(() => {
+      expect(sentText(mock)?.color).toBeNull();
+    });
+    expect(words().style.color).toBe('');
+  });
+
+  test('the background: the card colour for a new box, none, or a colour', async () => {
+    const { mock, user } = await withTextBox();
+    const background = () => chooser(en('dashboards.designer.textBackground'));
+    expect(
+      background()
+        .getByRole('button', { name: en('dashboards.designer.textBackgrounds.CARD') })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(textBox().classList.contains('visual--text-card')).toBe(true);
+
+    await user.click(
+      background().getByRole('button', { name: en('dashboards.designer.textBackgrounds.NONE') }),
+    );
+    await waitFor(() => {
+      expect(sentText(mock)?.background).toBe('NONE');
+    });
+    expect(textBox().classList.contains('visual--text-card')).toBe(false);
+    expect(textBox().classList.contains('visual--text-fill')).toBe(false);
+
+    await user.click(
+      background().getByRole('button', { name: en('dashboards.designer.colours.BLUE') }),
+    );
+    await waitFor(() => {
+      expect(sentText(mock)?.background).toBe('#3B78C4');
+    });
+    expect(textBox().classList.contains('visual--text-fill')).toBe(true);
+    expect(textBox().style.getPropertyValue('--text-box-fill')).toBe('#3B78C4');
+  });
+
+  test('a border, in the theme colour or one chosen', async () => {
+    const { mock, user, pane } = await withTextBox();
+    expect(
+      pane.queryByRole('group', { name: en('dashboards.designer.textBorderColour') }),
+    ).toBeNull();
+
+    await user.click(
+      pane.getByRole('checkbox', { name: en('dashboards.designer.textBorderShow') }),
+    );
+    await waitFor(() => {
+      expect(sentText(mock)).toMatchObject({ border: true, borderColor: null });
+    });
+    expect(textBox().classList.contains('visual--text-border')).toBe(true);
+    expect(textBox().style.getPropertyValue('--text-box-border')).toBe('');
+
+    await user.click(
+      chooser(en('dashboards.designer.textBorderColour')).getByRole('button', {
+        name: en('dashboards.designer.colours.GREEN'),
+      }),
+    );
+    await waitFor(() => {
+      expect(sentText(mock)?.borderColor).toBe('#3FB27F');
+    });
+    expect(textBox().style.getPropertyValue('--text-box-border')).toBe('#3FB27F');
+  });
+
+  test('the vertical alignment is sent and drawn', async () => {
+    const { mock, user, pane } = await withTextBox();
+    expect(words().className).toContain('visual-text--top');
+    await user.click(
+      pane.getByRole('button', { name: en('dashboards.designer.textVerticalAligns.MIDDLE') }),
+    );
+    await waitFor(() => {
+      expect(sentText(mock)?.verticalAlign).toBe('MIDDLE');
+    });
+    expect(words().className).toContain('visual-text--middle');
+    await user.click(
+      pane.getByRole('button', { name: en('dashboards.designer.textVerticalAligns.BOTTOM') }),
+    );
+    expect(words().className).toContain('visual-text--bottom');
+  });
+
+  test('a text colour under 3:1 on its background in the current theme says so, and is kept', async () => {
+    const { mock, user } = await withTextBox();
+    const colour = () => chooser(en('dashboards.designer.textColour'));
+    // White on the card colour, white in the light theme.
+    await user.click(
+      colour().getByRole('button', { name: en('dashboards.designer.colours.WHITE') }),
+    );
+    expect(colour().getByText(en('dashboards.designer.textLowContrast'))).toBeTruthy();
+    await waitFor(() => {
+      expect(sentText(mock)?.color).toBe('#FFFFFF');
+    });
+    await user.click(
+      colour().getByRole('button', { name: en('dashboards.designer.colours.BLACK') }),
+    );
+    expect(colour().queryByText(en('dashboards.designer.textLowContrast'))).toBeNull();
+  });
+
+  test('in the dark theme, red on the dark card colour says so', async () => {
+    document.documentElement.dataset.theme = 'dark';
+    const { user } = await withTextBox();
+    const colour = () => chooser(en('dashboards.designer.textColour'));
+    await user.click(colour().getByRole('button', { name: en('dashboards.designer.colours.RED') }));
+    expect(colour().getByText(en('dashboards.designer.textLowContrast'))).toBeTruthy();
+  });
+});
+
+describe('a text box saved before the format', () => {
+  const OLD: VisualResult = {
+    title: { ar: 'مقدمة', en: 'Introduction' },
+    visualType: 'TEXT',
+    measures: [],
+    groupBy: 'NONE',
+    layoutColumn: 0,
+    layoutRow: 2,
+    layoutWidth: 8,
+    layoutHeight: 2,
+    text: { ar: 'مرحبًا', en: 'Welcome', size: 'NORMAL', align: 'START', bold: false },
+    groups: [],
+    children: null,
+  };
+
+  test('draws as before on the dashboard: no background, no border, at the top', async () => {
+    api(design([CARD, OLD]));
+    renderApp({ path: DASHBOARD, session: session() });
+    const box = await screen.findByRole('region', { name: 'Introduction' });
+    expect(box.className).toBe('visual visual--text');
+    const shown = present(box.querySelector<HTMLElement>('.visual-text'));
+    expect(shown.getAttribute('style')).toBeNull();
+    expect(shown.className).toContain('visual-text--top');
+  });
+
+  test('opens in the designer with no background, and is sent with every part at what it draws', async () => {
+    const mock = api(design([CARD, OLD]));
+    const user = userEvent.setup();
+    await openDesigner();
+    const box = await screen.findByRole('region', { name: 'Introduction' });
+    expect(box.classList.contains('visual--text-card')).toBe(false);
+    await user.click(
+      screen.getByRole('button', {
+        name: (name) =>
+          plain(name) === plain(en('dashboards.designer.editVisual', { title: 'Introduction' })),
+      }),
+    );
+    expect(
+      within(
+        within(settings()).getByRole('group', { name: en('dashboards.designer.textBackground') }),
+      )
+        .getByRole('button', { name: en('dashboards.designer.textBackgrounds.NONE') })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+    // Nothing changed: the design read is the design saved.
+    expect(
+      screen.getByRole('button', { name: en('dashboards.designer.save') }).hasAttribute('disabled'),
+    ).toBe(true);
+    await waitFor(() => {
+      expect(lastPreviewed(mock).find((visual) => visual.visualType === 'TEXT')?.text).toEqual({
+        ...OLD.text,
+        fontSize: null,
+        italic: false,
+        underline: false,
+        color: null,
+        background: 'NONE',
+        border: false,
+        borderColor: null,
+        verticalAlign: 'TOP',
+      });
+    });
+  });
+});
+
+describe('the dashboard draws a formatted text box', () => {
+  test('its size, styles, colour, card background, border and vertical alignment', async () => {
+    api(
+      design([
+        CARD,
+        {
+          title: { ar: 'تنبيه', en: 'Notice' },
+          visualType: 'TEXT',
+          measures: [],
+          groupBy: 'NONE',
+          layoutColumn: 0,
+          layoutRow: 2,
+          layoutWidth: 8,
+          layoutHeight: 3,
+          text: {
+            ar: 'تنبيه',
+            en: 'Heads up',
+            size: 'NORMAL',
+            align: 'CENTER',
+            bold: true,
+            fontSize: 32,
+            italic: true,
+            underline: false,
+            color: '#B8322A',
+            background: 'CARD',
+            border: true,
+            borderColor: '#3FB27F',
+            verticalAlign: 'MIDDLE',
+          },
+          groups: [],
+          children: null,
+        },
+      ]),
+    );
+    renderApp({ path: DASHBOARD, session: session() });
+    const box = await screen.findByRole('region', { name: 'Notice' });
+    expect(box.classList.contains('visual--text-card')).toBe(true);
+    expect(box.classList.contains('visual--text-border')).toBe(true);
+    expect(box.classList.contains('widget')).toBe(false);
+    expect(box.style.getPropertyValue('--text-box-border')).toBe('#3FB27F');
+    const shown = present(box.querySelector<HTMLElement>('.visual-text'));
+    expect(shown.style.fontSize).toBe('32px');
+    expect(shown.style.fontStyle).toBe('italic');
+    expect(shown.style.color).toBe('rgb(184, 50, 42)');
+    expect(shown.className).toContain('visual-text--middle');
+    expect(shown.className).toContain('visual-text--bold');
   });
 });

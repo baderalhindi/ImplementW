@@ -38999,9 +38999,49 @@
           },
           "bold": {
             "type": "boolean"
+          },
+          "fontSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "italic": {
+            "type": "boolean",
+            "default": false
+          },
+          "underline": {
+            "type": "boolean",
+            "default": false
+          },
+          "color": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "background": {
+            "type": "string",
+            "default": "NONE"
+          },
+          "border": {
+            "type": "boolean",
+            "default": false
+          },
+          "borderColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verticalAlign": {
+            "$ref": "#/components/schemas/PortfolioTextVerticalAlign"
           }
         },
-        "description": "What a PortfolioVisualType.Text visual says (the 20 Nov 2026 text box, dashboard-designer-map-text.md): its words in both languages, each\n1–2000 characters once trimmed with its line breaks (`\\n`) kept, how large and where they are drawn, and whether in bold."
+        "description": "What a PortfolioVisualType.Text visual says (the 20 Nov 2026 text box, dashboard-designer-map-text.md): its words in both languages, each\n1–2000 characters once trimmed with its line breaks (`\\n`) kept, how large and where they are drawn, and whether in bold. Its formatting (the 20 Nov\n2026 text formatting, dashboard-designer-text-format.md) is optional, each absent property its default, so a text box saved before reads as it was drawn:\nFontSize a whole 8–96 px or null for the Size preset; Color and BorderColor a\n`#RRGGBB` colour or null for the theme's; Background`CARD` (the visuals' card colour), `NONE` or a colour."
       },
       "PortfolioTextBoxRequest": {
         "required": [
@@ -39050,9 +39090,64 @@
               "null",
               "boolean"
             ]
+          },
+          "fontSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "italic": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "underline": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "color": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "background": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "border": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "borderColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verticalAlign": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextVerticalAlign"
+              }
+            ]
           }
         },
-        "description": "What a TEXT visual says (the 20 Nov 2026 text box): its words in both languages as a visual's title is (R-17: present, not blank, each in its own\nlanguage), its line breaks kept and no other control character; its size, alignment and bold. Whether the visual is a text box and the trimmed length\n(2000) are checked by the service."
+        "description": "What a TEXT visual says (the 20 Nov 2026 text box): its words in both languages as a visual's title is (R-17: present, not blank, each in its own\nlanguage), its line breaks kept and no other control character; its size, alignment and bold. Its formatting (the 20 Nov 2026 text formatting) is optional,\neach absent or null property its default: no custom font size, no italic or underline, the theme's text and border colours, no background, no border, at\nthe top. Whether the visual is a text box, the trimmed length (2000), the font size's range and the colours' shape are checked by the service."
       },
       "PortfolioTextSize": {
         "enum": [
@@ -39062,6 +39157,15 @@
           "HEADING"
         ],
         "description": "How large a text box's words are drawn (the 20 Nov 2026 text box), from small to a heading."
+      },
+      "PortfolioTextVerticalAlign": {
+        "enum": [
+          "TOP",
+          "MIDDLE",
+          "BOTTOM"
+        ],
+        "description": "Where a text box's lines sit within its box, from the top (the 20 Nov 2026 text formatting).",
+        "default": "TOP"
       },
       "PortfolioTopProject": {
         "required": [

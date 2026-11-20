@@ -679,7 +679,9 @@
     "moveColumnDown": "نقل {column} للأسفل",
     "removeColumn": "إزالة {column}",
     "columnsFull": "في الجدول {count} عمودًا، وهو الحد الأقصى.",
-    "mapPlaced": "الخريطة موجودة في لوحة المعلومات",
+    "mapGoTo": "انتقل إلى الخريطة",
+    "mapDragToMove": "اسحب لنقل الخريطة",
+    "mapPlacedHint": "الخريطة موجودة في لوحة المعلومات: اضغط للانتقال إليها، أو اسحبها لنقلها.",
     "textDefaultTitle": "مربع نص",
     "textDefault": "نص",
     "textSettings": "يسمّي العنوانان مربع النص في المصمم ولقارئات الشاشة، ولا تعرض لوحة المعلومات إلا نصه.",
@@ -700,6 +702,47 @@
       "END": "النهاية"
     },
     "textBold": "عريض",
+    "textGroupText": "النص",
+    "textGroupFont": "الخط",
+    "textCustomSize": "مخصص (بكسل)",
+    "textCustomSizeHint": "من 8 إلى 96؛ اتركه فارغًا لاستخدام الحجم أعلاه.",
+    "textCustomSizeError": "أدخل عددًا صحيحًا من 8 إلى 96.",
+    "textStyle": "النمط",
+    "textItalic": "مائل",
+    "textUnderline": "تسطير",
+    "textColour": "لون النص",
+    "textLowContrast": "تباين منخفض: يصعب قراءة هذا اللون على خلفيته في المظهر الحالي.",
+    "textAlignHorizontal": "أفقيًا",
+    "textAlignVertical": "عموديًا",
+    "textVerticalAligns": {
+      "TOP": "أعلى",
+      "MIDDLE": "المنتصف",
+      "BOTTOM": "أسفل"
+    },
+    "textBackground": "الخلفية",
+    "textBackgrounds": {
+      "CARD": "لون البطاقة",
+      "NONE": "بلا"
+    },
+    "textBorder": "الحد",
+    "textBorderShow": "إظهار حد",
+    "textBorderColour": "لون الحد",
+    "colourDefault": "الافتراضي",
+    "colourCustom": "مخصص…",
+    "colourCustomLabel": "{label}: لون مخصص",
+    "colours": {
+      "GREEN": "أخضر",
+      "AMBER": "كهرماني",
+      "RED": "أحمر",
+      "BLUE": "أزرق",
+      "TEAL": "أخضر مزرق",
+      "ORANGE": "برتقالي",
+      "PURPLE": "بنفسجي",
+      "PINK": "وردي",
+      "GREY": "رمادي",
+      "BLACK": "أسود",
+      "WHITE": "أبيض"
+    },
     "textTooLong": "اختصر النص إلى 2000 حرف أو أقل.",
     "textInvalidCharacter": "احذف علامة الجدولة أو أي حرف تحكم آخر: لا يُحتفظ إلا بفواصل الأسطر."
   }

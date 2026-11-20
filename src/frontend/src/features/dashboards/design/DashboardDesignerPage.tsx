@@ -49,8 +49,14 @@ import { designApi, type Visual, type VisualResult, type VisualType } from './de
 import { lineStart, normalized } from './fields.ts';
 import { hiddenColumnsOf } from './sectionColumns.ts';
 import { SectionBody } from './SectionBody.tsx';
-import { hasMap, newMapVisual, sectionShown, type SectionSources } from './sections.ts';
-import { isTextBox, TEXT_ISSUE_MESSAGES, type TextIssue, withoutRefusedText } from './textBox.ts';
+import { mapPath, newMapVisual, sectionShown, type SectionSources } from './sections.ts';
+import {
+  frameOf,
+  isTextBox,
+  TEXT_ISSUE_MESSAGES,
+  type TextIssue,
+  withoutRefusedText,
+} from './textBox.ts';
 import { TextBoxBody } from './TextBoxBody.tsx';
 import { VisualBody } from './VisualBody.tsx';
 import { edgeScroller } from './edgeScroll.ts';
@@ -405,9 +411,20 @@ export function DashboardDesignerPage(): ReactElement {
     append(newVisual(type, visuals, fields.data ?? []));
   };
 
-  // The map is once per design: while it is on it, the gallery's Map is disabled and says so.
-  const mapPlaced = hasMap(visuals);
+  // The map is once per design (20 Nov 2026, docs/architecture/dashboard-designer-text-format.md): while it is on it, the gallery's Map
+  // selects it and scrolls it into view, or drags it to another place.
+  const placedMapPath = mapPath(visuals);
+  const placedMapKey =
+    placedMapPath === null ? null : (visualAt(visuals, placedMapPath)?.key ?? null);
   const mapPlacedId = 'designer-map-placed';
+
+  /** Selects the visual `key` and scrolls it into view. */
+  const show = (key: string) => {
+    setSelectedKey(key);
+    canvas.current
+      ?.querySelector(`[data-visual-key="${key}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   // The view's widgets no visual draws: each can be placed again from the gallery.
   const unplaced = view.data === undefined ? [] : unplacedWidgets(visuals, view.data.widgets);
@@ -547,14 +564,15 @@ export function DashboardDesignerPage(): ReactElement {
   };
 
   /**
-   * Drag and drop from the gallery (19 Nov 2026): pressed and moved a few pixels, a tile drags a new visual; over the dashboard it is placed at
-   * the cell under the pointer, or inside the container under it, as a moved visual is (`moved`); dropped elsewhere nothing is added. A press
-   * that does not move stays a click, which adds the visual at the first free place.
+   * Drag and drop from the gallery (19 Nov 2026): pressed and moved a few pixels, a tile drags a new visual (`make`); over the dashboard it is
+   * placed at the cell under the pointer, or inside the container under it, as a moved visual is (`moved`); dropped elsewhere nothing is added.
+   * A tile whose visual is once per design and already on it (the map, 20 Nov 2026) drags that visual instead (`key`): it moves, as by its own
+   * bar, and dropped elsewhere it stays where it was. A press that does not move stays a click.
    */
   const startGalleryDrag = (
     event: PointerEvent<HTMLElement>,
     label: string,
-    make: () => Visual | null,
+    source: { make: () => Visual | null } | { key: string },
   ) => {
     if (event.button !== 0) {
       return;
@@ -569,23 +587,28 @@ export function DashboardDesignerPage(): ReactElement {
         if (Math.hypot(move.clientX - startX, move.clientY - startY) < 6) {
           return;
         }
-        const made = visualCount(before) >= MAX_VISUALS ? null : make();
-        if (made === null) {
-          setPlaceProblem(t('dashboards.designer.noRoom'));
+        const from = 'key' in source ? pathOf(before, source.key) : null;
+        const existing = from === null ? undefined : visualAt(before, from);
+        const made = 'key' in source || visualCount(before) >= MAX_VISUALS ? null : source.make();
+        const dragged = existing ?? (made === null ? null : keyed(made));
+        if (dragged === null) {
+          if (!('key' in source)) {
+            setPlaceProblem(t('dashboards.designer.noRoom'));
+          }
           finish();
           return;
         }
-        draft = keyed(made);
+        draft = dragged;
         draggedFromGallery.current = true;
         drag.current = {
           gesture: 'move',
-          key: draft.key,
-          from: { index: before.length, child: null },
+          key: dragged.key,
+          from: from ?? { index: before.length, child: null },
           startX,
           startY,
-          start: draft,
-          before: [...before, draft],
-          // The new visual's top-start corner follows the pointer.
+          start: dragged,
+          before: existing === undefined ? [...before, dragged] : before,
+          // The visual's top-start corner follows the pointer.
           grabColumn: 0,
           grabRow: 0,
         };
@@ -822,45 +845,50 @@ export function DashboardDesignerPage(): ReactElement {
   };
 
   /** A visual at `place`: on the dashboard's grid, or on its container's inner grid. */
-  const renderVisual = (visual: Draft, place: CSSProperties) => (
-    // Its own key: a visual keeps its element, and its pointer, while the others reflow around it.
-    <section
-      key={visual.key}
-      className={classOf('widget visual designer__visual', visual)}
-      style={place}
-      aria-label={visual.title[language]}
-      aria-current={visual.key === selectedKey ? 'true' : undefined}
-      data-visual={visual.visualType}
-    >
-      {renderBar(visual, 'designer__visual-bar', 'widget__title')}
-      <VisualBodyBox
-        visual={visual}
-        className={
-          isTextBox(visual)
-            ? 'visual__body visual__body--text'
-            : visual.section === undefined || visual.section === null
-              ? 'visual__body'
-              : 'visual__body visual__body--section'
-        }
+  const renderVisual = (visual: Draft, place: CSSProperties) => {
+    // A text box's background and border (frameOf) are drawn in the designer as on the dashboard.
+    const frame = frameOf(visual.text);
+    return (
+      // Its own key: a visual keeps its element, and its pointer, while the others reflow around it.
+      <section
+        key={visual.key}
+        className={`${classOf('widget visual designer__visual', visual)}${frame.className}`}
+        style={{ ...place, ...frame.style }}
+        aria-label={visual.title[language]}
+        data-visual-key={visual.key}
+        aria-current={visual.key === selectedKey ? 'true' : undefined}
+        data-visual={visual.visualType}
       >
-        {isTextBox(visual) ? (
-          <TextBoxBody text={visual.text} />
-        ) : visual.section === undefined || visual.section === null ? (
-          <VisualBody visual={figuresOf(visual)} fields={fields.data} />
-        ) : sectionShown(visual, sources) ? (
-          <SectionBody
-            section={visual.section}
-            widgetCode={visual.widgetCode}
-            hidden={hiddenColumnsOf(visual)}
-            sources={sources}
-          />
-        ) : (
-          <p className="state">{t('dashboards.noData')}</p>
-        )}
-      </VisualBodyBox>
-      {renderResizeHandle(visual)}
-    </section>
-  );
+        {renderBar(visual, 'designer__visual-bar', 'widget__title')}
+        <VisualBodyBox
+          visual={visual}
+          className={
+            isTextBox(visual)
+              ? 'visual__body visual__body--text'
+              : visual.section === undefined || visual.section === null
+                ? 'visual__body'
+                : 'visual__body visual__body--section'
+          }
+        >
+          {isTextBox(visual) ? (
+            <TextBoxBody text={visual.text} />
+          ) : visual.section === undefined || visual.section === null ? (
+            <VisualBody visual={figuresOf(visual)} fields={fields.data} />
+          ) : sectionShown(visual, sources) ? (
+            <SectionBody
+              section={visual.section}
+              widgetCode={visual.widgetCode}
+              hidden={hiddenColumnsOf(visual)}
+              sources={sources}
+            />
+          ) : (
+            <p className="state">{t('dashboards.noData')}</p>
+          )}
+        </VisualBodyBox>
+        {renderResizeHandle(visual)}
+      </section>
+    );
+  };
 
   /** A container: its frame and title bar over its inner grid, where its visuals are drawn as any visual. */
   const renderContainer = (container: Draft) => {
@@ -1022,9 +1050,9 @@ export function DashboardDesignerPage(): ReactElement {
                     // A line draws fields only: it waits for the catalogue to give it one.
                     disabled={type === 'LINE' && lineStart(fields.data ?? []) === null}
                     onPointerDown={(event) => {
-                      startGalleryDrag(event, t(`dashboards.designer.type.${type}`), () =>
-                        newVisual(type, visuals, fields.data ?? []),
-                      );
+                      startGalleryDrag(event, t(`dashboards.designer.type.${type}`), {
+                        make: () => newVisual(type, visuals, fields.data ?? []),
+                      });
                     }}
                     onClick={() => {
                       clickedTile(() => {
@@ -1043,29 +1071,38 @@ export function DashboardDesignerPage(): ReactElement {
                 <button
                   type="button"
                   className="designer__type"
-                  // Sections are once per design: the map is placed again only once it is removed.
-                  disabled={mapPlaced}
-                  title={mapPlaced ? t('dashboards.designer.mapPlaced') : undefined}
-                  aria-describedby={mapPlaced ? mapPlacedId : undefined}
+                  // The map is once per design: while it is on it, the tile goes to it, and drags it to another place.
+                  title={
+                    placedMapKey === null
+                      ? undefined
+                      : `${t('dashboards.designer.mapGoTo')}\n${t('dashboards.designer.mapDragToMove')}`
+                  }
+                  aria-describedby={placedMapKey === null ? undefined : mapPlacedId}
                   onPointerDown={(event) => {
-                    if (!mapPlaced) {
-                      startGalleryDrag(event, t('dashboards.designer.type.MAP'), () =>
-                        newMapVisual(visuals),
-                      );
-                    }
+                    startGalleryDrag(
+                      event,
+                      t('dashboards.designer.type.MAP'),
+                      placedMapKey === null
+                        ? { make: () => newMapVisual(visuals) }
+                        : { key: placedMapKey },
+                    );
                   }}
                   onClick={() => {
                     clickedTile(() => {
-                      append(newMapVisual(visuals));
+                      if (placedMapKey === null) {
+                        append(newMapVisual(visuals));
+                      } else {
+                        show(placedMapKey);
+                      }
                     });
                   }}
                 >
                   <VisualIcon type="MAP" />
                   <span className="designer__type-name">{t('dashboards.designer.type.MAP')}</span>
                 </button>
-                {mapPlaced && (
+                {placedMapKey !== null && (
                   <span id={mapPlacedId} className="visually-hidden">
-                    {t('dashboards.designer.mapPlaced')}
+                    {t('dashboards.designer.mapPlacedHint')}
                   </span>
                 )}
               </li>
@@ -1074,9 +1111,9 @@ export function DashboardDesignerPage(): ReactElement {
                   type="button"
                   className="designer__type"
                   onPointerDown={(event) => {
-                    startGalleryDrag(event, t('dashboards.designer.type.TEXT'), () =>
-                      newVisual('TEXT', visuals),
-                    );
+                    startGalleryDrag(event, t('dashboards.designer.type.TEXT'), {
+                      make: () => newVisual('TEXT', visuals),
+                    });
                   }}
                   onClick={() => {
                     clickedTile(() => {
@@ -1093,9 +1130,9 @@ export function DashboardDesignerPage(): ReactElement {
                   type="button"
                   className="designer__type"
                   onPointerDown={(event) => {
-                    startGalleryDrag(event, t('dashboards.designer.type.CONTAINER'), () =>
-                      newContainer(visuals),
-                    );
+                    startGalleryDrag(event, t('dashboards.designer.type.CONTAINER'), {
+                      make: () => newContainer(visuals),
+                    });
                   }}
                   onClick={() => {
                     clickedTile(() => {
@@ -1125,9 +1162,9 @@ export function DashboardDesignerPage(): ReactElement {
                           title: widget.title[language],
                         })}
                         onPointerDown={(event) => {
-                          startGalleryDrag(event, widget.title[language], () =>
-                            newWidgetVisual(widget, visuals),
-                          );
+                          startGalleryDrag(event, widget.title[language], {
+                            make: () => newWidgetVisual(widget, visuals),
+                          });
                         }}
                         onClick={() => {
                           clickedTile(() => {

@@ -6,6 +6,7 @@ import { type DashboardView, type DashboardWidgetResult } from '../api/types.ts'
 import { insightBlockShown } from '../insights/insightSections.ts';
 import { visibleWidgets } from '../layout.ts';
 import { hasNoData } from '../presentation.ts';
+import { type Nestable, pathWhere, type VisualPath } from './containers.ts';
 import { type Visual } from './designApi.ts';
 import { freePlace } from './visuals.ts';
 
@@ -73,11 +74,11 @@ export function sectionShown(
 /** The map's size when placed from the gallery: the grid's width, eight rows. */
 export const MAP_SIZE = { width: 12, height: 7 };
 
-/** Whether the design has the map (Projects by location), top-level or in a container: sections are once per design. */
-export function hasMap(visuals: readonly Visual[]): boolean {
-  return visuals
-    .flatMap((visual) => [visual, ...(visual.children ?? [])])
-    .some((visual) => visual.section === 'PROJECT_LOCATIONS');
+/** Where the map (Projects by location) is, top-level or in a container; null when the design has none. Sections are once per design. */
+export function mapPath<T extends Nestable<T> & Pick<Visual, 'section'>>(
+  visuals: readonly T[],
+): VisualPath | null {
+  return pathWhere(visuals, (visual) => visual.section === 'PROJECT_LOCATIONS');
 }
 
 /**

@@ -62,14 +62,40 @@ public enum PortfolioTextAlign
     End = 3,
 }
 
+/// <summary>Where a text box's lines sit within its box, from the top (the 20 Nov 2026 text formatting).</summary>
+public enum PortfolioTextVerticalAlign
+{
+    Top = 1,
+    Middle = 2,
+    Bottom = 3,
+}
+
 /// <summary>
 /// What a <see cref="PortfolioVisualType.Text"/> visual says (the 20 Nov 2026 text box, dashboard-designer-map-text.md): its words in both languages, each
-/// 1–2000 characters once trimmed with its line breaks (<c>\n</c>) kept, how large and where they are drawn, and whether in bold.
+/// 1–2000 characters once trimmed with its line breaks (<c>\n</c>) kept, how large and where they are drawn, and whether in bold. Its formatting (the 20 Nov
+/// 2026 text formatting, dashboard-designer-text-format.md) is optional, each absent property its default, so a text box saved before reads as it was drawn:
+/// <paramref name="FontSize"/> a whole 8–96 px or null for the <paramref name="Size"/> preset; <paramref name="Color"/> and <paramref name="BorderColor"/> a
+/// <c>#RRGGBB</c> colour or null for the theme's; <paramref name="Background"/> <c>CARD</c> (the visuals' card colour), <c>NONE</c> or a colour.
 /// </summary>
-public sealed record PortfolioTextBox(string Ar, string En, PortfolioTextSize Size, PortfolioTextAlign Align, bool Bold)
+public sealed record PortfolioTextBox(
+    string Ar, string En, PortfolioTextSize Size, PortfolioTextAlign Align, bool Bold, decimal? FontSize = null, bool Italic = false, bool Underline = false,
+    string? Color = null, string Background = PortfolioTextBox.NoBackground, bool Border = false, string? BorderColor = null,
+    PortfolioTextVerticalAlign VerticalAlign = PortfolioTextVerticalAlign.Top)
 {
     /// <summary>The longest the words are in each language, once trimmed.</summary>
     public const int MaxLength = 2000;
+
+    /// <summary>The smallest custom font size, in px.</summary>
+    public const int MinFontSize = 8;
+
+    /// <summary>The largest custom font size, in px.</summary>
+    public const int MaxFontSize = 96;
+
+    /// <summary>The background of the visuals' cards (white in the light theme, the dark card in the dark).</summary>
+    public const string CardBackground = "CARD";
+
+    /// <summary>No background: the text is drawn on the dashboard itself. A text box saved before its formatting has none.</summary>
+    public const string NoBackground = "NONE";
 }
 
 /// <summary>
@@ -444,7 +470,22 @@ internal sealed partial class PortfolioDesignService(
         text is null ? new("text", FieldIssue.Required)
         : TextIssue(text.Ar, "text.ar", TextScript.Arabic) ?? TextIssue(text.En, "text.en", TextScript.English)
             ?? (!Enum.IsDefined(text.Size) ? new FieldIssue("text.size", FieldIssue.NotAllowed) : null)
-            ?? (!Enum.IsDefined(text.Align) ? new FieldIssue("text.align", FieldIssue.NotAllowed) : null);
+            ?? (!Enum.IsDefined(text.Align) ? new FieldIssue("text.align", FieldIssue.NotAllowed) : null)
+            ?? TextFormatIssue(text);
+
+    /// <summary>
+    /// What is wrong with a text box's formatting, or null (the 20 Nov 2026 text formatting): a custom font size whole and 8–96 px, each colour <c>#RRGGBB</c>,
+    /// the background CARD, NONE or a colour, and a known vertical alignment.
+    /// </summary>
+    private static FieldIssue? TextFormatIssue(PortfolioTextBox text) =>
+        text.FontSize is { } size && (size != decimal.Truncate(size) || size < PortfolioTextBox.MinFontSize || size > PortfolioTextBox.MaxFontSize)
+            ? new("text.fontSize", FieldIssue.OutsideRange)
+        : text.Color is { } color && !HexColour().IsMatch(color) ? new("text.color", FieldIssue.NotAllowed)
+        : text.Background is not (PortfolioTextBox.CardBackground or PortfolioTextBox.NoBackground) && !HexColour().IsMatch(text.Background ?? string.Empty)
+            ? new("text.background", FieldIssue.NotAllowed)
+        : text.BorderColor is { } border && !HexColour().IsMatch(border) ? new("text.borderColor", FieldIssue.NotAllowed)
+        : !Enum.IsDefined(text.VerticalAlign) ? new("text.verticalAlign", FieldIssue.NotAllowed)
+        : null;
 
     private static FieldIssue? TextIssue(string? value, string field, TextScript script) =>
         string.IsNullOrWhiteSpace(value) ? new(field, FieldIssue.Required)
@@ -840,7 +881,7 @@ internal sealed partial class PortfolioDesignService(
         : v.VisualType == PortfolioVisualType.Text
             ? new PortfolioVisualResult(
                 v.Title, v.VisualType, [], PortfolioGroupBy.None,
-                Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [], Text: v.Text)
+                Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [], Text: v.Text is { } text ? Normalised(text) : null)
         : v.Section is { } section
             ? new PortfolioVisualResult(
                 v.Title, v.VisualType, [], PortfolioGroupBy.None,
@@ -1094,11 +1135,23 @@ internal sealed partial class PortfolioDesignService(
                 new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit, IsColumnTable(v) ? v.Columns : null, IsColumnTable(v) ? v.ShowTotals : null), StoredJson)
             : null;
 
-    /// <summary>What <c>text_box</c> holds: a text box's words trimmed, as its title is; null for any other visual.</summary>
+    /// <summary>What <c>text_box</c> holds: a text box as <see cref="Normalised(PortfolioTextBox)"/>; null for any other visual.</summary>
     internal static string? TextBoxOf(PortfolioVisualInput v) =>
-        v.VisualType == PortfolioVisualType.Text && v.Text is { } text
-            ? JsonSerializer.Serialize(text with { Ar = text.Ar.Trim(), En = text.En.Trim() }, StoredJson)
-            : null;
+        v.VisualType == PortfolioVisualType.Text && v.Text is { } text ? JsonSerializer.Serialize(Normalised(text), StoredJson) : null;
+
+    /// <summary>
+    /// A text box as it is stored and echoed: its words trimmed, as its title is; its font size written shortest (14, never 14.0); its colours upper-case.
+    /// </summary>
+    internal static PortfolioTextBox Normalised(PortfolioTextBox text) =>
+        text with
+        {
+            Ar = text.Ar.Trim(),
+            En = text.En.Trim(),
+            FontSize = text.FontSize is { } size ? decimal.Truncate(size) : null,
+            Color = text.Color?.ToUpperInvariant(),
+            Background = text.Background.ToUpperInvariant(),
+            BorderColor = text.BorderColor?.ToUpperInvariant(),
+        };
 
     /// <summary>
     /// What <c>axes</c> holds: the axes with their titles trimmed, or null when they are the defaults (a bar, column or line drawn as standard) or the visual
@@ -1146,6 +1199,10 @@ internal sealed partial class PortfolioDesignService(
     /// <summary>A filter value of a date field: a year.</summary>
     [GeneratedRegex("^[0-9]{4}$", RegexOptions.CultureInvariant)]
     private static partial Regex YearShape();
+
+    /// <summary>A colour as <c>#RRGGBB</c>, in either case.</summary>
+    [GeneratedRegex(@"^#[0-9A-Fa-f]{6}\z", RegexOptions.CultureInvariant)]
+    private static partial Regex HexColour();
 
     /// <summary>
     /// The JSON of <c>data_fields</c>: the visual's values, grouping field and its date unit, and filters, and a column table's columns and totals switch, as
