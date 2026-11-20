@@ -9111,14 +9111,14 @@ tr[data-flagged='true'] {
 }
 
 /*
- * A container (19 Nov 2026): a framed, titled region holding visuals, drawn apart from a visual's card by a tinted ground, a primary-toned
- * frame and no shadow. On a wide screen its columns and rows are the dashboard's own: its first row is its title bar and its children take
+ * A container (19 Nov 2026): a titled card holding visuals, drawn as the dashboard's sections are (20 Nov 2026), its visuals as bordered
+ * boxes within it. On a wide screen its columns and rows are the dashboard's own: its first row is its title bar and its children take
  * their inner places (decimals, as on the dashboard) on the rows under it, so a child lines up with the visuals beside the container; a child
  * at an edge keeps the container's padding from its frame. On a narrow screen it stacks them.
  */
 .visual-container {
   --container-pad: var(--space-3);
-  --container-frame: 2px;
+  --container-frame: 1px;
 
   position: relative;
   display: flex;
@@ -9126,9 +9126,19 @@ tr[data-flagged='true'] {
   gap: var(--space-4);
   min-inline-size: 0;
   padding: var(--container-pad);
-  border: var(--container-frame) solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  /* A card like the dashboard's sections (20 Nov 2026: "the same as the On-plan indicator"): white, its title in the text colour. */
+  border: var(--container-frame) solid var(--widget-border);
+  border-radius: var(--radius-widget);
+  background: var(--color-background);
+  box-shadow: var(--shadow-widget);
+}
+
+/* Its visuals are boxes within it, as the On-plan indicator's counts are: a light border, no shadow of their own. */
+.visual-container > .visual {
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-card);
-  background: color-mix(in srgb, var(--color-primary-tint) 75%, transparent);
+  background: var(--color-background);
+  box-shadow: none;
 }
 
 @media (min-width: 48rem) {
@@ -9188,7 +9198,6 @@ tr[data-flagged='true'] {
   gap: var(--space-2);
   min-inline-size: 0;
   padding-block-end: var(--space-2);
-  border-block-end: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 .visual-container__title {
@@ -9196,7 +9205,7 @@ tr[data-flagged='true'] {
   min-inline-size: 0;
   margin: 0;
   overflow: hidden;
-  color: var(--color-primary);
+  color: var(--color-text);
   font-size: 1rem;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -9209,8 +9218,8 @@ tr[data-flagged='true'] {
   place-items: center;
   margin: 0;
   padding: var(--space-3);
-  border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
-  border-radius: var(--radius);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
   color: var(--color-text-muted);
   text-align: center;
 }
@@ -9257,7 +9266,7 @@ tr[data-flagged='true'] {
 .designer__container.is-drop-target {
   outline: 3px dashed var(--color-primary);
   outline-offset: 2px;
-  background: color-mix(in srgb, var(--color-primary-tint) 70%, transparent);
+  background: var(--color-surface);
 }
 
 /*
