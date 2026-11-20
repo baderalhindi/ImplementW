@@ -6,17 +6,21 @@ import { DashboardCanvas, WidgetCard } from '../components/DashboardCanvas.tsx';
 import { ProjectLocations } from '../components/ProjectLocations.tsx';
 import { InsightBlock } from '../insights/PortfolioInsightsSection.tsx';
 import { type Section } from './designApi.ts';
+import { type HiddenColumns, NO_HIDDEN_COLUMNS } from './sectionColumns.ts';
 import { type SectionSources, widgetOf } from './sections.ts';
 
 /** One of the dashboard's own sections, as the dashboard always drew it, inside the frame its design gives it. */
 export function SectionBody({
   section,
   widgetCode,
+  hidden = NO_HIDDEN_COLUMNS,
   sources,
 }: {
   section: Section;
   /** The widget a DASHBOARD_WIDGET section draws. */
   widgetCode?: string | null | undefined;
+  /** The columns a table section's design leaves out. */
+  hidden?: HiddenColumns;
   sources: SectionSources;
 }): ReactElement | null {
   const { insights, view, filters, map } = sources;
@@ -36,7 +40,7 @@ export function SectionBody({
         />
       );
     case 'ENTITY_COMPLETION_TABLE':
-      return <EntityCompletionPanel />;
+      return <EntityCompletionPanel hidden={hidden} />;
     case 'DASHBOARD_WIDGETS':
       return view === undefined ? null : (
         <DashboardCanvas view={view} headingLevel={3} filters={filters} />
@@ -55,7 +59,7 @@ export function SectionBody({
     }
     default:
       return insights === undefined ? null : (
-        <InsightBlock section={section} insights={insights} filters={filters} />
+        <InsightBlock section={section} insights={insights} filters={filters} hidden={hidden} />
       );
   }
 }

@@ -17,6 +17,7 @@ import { childrenOf, innerGridPlace, isContainer, withoutEmptyInnerRows } from '
 import { designApi, type VisualResult } from './designApi.ts';
 import { VisualBodyBox } from './FitToBox.tsx';
 import { drawsFields } from './fields.ts';
+import { hiddenColumnsOf } from './sectionColumns.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import {
@@ -116,7 +117,12 @@ function SectionFrame({
         {visual.title[language]}
       </h3>
       <VisualBodyBox visual={visual} className="visual__body visual__body--section">
-        <SectionBody section={visual.section} widgetCode={visual.widgetCode} sources={sources} />
+        <SectionBody
+          section={visual.section}
+          widgetCode={visual.widgetCode}
+          hidden={hiddenColumnsOf(visual)}
+          sources={sources}
+        />
       </VisualBodyBox>
     </section>
   );

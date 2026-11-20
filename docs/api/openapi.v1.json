@@ -39158,6 +39158,15 @@
             "items": {
               "$ref": "#/components/schemas/PortfolioVisualRequest"
             }
+          },
+          "hiddenColumns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -39307,6 +39316,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/PortfolioVisualResult"
+            }
+          },
+          "hiddenColumns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
             }
           }
         },

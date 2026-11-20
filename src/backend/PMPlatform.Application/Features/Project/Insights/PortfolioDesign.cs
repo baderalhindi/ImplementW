@@ -51,13 +51,14 @@ public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Va
 /// <paramref name="Filters"/>; grouped by a date field, it names the <paramref name="GroupDateUnit"/> (the 18 Nov 2026 more fields). A bar, column or line
 /// chart may set its <paramref name="Axes"/> (the 19 Nov 2026 axes). A <see cref="PortfolioSection.DashboardWidget"/> section names the governed widget it
 /// draws by its <paramref name="WidgetCode"/> (the 19 Nov 2026 widgets); any other visual names none. A <see cref="PortfolioVisualType.Container"/> draws
-/// nothing of its own and holds <paramref name="Children"/> (the 19 Nov 2026 containers), placed on its inner grid; any other visual holds none.
+/// nothing of its own and holds <paramref name="Children"/> (the 19 Nov 2026 containers), placed on its inner grid; any other visual holds none. A table
+/// section names the columns it does not show in <paramref name="HiddenColumns"/> (the 20 Nov 2026 table columns); null or empty shows them all.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
-    IReadOnlyList<PortfolioVisualInput>? Children = null);
+    IReadOnlyList<PortfolioVisualInput>? Children = null, IReadOnlyList<string>? HiddenColumns = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -87,12 +88,13 @@ public sealed record PortfolioVisualGroup(
 /// <c>ValueTypes</c> gives each value's field type, so a viewer without <c>DASHBOARD_DESIGN</c> (who cannot read the catalogue) formats it; null for fixed
 /// measures and a section. A bar, column or line chart echoes its <c>Axes</c> as set (null for the defaults); a <c>DASHBOARD_WIDGET</c> section its
 /// <c>WidgetCode</c>. A container carries no groups of its own (an empty list) and its <c>Children</c>, in order, each calculated as a top-level visual is;
-/// <c>Children</c> is null on any other visual.
+/// <c>Children</c> is null on any other visual. A table section echoes its <c>HiddenColumns</c> (null when it shows every column).
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
-    PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null);
+    PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null,
+    IReadOnlyList<string>? HiddenColumns = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -145,9 +147,17 @@ internal sealed partial class PortfolioDesignService(
     private const int MaxAxisTitleLength = 60;
     private const decimal AxisLimit = 1_000_000_000_000m;
     private const int MaxWidgetCodeLength = 50;
+    private const int MaxHiddenColumns = 20;
     private const string True = "TRUE";
     private const string False = "FALSE";
     private static readonly DateOnly UnixEpoch = new(1970, 1, 1);
+
+    /// <summary>The sections drawn as a table whose columns a design may hide (the 20 Nov 2026 table columns).</summary>
+    private static readonly HashSet<PortfolioSection> TableSections =
+    [
+        PortfolioSection.PortfolioTable, PortfolioSection.InitiativeTable, PortfolioSection.SectorTable, PortfolioSection.StatusTable,
+        PortfolioSection.CurrentStageTable, PortfolioSection.TopFollowUp, PortfolioSection.EntityCompletionTable,
+    ];
 
     /// <summary>
     /// The dimension keys a filter takes: <c>PROJECT.&lt;GROUP_BY&gt;</c> for each project attribute a visual groups by (<c>PROJECT.STATUS</c>,
@@ -260,6 +270,7 @@ internal sealed partial class PortfolioDesignService(
                 DataFields = DataFieldsOf(v),
                 Axes = AxesOf(v),
                 WidgetCode = v.WidgetCode,
+                HiddenColumns = HiddenColumnsOf(v),
                 CreatedAt = now,
                 CreatedBy = callerId,
                 UpdatedAt = now,
@@ -359,10 +370,11 @@ internal sealed partial class PortfolioDesignService(
         v.Title is null || string.IsNullOrWhiteSpace(v.Title.Ar) || string.IsNullOrWhiteSpace(v.Title.En) ? new FieldIssue("title", FieldIssue.Required)
         : v.Title.Ar.Trim().Length > MaxTitleLength || v.Title.En.Trim().Length > MaxTitleLength ? new FieldIssue("title", FieldIssue.OutsideRange)
         : !Enum.IsDefined(v.VisualType) || !Enum.IsDefined(v.GroupBy) ? new FieldIssue("visualType", FieldIssue.NotAllowed)
-        : v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
-        : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections) : DrawingIssue(v, catalogue))
-            ?? AxesIssue(v)
-            ?? WidgetCodeIssue(v, widgetCodes);
+        : (v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
+            : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections) : DrawingIssue(v, catalogue))
+                ?? AxesIssue(v)
+                ?? WidgetCodeIssue(v, widgetCodes))
+            ?? HiddenColumnsIssue(v);
 
     /// <summary>
     /// What is wrong with a container itself, or null (the 19 Nov 2026 containers): it draws nothing — no measure, value, grouping, filter, axes, section
@@ -445,6 +457,19 @@ internal sealed partial class PortfolioDesignService(
         : v.WidgetCode.Length > MaxWidgetCodeLength ? new("widgetCode", FieldIssue.OutsideRange)
         : !WidgetCodeShape().IsMatch(v.WidgetCode) ? new("widgetCode", FieldIssue.NotAllowed)
         : !widgetCodes.Add(v.WidgetCode) ? new("widgetCode", FieldIssue.Duplicate)
+        : null;
+
+    /// <summary>
+    /// What is wrong with a visual's hidden columns, or null (the 20 Nov 2026 table columns): only a section of the seven table sections names any (an empty
+    /// list names none); each is a code of <c>^[A-Z_]{1,40}$</c>, at most 20, none twice. The backend draws no table, so it does not know each section's
+    /// columns: only the shape is checked, and a code the table does not have hides nothing.
+    /// </summary>
+    private static FieldIssue? HiddenColumnsIssue(PortfolioVisualInput v) =>
+        v.HiddenColumns is not { Count: > 0 } codes ? null
+        : v.VisualType != PortfolioVisualType.Section || v.Section is not { } section || !TableSections.Contains(section) ? new("hiddenColumns", FieldIssue.NotAllowed)
+        : codes.Count > MaxHiddenColumns ? new("hiddenColumns", FieldIssue.OutsideRange)
+        : !codes.All(c => ColumnCodeShape().IsMatch(c)) ? new("hiddenColumns", FieldIssue.NotAllowed)
+        : codes.Distinct(StringComparer.Ordinal).Count() != codes.Count ? new("hiddenColumns", FieldIssue.Duplicate)
         : null;
 
     /// <summary>A title is a <see cref="BilingualLabel"/>, so both languages are there and not blank; each fits once trimmed.</summary>
@@ -714,7 +739,8 @@ internal sealed partial class PortfolioDesignService(
         : v.Section is { } section
             ? new PortfolioVisualResult(
                 v.Title, v.VisualType, [], PortfolioGroupBy.None,
-                Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [], section, WidgetCode: v.WidgetCode)
+                Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [], section, WidgetCode: v.WidgetCode,
+                HiddenColumns: HiddenColumnsOf(v))
         : new PortfolioVisualResult(
             v.Title, v.VisualType, v.Measures, v.GroupBy, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
             groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes);
@@ -920,8 +946,11 @@ internal sealed partial class PortfolioDesignService(
         return new(
             new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
             v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit,
-            v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode);
+            v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode, HiddenColumns: v.HiddenColumns);
     }
+
+    /// <summary>A table section's hidden columns as saved and echoed: null when it hides none (an empty list or null), so a design reads back as it was drawn.</summary>
+    private static List<string>? HiddenColumnsOf(PortfolioVisualInput v) => v.HiddenColumns is { Count: > 0 } codes ? [.. codes] : null;
 
     /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section, a container).</summary>
     private static string? DataFieldsOf(PortfolioVisualInput v) =>
@@ -967,6 +996,10 @@ internal sealed partial class PortfolioDesignService(
     /// <summary>A governed widget's code, as the dashboard view carries it; its length is checked apart.</summary>
     [GeneratedRegex(@"^[A-Za-z0-9_.-]+\z", RegexOptions.CultureInvariant)]
     private static partial Regex WidgetCodeShape();
+
+    /// <summary>A table section's column code (the 20 Nov 2026 table columns).</summary>
+    [GeneratedRegex(@"^[A-Z_]{1,40}\z", RegexOptions.CultureInvariant)]
+    private static partial Regex ColumnCodeShape();
 
     /// <summary>A filter value of a date field: a year.</summary>
     [GeneratedRegex("^[0-9]{4}$", RegexOptions.CultureInvariant)]

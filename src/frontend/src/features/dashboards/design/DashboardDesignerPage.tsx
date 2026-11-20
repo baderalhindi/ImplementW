@@ -45,6 +45,7 @@ import {
 } from './containers.ts';
 import { designApi, type Visual, type VisualResult, type VisualType } from './designApi.ts';
 import { lineStart, normalized } from './fields.ts';
+import { hiddenColumnsOf } from './sectionColumns.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import { VisualBody } from './VisualBody.tsx';
@@ -141,6 +142,7 @@ function withoutFigures(visual: VisualResult): Visual {
     groupDateUnit: visual.groupDateUnit,
     filters: visual.filters,
     axes: visual.axes,
+    hiddenColumns: visual.hiddenColumns,
     ...(visual.children === undefined || visual.children === null
       ? {}
       : { children: visual.children.map(withoutFigures) }),
@@ -782,7 +784,12 @@ export function DashboardDesignerPage(): ReactElement {
         {visual.section === undefined || visual.section === null ? (
           <VisualBody visual={figuresOf(visual)} fields={fields.data} />
         ) : sectionShown(visual, sources) ? (
-          <SectionBody section={visual.section} widgetCode={visual.widgetCode} sources={sources} />
+          <SectionBody
+            section={visual.section}
+            widgetCode={visual.widgetCode}
+            hidden={hiddenColumnsOf(visual)}
+            sources={sources}
+          />
         ) : (
           <p className="state">{t('dashboards.noData')}</p>
         )}

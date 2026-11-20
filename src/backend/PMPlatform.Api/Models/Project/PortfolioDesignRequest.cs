@@ -60,7 +60,8 @@ public sealed record PortfolioVisualRequest(
     PortfolioDateUnit? GroupDateUnit = null,
     PortfolioAxesRequest? Axes = null,
     string? WidgetCode = null,
-    IReadOnlyList<PortfolioVisualRequest?>? Children = null)
+    IReadOnlyList<PortfolioVisualRequest?>? Children = null,
+    IReadOnlyList<string?>? HiddenColumns = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -92,6 +93,14 @@ public sealed record PortfolioVisualRequest(
             }
         }
 
+        for (int i = 0; i < (HiddenColumns?.Count ?? 0); i++)
+        {
+            if (HiddenColumns![i] is null)
+            {
+                errors.Add(new FieldError($"{at}.hiddenColumns[{i}]", FieldError.Required));
+            }
+        }
+
         Axes?.Validate($"{at}.axes", errors);
         for (int i = 0; i < (Children?.Count ?? 0); i++)
         {
@@ -110,7 +119,7 @@ public sealed record PortfolioVisualRequest(
         new(Title!.ToLabel(), VisualType!.Value, Measures ?? [], GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value, Section,
             Values?.Select(v => new PortfolioFieldValue(v!.Field!, v.Aggregation!.Value)).ToList(), GroupField,
             Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes(), WidgetCode,
-            Children?.Select(c => c!.ToInput()).ToList());
+            Children?.Select(c => c!.ToInput()).ToList(), HiddenColumns?.Select(c => c!).ToList());
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct

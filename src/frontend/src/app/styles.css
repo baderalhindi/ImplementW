@@ -9241,3 +9241,30 @@ tr[data-flagged='true'] {
   outline-offset: 2px;
   background: color-mix(in srgb, var(--color-primary-tint) 70%, transparent);
 }
+
+/*
+ * A table section's columns in its settings (20 Nov 2026, docs/architecture/dashboard-designer-table-columns.md): a tick per column; the
+ * sector's two tables each under their own caption.
+ */
+.designer-columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  border: 0;
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.designer-columns__legend {
+  float: inline-start;
+  inline-size: 100%;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* The last ticked column, which may not be unticked. */
+.designer-well .field__checkbox:has(input:disabled) {
+  color: var(--color-text-muted);
+}

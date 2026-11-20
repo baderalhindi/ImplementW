@@ -52,6 +52,13 @@ import { BarChart, DonutChart, GroupedColumnChart } from '../components/Charts.t
 import { followUpPath, registerPath } from '../drillLinks.ts';
 import { portfolioCardPath } from '../paths.ts';
 import { emptyPortfolioReason } from '../presentation.ts';
+import {
+  anyShown,
+  BREAKDOWN_COLUMNS,
+  type HiddenColumns,
+  NO_HIDDEN_COLUMNS,
+  SECTOR_SPEND_COLUMNS,
+} from '../design/sectionColumns.ts';
 import { ExecutiveTop } from './ExecutiveSections.tsx';
 
 import { Coverage, Percent } from './figures.tsx';
@@ -235,23 +242,28 @@ function InsightSection({
 function RowFigures({
   row,
   showValue,
+  hidden,
   filters,
   rowFilters,
 }: {
   row: PortfolioBreakdownRow;
   showValue: boolean;
+  hidden: HiddenColumns;
   filters: PortfolioFilters;
   rowFilters: Record<string, string> | null;
 }): ReactElement {
   const { t } = useI18n();
+  const shown = (code: string) => !hidden.has(code);
   const projects = rowFilters === null ? null : registerPath(filters, rowFilters);
   const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
   return (
     <>
-      <td dir="ltr" className="cell--ltr">
-        <CountLink count={row.projects} to={projects} hint={projectsHint(row.projects)} />
-      </td>
-      {showValue && (
+      {shown('PROJECTS') && (
+        <td dir="ltr" className="cell--ltr">
+          <CountLink count={row.projects} to={projects} hint={projectsHint(row.projects)} />
+        </td>
+      )}
+      {showValue && shown('VALUE') && (
         <td>
           {row.valueSar === null || row.valueEntered === 0 ? (
             <Percent value={null} />
@@ -260,34 +272,48 @@ function RowFigures({
           )}
         </td>
       )}
-      <td dir="ltr" className="cell--ltr">
-        <CountLink
-          count={row.measured}
-          to={
-            rowFilters === null ? null : registerPath(filters, { ...rowFilters, measured: 'true' })
-          }
-          hint={projectsHint(row.measured)}
-        />
-      </td>
-      <td>
-        <Percent value={row.averagePlannedPercent} />
-      </td>
-      <td>
-        <Percent value={row.averageActualPercent} />
-      </td>
-      <td>
-        <GapValue points={row.gapPoints} />
-      </td>
-      <td>
-        <OnPlanBadge status={row.onPlan} />
-      </td>
-      <td dir="ltr" className="cell--ltr">
-        <CountLink
-          count={row.needingFollowUp}
-          to={rowFilters === null ? null : followUpPath(filters, rowFilters)}
-          hint={t('dashboards.drill.followUp', { count: row.needingFollowUp })}
-        />
-      </td>
+      {shown('MEASURED') && (
+        <td dir="ltr" className="cell--ltr">
+          <CountLink
+            count={row.measured}
+            to={
+              rowFilters === null
+                ? null
+                : registerPath(filters, { ...rowFilters, measured: 'true' })
+            }
+            hint={projectsHint(row.measured)}
+          />
+        </td>
+      )}
+      {shown('AVERAGE_PLANNED') && (
+        <td>
+          <Percent value={row.averagePlannedPercent} />
+        </td>
+      )}
+      {shown('AVERAGE_ACTUAL') && (
+        <td>
+          <Percent value={row.averageActualPercent} />
+        </td>
+      )}
+      {shown('GAP') && (
+        <td>
+          <GapValue points={row.gapPoints} />
+        </td>
+      )}
+      {shown('ON_PLAN') && (
+        <td>
+          <OnPlanBadge status={row.onPlan} />
+        </td>
+      )}
+      {shown('NEEDING_FOLLOW_UP') && (
+        <td dir="ltr" className="cell--ltr">
+          <CountLink
+            count={row.needingFollowUp}
+            to={rowFilters === null ? null : followUpPath(filters, rowFilters)}
+            hint={t('dashboards.drill.followUp', { count: row.needingFollowUp })}
+          />
+        </td>
+      )}
     </>
   );
 }
@@ -300,6 +326,7 @@ function BreakdownTable({
   itemName,
   filters,
   grouped = false,
+  hidden = NO_HIDDEN_COLUMNS,
 }: {
   caption: string;
   breakdown: PortfolioBreakdown;
@@ -309,13 +336,20 @@ function BreakdownTable({
   itemName: ItemName;
   /** Under each row's parent: an initiative under its portfolio. */
   grouped?: boolean;
+  /** The columns a design leaves out (design/sectionColumns.ts). */
+  hidden?: HiddenColumns;
 }): ReactElement {
   const { t } = useI18n();
   const mayOpenCards = useCan('PORTFOLIO_BREAKDOWN_VIEW');
   const selection = useRowSelection();
   const { rows, total } = breakdown;
   const showValue = total.valueSar !== null;
-  const columns = 9 + (showValue ? 1 : 0);
+  // The value only for a caller who may see amounts, whatever the design ticks.
+  const figureColumns = BREAKDOWN_COLUMNS.filter(
+    (column) => !hidden.has(column.code) && (showValue || column.code !== 'VALUE'),
+  );
+  // The selection, the name and the figures.
+  const columns = 2 + figureColumns.length;
   const rowId = (row: PortfolioBreakdownRow) => row.itemId ?? 'none';
   const parents = grouped ? [...new Set(rows.map((row) => row.parentItemId))] : [null];
 
@@ -342,7 +376,13 @@ function BreakdownTable({
           </Link>
         )}
       </th>
-      <RowFigures row={row} showValue={showValue} filters={filters} rowFilters={rowFilters(row)} />
+      <RowFigures
+        row={row}
+        showValue={showValue}
+        hidden={hidden}
+        filters={filters}
+        rowFilters={rowFilters(row)}
+      />
     </tr>
   );
 
@@ -356,14 +396,11 @@ function BreakdownTable({
           <tr>
             <SelectAllHeader ids={rows.map(rowId)} selection={selection} />
             <th scope="col">{nameHeader}</th>
-            <th scope="col">{t('dashboards.insights.projects')}</th>
-            {showValue && <th scope="col">{t('dashboards.insights.value')}</th>}
-            <th scope="col">{t('dashboards.insights.measured')}</th>
-            <th scope="col">{t('dashboards.insights.averagePlanned')}</th>
-            <th scope="col">{t('dashboards.insights.averageActual')}</th>
-            <th scope="col">{t('dashboards.insights.gap')}</th>
-            <th scope="col">{t('dashboards.insights.label')}</th>
-            <th scope="col">{t('dashboards.insights.needingFollowUp')}</th>
+            {figureColumns.map((column) => (
+              <th key={column.code} scope="col">
+                {t(column.label)}
+              </th>
+            ))}
           </tr>
         </thead>
         {parents.map((parent) => (
@@ -382,7 +419,13 @@ function BreakdownTable({
           <tr data-row="total">
             <td className="cell--select" />
             <th scope="row">{t('dashboards.insights.total')}</th>
-            <RowFigures row={total} showValue={showValue} filters={filters} rowFilters={{}} />
+            <RowFigures
+              row={total}
+              showValue={showValue}
+              hidden={hidden}
+              filters={filters}
+              rowFilters={{}}
+            />
           </tr>
         </tfoot>
       </TableContainer>
@@ -400,14 +443,17 @@ function SectorSpend({
   breakdown,
   itemName,
   filters,
+  hidden = NO_HIDDEN_COLUMNS,
 }: {
   breakdown: PortfolioBreakdown;
   itemName: ItemName;
   filters: PortfolioFilters;
+  hidden?: HiddenColumns;
 }): ReactElement {
   const { t } = useI18n();
   const selection = useRowSelection();
   const { rows, total } = breakdown;
+  const shown = (code: string) => !hidden.has(code);
   return (
     <>
       <TableContainer
@@ -418,9 +464,11 @@ function SectorSpend({
           <tr>
             <SelectAllHeader ids={rows.map((row) => row.itemId ?? 'none')} selection={selection} />
             <th scope="col">{t('dashboards.insights.sector')}</th>
-            <th scope="col">{t('dashboards.insights.plannedSpend')}</th>
-            <th scope="col">{t('dashboards.insights.actualSpend')}</th>
-            <th scope="col">{t('dashboards.insights.split')}</th>
+            {SECTOR_SPEND_COLUMNS.filter((column) => shown(column.code)).map((column) => (
+              <th key={column.code} scope="col">
+                {t(column.label)}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -443,40 +491,46 @@ function SectorSpend({
                   </Link>
                 )}
               </th>
-              <td>
-                <Percent value={row.averagePlannedSpendPercent} />
-              </td>
-              <td>
-                <Percent value={row.averageActualSpendPercent} />
-              </td>
-              <td>
-                <ul className="insights__split">
-                  {(row.portfolioSplit ?? []).map((split) => {
-                    const text = t('dashboards.insights.splitRow', {
-                      portfolio: itemName(split.portfolioItemId),
-                      count: split.projects,
-                    });
-                    return (
-                      <li key={split.portfolioItemId ?? 'none'}>
-                        {row.itemId === null || split.portfolioItemId === null ? (
-                          text
-                        ) : (
-                          <Link
-                            className="drill-link"
-                            to={registerPath(filters, {
-                              classificationItemId: row.itemId,
-                              strategicPortfolioItemId: split.portfolioItemId,
-                            })}
-                            title={t('dashboards.drill.projects', { count: split.projects })}
-                          >
-                            {text}
-                          </Link>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </td>
+              {shown('PLANNED_SPEND') && (
+                <td>
+                  <Percent value={row.averagePlannedSpendPercent} />
+                </td>
+              )}
+              {shown('ACTUAL_SPEND') && (
+                <td>
+                  <Percent value={row.averageActualSpendPercent} />
+                </td>
+              )}
+              {shown('SPLIT') && (
+                <td>
+                  <ul className="insights__split">
+                    {(row.portfolioSplit ?? []).map((split) => {
+                      const text = t('dashboards.insights.splitRow', {
+                        portfolio: itemName(split.portfolioItemId),
+                        count: split.projects,
+                      });
+                      return (
+                        <li key={split.portfolioItemId ?? 'none'}>
+                          {row.itemId === null || split.portfolioItemId === null ? (
+                            text
+                          ) : (
+                            <Link
+                              className="drill-link"
+                              to={registerPath(filters, {
+                                classificationItemId: row.itemId,
+                                strategicPortfolioItemId: split.portfolioItemId,
+                              })}
+                              title={t('dashboards.drill.projects', { count: split.projects })}
+                            >
+                              {text}
+                            </Link>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -491,12 +545,15 @@ function SectorSpend({
 function Stages({
   stages,
   filters,
+  hidden = NO_HIDDEN_COLUMNS,
 }: {
   stages: PortfolioStageCount[];
   filters: PortfolioFilters;
+  hidden?: HiddenColumns;
 }): ReactElement {
   const { t } = useI18n();
   const selection = useRowSelection();
+  const shown = (code: string) => !hidden.has(code);
   return (
     <InsightSection id="stages" title={t('dashboards.insights.byStatus')}>
       <TableContainer
@@ -507,8 +564,8 @@ function Stages({
           <tr>
             <SelectAllHeader ids={stages.map((stage) => stage.status)} selection={selection} />
             <th scope="col">{t('projects.fields.status')}</th>
-            <th scope="col">{t('dashboards.insights.projects')}</th>
-            <th scope="col">{t('dashboards.insights.percent')}</th>
+            {shown('PROJECTS') && <th scope="col">{t('dashboards.insights.projects')}</th>}
+            {shown('PERCENT') && <th scope="col">{t('dashboards.insights.percent')}</th>}
           </tr>
         </thead>
         <tbody>
@@ -527,16 +584,20 @@ function Stages({
                   {t(`projects.status.${stage.status}`)}
                 </Link>
               </th>
-              <td dir="ltr" className="cell--ltr">
-                <CountLink
-                  count={stage.projects}
-                  to={registerPath(filters, { status: stage.status })}
-                  hint={t('dashboards.drill.projects', { count: stage.projects })}
-                />
-              </td>
-              <td>
-                <Percent value={stage.percent} />
-              </td>
+              {shown('PROJECTS') && (
+                <td dir="ltr" className="cell--ltr">
+                  <CountLink
+                    count={stage.projects}
+                    to={registerPath(filters, { status: stage.status })}
+                    hint={t('dashboards.drill.projects', { count: stage.projects })}
+                  />
+                </td>
+              )}
+              {shown('PERCENT') && (
+                <td>
+                  <Percent value={stage.percent} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -549,15 +610,18 @@ function Stages({
 function CurrentStages({
   stages,
   filters,
+  hidden = NO_HIDDEN_COLUMNS,
 }: {
   stages: PortfolioCurrentStage[];
   filters: PortfolioFilters;
+  hidden?: HiddenColumns;
 }): ReactElement {
   const { t, language } = useI18n();
+  const showProjects = !hidden.has('PROJECTS');
   const pathOf = (stage: PortfolioCurrentStage) =>
     registerPath(filters, { stage: stage.stageCode ?? NO_STAGE });
   const selection = useRowSelection();
-  const showValue = stages.some((stage) => stage.valueSar !== null);
+  const showValue = !hidden.has('VALUE') && stages.some((stage) => stage.valueSar !== null);
   const nameOf = (stage: PortfolioCurrentStage) =>
     stage.name?.[language] ?? t('dashboards.insights.noCurrentStage');
   return (
@@ -573,7 +637,7 @@ function CurrentStages({
               selection={selection}
             />
             <th scope="col">{t('dashboards.insights.currentStage')}</th>
-            <th scope="col">{t('dashboards.insights.projects')}</th>
+            {showProjects && <th scope="col">{t('dashboards.insights.projects')}</th>}
             {showValue && <th scope="col">{t('dashboards.insights.value')}</th>}
           </tr>
         </thead>
@@ -593,13 +657,15 @@ function CurrentStages({
                   {nameOf(stage)}
                 </Link>
               </th>
-              <td dir="ltr" className="cell--ltr">
-                <CountLink
-                  count={stage.projects}
-                  to={pathOf(stage)}
-                  hint={t('dashboards.drill.projects', { count: stage.projects })}
-                />
-              </td>
+              {showProjects && (
+                <td dir="ltr" className="cell--ltr">
+                  <CountLink
+                    count={stage.projects}
+                    to={pathOf(stage)}
+                    hint={t('dashboards.drill.projects', { count: stage.projects })}
+                  />
+                </td>
+              )}
               {showValue && (
                 <td>
                   {stage.valueSar === null || stage.valueEntered === 0 ? (
@@ -739,11 +805,14 @@ function Reasons({
 function TopProjects({
   projects,
   itemName,
+  hidden = NO_HIDDEN_COLUMNS,
 }: {
   projects: PortfolioTopProject[];
   itemName: ItemName;
+  hidden?: HiddenColumns;
 }): ReactElement {
   const { t } = useI18n();
+  const shown = (code: string) => !hidden.has(code);
   const notAvailable = t('dashboards.insights.notAvailable');
   const selection = useRowSelection();
   return (
@@ -759,11 +828,11 @@ function TopProjects({
               selection={selection}
             />
             <th scope="col">{t('projects.fields.formalProjectId')}</th>
-            <th scope="col">{t('projects.fields.title')}</th>
-            <th scope="col">{t('dashboards.insights.portfolio')}</th>
-            <th scope="col">{t('projects.followUpList.reason')}</th>
-            <th scope="col">{t('projects.followUpList.obstacle')}</th>
-            <th scope="col">{t('projects.followUpList.nextAction')}</th>
+            {shown('TITLE') && <th scope="col">{t('projects.fields.title')}</th>}
+            {shown('PORTFOLIO') && <th scope="col">{t('dashboards.insights.portfolio')}</th>}
+            {shown('REASON') && <th scope="col">{t('projects.followUpList.reason')}</th>}
+            {shown('OBSTACLE') && <th scope="col">{t('projects.followUpList.obstacle')}</th>}
+            {shown('NEXT_ACTION') && <th scope="col">{t('projects.followUpList.nextAction')}</th>}
           </tr>
         </thead>
         <tbody>
@@ -777,31 +846,37 @@ function TopProjects({
               <td dir="ltr" className="cell--ltr">
                 {project.formalProjectId ?? project.legacyReference ?? '—'}
               </td>
-              <td>
-                <Link
-                  to={`/projects/${project.projectId}`}
-                  lang={languageTag(project.title.language)}
-                  dir="auto"
-                >
-                  {project.title.text}
-                </Link>
-              </td>
-              <td>{itemName(project.portfolioItemId)}</td>
-              <td>{t(`projects.followUpReason.${project.reason}`)}</td>
-              <td dir="auto">{project.currentObstacle?.text ?? notAvailable}</td>
-              <td>
-                <span dir="auto">{project.nextAction?.text ?? notAvailable}</span>
-                {project.nextActionOwner !== null && (
-                  <span className="cell__aside" dir="auto">
-                    {project.nextActionOwner}
-                  </span>
-                )}
-                {project.nextActionDueDate !== null && (
-                  <span className="cell__aside" dir="ltr">
-                    {project.nextActionDueDate}
-                  </span>
-                )}
-              </td>
+              {shown('TITLE') && (
+                <td>
+                  <Link
+                    to={`/projects/${project.projectId}`}
+                    lang={languageTag(project.title.language)}
+                    dir="auto"
+                  >
+                    {project.title.text}
+                  </Link>
+                </td>
+              )}
+              {shown('PORTFOLIO') && <td>{itemName(project.portfolioItemId)}</td>}
+              {shown('REASON') && <td>{t(`projects.followUpReason.${project.reason}`)}</td>}
+              {shown('OBSTACLE') && (
+                <td dir="auto">{project.currentObstacle?.text ?? notAvailable}</td>
+              )}
+              {shown('NEXT_ACTION') && (
+                <td>
+                  <span dir="auto">{project.nextAction?.text ?? notAvailable}</span>
+                  {project.nextActionOwner !== null && (
+                    <span className="cell__aside" dir="auto">
+                      {project.nextActionOwner}
+                    </span>
+                  )}
+                  {project.nextActionDueDate !== null && (
+                    <span className="cell__aside" dir="ltr">
+                      {project.nextActionDueDate}
+                    </span>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -1177,10 +1252,13 @@ export function InsightBlock({
   section,
   insights,
   filters,
+  hidden = NO_HIDDEN_COLUMNS,
 }: {
   section: InsightSectionCode;
   insights: PortfolioInsights;
   filters: PortfolioFilters;
+  /** A table section's columns its design leaves out. */
+  hidden?: HiddenColumns;
 }): ReactElement | null {
   const { t } = useI18n();
   const lookups = useProjectLookups();
@@ -1199,6 +1277,7 @@ export function InsightBlock({
             filters={filters}
             nameHeader={t('dashboards.insights.portfolio')}
             itemName={itemName}
+            hidden={hidden}
           />
         </InsightSection>
       );
@@ -1213,28 +1292,40 @@ export function InsightBlock({
             nameHeader={t('dashboards.insights.initiative')}
             itemName={itemName}
             grouped
+            hidden={hidden}
           />
         </InsightSection>
       );
     case 'SECTOR_TABLE':
       return bySector === null ? null : (
         <InsightSection id="sector" title={t('dashboards.insights.bySector')}>
-          <BreakdownTable
-            caption={t('dashboards.insights.bySector')}
-            breakdown={bySector}
-            dimension="sector"
-            filters={filters}
-            nameHeader={t('dashboards.insights.sector')}
-            itemName={itemName}
-          />
-          <SectorSpend breakdown={bySector} itemName={itemName} filters={filters} />
+          {/* A table none of whose listed columns the design shows is left out. */}
+          {anyShown(BREAKDOWN_COLUMNS, hidden) && (
+            <BreakdownTable
+              caption={t('dashboards.insights.bySector')}
+              breakdown={bySector}
+              dimension="sector"
+              filters={filters}
+              nameHeader={t('dashboards.insights.sector')}
+              itemName={itemName}
+              hidden={hidden}
+            />
+          )}
+          {anyShown(SECTOR_SPEND_COLUMNS, hidden) && (
+            <SectorSpend
+              breakdown={bySector}
+              itemName={itemName}
+              filters={filters}
+              hidden={hidden}
+            />
+          )}
         </InsightSection>
       );
     case 'STATUS_TABLE':
-      return stages === null ? null : <Stages stages={stages} filters={filters} />;
+      return stages === null ? null : <Stages stages={stages} filters={filters} hidden={hidden} />;
     case 'CURRENT_STAGE_TABLE':
       return byCurrentStage === null ? null : (
-        <CurrentStages stages={byCurrentStage} filters={filters} />
+        <CurrentStages stages={byCurrentStage} filters={filters} hidden={hidden} />
       );
     case 'ON_PLAN_COUNTS':
       return onPlan === null ? null : <OnPlanCounts onPlan={onPlan} filters={filters} />;
@@ -1244,7 +1335,7 @@ export function InsightBlock({
       );
     case 'TOP_FOLLOW_UP':
       return topFollowUp === null ? null : (
-        <TopProjects projects={topFollowUp} itemName={itemName} />
+        <TopProjects projects={topFollowUp} itemName={itemName} hidden={hidden} />
       );
     case 'ENTITY_COMPLETION':
       return <EntityCompletionChart />;

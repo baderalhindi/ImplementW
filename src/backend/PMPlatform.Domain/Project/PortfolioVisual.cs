@@ -183,4 +183,11 @@ public sealed class PortfolioVisual : AuditedEntity
     /// draws nothing.
     /// </summary>
     public string? WidgetCode { get; set; }
+
+    /// <summary>
+    /// The columns a table section does not show (the 20 Nov 2026 table columns): codes of <c>^[A-Z_]{1,40}$</c>, at most 20, no repeats, on a
+    /// <see cref="PortfolioVisualType.Section"/> of one of the seven table sections only; null when every column is shown. The backend draws no table, so
+    /// only the shape is checked, and a code the table does not have hides nothing.
+    /// </summary>
+    public List<string>? HiddenColumns { get; set; }
 }

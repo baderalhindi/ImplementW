@@ -7,6 +7,7 @@ import { type SelectOption } from '@/shared/ui/FormFields.tsx';
 
 import { labelOfValue } from '../presentation.ts';
 import { sentAxes } from './axes.ts';
+import { sentHiddenColumns } from './sectionColumns.ts';
 import {
   type DateUnit,
   type FieldAggregation,
@@ -333,7 +334,7 @@ export const NO_FIELD_DATA = {
 
 /**
  * A visual as it is compared and sent: its field data and widget code only where it has some, so a design read back equals the one sent; its axes as the API
- * takes them, null for the defaults (axes.ts); a container's children, each so.
+ * takes them, null for the defaults (axes.ts); a table section's hidden columns, null when none (sectionColumns.ts); a container's children, each so.
  */
 export function normalized<T extends Visual>(visual: T): T {
   const {
@@ -344,8 +345,10 @@ export function normalized<T extends Visual>(visual: T): T {
     axes: _axes,
     widgetCode,
     children,
+    hiddenColumns: _hiddenColumns,
     ...rest
   } = visual;
+  const hiddenColumns = sentHiddenColumns(visual);
   return {
     ...rest,
     // Children only on a container, which always sends its list (empty or not), each child as a top-level visual is sent.
@@ -356,6 +359,8 @@ export function normalized<T extends Visual>(visual: T): T {
     ...(groupField === undefined || groupField === null ? {} : { groupField }),
     ...(groupDateUnit === undefined || groupDateUnit === null ? {} : { groupDateUnit }),
     ...(filters === undefined || filters === null || filters.length === 0 ? {} : { filters }),
+    // Only on a table section, null when every column is shown.
+    ...(hiddenColumns === undefined ? {} : { hiddenColumns }),
   } as T;
 }
 

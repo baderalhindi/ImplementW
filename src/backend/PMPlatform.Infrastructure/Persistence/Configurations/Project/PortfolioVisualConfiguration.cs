@@ -37,6 +37,11 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
             t.HasCheckConstraint(
                 "ck_portfolio_visual_widget_code",
                 "COALESCE(section = 'DASHBOARD_WIDGET', FALSE) = (widget_code IS NOT NULL) AND (widget_code IS NULL OR widget_code ~ '^[A-Za-z0-9_.-]+$')");
+            // Only a table section hides columns, and it hides at least one when it names any (20 Nov 2026 table columns).
+            t.HasCheckConstraint(
+                "ck_portfolio_visual_hidden_columns",
+                "hidden_columns IS NULL OR (visual_type = 'SECTION' AND section IN ('PORTFOLIO_TABLE', 'INITIATIVE_TABLE', 'SECTOR_TABLE', 'STATUS_TABLE', "
+                + "'CURRENT_STAGE_TABLE', 'TOP_FOLLOW_UP', 'ENTITY_COMPLETION_TABLE') AND cardinality(hidden_columns) BETWEEN 1 AND 20)");
         });
         builder.Property(e => e.TitleAr).HasMaxLength(100);
         builder.Property(e => e.TitleEn).HasMaxLength(100);

@@ -16,7 +16,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// LINE visual, rule 7's grain and the period charts over the published history; and its 19 Nov 2026 axes: who takes them, their titles and range, and what is
 /// stored; and its 19 Nov 2026 widgets: one DASHBOARD_WIDGET section per governed widget, named by its code; and its 19 Nov 2026 containers: rules 1 to 6
 /// (dashboard-designer-containers.md), the saved rows nested back and the children calculated as top-level visuals; and its 20 Nov 2026 decimal layout: places
-/// and sizes in steps of 0.1, overlaps by area (dashboard-designer-decimal-layout.md).
+/// and sizes in steps of 0.1, overlaps by area (dashboard-designer-decimal-layout.md); and its 20 Nov 2026 table columns: which visuals hide columns and the
+/// codes' shape (dashboard-designer-table-columns.md).
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -257,6 +258,101 @@ public sealed class PortfolioDesignRulesTests
     {
         Assert.Equal("visuals[0].section", Issue(Widget("OPEN_RISKS") with { Measures = [PortfolioMeasure.Projects] })?.Field);
         Assert.Equal("visuals[0].section", Issue(Widget("OPEN_RISKS") with { VisualType = PortfolioVisualType.Card })?.Field);
+    }
+
+    private static PortfolioVisualInput Hiding(PortfolioSection section, params string[] codes) => Placed(section, 0) with { HiddenColumns = codes };
+
+    /// <summary>20 Nov 2026 table columns: each of the seven table sections may hide columns.</summary>
+    [Theory]
+    [InlineData(PortfolioSection.PortfolioTable)]
+    [InlineData(PortfolioSection.InitiativeTable)]
+    [InlineData(PortfolioSection.SectorTable)]
+    [InlineData(PortfolioSection.StatusTable)]
+    [InlineData(PortfolioSection.CurrentStageTable)]
+    [InlineData(PortfolioSection.TopFollowUp)]
+    [InlineData(PortfolioSection.EntityCompletionTable)]
+    public void ATableSectionHidesColumns(PortfolioSection section) => Assert.Null(Issue(Hiding(section, "VALUE", "GAP")));
+
+    /// <summary>Only a table section hides columns: not another section, a chart, a card or a container.</summary>
+    [Theory]
+    [InlineData(PortfolioSection.OnPlanCounts)]
+    [InlineData(PortfolioSection.FollowUpReasons)]
+    [InlineData(PortfolioSection.EntityCompletion)]
+    [InlineData(PortfolioSection.ProjectLocations)]
+    [InlineData(PortfolioSection.DashboardWidgets)]
+    public void AnotherSectionHidesNoColumn(PortfolioSection section) =>
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.NotAllowed), Issue(Hiding(section, "VALUE")));
+
+    [Fact]
+    public void OnlyASectionHidesColumns()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.NotAllowed), Issue(Widget("OPEN_RISKS") with { HiddenColumns = ["VALUE"] }));
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.NotAllowed), Issue(SmallCard(0, 0) with { HiddenColumns = ["VALUE"] }));
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.NotAllowed), Issue(Visual(PortfolioVisualType.Table) with { HiddenColumns = ["VALUE"] }));
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.NotAllowed), Issue(Container() with { HiddenColumns = ["VALUE"] }));
+        Assert.Equal(
+            new FieldIssue("visuals[0].children[0].hiddenColumns", FieldIssue.NotAllowed), Issue(Container(children: [SmallCard(0, 0) with { HiddenColumns = ["VALUE"] }])));
+    }
+
+    /// <summary>An empty list hides nothing, so it is taken on any visual, as null is.</summary>
+    [Fact]
+    public void AnEmptyListHidesNothingAnywhere()
+    {
+        Assert.Null(Issue(SmallCard(0, 0) with { HiddenColumns = [] }));
+        Assert.Null(Issue(Hiding(PortfolioSection.OnPlanCounts)));
+    }
+
+    /// <summary>A column code is 1–40 upper-case letters and '_'; only the shape is checked, so a code the table does not have is taken and hides nothing.</summary>
+    [Theory]
+    [InlineData("VALUE", null)]
+    [InlineData("NEEDING_FOLLOW_UP", null)]
+    [InlineData("NOT_A_COLUMN_OF_THIS_TABLE", null)]
+    [InlineData("value", FieldIssue.NotAllowed)]
+    [InlineData("PLANNED SPEND", FieldIssue.NotAllowed)]
+    [InlineData("SPLIT2", FieldIssue.NotAllowed)]
+    [InlineData("VALUE\n", FieldIssue.NotAllowed)]
+    [InlineData("", FieldIssue.NotAllowed)]
+    public void AColumnCodeHasItsShape(string code, string? issue) =>
+        Assert.Equal(issue is null ? null : new FieldIssue("visuals[0].hiddenColumns", issue), Issue(Hiding(PortfolioSection.SectorTable, Regex.Unescape(code))));
+
+    [Fact]
+    public void AColumnCodeIsAtMostFortyCharacters()
+    {
+        Assert.Null(Issue(Hiding(PortfolioSection.SectorTable, new string('C', 40))));
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.NotAllowed), Issue(Hiding(PortfolioSection.SectorTable, new string('C', 41))));
+    }
+
+    [Fact]
+    public void ATableHidesAtMostTwentyColumns()
+    {
+        string[] codes = [.. Enumerable.Range(0, 21).Select(i => new string((char)('A' + i), 3))];
+        Assert.Null(Issue(Hiding(PortfolioSection.SectorTable, codes[..20])));
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.OutsideRange), Issue(Hiding(PortfolioSection.SectorTable, codes)));
+    }
+
+    [Fact]
+    public void AColumnIsHiddenOnce() =>
+        Assert.Equal(new FieldIssue("visuals[0].hiddenColumns", FieldIssue.Duplicate), Issue(Hiding(PortfolioSection.SectorTable, "VALUE", "GAP", "VALUE")));
+
+    /// <summary>The hidden columns are echoed as sent; an empty list as null, the same as a section hiding none.</summary>
+    [Fact]
+    public void TheHiddenColumnsAreEchoed()
+    {
+        IReadOnlyDictionary<string, PortfolioFieldType> types = new Dictionary<string, PortfolioFieldType>(StringComparer.Ordinal);
+        Assert.Equal(["VALUE", "GAP"], PortfolioDesignService.ResultOf(Hiding(PortfolioSection.SectorTable, "VALUE", "GAP"), _ => [], types).HiddenColumns);
+        Assert.Null(PortfolioDesignService.ResultOf(Hiding(PortfolioSection.SectorTable), _ => [], types).HiddenColumns);
+        Assert.Null(PortfolioDesignService.ResultOf(Placed(PortfolioSection.SectorTable, 0), _ => [], types).HiddenColumns);
+    }
+
+    /// <summary>A saved row's hidden columns read back on its visual.</summary>
+    [Fact]
+    public void SavedHiddenColumnsReadBack()
+    {
+        PortfolioVisual sector = Saved(1, PortfolioVisualType.Section, "By sector");
+        sector.Section = PortfolioSection.SectorTable;
+        sector.HiddenColumns = ["VALUE", "GAP"];
+        Assert.Equal(["VALUE", "GAP"], PortfolioDesignService.Nested([sector, Saved(2, PortfolioVisualType.Card, "Card", row: 8)])[0].HiddenColumns);
+        Assert.Null(PortfolioDesignService.Nested([Saved(1, PortfolioVisualType.Card, "Card")])[0].HiddenColumns);
     }
 
     /// <summary>A grouping is read under the insights permission that shows that breakdown today, so the designer shows no one more than before.</summary>

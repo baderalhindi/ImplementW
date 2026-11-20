@@ -1,6 +1,10 @@
 import { type ReactElement, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 
+import {
+  type HiddenColumns,
+  NO_HIDDEN_COLUMNS,
+} from '@/features/dashboards/design/sectionColumns.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { apiRequest } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -151,12 +155,18 @@ export function OwnEntityCompletionCard(): ReactElement {
  * AHDA's dashboard: every entity it may see, lowest rate first, each opening the participation monitor filtered to it. The donut's bands and its
  * "see more" open it here (review round 8, point 03): a band in the address shows that band's entities only, with a way back to all of them.
  */
-export function EntityCompletionPanel(): ReactElement | null {
-  return useCan('EXTERNAL_REQUEST_VIEW') ? <EntityCompletionTable /> : null;
+export function EntityCompletionPanel({
+  hidden = NO_HIDDEN_COLUMNS,
+}: {
+  /** The columns a dashboard design leaves out (dashboards/design/sectionColumns.ts). */
+  hidden?: HiddenColumns;
+}): ReactElement | null {
+  return useCan('EXTERNAL_REQUEST_VIEW') ? <EntityCompletionTable hidden={hidden} /> : null;
 }
 
-function EntityCompletionTable(): ReactElement {
+function EntityCompletionTable({ hidden }: { hidden: HiddenColumns }): ReactElement {
   const { t } = useI18n();
+  const shown = (code: string) => !hidden.has(code);
   const entityName = useEntityNames();
   const { period, setPeriod } = useCompletionPeriod();
   const load = useCallback(
@@ -242,11 +252,21 @@ function EntityCompletionTable(): ReactElement {
                   selection={selection}
                 />
                 <th scope="col">{t('externalParticipation.table.entity')}</th>
-                <th scope="col">{t('externalParticipation.completion.issued')}</th>
-                <th scope="col">{t('externalParticipation.completion.submitted')}</th>
-                <th scope="col">{t('externalParticipation.completion.accepted')}</th>
-                <th scope="col">{t('externalParticipation.completion.overdue')}</th>
-                <th scope="col">{t('externalParticipation.completion.percent')}</th>
+                {shown('ISSUED') && (
+                  <th scope="col">{t('externalParticipation.completion.issued')}</th>
+                )}
+                {shown('SUBMITTED') && (
+                  <th scope="col">{t('externalParticipation.completion.submitted')}</th>
+                )}
+                {shown('ACCEPTED') && (
+                  <th scope="col">{t('externalParticipation.completion.accepted')}</th>
+                )}
+                {shown('OVERDUE') && (
+                  <th scope="col">{t('externalParticipation.completion.overdue')}</th>
+                )}
+                {shown('PERCENT') && (
+                  <th scope="col">{t('externalParticipation.completion.percent')}</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -264,11 +284,11 @@ function EntityCompletionTable(): ReactElement {
                       {entityName(row.externalEntityId)}
                     </Link>
                   </td>
-                  <td dir="ltr">{row.issued}</td>
-                  <td dir="ltr">{row.submitted}</td>
-                  <td dir="ltr">{row.accepted}</td>
-                  <td dir="ltr">{row.overdue}</td>
-                  <td dir="ltr">{percent(row.completionPercent)}</td>
+                  {shown('ISSUED') && <td dir="ltr">{row.issued}</td>}
+                  {shown('SUBMITTED') && <td dir="ltr">{row.submitted}</td>}
+                  {shown('ACCEPTED') && <td dir="ltr">{row.accepted}</td>}
+                  {shown('OVERDUE') && <td dir="ltr">{row.overdue}</td>}
+                  {shown('PERCENT') && <td dir="ltr">{percent(row.completionPercent)}</td>}
                 </tr>
               ))}
             </tbody>

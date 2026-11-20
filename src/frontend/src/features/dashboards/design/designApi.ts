@@ -153,6 +153,8 @@ export interface Visual {
    * first row is its title bar). Absent or null on every other visual; never a container.
    */
   children?: Visual[] | null | undefined;
+  /** A table section's unticked columns (sectionColumns.ts), null when every column is shown; absent on any other visual. */
+  hiddenColumns?: string[] | null | undefined;
 }
 
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */

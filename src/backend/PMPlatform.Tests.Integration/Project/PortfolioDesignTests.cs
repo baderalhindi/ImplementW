@@ -12,7 +12,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// axes) are saved and read back as set, titles trimmed; a chart drawn with the default axes stores none. Two DASHBOARD_WIDGET sections (the 19 Nov 2026
 /// widgets) are saved and read back with their widget codes; two naming the same widget are refused. A container (the 19 Nov 2026 containers) is saved with
 /// its children and read back with them nested in order, each with its figures; a child covering a sibling or outside its container is refused. A design
-/// with decimal places and sizes (the 20 Nov 2026 decimal layout) is saved and read back exactly; one with two decimal places is refused.
+/// with decimal places and sizes (the 20 Nov 2026 decimal layout) is saved and read back exactly; one with two decimal places is refused. A table section's
+/// hidden columns (the 20 Nov 2026 table columns) are saved and read back; a card hiding columns is refused.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -142,7 +143,15 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             Assert.Equal(("visuals[1].widgetCode", "DUPLICATE"), (error["field"]!.GetValue<string>(), error["code"]!.GetValue<string>()));
         }
 
-        foreach (object design in new[] { overlapping, groupedCard, emptyRange, cardAxes, sameWidget })
+        // A card hiding table columns (the 20 Nov 2026 table columns): only a table section has columns to hide.
+        object cardColumns = DesignOf(Visual("Card columns", "CARD", 0, 0, 3, 2, measures: ["PROJECTS"], hiddenColumns: ["VALUE"]));
+        using (HttpResponseMessage notAllowed = await client.PostAsync($"{Design}/preview", manager, cardColumns))
+        {
+            JsonNode error = (await notAllowed.ReadObjectAsync())["errors"]![0]!;
+            Assert.Equal(("visuals[0].hiddenColumns", "NOT_ALLOWED"), (error["field"]!.GetValue<string>(), error["code"]!.GetValue<string>()));
+        }
+
+        foreach (object design in new[] { overlapping, groupedCard, emptyRange, cardAxes, sameWidget, cardColumns })
         {
             using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
             Assert.Equal((HttpStatusCode.UnprocessableEntity, "PROJECT_PORTFOLIO_DESIGN_INVALID"), (preview.StatusCode, await preview.CodeOfAsync()));
@@ -286,6 +295,40 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             string.Join(',', v["layoutColumn"]!.ToJsonString(), v["layoutRow"]!.ToJsonString(), v["layoutWidth"]!.ToJsonString(), v["layoutHeight"]!.ToJsonString());
     }
 
+    [Fact]
+    public async Task ATableSectionsHiddenColumnsAreSavedAndReadBack()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+
+        object design = DesignOf(
+            Visual("By sector", "SECTION", 0, 0, 12, 8, section: "SECTOR_TABLE", hiddenColumns: ["VALUE", "GAP"]),
+            Visual("By portfolio", "SECTION", 0, 8, 12, 6, section: "PORTFOLIO_TABLE", hiddenColumns: []),
+            Visual("Card", "CARD", 0, 14, 4, 2, measures: ["PROJECTS"]));
+        string?[] expected = ["VALUE,GAP", null, null];
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        Assert.Equal(expected, HiddenOf(await preview.ReadObjectAsync()));
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        Assert.Equal(expected, HiddenOf(await saved.ReadObjectAsync()));
+
+        using HttpResponseMessage read = await client.GetAsync(Design, manager);
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        Assert.Equal(expected, HiddenOf(await read.ReadObjectAsync()));
+        // An empty list is stored as null: the section shows every column.
+        Assert.Equal(["1:{VALUE,GAP}", "2:", "3:"], await host.Database.QueryAsync(
+            "SELECT sort_order || ':' || COALESCE(hidden_columns::text, '') FROM project.portfolio_visual ORDER BY sort_order"));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        static string?[] HiddenOf(JsonObject view) =>
+            [.. view["visuals"]!.AsArray().Select(v => v!["hiddenColumns"] is JsonArray codes ? string.Join(',', codes.Select(c => c!.GetValue<string>())) : null)];
+    }
+
     private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();
 
     private static object DesignOf(params object[] visuals) => new { visuals };
@@ -295,7 +338,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
 
     private static object Visual(
         string title, string type, decimal column, decimal row, decimal width, decimal height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
-        object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null) =>
+        object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null, string[]? hiddenColumns = null) =>
         new
         {
             title = new { ar = $"عنوان {title}", en = title },
@@ -311,5 +354,6 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             section,
             widgetCode,
             children,
+            hiddenColumns,
         };
 }

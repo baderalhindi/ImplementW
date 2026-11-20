@@ -1,4 +1,4 @@
-import { type ReactElement, useId, useState } from 'react';
+import { Fragment, type ReactElement, useId, useState } from 'react';
 
 import { type ApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -7,6 +7,14 @@ import { AxesFormat } from './AxesFormat.tsx';
 import { takesAxes } from './axes.ts';
 import { DataPanel } from './DataPanel.tsx';
 import { type FieldDescriptor, type Visual, type VisualType } from './designApi.ts';
+import {
+  hiddenColumnsOf,
+  isLastShown,
+  isTableSection,
+  type SectionColumn,
+  sectionTables,
+  withColumnShown,
+} from './sectionColumns.ts';
 import { asLine, MAX_HEIGHT, retitled, tenth, VISUAL_TYPES, withType } from './visuals.ts';
 
 /** The sizes a visual may take where it is: a container's least size, and a child's columns (its container's width). */
@@ -74,6 +82,57 @@ function SizeInput({
 }
 
 /**
+ * A table section's columns (20 Nov 2026, docs/architecture/dashboard-designer-table-columns.md): each ticked is shown, in the table's own
+ * words; the first column is always shown and not listed, and the last ticked one may not be unticked. The sector's two tables are listed apart.
+ */
+function ColumnChoice({
+  visual,
+  onChange,
+}: {
+  visual: Visual;
+  onChange: (next: Visual) => void;
+}): ReactElement {
+  const { t } = useI18n();
+  const id = useId();
+  const hidden = hiddenColumnsOf(visual);
+  const tables = sectionTables(visual.section);
+  const boxes = (columns: readonly SectionColumn[]) =>
+    columns.map((column) => (
+      <label key={column.code} className="field__checkbox">
+        <input
+          type="checkbox"
+          checked={!hidden.has(column.code)}
+          disabled={isLastShown(visual, column.code)}
+          onChange={(event) => {
+            onChange(withColumnShown(visual, column.code, event.target.checked));
+          }}
+        />
+        {t(column.label)}
+      </label>
+    ));
+  return (
+    <fieldset className="field field--group designer-well" aria-describedby={`${id}-hint`}>
+      <legend className="field__label designer-well__label">
+        {t('dashboards.designer.columns')}
+      </legend>
+      <p id={`${id}-hint`} className="field__hint">
+        {t('dashboards.designer.columnsHint')}
+      </p>
+      {tables.map((table) =>
+        table.caption === null ? (
+          <Fragment key="columns">{boxes(table.columns)}</Fragment>
+        ) : (
+          <fieldset key={table.caption} className="designer-columns">
+            <legend className="designer-columns__legend">{t(table.caption)}</legend>
+            {boxes(table.columns)}
+          </fieldset>
+        ),
+      )}
+    </fieldset>
+  );
+}
+
+/**
  * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters), a chart's axes (AxesFormat) and size. Only what the type takes is offered, so whatever is chosen
  * saves; a size that would cover another visual is refused by the designer, which says so. A container has its titles and size only.
  */
@@ -96,6 +155,7 @@ export function VisualSettings({
   const id = useId();
   // A section shows the dashboard's own figures: only its titles and size are the designer's.
   const isSection = visual.visualType === 'SECTION';
+  const isTable = isSection && isTableSection(visual.section);
   const isContainer = visual.visualType === 'CONTAINER';
   // A change of type, values or grouping renames the visual while its titles are still the automatic ones.
   const change = (next: Visual) => {
@@ -139,13 +199,18 @@ export function VisualSettings({
       {isContainer ? (
         <p className="designer__hint">{t('dashboards.designer.containerSettings')}</p>
       ) : isSection ? (
-        <p className="designer__hint">
-          {t(
-            visual.section === 'DASHBOARD_WIDGET'
-              ? 'dashboards.designer.widgetSettings'
-              : 'dashboards.designer.sectionSettings',
-          )}
-        </p>
+        <>
+          <p className="designer__hint">
+            {t(
+              visual.section === 'DASHBOARD_WIDGET'
+                ? 'dashboards.designer.widgetSettings'
+                : isTable
+                  ? 'dashboards.designer.tableSectionSettings'
+                  : 'dashboards.designer.sectionSettings',
+            )}
+          </p>
+          {isTable && <ColumnChoice visual={visual} onChange={onChange} />}
+        </>
       ) : (
         <>
           <div className="field">
