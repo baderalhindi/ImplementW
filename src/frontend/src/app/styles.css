@@ -4360,8 +4360,8 @@ select.field__input {
 /* The donut: round-ended segments with a surface gap, its centre naming the hovered (or largest) value. */
 .donut {
   position: relative;
-  inline-size: 10.5rem;
-  block-size: 10.5rem;
+  inline-size: var(--donut-size, 10.5rem);
+  block-size: var(--donut-size, 10.5rem);
 }
 
 .donut svg {
@@ -9378,4 +9378,32 @@ tr[data-flagged='true'] {
 
 .designed-table .sort-header__arrow {
   margin-inline-start: var(--space-1);
+}
+
+/*
+ * A donut in a visual fills the room under the title (20 Nov 2026: a visual made larger draws a larger ring); DonutWithLegend measures that
+ * room and sizes the ring (--donut-size), the legend keeping its own room beside it.
+ */
+.visual__body > .distribution--donut {
+  flex: 1;
+  min-block-size: 0;
+  align-items: center;
+}
+
+.widget--in-visual > .widget__body {
+  flex: 1;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.widget--in-visual > .widget__body > .distribution--donut {
+  align-items: center;
+}
+
+/* A ring made larger writes its total larger too, in the same proportion (1.75rem at its usual 10.5rem). */
+.distribution--donut[style*='--donut-size'] .donut__value {
+  font-size: calc(var(--donut-size) / 6);
+}
+
+.distribution--donut[style*='--donut-size'] .donut__label {
+  font-size: calc(var(--donut-size) / 14);
 }

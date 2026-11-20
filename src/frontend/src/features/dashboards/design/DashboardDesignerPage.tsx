@@ -346,7 +346,17 @@ export function DashboardDesignerPage(): ReactElement {
   /** Changes the visual `key` to its settings `next` (all but a container's children, which the settings never change). */
   const place = (key: string, next: Visual) => {
     const { children: _children, ...settings } = next;
-    relayout((all) => withChanged(all, key, (visual) => ({ ...visual, ...settings })));
+    relayout((all) =>
+      withChanged(all, key, (visual) => {
+        const changed = { ...visual, ...settings };
+        // Made wider than the room to the grid's end edge, a visual moves toward the reading start to take its new width (a child is kept
+        // within its container by its own rule).
+        const top = all.some((other) => other.key === key);
+        return top && changed.layoutColumn + changed.layoutWidth > COLUMNS
+          ? { ...changed, layoutColumn: Math.max(0, tenth(COLUMNS - changed.layoutWidth)) }
+          : changed;
+      }),
+    );
   };
 
   const append = (visual: Visual | null) => {
