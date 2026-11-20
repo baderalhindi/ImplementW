@@ -14,7 +14,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// its children and read back with them nested in order, each with its figures; a child covering a sibling or outside its container is refused. A design
 /// with decimal places and sizes (the 20 Nov 2026 decimal layout) is saved and read back exactly; one with two decimal places is refused. A table section's
 /// hidden columns (the 20 Nov 2026 table columns) are saved and read back; a card hiding columns is refused. A TABLE of columns (the 20 Nov 2026 Power
-/// BI-style table) previews, saves and reads back with its table of figures; a card with columns is refused.
+/// BI-style table) previews, saves and reads back with its table of figures; a card with columns is refused. A container of a card per box of the on-plan
+/// indicator and the follow-up reasons (the 20 Nov 2026 box sections) previews, saves and reads back each box's count as GET /portfolio-insights has it.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -389,6 +390,50 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             Assert.Equal(rows.Sum(r => r!["projects"]!.GetValue<int>()), table["totals"]![1]!["value"]!.GetValue<int>());
             Assert.False(table["truncated"]!.GetValue<bool>());
         }
+    }
+
+    /// <summary>The box sections' figures and where GET /portfolio-insights has the same count.</summary>
+    private static readonly (string Measure, string Section, string Box)[] Boxes =
+    [
+        ("ON_TRACK", "onPlan", "onTrack"), ("LATE", "onPlan", "late"), ("STALLED", "onPlan", "stalled"), ("NOT_MEASURED", "onPlan", "notMeasured"),
+        ("FOLLOW_UP_STALLED", "followUpReasons", "stalled"), ("FOLLOW_UP_SUSPENDED", "followUpReasons", "suspended"), ("FOLLOW_UP_LATE", "followUpReasons", "late"),
+        ("FOLLOW_UP_ACTION_OVERDUE", "followUpReasons", "overdueAction"), ("FOLLOW_UP_OPEN_OBSTACLE", "followUpReasons", "openObstacle"),
+        ("NEEDING_FOLLOW_UP", "followUpReasons", "total"),
+    ];
+
+    [Fact]
+    public async Task ACardPerBoxCountsWhatTheBoxSectionsShow()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+        // A container of the ten cards, four on a row of its inner grid, as Make editable lays the sections out.
+        object design = DesignOf(Visual("Boxes", "CONTAINER", 0, 0, 12, 9, measures: [], children: [.. Boxes.Select((b, i) =>
+            Visual(b.Measure, "CARD", i % 4 * 3, i / 4 * 2.5m, 3, 2.5m, measures: [b.Measure]))]));
+
+        using HttpResponseMessage insights = await client.GetAsync("/api/v1/portfolio-insights", manager);
+        Assert.Equal(HttpStatusCode.OK, insights.StatusCode);
+        JsonObject sections = await insights.ReadObjectAsync();
+        int[] expected = [.. Boxes.Select(b => Int(sections[b.Section]!, b.Box))];
+        Assert.Equal(Int(sections["followUpReasons"]!, "total"), expected[4..9].Sum());
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        Assert.Equal(expected, CountsOf(await preview.ReadObjectAsync()));
+
+        // The database's check takes the new codes: the design saves and reads back the same counts.
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        using HttpResponseMessage read = await client.GetAsync(Design, manager);
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        Assert.Equal(expected, CountsOf(await read.ReadObjectAsync()));
+        Assert.Equal([.. Boxes.Select(b => $"{{{b.Measure}}}")], await host.Database.QueryAsync(
+            "SELECT measures::text FROM project.portfolio_visual WHERE visual_type = 'CARD' ORDER BY sort_order"));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        static int[] CountsOf(JsonObject view) =>
+            [.. view["visuals"]![0]!["children"]!.AsArray().Select(card => card!["groups"]![0]!["values"]![0]!.GetValue<int>())];
     }
 
     private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();

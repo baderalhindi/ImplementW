@@ -132,9 +132,7 @@ internal sealed class PortfolioInsightsService(
             breakdown is null ? null : Breakdown([.. breakdown.Where(r => r.Project.StrategicInitiativeItemId is not null)], r => r.Project.StrategicInitiativeItemId, r => r.Project.StrategicPortfolioItemId, amounts, thresholds, sector: false),
             breakdown is null ? null : Breakdown(breakdown, r => r.Project.ClassificationItemId, _ => null, amounts, thresholds, sector: true),
             status is null ? null : Stages(status),
-            status is null ? null : new PortfolioOnPlan(
-                status.Count(r => r.Indicators.OnPlan == OnPlanStatus.OnTrack), status.Count(r => r.Indicators.OnPlan == OnPlanStatus.Late),
-                status.Count(r => r.Indicators.OnPlan == OnPlanStatus.Stalled), status.Count(r => r.Indicators.OnPlan is null)),
+            status is null ? null : OnPlanOf(status),
             followUp is null ? null : Reasons(followUp),
             followUp is null ? null : [.. followUp.Where(r => r.Indicators.FollowUpReasons.Count > 0)
                 .OrderBy(r => r.Indicators.FollowUpReasons[0])
@@ -230,7 +228,14 @@ internal sealed class PortfolioInsightsService(
         ];
     }
 
-    private static PortfolioFollowUpReasons Reasons(IReadOnlyList<PortfolioProjectRow> rows)
+    /// <summary>The on-plan indicator's boxes over <paramref name="rows"/>: also the designer's ON_TRACK, LATE, STALLED and NOT_MEASURED figures.</summary>
+    internal static PortfolioOnPlan OnPlanOf(IReadOnlyList<PortfolioProjectRow> rows) =>
+        new(
+            rows.Count(r => r.Indicators.OnPlan == OnPlanStatus.OnTrack), rows.Count(r => r.Indicators.OnPlan == OnPlanStatus.Late),
+            rows.Count(r => r.Indicators.OnPlan == OnPlanStatus.Stalled), rows.Count(r => r.Indicators.OnPlan is null));
+
+    /// <summary>The follow-up reasons' boxes over <paramref name="rows"/>: also the designer's FOLLOW_UP_* figures, whose total is NEEDING_FOLLOW_UP.</summary>
+    internal static PortfolioFollowUpReasons Reasons(IReadOnlyList<PortfolioProjectRow> rows)
     {
         List<FollowUpReason> first = [.. rows.Where(r => r.Indicators.FollowUpReasons.Count > 0).Select(r => r.Indicators.FollowUpReasons[0])];
         int Count(FollowUpReason reason) => first.Count(r => r == reason);

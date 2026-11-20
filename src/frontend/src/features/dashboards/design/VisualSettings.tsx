@@ -5,6 +5,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { AxesFormat } from './AxesFormat.tsx';
 import { takesAxes } from './axes.ts';
+import { boxesContainer, isBoxSection } from './boxSections.ts';
 import { DataPanel } from './DataPanel.tsx';
 import { type FieldDescriptor, type Visual, type VisualType } from './designApi.ts';
 import {
@@ -135,12 +136,15 @@ function ColumnChoice({
 
 /**
  * Make editable (20 Nov 2026, docs/architecture/dashboard-designer-power-table.md): the table section becomes a table visual with the same
- * columns, at the same place, size and titles, whose columns and calculations can then be changed; an unsaved change as any other.
+ * columns, at the same place, size and titles, whose columns and calculations can then be changed; a box section becomes a container of a card
+ * per box (dashboard-designer-box-sections.md). An unsaved change as any other.
  */
 function MakeEditable({
+  hint,
   sectorSpend,
   onClick,
 }: {
+  hint: 'dashboards.designer.makeEditableHint' | 'dashboards.designer.makeEditableBoxesHint';
   sectorSpend: boolean;
   onClick: () => void;
 }): ReactElement {
@@ -152,7 +156,7 @@ function MakeEditable({
         {t('dashboards.designer.makeEditable')}
       </button>
       <p id={id} className="field__hint">
-        {t('dashboards.designer.makeEditableHint')}
+        {t(hint)}
         {sectorSpend && <> {t('dashboards.designer.makeEditableSectorSpend')}</>}
       </p>
     </div>
@@ -168,6 +172,7 @@ export function VisualSettings({
   fields,
   bounds,
   onChange,
+  onReplace,
   onDuplicate,
   onRemove,
 }: {
@@ -175,6 +180,8 @@ export function VisualSettings({
   fields: ApiResource<FieldDescriptor[]>;
   bounds: SizeBounds;
   onChange: (next: Visual) => void;
+  /** Replaces the visual by another, children included: a box section made a container; absent where that cannot go (inside a container). */
+  onReplace?: ((next: Visual) => void) | undefined;
   onDuplicate: () => void;
   onRemove: () => void;
 }): ReactElement {
@@ -236,8 +243,18 @@ export function VisualSettings({
                   : 'dashboards.designer.sectionSettings',
             )}
           </p>
+          {isBoxSection(visual.section) && onReplace !== undefined && (
+            <MakeEditable
+              hint="dashboards.designer.makeEditableBoxesHint"
+              sectorSpend={false}
+              onClick={() => {
+                onReplace(boxesContainer(visual));
+              }}
+            />
+          )}
           {isEditableSection(visual.section) && (
             <MakeEditable
+              hint="dashboards.designer.makeEditableHint"
               sectorSpend={visual.section === 'SECTOR_TABLE'}
               onClick={() => {
                 onChange(madeEditable(visual, hiddenColumnsOf(visual)));

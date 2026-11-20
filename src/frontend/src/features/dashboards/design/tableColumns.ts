@@ -6,8 +6,10 @@ import { type SortDirection } from '@/shared/ui/SortHeader.tsx';
 import {
   type FieldAggregation,
   type FieldDescriptor,
+  FOLLOW_UP_MEASURES,
   type GroupBy,
   type Measure,
+  ON_PLAN_MEASURES,
   type Section,
   type TableAggregation,
   type TableCell,
@@ -61,7 +63,9 @@ export const TABLE_MEASURES: readonly TableMeasure[] = [
   'AVERAGE_ACTUAL',
   'GAP_POINTS',
   'ON_PLAN',
+  ...ON_PLAN_MEASURES,
   'NEEDING_FOLLOW_UP',
+  ...FOLLOW_UP_MEASURES,
   'OVERDUE_ACTIONS',
   'PROJECT_SHARE',
 ];
@@ -98,6 +102,8 @@ const VISUAL_MEASURES: readonly string[] = [
   'GAP_POINTS',
   'NEEDING_FOLLOW_UP',
   'OVERDUE_ACTIONS',
+  ...ON_PLAN_MEASURES,
+  ...FOLLOW_UP_MEASURES,
 ];
 
 const FIELD_AGGREGATIONS: readonly string[] = [

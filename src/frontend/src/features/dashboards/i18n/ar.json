@@ -394,7 +394,20 @@
       "OVERDUE_ACTIONS": "إجراءات متأخرة",
       "MEASURED": "المقيس",
       "ON_PLAN": "الالتزام بالخطة",
-      "PROJECT_SHARE": "نسبة المشاريع"
+      "PROJECT_SHARE": "نسبة المشاريع",
+      "ON_TRACK": "على المسار",
+      "LATE": "متأخر",
+      "STALLED": "متعثر",
+      "NOT_MEASURED": "غير مقيس",
+      "FOLLOW_UP_STALLED": "متعثر",
+      "FOLLOW_UP_SUSPENDED": "موقوف",
+      "FOLLOW_UP_LATE": "متأخر",
+      "FOLLOW_UP_ACTION_OVERDUE": "إجراء متأخر عن موعده",
+      "FOLLOW_UP_OPEN_OBSTACLE": "معوق قائم"
+    },
+    "measureSource": {
+      "ON_PLAN": "مؤشر الالتزام بالخطة",
+      "FOLLOW_UP": "سبب المتابعة"
     },
     "groupBy": {
       "NONE": "بلا تجميع (رقم واحد)",
@@ -655,6 +668,7 @@
     "showTotals": "إظهار الإجمالي",
     "makeEditable": "اجعله قابلًا للتعديل",
     "makeEditableHint": "يحوّل هذا القسم إلى جدول يمكنك تعديله: اختر أعمدته وطريقة حساب كل منها. «تجاهل التغييرات» يعيد القسم.",
+    "makeEditableBoxesHint": "يحوّل هذا القسم إلى حاوية فيها بطاقة لكل مربع: عدّل كل بطاقة أو غيّر حجمها أو أضف عناصر مرئية إلى الحاوية. «تجاهل التغييرات» يعيد القسم.",
     "makeEditableSectorSpend": "لا يُنقل الجدول الثاني (الإنفاق وتوزيع المحافظ).",
     "columnAggregationLabel": "طريقة الحساب لـ {column}",
     "projectDetails": "بيانات المشروع",

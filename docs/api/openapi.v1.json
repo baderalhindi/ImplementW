@@ -38631,9 +38631,18 @@
           "AVERAGE_ACTUAL",
           "GAP_POINTS",
           "NEEDING_FOLLOW_UP",
-          "OVERDUE_ACTIONS"
+          "OVERDUE_ACTIONS",
+          "ON_TRACK",
+          "LATE",
+          "STALLED",
+          "NOT_MEASURED",
+          "FOLLOW_UP_STALLED",
+          "FOLLOW_UP_SUSPENDED",
+          "FOLLOW_UP_LATE",
+          "FOLLOW_UP_ACTION_OVERDUE",
+          "FOLLOW_UP_OPEN_OBSTACLE"
         ],
-        "description": "What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3)."
+        "description": "What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3), then the boxes\nof its on-plan indicator and follow-up reasons (the 20 Nov 2026 box sections)."
       },
       "PortfolioOnPlan": {
         "required": [

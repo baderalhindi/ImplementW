@@ -83,25 +83,41 @@ internal sealed partial class PortfolioDesignService
         .Append((TitleKey, null)).Append((FormalProjectIdKey, null))
         .ToDictionary(d => d.Item1, d => d.Item2, StringComparer.Ordinal);
 
-    /// <summary>The portfolio figures a column takes: the fixed measures by their code, then MEASURED, ON_PLAN and PROJECT_SHARE.</summary>
+    /// <summary>The portfolio figures a column takes: the fixed measures by their code, then MEASURED, ON_PLAN and PROJECT_SHARE, then the box sections' figures.</summary>
     private static readonly Dictionary<string, TableMeasure> ColumnMeasures = Enum.GetValues<TableMeasure>().ToDictionary(m => Code(m), StringComparer.Ordinal);
 
     private static bool IsColumnTable(PortfolioVisualInput v) => v.VisualType == PortfolioVisualType.Table && v.Columns is { Count: > 0 };
 
     /// <summary>
     /// The permissions a visual's projects are read under: its grouping's; for a column table, each dimension column's grouping's (the title and the ID as
-    /// an ungrouped visual's), or an ungrouped visual's when it names none. A column table shows only the projects every one of them reaches.
+    /// an ungrouped visual's), or an ungrouped visual's when it names none; then each figure's own (<see cref="PermissionOf(PortfolioMeasure)"/>, the 20 Nov
+    /// 2026 box sections). An ungrouped visual whose every figure has its own permission is read under those alone, as the section its figures are boxes of.
+    /// A visual shows only the projects every one of them reaches.
     /// </summary>
     internal static IReadOnlyList<string> PermissionsOf(PortfolioVisualInput v)
     {
-        if (!IsColumnTable(v))
+        List<string?> own;
+        List<string> grouping;
+        if (IsColumnTable(v))
         {
-            return [PermissionOf(v.GroupBy)];
+            own = [.. v.Columns!.Where(c => c.Kind == PortfolioTableColumnKind.Measure)
+                .Select(c => ColumnMeasures.TryGetValue(c.Key, out TableMeasure m) && FigureOf(m) is { } figure ? PermissionOf(figure) : null)];
+            grouping = [.. v.Columns!.Where(c => c.Kind == PortfolioTableColumnKind.Dimension)
+                .Select(c => PermissionOf(ColumnDimensions.GetValueOrDefault(c.Key) ?? PortfolioGroupBy.None))];
+            bool ownOnly = grouping.Count == 0 && own.Count == v.Columns!.Count && own.TrueForAll(p => p is not null);
+            if (grouping.Count == 0 && !ownOnly)
+            {
+                grouping = [PermissionOf(PortfolioGroupBy.None)];
+            }
+        }
+        else
+        {
+            own = [.. (v.Measures ?? []).Select(PermissionOf)];
+            bool ownOnly = v.GroupBy == PortfolioGroupBy.None && own.Count > 0 && own.TrueForAll(p => p is not null);
+            grouping = ownOnly ? [] : [PermissionOf(v.GroupBy)];
         }
 
-        List<string> permissions = [.. v.Columns!.Where(c => c.Kind == PortfolioTableColumnKind.Dimension)
-            .Select(c => PermissionOf(ColumnDimensions.GetValueOrDefault(c.Key) ?? PortfolioGroupBy.None)).Distinct(StringComparer.Ordinal)];
-        return permissions.Count == 0 ? [PermissionOf(PortfolioGroupBy.None)] : permissions;
+        return [.. grouping.Concat(own.OfType<string>()).Distinct(StringComparer.Ordinal)];
     }
 
     /// <summary>
@@ -357,9 +373,15 @@ internal sealed partial class PortfolioDesignService
         TableMeasure.AverageActual => new(null, null, ValueOf(PortfolioMeasure.AverageActual, figures, members)),
         TableMeasure.GapPoints => new(null, null, ValueOf(PortfolioMeasure.GapPoints, figures, members)),
         TableMeasure.NeedingFollowUp => new(null, null, ValueOf(PortfolioMeasure.NeedingFollowUp, figures, members)),
-        TableMeasure.OverdueActions => new(null, null, ValueOf(PortfolioMeasure.OverdueActions, figures, members)),
+        TableMeasure.OverdueActions or TableMeasure.OnTrack or TableMeasure.Late or TableMeasure.Stalled or TableMeasure.NotMeasured or TableMeasure.FollowUpStalled
+            or TableMeasure.FollowUpSuspended or TableMeasure.FollowUpLate or TableMeasure.FollowUpActionOverdue or TableMeasure.FollowUpOpenObstacle =>
+            new(null, null, ValueOf(FigureOf(measure)!.Value, figures, members)),
         _ => throw new ArgumentOutOfRangeException(nameof(measure), measure, "Unknown measure."),
     };
+
+    /// <summary>The portfolio figure a table measure is, by the same code; null for the table's own (MEASURED, ON_PLAN, PROJECT_SHARE).</summary>
+    private static PortfolioMeasure? FigureOf(TableMeasure measure) =>
+        Enum.TryParse(measure.ToString(), out PortfolioMeasure figure) ? figure : null;
 
     /// <summary>A project's value of a dimension column for counting: the attribute's key, the project for its title, its formal ID.</summary>
     private static string? DimensionKeyOf(string key, PortfolioProjectRow row) => key switch
@@ -411,14 +433,16 @@ internal sealed partial class PortfolioDesignService
                 TableMeasure.AveragePlanned or TableMeasure.AverageActual or TableMeasure.ProjectShare => PortfolioTableColumnType.Percent,
                 TableMeasure.GapPoints => PortfolioTableColumnType.Points,
                 TableMeasure.OnPlan => PortfolioTableColumnType.OnPlan,
-                TableMeasure.Projects or TableMeasure.InProgress or TableMeasure.NeedingFollowUp or TableMeasure.OverdueActions or TableMeasure.Measured =>
+                TableMeasure.Projects or TableMeasure.InProgress or TableMeasure.NeedingFollowUp or TableMeasure.OverdueActions or TableMeasure.Measured
+                    or TableMeasure.OnTrack or TableMeasure.Late or TableMeasure.Stalled or TableMeasure.NotMeasured or TableMeasure.FollowUpStalled
+                    or TableMeasure.FollowUpSuspended or TableMeasure.FollowUpLate or TableMeasure.FollowUpActionOverdue or TableMeasure.FollowUpOpenObstacle =>
                     PortfolioTableColumnType.Count,
                 _ => PortfolioTableColumnType.Count,
             },
             _ => PortfolioTableColumnType.Text,
         };
 
-    /// <summary>The figures a table column takes: the fixed measures, then the projects measured, the on-plan status and the share of the table's projects.</summary>
+    /// <summary>The figures a table column takes: the fixed measures, then the projects measured, the on-plan status and the share of the table's projects, then the box sections' figures.</summary>
     private enum TableMeasure
     {
         Projects = 1,
@@ -432,6 +456,17 @@ internal sealed partial class PortfolioDesignService
         Measured = 9,
         OnPlan = 10,
         ProjectShare = 11,
+
+        // The 20 Nov 2026 box sections: the on-plan indicator's and the follow-up reasons' boxes, as the portfolio figures of the same name.
+        OnTrack = 12,
+        Late = 13,
+        Stalled = 14,
+        NotMeasured = 15,
+        FollowUpStalled = 16,
+        FollowUpSuspended = 17,
+        FollowUpLate = 18,
+        FollowUpActionOverdue = 19,
+        FollowUpOpenObstacle = 20,
     }
 
     /// <summary>

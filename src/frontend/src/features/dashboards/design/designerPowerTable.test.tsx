@@ -739,10 +739,6 @@ describe('Make editable', () => {
     expect(
       within(settings()).queryByRole('button', { name: en('dashboards.designer.makeEditable') }),
     ).toBeNull();
-    await edit(user, 'Why projects need follow-up');
-    expect(
-      within(settings()).queryByRole('button', { name: en('dashboards.designer.makeEditable') }),
-    ).toBeNull();
   });
 
   test('Discard brings the section back', async () => {

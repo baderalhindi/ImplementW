@@ -11,8 +11,10 @@ import {
   type DateUnit,
   type FieldDescriptor,
   type FieldValue,
+  FOLLOW_UP_MEASURES,
   type GroupBy,
   type Measure,
+  ON_PLAN_MEASURES,
   type Visual,
   type VisualGroup,
   type VisualType,
@@ -61,6 +63,34 @@ export const VISUAL_TYPES: readonly VisualType[] = [
   'GAUGE',
 ];
 
+/** The Follow-up list's main reason each follow-up figure counts. */
+const MAIN_REASON: Record<(typeof FOLLOW_UP_MEASURES)[number], string> = {
+  FOLLOW_UP_STALLED: 'STALLED',
+  FOLLOW_UP_SUSPENDED: 'SUSPENDED',
+  FOLLOW_UP_LATE: 'LATE',
+  FOLLOW_UP_ACTION_OVERDUE: 'ACTION_OVERDUE',
+  FOLLOW_UP_OPEN_OBSTACLE: 'OPEN_OBSTACLE',
+};
+
+/** Whether a figure counts projects needing follow-up, so it opens the Follow-up list. */
+export function countsFollowUp(measure: Measure): boolean {
+  return measure === 'NEEDING_FOLLOW_UP' || measure in MAIN_REASON;
+}
+
+/** Where a figure comes from, for the words beside it where two read alike ("Stalled" on plan, "Stalled" needing follow-up); null for the others. */
+export function measureSource(measure: string): 'ON_PLAN' | 'FOLLOW_UP' | null {
+  if ((ON_PLAN_MEASURES as readonly string[]).includes(measure)) {
+    return 'ON_PLAN';
+  }
+  return measure in MAIN_REASON ? 'FOLLOW_UP' : null;
+}
+
+/** The words beside a figure in the field lists: the section its boxes are in ("On-plan indicator"), null for the others. */
+export function measureHint(measure: string, t: Translate): string | null {
+  const source = measureSource(measure);
+  return source === null ? null : t(`dashboards.designer.measureSource.${source}`);
+}
+
 export const MEASURES: readonly Measure[] = [
   'PROJECTS',
   'IN_PROGRESS',
@@ -70,6 +100,8 @@ export const MEASURES: readonly Measure[] = [
   'GAP_POINTS',
   'NEEDING_FOLLOW_UP',
   'OVERDUE_ACTIONS',
+  ...ON_PLAN_MEASURES,
+  ...FOLLOW_UP_MEASURES,
 ];
 
 export const GROUP_BYS: readonly GroupBy[] = [
@@ -142,6 +174,8 @@ const ADDITIVE_MEASURES: readonly Measure[] = [
   'VALUE_SAR',
   'NEEDING_FOLLOW_UP',
   'OVERDUE_ACTIONS',
+  ...ON_PLAN_MEASURES,
+  ...FOLLOW_UP_MEASURES,
 ];
 
 /** The measures a type may draw: a gauge a percentage, a pie or donut a total that adds up; a line draws fields only. */
@@ -625,6 +659,20 @@ export function drillPath(
       return undefined;
     case 'NEEDING_FOLLOW_UP':
       return followUpPath(filters, group);
+    case 'FOLLOW_UP_STALLED':
+    case 'FOLLOW_UP_SUSPENDED':
+    case 'FOLLOW_UP_LATE':
+    case 'FOLLOW_UP_ACTION_OVERDUE':
+    case 'FOLLOW_UP_OPEN_OBSTACLE':
+      return followUpPath(filters, { ...group, mainReason: MAIN_REASON[measure] });
+    case 'ON_TRACK':
+    case 'LATE':
+    case 'STALLED':
+    case 'NOT_MEASURED':
+      // The register's on-plan filter takes the figure's code (NOT_MEASURED included); a group of another on-plan status counts none.
+      return groupBy === 'ON_PLAN' && group.onPlan !== measure
+        ? undefined
+        : registerPath(filters, { ...group, onPlan: measure });
     case 'IN_PROGRESS':
       return registerPath(filters, { status: 'ACTIVE', ...group });
     case 'VALUE_SAR':

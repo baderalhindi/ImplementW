@@ -24,6 +24,7 @@ import {
   TABLE_DIMENSIONS,
   TABLE_MEASURES,
 } from './tableColumns.ts';
+import { measureHint } from './visuals.ts';
 
 const DETAILS = 'DETAILS';
 const FIGURES = 'FIGURES';
@@ -33,7 +34,10 @@ interface Offer {
   kind: TableColumnKind;
   key: string;
   name: string;
+  /** A field's type, beside its name for the eye only. */
   hint: string | null;
+  /** Where a figure's boxes are ("On-plan indicator"), part of its name: two figures read alike without it. */
+  source: string | null;
 }
 
 /**
@@ -74,12 +78,14 @@ export function ColumnsWell({
     key,
     name: columnName({ kind: 'DIMENSION', key }, language),
     hint: null,
+    source: null,
   })).filter((offer) => matches(offer.name));
   const figures: Offer[] = TABLE_MEASURES.map((key) => ({
     kind: 'MEASURE' as const,
     key,
     name: columnName({ kind: 'MEASURE', key }, language),
     hint: null,
+    source: measureHint(key, t),
   })).filter((offer) => matches(offer.name));
   // A column table is calculated over projects: the fields over time are not offered.
   const offered = catalogue.filter((field) => field.grain === 'PROJECT');
@@ -96,6 +102,7 @@ export function ColumnsWell({
         key: field.key,
         name: fieldName(field.key, language),
         hint: t(`dashboards.designer.fieldType.${field.type}`),
+        source: null,
       }));
     return offers.length === 0 ? [] : [{ code, name, offers }];
   });
@@ -128,6 +135,7 @@ export function ColumnsWell({
             <span className="designer-data__field-name" dir="auto">
               {offer.name}
             </span>
+            {offer.source !== null && <span className="designer-data__type">{offer.source}</span>}
             {offer.hint !== null && (
               <span className="designer-data__type" aria-hidden="true">
                 {offer.hint}

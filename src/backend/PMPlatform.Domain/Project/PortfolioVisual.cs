@@ -78,7 +78,10 @@ public enum PortfolioSection
     DashboardWidget = 13,
 }
 
-/// <summary>What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3).</summary>
+/// <summary>
+/// What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3), then the boxes
+/// of its on-plan indicator and follow-up reasons (the 20 Nov 2026 box sections).
+/// </summary>
 public enum PortfolioMeasure
 {
     Projects = 1,
@@ -101,6 +104,33 @@ public enum PortfolioMeasure
 
     /// <summary>Projects whose next action is past its due date.</summary>
     OverdueActions = 8,
+
+    /// <summary>
+    /// Projects on track: a box of the on-plan indicator (<see cref="PortfolioSection.OnPlanCounts"/>, the 20 Nov 2026 box sections), counted as that
+    /// section counts it and read under its permission, as are <see cref="Late"/>, <see cref="Stalled"/> and <see cref="NotMeasured"/>.
+    /// </summary>
+    OnTrack = 9,
+
+    Late = 10,
+
+    Stalled = 11,
+
+    /// <summary>Projects with no on-plan status.</summary>
+    NotMeasured = 12,
+
+    /// <summary>
+    /// Projects needing follow-up whose first reason is that the project is stalled: a box of <see cref="PortfolioSection.FollowUpReasons"/> (the 20 Nov 2026
+    /// box sections), each project counted once under its first reason as that section counts it and read under its permission, as are the four after it.
+    /// </summary>
+    FollowUpStalled = 13,
+
+    FollowUpSuspended = 14,
+
+    FollowUpLate = 15,
+
+    FollowUpActionOverdue = 16,
+
+    FollowUpOpenObstacle = 17,
 }
 
 /// <summary>What the projects of a visual are grouped by: a project attribute, or none for one figure over them all.</summary>

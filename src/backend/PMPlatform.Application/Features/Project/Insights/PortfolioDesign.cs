@@ -297,6 +297,20 @@ internal sealed partial class PortfolioDesignService(
     };
 
     /// <summary>
+    /// The permission a figure needs of its own (the 20 Nov 2026 box sections): a box of the on-plan indicator that section's, a follow-up reason's box that
+    /// section's; null for a headline figure, which its visual's grouping's permission shows.
+    /// </summary>
+    internal static string? PermissionOf(PortfolioMeasure measure) => measure switch
+    {
+        PortfolioMeasure.OnTrack or PortfolioMeasure.Late or PortfolioMeasure.Stalled or PortfolioMeasure.NotMeasured => PermissionCatalogue.PortfolioStatusView,
+        PortfolioMeasure.FollowUpStalled or PortfolioMeasure.FollowUpSuspended or PortfolioMeasure.FollowUpLate or PortfolioMeasure.FollowUpActionOverdue
+            or PortfolioMeasure.FollowUpOpenObstacle => PermissionCatalogue.PortfolioFollowUpView,
+        PortfolioMeasure.Projects or PortfolioMeasure.InProgress or PortfolioMeasure.ValueSar or PortfolioMeasure.AveragePlanned or PortfolioMeasure.AverageActual
+            or PortfolioMeasure.GapPoints or PortfolioMeasure.NeedingFollowUp or PortfolioMeasure.OverdueActions => null,
+        _ => throw new ArgumentOutOfRangeException(nameof(measure), measure, "Unknown measure."),
+    };
+
+    /// <summary>
     /// What is wrong with a design, or null. Visuals may not overlap; a card and a gauge show one figure, the others a figure per group. A field a visual names
     /// is one of <paramref name="fields"/>, the catalogue the designer offers (the 18 Nov 2026 data fields, rule 6). A container's children (the 19 Nov 2026
     /// containers) obey every rule a top-level visual obeys, sections and widget codes staying unique over the whole design, and fit, without overlapping,
@@ -734,10 +748,13 @@ internal sealed partial class PortfolioDesignService(
         return new PortfolioDesignView(isStandard, updatedAt, [.. visuals.Select(v => ResultOf(v, GroupsOf, types, TableOf))]);
 
         IReadOnlyList<PortfolioVisualGroup>? GroupsOf(PortfolioVisualInput v) =>
-            rowsByPermission[PermissionOf(v.GroupBy)] is { } rows ? Groups(v, rows, stages, amounts, thresholds, cells, catalogue) : null;
+            PopulationOf(v) is { } rows ? Groups(v, rows, stages, amounts, thresholds, cells, catalogue) : null;
 
-        // A column table's projects are those every permission it needs reaches.
-        PortfolioTableResult? TableOf(PortfolioVisualInput v)
+        PortfolioTableResult? TableOf(PortfolioVisualInput v) =>
+            PopulationOf(v) is { } rows ? Table(v, rows, stages, amounts, thresholds, cells, catalogue, labels) : null;
+
+        // A visual's projects are those every permission it needs reaches; none without one of them.
+        List<PortfolioProjectRow>? PopulationOf(PortfolioVisualInput v)
         {
             List<IReadOnlyList<PortfolioProjectRow>?> reached = [.. PermissionsOf(v).Select(permission => rowsByPermission[permission])];
             if (reached.Exists(rows => rows is null))
@@ -746,8 +763,7 @@ internal sealed partial class PortfolioDesignService(
             }
 
             List<HashSet<Guid>> ids = [.. reached.Skip(1).Select(rows => rows!.Select(r => r.Project.Id).ToHashSet())];
-            List<PortfolioProjectRow> population = [.. reached[0]!.Where(r => ids.TrueForAll(set => set.Contains(r.Project.Id)))];
-            return Table(v, population, stages, amounts, thresholds, cells, catalogue, labels);
+            return [.. reached[0]!.Where(r => ids.TrueForAll(set => set.Contains(r.Project.Id)))];
         }
     }
 
@@ -973,7 +989,7 @@ internal sealed partial class PortfolioDesignService(
         : groupBy == PortfolioGroupBy.Status ? (int)row.Project.LifecycleState
         : (int)(row.Indicators.OnPlan ?? 0);
 
-    private static decimal? ValueOf(PortfolioMeasure measure, PortfolioBreakdownRow figures, IReadOnlyList<PortfolioProjectRow> members) => measure switch
+    internal static decimal? ValueOf(PortfolioMeasure measure, PortfolioBreakdownRow figures, IReadOnlyList<PortfolioProjectRow> members) => measure switch
     {
         PortfolioMeasure.Projects => figures.Projects,
         PortfolioMeasure.InProgress => members.Count(r => r.Project.LifecycleState == ProjectLifecycleState.Active),
@@ -983,6 +999,15 @@ internal sealed partial class PortfolioDesignService(
         PortfolioMeasure.GapPoints => figures.GapPoints,
         PortfolioMeasure.NeedingFollowUp => figures.NeedingFollowUp,
         PortfolioMeasure.OverdueActions => members.Count(r => r.Indicators.ActionDue == ActionDueStatus.Overdue),
+        PortfolioMeasure.OnTrack => PortfolioInsightsService.OnPlanOf(members).OnTrack,
+        PortfolioMeasure.Late => PortfolioInsightsService.OnPlanOf(members).Late,
+        PortfolioMeasure.Stalled => PortfolioInsightsService.OnPlanOf(members).Stalled,
+        PortfolioMeasure.NotMeasured => PortfolioInsightsService.OnPlanOf(members).NotMeasured,
+        PortfolioMeasure.FollowUpStalled => PortfolioInsightsService.Reasons(members).Stalled,
+        PortfolioMeasure.FollowUpSuspended => PortfolioInsightsService.Reasons(members).Suspended,
+        PortfolioMeasure.FollowUpLate => PortfolioInsightsService.Reasons(members).Late,
+        PortfolioMeasure.FollowUpActionOverdue => PortfolioInsightsService.Reasons(members).OverdueAction,
+        PortfolioMeasure.FollowUpOpenObstacle => PortfolioInsightsService.Reasons(members).OpenObstacle,
         _ => throw new ArgumentOutOfRangeException(nameof(measure), measure, "Unknown measure."),
     };
 

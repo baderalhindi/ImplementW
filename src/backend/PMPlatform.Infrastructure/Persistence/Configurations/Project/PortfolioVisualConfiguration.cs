@@ -15,7 +15,7 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
                 "ck_portfolio_visual_layout",
                 "layout_column BETWEEN 0 AND 11 AND layout_width BETWEEN 1 AND 12 AND layout_column + layout_width <= 12 "
                 + "AND layout_row >= 0 AND layout_height BETWEEN 1 AND 24");
-            // Measures are codes from a fixed list, never an expression (BR-DSH-030).
+            // Measures are codes from a fixed list, never an expression (BR-DSH-030); the box sections' figures joined it on 20 Nov 2026.
             // A section names one of the dashboard's own parts and no measure or data field; any other visual no section, and one to three
             // measures or, drawing the data catalogue's fields instead (18 Nov 2026), no measure and its data fields. A container is checked apart.
             t.HasCheckConstraint(
@@ -23,7 +23,9 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
                 "visual_type = 'CONTAINER' OR (visual_type = 'SECTION' AND cardinality(measures) = 0 AND section IS NOT NULL AND group_by = 'NONE' AND data_fields IS NULL) "
                 + "OR (visual_type <> 'SECTION' AND section IS NULL AND ((cardinality(measures) BETWEEN 1 AND 3 "
                 + "AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', "
-                + "'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS']::text[]) OR (cardinality(measures) = 0 AND data_fields IS NOT NULL)))");
+                + "'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS', 'ON_TRACK', 'LATE', 'STALLED', 'NOT_MEASURED', 'FOLLOW_UP_STALLED', "
+                + "'FOLLOW_UP_SUSPENDED', 'FOLLOW_UP_LATE', 'FOLLOW_UP_ACTION_OVERDUE', 'FOLLOW_UP_OPEN_OBSTACLE']::text[]) "
+                + "OR (cardinality(measures) = 0 AND data_fields IS NOT NULL)))");
             // A container (19 Nov 2026) draws nothing of its own, has its title bar and a row, and is on the dashboard itself: one level only.
             t.HasCheckConstraint(
                 "ck_portfolio_visual_container",

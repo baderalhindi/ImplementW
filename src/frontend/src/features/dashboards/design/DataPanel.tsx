@@ -42,6 +42,7 @@ import {
   GROUP_BYS,
   groupBysFor,
   MAX_MEASURES,
+  measureHint,
   measuresFor,
   withValues,
 } from './visuals.ts';
@@ -56,7 +57,7 @@ const REPLACED_NOTE = {
   byCurrent: 'dashboards.designer.replacedByCurrent',
 } as const;
 
-/** The Data panel's first group: the eight Portfolio figures (`measures`), before the governed fields' sources. */
+/** The Data panel's first group: the Portfolio figures (`measures`), before the governed fields' sources. */
 const FIGURES = 'FIGURES';
 
 /**
@@ -299,7 +300,7 @@ export function DataPanel({
                   <FieldRow
                     key={measure}
                     name={t(`dashboards.designer.measure.${measure}`)}
-                    hint={null}
+                    hint={measureHint(measure, t)}
                     checked={checked}
                     disabled={
                       checked ? visual.measures.length === 1 : !onFields && max > 1 && chosen >= max

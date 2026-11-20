@@ -34,6 +34,10 @@ export type Section =
   | 'DASHBOARD_WIDGET'
   | 'ENTITY_COMPLETION_TABLE';
 
+/**
+ * A portfolio figure. The on-plan statuses and the follow-up reasons (20 Nov 2026, docs/architecture/dashboard-designer-box-sections.md) count
+ * the projects the On-plan indicator's and the follow-up reasons' boxes count.
+ */
 export type Measure =
   | 'PROJECTS'
   | 'IN_PROGRESS'
@@ -42,7 +46,33 @@ export type Measure =
   | 'AVERAGE_ACTUAL'
   | 'GAP_POINTS'
   | 'NEEDING_FOLLOW_UP'
-  | 'OVERDUE_ACTIONS';
+  | 'OVERDUE_ACTIONS'
+  | 'ON_TRACK'
+  | 'LATE'
+  | 'STALLED'
+  | 'NOT_MEASURED'
+  | 'FOLLOW_UP_STALLED'
+  | 'FOLLOW_UP_SUSPENDED'
+  | 'FOLLOW_UP_LATE'
+  | 'FOLLOW_UP_ACTION_OVERDUE'
+  | 'FOLLOW_UP_OPEN_OBSTACLE';
+
+/** The figures of the On-plan indicator's boxes, in their order: projects with each on-plan status, and those not measured. */
+export const ON_PLAN_MEASURES = [
+  'ON_TRACK',
+  'LATE',
+  'STALLED',
+  'NOT_MEASURED',
+] as const satisfies readonly Measure[];
+
+/** The figures of the follow-up reasons' boxes, in their order: the projects needing follow-up counted under each main reason. */
+export const FOLLOW_UP_MEASURES = [
+  'FOLLOW_UP_STALLED',
+  'FOLLOW_UP_SUSPENDED',
+  'FOLLOW_UP_LATE',
+  'FOLLOW_UP_ACTION_OVERDUE',
+  'FOLLOW_UP_OPEN_OBSTACLE',
+] as const satisfies readonly Measure[];
 
 export type GroupBy =
   | 'NONE'

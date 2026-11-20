@@ -14,16 +14,18 @@ import {
 } from '../insights/insightSections.ts';
 import { emptyPortfolioReason, hasNoData } from '../presentation.ts';
 import { childrenOf, innerGridPlace, isContainer, withoutEmptyInnerRows } from './containers.ts';
-import { designApi, type VisualResult } from './designApi.ts';
+import { designApi, type Measure, type VisualGroup, type VisualResult } from './designApi.ts';
 import { VisualBodyBox } from './FitToBox.tsx';
 import { drawsFields } from './fields.ts';
 import { hiddenColumnsOf } from './sectionColumns.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import {
+  countsFollowUp,
   drillPath,
   gridPlace,
   gridRows,
+  measureSource,
   packed,
   placeKey,
   rowsOf,
@@ -32,6 +34,21 @@ import {
 import { hasColumns } from './tableColumns.ts';
 import { VisualBody } from './VisualBody.tsx';
 import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
+
+/** The words a card's or gauge's link has: how many records it opens, its figure's count for a figure that counts projects of a kind. */
+function drillHint(
+  measure: Measure,
+  whole: VisualGroup | undefined,
+  t: ReturnType<typeof useI18n>['t'],
+): string {
+  const figure = whole?.values[0] ?? 0;
+  if (countsFollowUp(measure)) {
+    return t('dashboards.drill.followUp', { count: figure });
+  }
+  return t('dashboards.drill.projects', {
+    count: measureSource(measure) === 'ON_PLAN' ? figure : (whole?.projects ?? 0),
+  });
+}
 
 /** One visual on the dashboard: its title over its figures. A card's or gauge's title opens the records its figure counts, as a headline card's did. */
 function VisualFrame({
@@ -64,11 +81,7 @@ function VisualFrame({
           <Link
             className="home__tile-link"
             to={href}
-            title={
-              visual.measures[0] === 'NEEDING_FOLLOW_UP'
-                ? t('dashboards.drill.followUp', { count: whole?.values[0] ?? 0 })
-                : t('dashboards.drill.projects', { count: whole?.projects ?? 0 })
-            }
+            title={drillHint(visual.measures[0] ?? 'PROJECTS', whole, t)}
           >
             {title}
           </Link>

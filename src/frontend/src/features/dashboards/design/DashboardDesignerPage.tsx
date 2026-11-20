@@ -69,6 +69,7 @@ import {
   newVisual,
   packed,
   rowsOf,
+  settled,
   tenth,
   VISUAL_TYPES,
 } from './visuals.ts';
@@ -357,6 +358,26 @@ export function DashboardDesignerPage(): ReactElement {
           : changed;
       }),
     );
+  };
+
+  /**
+   * Replaces the top-level visual `key` by `next`, its children included (Make editable on a box section), keeping its key so it stays
+   * selected; what it now covers moves down. Refused when the design would hold more visuals than it may.
+   */
+  const replace = (key: string, next: Visual) => {
+    if (visualCount(visuals) - 1 + visualCount([next]) > MAX_VISUALS) {
+      setPlaceProblem(t('dashboards.designer.noRoom'));
+      return;
+    }
+    relayout((all) => {
+      const index = all.findIndex((visual) => visual.key === key);
+      return index < 0
+        ? all
+        : settled(
+            all.map((visual, at) => (at === index ? { ...keyed(next), key } : visual)),
+            index,
+          );
+    });
   };
 
   const append = (visual: Visual | null) => {
@@ -794,6 +815,7 @@ export function DashboardDesignerPage(): ReactElement {
       style={place}
       aria-label={visual.title[language]}
       aria-current={visual.key === selectedKey ? 'true' : undefined}
+      data-visual={visual.visualType}
     >
       {renderBar(visual, 'designer__visual-bar', 'widget__title')}
       <VisualBodyBox
@@ -1052,6 +1074,13 @@ export function DashboardDesignerPage(): ReactElement {
                 onChange={(next) => {
                   place(current.key, next);
                 }}
+                onReplace={
+                  visuals.some((visual) => visual.key === current.key)
+                    ? (next) => {
+                        replace(current.key, next);
+                      }
+                    : undefined
+                }
                 onDuplicate={() => {
                   duplicate(current);
                 }}

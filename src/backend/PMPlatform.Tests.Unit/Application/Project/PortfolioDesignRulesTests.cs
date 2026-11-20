@@ -18,7 +18,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// (dashboard-designer-containers.md), the saved rows nested back and the children calculated as top-level visuals; and its 20 Nov 2026 decimal layout: places
 /// and sizes in steps of 0.1, overlaps by area (dashboard-designer-decimal-layout.md); and its 20 Nov 2026 table columns: which visuals hide columns and the
 /// codes' shape (dashboard-designer-table-columns.md); and its 20 Nov 2026 Power BI-style table: the columns' rules and the table's calculation
-/// (dashboard-designer-power-table.md).
+/// (dashboard-designer-power-table.md); and its 20 Nov 2026 box sections: the on-plan indicator's and the follow-up reasons' boxes as figures
+/// (dashboard-designer-box-sections.md).
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -1394,5 +1395,171 @@ public sealed class PortfolioDesignRulesTests
         PortfolioVisualResult withheld = PortfolioDesignService.ResultOf(visual, _ => [], types, _ => null);
         Assert.Null(withheld.Groups);
         Assert.Null(withheld.Table);
+    }
+
+    /// <summary>The box sections' nine figures (dashboard-designer-box-sections.md).</summary>
+    private static readonly PortfolioMeasure[] BoxFigures =
+    [
+        PortfolioMeasure.OnTrack, PortfolioMeasure.Late, PortfolioMeasure.Stalled, PortfolioMeasure.NotMeasured, PortfolioMeasure.FollowUpStalled,
+        PortfolioMeasure.FollowUpSuspended, PortfolioMeasure.FollowUpLate, PortfolioMeasure.FollowUpActionOverdue, PortfolioMeasure.FollowUpOpenObstacle,
+    ];
+
+    /// <summary>A project of a sector with its on-plan status and its follow-up reasons, most urgent first, as the indicators calculate them.</summary>
+    private static PortfolioProjectRow Boxed(Guid sector, OnPlanStatus? onPlan, params FollowUpReason[] reasons) =>
+        new(new PMPlatform.Domain.Project.Project
+        {
+            Id = Guid.NewGuid(),
+            Title = new NarrativeText("مشروع", Language.Ar),
+            LifecycleState = ProjectLifecycleState.Active,
+            ClassificationItemId = sector,
+        }, ProjectIndicators.None with { OnPlan = onPlan, FollowUpReasons = reasons });
+
+    /// <summary>Every on-plan status and follow-up reason, some projects with several reasons (counted under their first) and some with none.</summary>
+    private static List<PortfolioProjectRow> BoxedPopulation() =>
+    [
+        Boxed(Health1, OnPlanStatus.OnTrack), Boxed(Health1, OnPlanStatus.OnTrack, FollowUpReason.OpenObstacle),
+        Boxed(Health1, OnPlanStatus.Late, FollowUpReason.Late, FollowUpReason.ActionOverdue), Boxed(Health1, OnPlanStatus.Stalled, FollowUpReason.Stalled, FollowUpReason.Late),
+        Boxed(Health1, null, FollowUpReason.Suspended), Boxed(Education, OnPlanStatus.Late, FollowUpReason.Late), Boxed(Education, OnPlanStatus.OnTrack, FollowUpReason.ActionOverdue, FollowUpReason.OpenObstacle),
+        Boxed(Education, null), Boxed(Education, OnPlanStatus.Stalled, FollowUpReason.Stalled), Boxed(Education, null, FollowUpReason.OpenObstacle),
+    ];
+
+    /// <summary>A box section's figure over a population, as the insights' section shows it.</summary>
+    private static int BoxOf(PortfolioMeasure measure, IReadOnlyList<PortfolioProjectRow> rows)
+    {
+        PortfolioOnPlan onPlan = PortfolioInsightsService.OnPlanOf(rows);
+        PortfolioFollowUpReasons reasons = PortfolioInsightsService.Reasons(rows);
+        return measure switch
+        {
+            PortfolioMeasure.OnTrack => onPlan.OnTrack,
+            PortfolioMeasure.Late => onPlan.Late,
+            PortfolioMeasure.Stalled => onPlan.Stalled,
+            PortfolioMeasure.NotMeasured => onPlan.NotMeasured,
+            PortfolioMeasure.FollowUpStalled => reasons.Stalled,
+            PortfolioMeasure.FollowUpSuspended => reasons.Suspended,
+            PortfolioMeasure.FollowUpLate => reasons.Late,
+            PortfolioMeasure.FollowUpActionOverdue => reasons.OverdueAction,
+            PortfolioMeasure.FollowUpOpenObstacle => reasons.OpenObstacle,
+            PortfolioMeasure.NeedingFollowUp => reasons.Total,
+            PortfolioMeasure.Projects or PortfolioMeasure.InProgress or PortfolioMeasure.ValueSar or PortfolioMeasure.AveragePlanned or PortfolioMeasure.AverageActual
+                or PortfolioMeasure.GapPoints or PortfolioMeasure.OverdueActions => throw new ArgumentOutOfRangeException(nameof(measure), measure, "Not a box."),
+            _ => throw new ArgumentOutOfRangeException(nameof(measure), measure, "Not a box."),
+        };
+    }
+
+    /// <summary>
+    /// Each box figure on a card is the insights' box for the same projects, and the figures add up as the sections' boxes do: the four on-plan boxes to
+    /// every project, the five reasons to the reasons' total, which is NEEDING_FOLLOW_UP.
+    /// </summary>
+    [Fact]
+    public void ABoxFigureOnACardIsTheSectionsBox()
+    {
+        List<PortfolioProjectRow> rows = BoxedPopulation();
+        decimal? CardOf(PortfolioMeasure measure) =>
+            Assert.Single(Groups(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, measures: [measure]), rows, [])).Values[0];
+
+        foreach (PortfolioMeasure measure in BoxFigures)
+        {
+            Assert.Equal(BoxOf(measure, rows), CardOf(measure));
+        }
+
+        Assert.Equal([3m, 2m, 2m, 3m], BoxFigures[..4].Select(CardOf).Select(v => v!.Value));
+        Assert.Equal([2m, 1m, 2m, 1m, 2m], BoxFigures[4..].Select(CardOf).Select(v => v!.Value));
+        Assert.Equal(rows.Count, BoxFigures[..4].Sum(m => CardOf(m)!.Value));
+        Assert.Equal(CardOf(PortfolioMeasure.NeedingFollowUp), BoxFigures[4..].Sum(CardOf));
+        Assert.Equal(8m, CardOf(PortfolioMeasure.NeedingFollowUp));
+        Assert.Equal(PortfolioInsightsService.Reasons(rows).Total, CardOf(PortfolioMeasure.NeedingFollowUp));
+    }
+
+    /// <summary>A grouped chart counts each group's box as the section would over that group's projects.</summary>
+    [Fact]
+    public void ABoxFigureOfAGroupIsTheSectionsBoxOfItsProjects()
+    {
+        List<PortfolioProjectRow> rows = BoxedPopulation();
+        foreach (PortfolioMeasure measure in BoxFigures)
+        {
+            foreach (PortfolioVisualGroup group in Groups(Visual(PortfolioVisualType.Bar, PortfolioGroupBy.Sector, measures: [measure]), rows, []))
+            {
+                Assert.Equal(BoxOf(measure, [.. rows.Where(r => r.Project.ClassificationItemId.ToString() == group.Key)]), group.Values[0]);
+            }
+        }
+    }
+
+    /// <summary>Each box figure is a MEASURE column of the Power table: a count per row over the row's projects, and over all of them in the totals.</summary>
+    [Fact]
+    public void ABoxFigureIsAPowerTableMeasureColumn()
+    {
+        List<PortfolioProjectRow> rows = BoxedPopulation();
+        PortfolioMeasure[] measured = [.. BoxFigures, PortfolioMeasure.NeedingFollowUp];
+        List<string> codes = [.. measured.Select(m => System.Text.Json.JsonNamingPolicy.SnakeCaseUpper.ConvertName(m.ToString()))];
+        Assert.Equal(
+            ["ON_TRACK", "LATE", "STALLED", "NOT_MEASURED", "FOLLOW_UP_STALLED", "FOLLOW_UP_SUSPENDED", "FOLLOW_UP_LATE", "FOLLOW_UP_ACTION_OVERDUE", "FOLLOW_UP_OPEN_OBSTACLE",
+                "NEEDING_FOLLOW_UP"],
+            codes);
+        PortfolioVisualInput visual = ColumnTable([Dim("SECTOR"), .. codes.Select(Msr)]);
+        Assert.Null(Issue(visual));
+
+        PortfolioTableResult table = Table(visual, rows);
+        Assert.All(table.ColumnTypes.Skip(1), type => Assert.Equal(PortfolioTableColumnType.Count, type));
+        Assert.Equal(2, table.Rows.Count);
+        foreach (PortfolioTableRow row in table.Rows)
+        {
+            List<PortfolioProjectRow> group = [.. rows.Where(r => r.Project.ClassificationItemId.ToString() == row.Cells[0].Key)];
+            Assert.Equal(measured.Select(m => (decimal?)BoxOf(m, group)), row.Cells.Skip(1).Select(c => c.Value));
+        }
+
+        Assert.Equal(measured.Select(m => (decimal?)BoxOf(m, rows)), table.Totals!.Skip(1).Select(c => c.Value));
+    }
+
+    /// <summary>A box figure is accepted wherever a count is (a card, bars, columns, a pie, a donut, a table) and refused only where a count is (a gauge).</summary>
+    [Fact]
+    public void ABoxFigureIsAcceptedWhereCountsAre()
+    {
+        foreach (PortfolioMeasure measure in BoxFigures)
+        {
+            foreach (PortfolioMeasure count in (PortfolioMeasure[])[measure, PortfolioMeasure.Projects])
+            {
+                Assert.Null(Issue(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, measures: [count])));
+                Assert.Null(Issue(Visual(PortfolioVisualType.Bar, measures: [count])));
+                Assert.Null(Issue(Visual(PortfolioVisualType.Pie, measures: [count])));
+                Assert.Null(Issue(Visual(PortfolioVisualType.Donut, PortfolioGroupBy.OnPlan, measures: [count])));
+                Assert.Null(Issue(Visual(PortfolioVisualType.Table, PortfolioGroupBy.None, measures: [count])));
+                Assert.Equal(new FieldIssue("visuals[0].measures", FieldIssue.NotAllowed), Issue(Visual(PortfolioVisualType.Gauge, PortfolioGroupBy.None, measures: [count])));
+            }
+
+            Assert.Null(Issue(Visual(PortfolioVisualType.Column, measures: [PortfolioMeasure.Projects, measure, PortfolioMeasure.NeedingFollowUp])));
+            Assert.Null(Issue(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, measures: [PortfolioMeasure.Projects, measure])));
+        }
+    }
+
+    /// <summary>
+    /// A box figure needs its section's permission besides its grouping's; an ungrouped visual of box figures only is read under its sections' permissions alone,
+    /// as the sections are; a table column the same.
+    /// </summary>
+    [Fact]
+    public void ABoxFigureIsReadUnderItsSectionsPermission()
+    {
+        foreach (PortfolioMeasure measure in BoxFigures)
+        {
+            Assert.NotNull(PortfolioDesignService.PermissionOf(measure));
+        }
+
+        Assert.Null(PortfolioDesignService.PermissionOf(PortfolioMeasure.NeedingFollowUp));
+        string status = PermissionCatalogue.PortfolioStatusView, followUp = PermissionCatalogue.PortfolioFollowUpView;
+        Assert.Equal([status], PortfolioDesignService.PermissionsOf(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, measures: [PortfolioMeasure.OnTrack])));
+        Assert.Equal([followUp], PortfolioDesignService.PermissionsOf(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, measures: [PortfolioMeasure.FollowUpLate])));
+        Assert.Equal(
+            [status, followUp],
+            PortfolioDesignService.PermissionsOf(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, measures: [PortfolioMeasure.Late, PortfolioMeasure.FollowUpLate])));
+        Assert.Equal(
+            [PermissionCatalogue.PortfolioSummaryView, status],
+            PortfolioDesignService.PermissionsOf(Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, measures: [PortfolioMeasure.Projects, PortfolioMeasure.OnTrack])));
+        Assert.Equal(
+            [PermissionCatalogue.PortfolioBreakdownView, followUp], PortfolioDesignService.PermissionsOf(Visual(measures: [PortfolioMeasure.FollowUpStalled])));
+        Assert.Equal([status], PortfolioDesignService.PermissionsOf(Visual(PortfolioVisualType.Donut, PortfolioGroupBy.OnPlan, measures: [PortfolioMeasure.Stalled])));
+        Assert.Equal([followUp], PortfolioDesignService.PermissionsOf(ColumnTable(Msr("FOLLOW_UP_LATE"))));
+        Assert.Equal([PermissionCatalogue.PortfolioBreakdownView, status], PortfolioDesignService.PermissionsOf(ColumnTable(Dim("SECTOR"), Msr("ON_TRACK"))));
+        Assert.Equal(
+            [PermissionCatalogue.PortfolioSummaryView, followUp],
+            PortfolioDesignService.PermissionsOf(ColumnTable(Msr("FOLLOW_UP_LATE"), Fld(Budget, PortfolioTableAggregation.Sum))));
     }
 }

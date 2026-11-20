@@ -10,8 +10,10 @@ import {
   type FieldDescriptor,
   type FieldGrain,
   type FieldType,
+  type FOLLOW_UP_MEASURES,
   type GroupBy,
   type Measure,
+  type ON_PLAN_MEASURES,
   type VisualGroup,
   type VisualResult,
   type VisualType,
@@ -183,6 +185,25 @@ function visual(
   };
 }
 
+/** The on-plan and follow-up reason figures (dashboard-designer-box-sections.md): the boxes' counts over the whole, none for a group. */
+function boxFigures(
+  insights: PortfolioInsights | null,
+): Pick<Figures, (typeof ON_PLAN_MEASURES)[number] | (typeof FOLLOW_UP_MEASURES)[number]> {
+  const onPlan = insights?.onPlan ?? null;
+  const reasons = insights?.followUpReasons ?? null;
+  return {
+    ON_TRACK: onPlan?.onTrack ?? null,
+    LATE: onPlan?.late ?? null,
+    STALLED: onPlan?.stalled ?? null,
+    NOT_MEASURED: onPlan?.notMeasured ?? null,
+    FOLLOW_UP_STALLED: reasons?.stalled ?? null,
+    FOLLOW_UP_SUSPENDED: reasons?.suspended ?? null,
+    FOLLOW_UP_LATE: reasons?.late ?? null,
+    FOLLOW_UP_ACTION_OVERDUE: reasons?.overdueAction ?? null,
+    FOLLOW_UP_OPEN_OBSTACLE: reasons?.openObstacle ?? null,
+  };
+}
+
 /**
  * The standard design of the Portfolio dashboard (PortfolioDesignService.StandardDesign) with the figures the API would calculate from these
  * insights: the headline cards from `headline`, the portfolio charts from `byPortfolio`, the status, stage and on-plan charts from theirs; a
@@ -207,6 +228,7 @@ export function standardDesignOf(insights: PortfolioInsights): DesignView {
             GAP_POINTS: headline.gapPoints,
             NEEDING_FOLLOW_UP: headline.needingFollowUp,
             OVERDUE_ACTIONS: headline.overdueActions,
+            ...boxFigures(insights),
           },
         ];
   const rows = headline === null ? null : (insights.byPortfolio?.rows ?? []);
@@ -224,6 +246,7 @@ export function standardDesignOf(insights: PortfolioInsights): DesignView {
       GAP_POINTS: row.gapPoints,
       NEEDING_FOLLOW_UP: row.needingFollowUp,
       OVERDUE_ACTIONS: null,
+      ...boxFigures(null),
     })) ?? null;
   const portfolioKeys = rows?.map((row) => row.itemId) ?? [];
   return {
@@ -344,6 +367,7 @@ function counted(projects: number): Figures {
     GAP_POINTS: null,
     NEEDING_FOLLOW_UP: null,
     OVERDUE_ACTIONS: null,
+    ...boxFigures(null),
   };
 }
 

@@ -394,7 +394,20 @@
       "OVERDUE_ACTIONS": "Overdue actions",
       "MEASURED": "Measured",
       "ON_PLAN": "On plan",
-      "PROJECT_SHARE": "Share of projects"
+      "PROJECT_SHARE": "Share of projects",
+      "ON_TRACK": "On track",
+      "LATE": "Late",
+      "STALLED": "Stalled",
+      "NOT_MEASURED": "Not measured",
+      "FOLLOW_UP_STALLED": "Stalled",
+      "FOLLOW_UP_SUSPENDED": "Suspended",
+      "FOLLOW_UP_LATE": "Late",
+      "FOLLOW_UP_ACTION_OVERDUE": "Action overdue",
+      "FOLLOW_UP_OPEN_OBSTACLE": "Open obstacle"
+    },
+    "measureSource": {
+      "ON_PLAN": "On-plan indicator",
+      "FOLLOW_UP": "Follow-up reason"
     },
     "groupBy": {
       "NONE": "Nothing (one figure)",
@@ -655,6 +668,7 @@
     "showTotals": "Show totals",
     "makeEditable": "Make editable",
     "makeEditableHint": "Turns this section into a table you can change: choose its columns and how each is calculated. Discard changes brings the section back.",
+    "makeEditableBoxesHint": "Turns this section into a container of cards, one per box: change each card, size it, or add visuals into the container. Discard changes brings the section back.",
     "makeEditableSectorSpend": "The second table (spend and portfolio split) is not carried over.",
     "columnAggregationLabel": "Calculation for {column}",
     "projectDetails": "Project details",
