@@ -4248,17 +4248,26 @@ select.field__input {
   opacity: 0.45;
 }
 
-.distribution__donut {
-  max-inline-size: 22rem;
+/*
+ * A donut's legend (20 Nov 2026, every donut in one design): as wide as what it holds, centred beside its ring; the counts and their
+ * heading at the column's end, one under the other, the digits lined up.
+ */
+.widget__distribution.distribution__donut {
+  align-self: center;
+  inline-size: auto;
+  min-inline-size: 14rem;
+  max-inline-size: 26rem;
 }
 
-.distribution__donut td,
-.distribution__donut thead th:last-child {
+.widget__distribution.distribution__donut thead th:last-child,
+.widget__distribution.distribution__donut tbody td {
+  padding-inline-start: var(--space-6);
   text-align: end;
 }
 
-.distribution__donut td {
+.widget__distribution.distribution__donut tbody td {
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The bar list: each value's words at the start and its count at the end, its bar under them. */
