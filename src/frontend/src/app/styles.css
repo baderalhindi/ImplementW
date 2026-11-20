@@ -7217,8 +7217,9 @@ tr[data-flagged='true'] {
 }
 
 .home__hero--image {
-  min-block-size: 15rem;
-  padding-block-end: var(--space-8, 3rem);
+  /* A little taller (20 Nov 2026, the user): more of the picture shows around the greeting. */
+  min-block-size: 18.5rem;
+  padding-block: var(--space-8, 3rem);
   background: var(--color-rail);
 }
 
