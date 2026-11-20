@@ -1,4 +1,4 @@
-import { type ReactElement, useId } from 'react';
+import { type ReactElement, useId, useState } from 'react';
 
 import { type ApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -7,13 +7,70 @@ import { AxesFormat } from './AxesFormat.tsx';
 import { takesAxes } from './axes.ts';
 import { DataPanel } from './DataPanel.tsx';
 import { type FieldDescriptor, type Visual, type VisualType } from './designApi.ts';
-import { asLine, MAX_HEIGHT, retitled, VISUAL_TYPES, withType } from './visuals.ts';
+import { asLine, MAX_HEIGHT, retitled, tenth, VISUAL_TYPES, withType } from './visuals.ts';
 
 /** The sizes a visual may take where it is: a container's least size, and a child's columns (its container's width). */
 export interface SizeBounds {
   minWidth: number;
   minHeight: number;
   maxWidth: number;
+}
+
+/**
+ * A size in columns or rows: a decimal with one decimal place (20 Nov 2026), from `min` to `max`. While it has the focus it shows what is being
+ * typed ("4." on the way to "4.5"), and each value that is whole or has one decimal within the range is applied as it is typed; on leaving it,
+ * it shows the size the visual took.
+ */
+function SizeInput({
+  id,
+  label,
+  hint,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}): ReactElement {
+  const [typed, setTyped] = useState<string | null>(null);
+  return (
+    <div className="field">
+      <label className="field__label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        className="field__input"
+        type="number"
+        inputMode="decimal"
+        step={0.1}
+        min={min}
+        max={max}
+        aria-describedby={`${id}-hint`}
+        value={typed ?? String(value)}
+        onChange={(event) => {
+          const text = event.target.value;
+          setTyped(text);
+          const size = Number(text);
+          if (text !== '' && tenth(size) === size && size >= min && size <= max) {
+            onChange(size);
+          }
+        }}
+        onBlur={() => {
+          setTyped(null);
+        }}
+      />
+      <p id={`${id}-hint`} className="field__hint">
+        {hint}
+      </p>
+    </div>
+  );
 }
 
 /**
@@ -124,52 +181,28 @@ export function VisualSettings({
         </>
       )}
       <div className="designer__size">
-        <div className="field">
-          <label className="field__label" htmlFor={`${id}-width`}>
-            {t('dashboards.designer.width')}
-          </label>
-          <input
-            id={`${id}-width`}
-            className="field__input"
-            type="number"
-            min={bounds.minWidth}
-            max={bounds.maxWidth}
-            aria-describedby={`${id}-width-hint`}
-            value={visual.layoutWidth}
-            onChange={(event) => {
-              const width = Number(event.target.value);
-              if (Number.isInteger(width)) {
-                onChange({ ...visual, layoutWidth: width });
-              }
-            }}
-          />
-          <p id={`${id}-width-hint`} className="field__hint">
-            {t('dashboards.designer.widthHint', { count: bounds.maxWidth })}
-          </p>
-        </div>
-        <div className="field">
-          <label className="field__label" htmlFor={`${id}-height`}>
-            {t('dashboards.designer.height')}
-          </label>
-          <input
-            id={`${id}-height`}
-            className="field__input"
-            type="number"
-            min={bounds.minHeight}
-            max={MAX_HEIGHT}
-            aria-describedby={`${id}-height-hint`}
-            value={visual.layoutHeight}
-            onChange={(event) => {
-              const height = Number(event.target.value);
-              if (Number.isInteger(height)) {
-                onChange({ ...visual, layoutHeight: height });
-              }
-            }}
-          />
-          <p id={`${id}-height-hint`} className="field__hint">
-            {t('dashboards.designer.heightHint', { count: MAX_HEIGHT })}
-          </p>
-        </div>
+        <SizeInput
+          id={`${id}-width`}
+          label={t('dashboards.designer.width')}
+          hint={t('dashboards.designer.widthHint', { count: bounds.maxWidth })}
+          value={visual.layoutWidth}
+          min={bounds.minWidth}
+          max={bounds.maxWidth}
+          onChange={(width) => {
+            onChange({ ...visual, layoutWidth: width });
+          }}
+        />
+        <SizeInput
+          id={`${id}-height`}
+          label={t('dashboards.designer.height')}
+          hint={t('dashboards.designer.heightHint', { count: MAX_HEIGHT })}
+          value={visual.layoutHeight}
+          min={bounds.minHeight}
+          max={MAX_HEIGHT}
+          onChange={(height) => {
+            onChange({ ...visual, layoutHeight: height });
+          }}
+        />
       </div>
       {isContainer && (
         <p className="designer__hint">{t('dashboards.designer.containerSizeHint')}</p>

@@ -15,10 +15,19 @@ import {
 import { emptyPortfolioReason, hasNoData } from '../presentation.ts';
 import { childrenOf, innerGridPlace, isContainer, withoutEmptyInnerRows } from './containers.ts';
 import { designApi, type VisualResult } from './designApi.ts';
+import { VisualBodyBox } from './FitToBox.tsx';
 import { drawsFields } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
-import { drillPath, gridPlace, packed, placeKey, withoutEmptyRows } from './visuals.ts';
+import {
+  drillPath,
+  gridPlace,
+  gridRows,
+  packed,
+  placeKey,
+  rowsOf,
+  withoutEmptyRows,
+} from './visuals.ts';
 import { VisualBody } from './VisualBody.tsx';
 import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
 
@@ -63,9 +72,9 @@ function VisualFrame({
           </Link>
         )}
       </h3>
-      <div className="visual__body">
+      <VisualBodyBox visual={visual} className="visual__body">
         <VisualBody visual={visual} filters={filters} />
-      </div>
+      </VisualBodyBox>
     </section>
   );
 }
@@ -106,9 +115,9 @@ function SectionFrame({
       <h3 id={titleId} className="widget__title">
         {visual.title[language]}
       </h3>
-      <div className="visual__body visual__body--section">
+      <VisualBodyBox visual={visual} className="visual__body visual__body--section">
         <SectionBody section={visual.section} widgetCode={visual.widgetCode} sources={sources} />
-      </div>
+      </VisualBodyBox>
     </section>
   );
 }
@@ -286,7 +295,7 @@ export function DesignedVisuals({
       <h2 id="designed-visuals" className="visually-hidden">
         {t('dashboards.insights.headlineLabel')}
       </h2>
-      <div className="visual-grid" data-section="designed">
+      <div className="visual-grid" data-section="designed" style={gridRows(rowsOf(shown))}>
         {shown.map((visual) =>
           // No two visuals share a place, so the place names one.
           isContainer(visual) ? (

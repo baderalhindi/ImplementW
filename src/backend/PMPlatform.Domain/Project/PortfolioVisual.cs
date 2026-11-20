@@ -150,17 +150,19 @@ public sealed class PortfolioVisual : AuditedEntity
 
     public PortfolioGroupBy GroupBy { get; set; }
 
-    /// <summary>The first grid column, 0 to 11, counted from the reading start (the right in Arabic).</summary>
-    public short LayoutColumn { get; set; }
+    // The four layout numbers are decimals in steps of 0.1 (the 20 Nov 2026 decimal layout): a visual 4.5 columns wide is placed at column 4.5.
 
-    /// <summary>The first grid row, from 0.</summary>
-    public short LayoutRow { get; set; }
+    /// <summary>The first grid column, from 0, counted from the reading start (the right in Arabic); at most one decimal place.</summary>
+    public decimal LayoutColumn { get; set; }
 
-    /// <summary>Columns taken, 1 to 12.</summary>
-    public short LayoutWidth { get; set; }
+    /// <summary>The first grid row, from 0; at most one decimal place.</summary>
+    public decimal LayoutRow { get; set; }
 
-    /// <summary>Rows taken, 1 to 24.</summary>
-    public short LayoutHeight { get; set; }
+    /// <summary>Columns taken, 1.0 to 12.0; at most one decimal place.</summary>
+    public decimal LayoutWidth { get; set; }
+
+    /// <summary>Rows taken, 1.0 to 24.0; at most one decimal place.</summary>
+    public decimal LayoutHeight { get; set; }
 
     /// <summary>
     /// The data catalogue's fields the visual names (the 18 Nov 2026 data fields), as JSON in the API's shape: <c>{"values":[…],"groupField":…,"filters":[…]}</c>.

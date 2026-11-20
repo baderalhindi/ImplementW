@@ -462,3 +462,67 @@ describe('the dashboard draws containers', () => {
     expect(screen.queryByText('Empty box')).toBeNull();
   });
 });
+
+describe('decimal sizes in the settings (20 Nov 2026, decimal layout contract)', () => {
+  const overlapping = (visuals: readonly Visual[]) =>
+    visuals.some((a, i) =>
+      visuals.some(
+        (b, j) =>
+          j > i &&
+          a.layoutColumn < b.layoutColumn + b.layoutWidth &&
+          b.layoutColumn < a.layoutColumn + a.layoutWidth &&
+          a.layoutRow < b.layoutRow + b.layoutHeight &&
+          b.layoutRow < a.layoutRow + a.layoutHeight,
+      ),
+    );
+
+  test('Width takes 4.5 and Height 2.7: drawn and sent so, while 4.55 is not taken', async () => {
+    const mock = api(WITH_CONTAINER);
+    const user = userEvent.setup();
+    renderApp({ path: DESIGNER, session: session() });
+    await screen.findByRole('region', { name: 'Total value' });
+
+    await edit(user, 'Total value');
+    const width = within(settings()).getByLabelText(en('dashboards.designer.width'));
+    const height = within(settings()).getByLabelText(en('dashboards.designer.height'));
+    expect(width.getAttribute('step')).toBe('0.1');
+    expect(height.getAttribute('step')).toBe('0.1');
+    await user.clear(width);
+    await user.type(width, '4.5');
+    await user.clear(height);
+    await user.type(height, '2.7');
+
+    await waitFor(() => {
+      expect(lastPreviewed(mock).find((visual) => visual.title.en === 'Total value')).toMatchObject(
+        { layoutColumn: 0, layoutRow: 0, layoutWidth: 4.5, layoutHeight: 2.7 },
+      );
+    });
+    const drawn = screen.getByRole('region', { name: 'Total value' });
+    expect(drawn.style.getPropertyValue('--visual-width')).toBe('4.5');
+    expect(drawn.style.getPropertyValue('--visual-height')).toBe('2.7');
+
+    // Two decimal places are not a size the API takes: the visual keeps 4.5, and the field shows it again once left.
+    await user.clear(width);
+    await user.type(width, '4.55');
+    expect(drawn.style.getPropertyValue('--visual-width')).toBe('4.5');
+    await user.tab();
+    expect((width as HTMLInputElement).value).toBe('4.5');
+
+    // A child 4.7 wide in its container: what it now covers moves down, nothing overlaps, and the decimals are saved.
+    await edit(user, 'All projects');
+    const childWidth = within(settings()).getByLabelText(en('dashboards.designer.width'));
+    await user.clear(childWidth);
+    await user.type(childWidth, '4.7');
+
+    const sent = await saved(mock, user);
+    expect(
+      placeOf(present(sent.find((visual) => visual.title.en === 'Total value'))),
+    ).toMatchObject({ layoutWidth: 4.5, layoutHeight: 2.7 });
+    const box = present(sent.find((visual) => visual.visualType === 'CONTAINER'));
+    expect(
+      present(box.children?.find((child) => child.title.en === 'All projects')).layoutWidth,
+    ).toBe(4.7);
+    expect(overlapping(sent)).toBe(false);
+    expect(overlapping(box.children ?? [])).toBe(false);
+  });
+});

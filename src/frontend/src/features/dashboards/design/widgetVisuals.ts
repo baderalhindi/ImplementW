@@ -1,7 +1,7 @@
 import { type DashboardWidgetResult } from '../api/types.ts';
 import { filledSpans, visibleWidgets } from '../layout.ts';
 import { type Visual } from './designApi.ts';
-import { COLUMNS, freePlace } from './visuals.ts';
+import { COLUMNS, freePlace, tenth } from './visuals.ts';
 
 // One visual per governed widget (19 Nov 2026, docs/architecture/dashboard-designer-widgets.md): the API cannot read the dashboard's widget
 // codes, so the frontend turns a DASHBOARD_WIDGETS section (all of them in one visual) into a DASHBOARD_WIDGET visual per widget, and offers
@@ -99,7 +99,7 @@ export function splitWidgets<T extends Visual>(
       const width = widths[index] ?? widgetWidth(widget);
       if (column + width > COLUMNS) {
         column = 0;
-        row += rowHeight;
+        row = tenth(row + rowHeight);
         rowHeight = 0;
       }
       const next = widgetVisual(widget, column, row, width);

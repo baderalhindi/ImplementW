@@ -9463,20 +9463,24 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("group_by");
 
-                    b.Property<short>("LayoutColumn")
-                        .HasColumnType("smallint")
+                    b.Property<decimal>("LayoutColumn")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
                         .HasColumnName("layout_column");
 
-                    b.Property<short>("LayoutHeight")
-                        .HasColumnType("smallint")
+                    b.Property<decimal>("LayoutHeight")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
                         .HasColumnName("layout_height");
 
-                    b.Property<short>("LayoutRow")
-                        .HasColumnType("smallint")
+                    b.Property<decimal>("LayoutRow")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
                         .HasColumnName("layout_row");
 
-                    b.Property<short>("LayoutWidth")
-                        .HasColumnType("smallint")
+                    b.Property<decimal>("LayoutWidth")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
                         .HasColumnName("layout_width");
 
                     b.PrimitiveCollection<List<string>>("Measures")

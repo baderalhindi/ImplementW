@@ -43,6 +43,11 @@ internal sealed class PortfolioVisualConfiguration : IEntityTypeConfiguration<Po
         builder.Property(e => e.DataFields).HasColumnType("jsonb");
         builder.Property(e => e.Axes).HasColumnType("jsonb");
         builder.Property(e => e.WidgetCode).HasMaxLength(50);
+        // Decimal places in steps of 0.1 (20 Nov 2026); ck_portfolio_visual_layout keeps its ranges on them.
+        builder.Property(e => e.LayoutColumn).HasPrecision(4, 1);
+        builder.Property(e => e.LayoutRow).HasPrecision(4, 1);
+        builder.Property(e => e.LayoutWidth).HasPrecision(4, 1);
+        builder.Property(e => e.LayoutHeight).HasPrecision(4, 1);
         builder.HasIndex(e => e.SortOrder).IsUnique();
         // A child is in its container (19 Nov 2026) and goes with it; the service checks that the parent is a container.
         builder.HasOne<PortfolioVisual>().WithMany().HasForeignKey(e => e.ParentId).OnDelete(DeleteBehavior.Cascade);

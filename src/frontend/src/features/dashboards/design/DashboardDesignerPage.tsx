@@ -29,7 +29,7 @@ import {
   type Cell,
   changedAt,
   childrenOf,
-  containerMinSize,
+  CONTAINER_MIN_HEIGHT,
   innerGridPlace,
   isContainer,
   moved,
@@ -49,6 +49,7 @@ import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import { VisualBody } from './VisualBody.tsx';
 import { edgeScroller } from './edgeScroll.ts';
+import { VisualBodyBox } from './FitToBox.tsx';
 import { VisualIcon } from './VisualIcon.tsx';
 import { type SizeBounds, VisualSettings } from './VisualSettings.tsx';
 import {
@@ -61,11 +62,13 @@ import {
   COLUMNS,
   freePlace,
   gridPlace,
+  gridRows,
   MAX_HEIGHT,
   MAX_VISUALS,
   newVisual,
   packed,
   rowsOf,
+  tenth,
   VISUAL_TYPES,
 } from './visuals.ts';
 
@@ -97,7 +100,7 @@ interface Drag {
   start: Draft;
   /** The design when the drag began: each step is laid out from it, so a visual passed over goes back to its place. */
   before: Draft[];
-  /** The cell of the visual under the pointer when it was grabbed, so the visual keeps that cell under the pointer. */
+  /** Where on the visual (in columns and rows from its top-start corner) it was grabbed, so that point stays under the pointer. */
   grabColumn: number;
   grabRow: number;
 }
@@ -184,7 +187,7 @@ function sameDesign(a: Visual[], b: Visual[]): boolean {
  * are calculated live. Placement is free (the user, 19 Nov 2026): a visual goes where it is dropped, empty room may stay, and a visual it lands
  * on moves down below it.
  * A container (19 Nov 2026) frames visuals under a title: a visual dropped on its inner grid becomes its child, moving it moves them, and it is
- * never sized smaller than they need (containers.ts).
+ * sized freely, its visuals scaling with it (containers.ts). A visual's figures larger than its box are drawn smaller to fit (FitToBox).
  * Saving changes the dashboard for everyone, with no approval. A keyboard moves a visual one cell with the arrow keys on its move handle
  * (a child within its container) and sizes it on its size handle.
  */
@@ -388,7 +391,7 @@ export function DashboardDesignerPage(): ReactElement {
     );
   };
 
-  /** The size of one grid step, read from the drawn canvas: a column's width and a row's height, each with its gap. */
+  /** The size of one grid step, read from the drawn canvas (styles.css sets its gap and row height): a column's width and a row's height, each with its gap. */
   const step = () => {
     const element = canvas.current;
     if (element === null) {
@@ -414,10 +417,10 @@ export function DashboardDesignerPage(): ReactElement {
    * A drag follows the pointer on the window, not by capturing it: the dragged element moves in the page as the others reflow, and a browser
    * drops a capture when its element moves.
    */
-  /** The grid cell under the pointer. */
+  /** Where the pointer is on the grid, in columns from the reading start and rows from the top (decimals: a place may be any tenth). */
   const cellAt = (clientX: number, clientY: number, size: ReturnType<typeof step>): Cell => ({
-    column: Math.floor((size.rtl ? size.right - clientX : clientX - size.left) / size.column),
-    row: Math.floor((clientY - size.top) / size.row),
+    column: (size.rtl ? size.right - clientX : clientX - size.left) / size.column,
+    row: (clientY - size.top) / size.row,
   });
 
   const startDrag = (event: PointerEvent<HTMLElement>, key: string, gesture: Gesture) => {
@@ -587,36 +590,38 @@ export function DashboardDesignerPage(): ReactElement {
     }
     const size = step();
     if (active.gesture === 'resize') {
-      const columns = Math.round(((clientX - active.startX) * (size.rtl ? -1 : 1)) / size.column);
-      const rows = Math.round((clientY - active.startY) / size.row);
-      // Sizing stops at the grid's (or the container's) end edge, and a container at what its visuals need; it never moves the visual.
+      // Sizing snaps to a tenth of a column and of a row (20 Nov 2026: "4.5 or 4.7, like float numbers").
+      const columns = tenth(((clientX - active.startX) * (size.rtl ? -1 : 1)) / size.column);
+      const rows = tenth((clientY - active.startY) / size.row);
+      // Sizing stops at the grid's (or the container's) end edge, never at what the visual holds (a container's visuals scale with it); it
+      // never moves the visual.
       const across = containerOf(active.before, active.from)?.layoutWidth ?? COLUMNS;
       relayout(() =>
         changedAt(active.before, active.from, {
           ...active.start,
           layoutWidth: Math.min(
-            across - active.start.layoutColumn,
-            Math.max(1, active.start.layoutWidth + columns),
+            tenth(across - active.start.layoutColumn),
+            Math.max(1, tenth(active.start.layoutWidth + columns)),
           ),
-          layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, active.start.layoutHeight + rows)),
+          layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, tenth(active.start.layoutHeight + rows))),
         }),
       );
       return;
     }
-    // Moving is free: the cell it was grabbed by stays under the pointer, and the pointer's cell decides where it goes: into the container
-    // whose inner grid it is on, or onto the dashboard (`moved`).
+    // Moving is free: the point it was grabbed by stays under the pointer, snapped to a tenth of a column and of a row, and where the pointer
+    // is decides where it goes: into the container whose inner grid it is on, or onto the dashboard (`moved`).
     const pointer = cellAt(clientX, clientY, size);
     const result = moved(active.before, active.from, pointer, {
-      column: pointer.column - active.grabColumn,
-      row: pointer.row - active.grabRow,
+      column: tenth(pointer.column - active.grabColumn),
+      row: tenth(pointer.row - active.grabRow),
     });
     setPlaceProblem(result.noRoom ? t('dashboards.designer.noRoomInContainer') : null);
     setVisuals(result.visuals);
   };
 
   /**
-   * Arrow keys on a handle: one cell on the move handle (a child within its container), smaller or larger on the size handle; Delete removes
-   * the visual.
+   * Arrow keys on a handle: one cell on the move handle (a child within its container), smaller or larger on the size handle; with Shift, a
+   * tenth of a cell. Delete removes the visual.
    */
   const keyOnHandle = (event: KeyboardEvent<HTMLButtonElement>, key: string, gesture: Gesture) => {
     const path = pathOf(visuals, key);
@@ -633,8 +638,9 @@ export function DashboardDesignerPage(): ReactElement {
     // The arrow pointing to the reading end is forward: right in English, left in Arabic.
     const forward = step().rtl ? 'ArrowLeft' : 'ArrowRight';
     const backward = step().rtl ? 'ArrowRight' : 'ArrowLeft';
-    const sideways = event.key === forward ? 1 : event.key === backward ? -1 : 0;
-    const down = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
+    const by = event.shiftKey ? 0.1 : 1;
+    const sideways = event.key === forward ? by : event.key === backward ? -by : 0;
+    const down = event.key === 'ArrowDown' ? by : event.key === 'ArrowUp' ? -by : 0;
     if (sideways === 0 && down === 0) {
       return;
     }
@@ -646,18 +652,18 @@ export function DashboardDesignerPage(): ReactElement {
           ? {
               ...latest,
               layoutColumn: Math.min(
-                across - latest.layoutWidth,
-                Math.max(0, latest.layoutColumn + sideways),
+                tenth(across - latest.layoutWidth),
+                Math.max(0, tenth(latest.layoutColumn + sideways)),
               ),
-              layoutRow: Math.max(0, latest.layoutRow + down),
+              layoutRow: Math.max(0, tenth(latest.layoutRow + down)),
             }
           : {
               ...latest,
               layoutWidth: Math.min(
-                across - latest.layoutColumn,
-                Math.max(1, latest.layoutWidth + sideways),
+                tenth(across - latest.layoutColumn),
+                Math.max(1, tenth(latest.layoutWidth + sideways)),
               ),
-              layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, latest.layoutHeight + down)),
+              layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, tenth(latest.layoutHeight + down))),
             },
       ),
     );
@@ -765,7 +771,8 @@ export function DashboardDesignerPage(): ReactElement {
       aria-current={visual.key === selectedKey ? 'true' : undefined}
     >
       {renderBar(visual, 'designer__visual-bar', 'widget__title')}
-      <div
+      <VisualBodyBox
+        visual={visual}
         className={
           visual.section === undefined || visual.section === null
             ? 'visual__body'
@@ -779,7 +786,7 @@ export function DashboardDesignerPage(): ReactElement {
         ) : (
           <p className="state">{t('dashboards.noData')}</p>
         )}
-      </div>
+      </VisualBodyBox>
       {renderResizeHandle(visual)}
     </section>
   );
@@ -818,7 +825,7 @@ export function DashboardDesignerPage(): ReactElement {
 
   /** The sizes the selected visual may take where it is. */
   const boundsOf = (visual: Draft): SizeBounds => {
-    const least = isContainer(visual) ? containerMinSize(visual) : { width: 1, height: 1 };
+    const least = { width: 1, height: isContainer(visual) ? CONTAINER_MIN_HEIGHT : 1 };
     return {
       minWidth: least.width,
       minHeight: least.height,
@@ -900,7 +907,7 @@ export function DashboardDesignerPage(): ReactElement {
           <div
             ref={canvas}
             className="visual-grid designer__canvas"
-            style={{ '--canvas-rows': String(rowsOf(visuals) + SPARE_ROWS) } as CSSProperties}
+            style={gridRows(Math.ceil(rowsOf(visuals)) + SPARE_ROWS)}
           >
             {visuals.map((visual) =>
               isContainer(visual)

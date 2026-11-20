@@ -2,10 +2,10 @@ import { describe, expect, test } from 'vitest';
 
 import {
   changedAt,
-  containerMinSize,
   containerResized,
   innerGridPlace,
   moved,
+  placedInContainer,
   nestedReadingOrder,
   newContainer,
   onDashboard,
@@ -202,21 +202,45 @@ describe('moving and sizing a container', () => {
     expect(onDashboard(after, b)).toEqual({ column: 4, row: 12 });
   });
 
-  test('a container is never smaller than what its children need, and an empty one keeps one inner row', () => {
+  test('a container is sized freely, down to one column by its title bar and one row, and its children scale with it (20 Nov 2026)', () => {
     const box = container('Box', [4, 0, 8, 6], children);
-    // B reaches column 7 and inner row 4; the title bar adds a row.
-    expect(containerMinSize(box)).toEqual({ width: 7, height: 5 });
-    expect(containerMinSize(container('Empty', [0, 0, 6, 6]))).toEqual({ width: 1, height: 2 });
-    expect(placeOf(containerResized(box, 2, 2))).toEqual([4, 0, 7, 5]);
-    // Larger is free, up to the grid's end edge.
-    expect(placeOf(containerResized(box, 12, 9))).toEqual([4, 0, 8, 9]);
+    // Half the columns, and the five inner rows to two: each child's place and size scaled, at least one by one, none overlapping.
+    const half = containerResized(box, 4, 3);
+    expect(placeOf(half)).toEqual([4, 0, 4, 3]);
+    expect(half.children?.map(placeOf)).toEqual([
+      [0, 0, 2, 1],
+      [2, 0.4, 1.5, 1.2],
+    ]);
+    // The least: one column, the title bar over one inner row; children at one by one, stacked, grow the container to hold them.
+    const least = containerResized(box, 0.5, 1);
+    expect(least.children?.map(placeOf)).toEqual([
+      [0, 0, 1, 1],
+      [0, 1, 1, 1],
+    ]);
+    expect(placeOf(least)).toEqual([4, 0, 1, 3]);
+    expect(placeOf(containerResized(container('Empty', [0, 0, 6, 6]), 0.5, 1))).toEqual([
+      0, 0, 1, 2,
+    ]);
+    // Larger scales them up, up to the grid's end edge.
+    const larger = containerResized(box, 12, 11);
+    expect(placeOf(larger)).toEqual([4, 0, 8, 11]);
+    expect(larger.children?.map(placeOf)).toEqual([
+      [0, 0, 4, 4],
+      [4, 2, 3, 6],
+    ]);
   });
 
-  test('sizing a container through the settings (changedAt) stops at what its children need', () => {
+  test('sizing a container through the settings (changedAt) scales its children from the size it had', () => {
     const box = container('Box', [0, 0, 8, 6], children);
-    const sized = changedAt([box], top, { ...box, layoutWidth: 3, layoutHeight: 2 });
-    expect(placeOf(named(sized, 'Box'))).toEqual([0, 0, 7, 5]);
-    expect(named(sized, 'Box')?.children).toEqual(children);
+    const sized = changedAt([box], top, { ...box, layoutWidth: 4, layoutHeight: 3.5 });
+    expect(placeOf(named(sized, 'Box'))).toEqual([0, 0, 4, 3.5]);
+    expect(named(sized, 'Box')?.children?.map(placeOf)).toEqual([
+      [0, 0, 2, 1],
+      [2, 0.5, 1.5, 1.5],
+    ]);
+    // Moved, not sized: the children are as they were.
+    const moved = changedAt([box], top, { ...box, layoutColumn: 2 });
+    expect(named(moved, 'Box')?.children).toEqual(children);
   });
 });
 
@@ -332,5 +356,58 @@ describe('a new container and how one is drawn', () => {
       [0, 2, 4, 2],
     ]);
     expect(shown.layoutHeight).toBe(5);
+  });
+});
+
+describe('decimal places in a container (20 Nov 2026, decimal layout contract)', () => {
+  test('a child 4.7 wide goes in beside a 3.3-wide one and fills the 8 columns to the tenth', () => {
+    const box = container('Box', [2, 0, 8, 4], [card('A', [0, 0, 3.3, 2])]);
+    const placed = placedInContainer(box, card('B', [0, 0, 4.7, 2.5]), 3.3, 0, null);
+    expect(placed?.children?.map(placeOf)).toEqual([
+      [0, 0, 3.3, 2],
+      [3.3, 0, 4.7, 2.5],
+    ]);
+    expect(placed?.layoutHeight).toBe(4);
+    expect(
+      innerGridPlace({ layoutColumn: 3.3, layoutRow: 0, layoutWidth: 4.7, layoutHeight: 2.5 }),
+    ).toEqual({
+      '--visual-column': '4.3',
+      '--visual-row': '2',
+      '--visual-width': '4.7',
+      '--visual-height': '2.5',
+    });
+  });
+
+  test('a visual dropped at a decimal point lands there, rounded to a tenth, inside or outside a container', () => {
+    const box = container('Box', [2, 0, 8, 6]);
+    const design = [box, card('Loose', [0, 8, 4.7, 2])];
+    const inside = moved(
+      design,
+      { index: 1, child: null },
+      { column: 3, row: 2 },
+      {
+        column: 2.5 + 0.1 + 0.2,
+        row: 1.6666,
+      },
+    );
+    expect(inside.visuals.map((visual) => visual.title.en)).toEqual(['Box']);
+    expect(placeOf(inside.visuals[0]?.children?.[0])).toEqual([0.8, 0.7, 4.7, 2]);
+    expect(
+      onDashboard(box, { layoutColumn: 0.8, layoutRow: 0.7, layoutWidth: 1, layoutHeight: 1 }),
+    ).toEqual({
+      column: 2.8,
+      row: 1.7,
+    });
+    const outside = moved(
+      design,
+      { index: 1, child: null },
+      { column: 0.5, row: 9 },
+      {
+        column: 7.6,
+        row: 9.25,
+      },
+    );
+    // Kept within the twelve columns: 12 − 4.7.
+    expect(placeOf(named(outside.visuals, 'Loose'))).toEqual([7.3, 9.3, 4.7, 2]);
   });
 });

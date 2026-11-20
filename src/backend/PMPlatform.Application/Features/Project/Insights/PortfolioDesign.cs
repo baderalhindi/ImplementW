@@ -54,8 +54,8 @@ public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Va
 /// nothing of its own and holds <paramref name="Children"/> (the 19 Nov 2026 containers), placed on its inner grid; any other visual holds none.
 /// </summary>
 public sealed record PortfolioVisualInput(
-    BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
-    short LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
+    BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
+    decimal LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
     IReadOnlyList<PortfolioVisualInput>? Children = null);
 
@@ -89,8 +89,8 @@ public sealed record PortfolioVisualGroup(
 /// <c>WidgetCode</c>. A container carries no groups of its own (an empty list) and its <c>Children</c>, in order, each calculated as a top-level visual is;
 /// <c>Children</c> is null on any other visual.
 public sealed record PortfolioVisualResult(
-    BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
-    short LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
+    BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
+    decimal LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
     PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null);
 
@@ -135,8 +135,11 @@ internal sealed partial class PortfolioDesignService(
     IPortfolioFieldReader fieldReader, TimeProvider timeProvider) : IPortfolioDesignService
 {
     public const int MaxTitleLength = 100;
-    private const int Columns = 12;
-    private const int MaxHeight = 24;
+    private const decimal Columns = 12;
+    private const decimal MaxHeight = 24;
+
+    /// <summary>The last row a visual may start on: <c>layout_row</c> is <c>numeric(4,1)</c>.</summary>
+    private const decimal MaxRow = 999.9m;
     private const int MaxFilters = 5;
     private const int MaxFilterValues = 20;
     private const int MaxAxisTitleLength = 60;
@@ -292,7 +295,7 @@ internal sealed partial class PortfolioDesignService(
         }
 
         Dictionary<string, PortfolioFieldDescriptor> catalogue = fields.ToDictionary(f => f.Key, StringComparer.Ordinal);
-        HashSet<(int Column, int Row)> taken = [];
+        List<PlaceRectangle> taken = [];
         HashSet<PortfolioSection> sections = [];
         HashSet<string> widgetCodes = new(StringComparer.Ordinal);
         for (int index = 0; index < visuals.Count; index++)
@@ -334,7 +337,7 @@ internal sealed partial class PortfolioDesignService(
             return new FieldIssue("children", FieldIssue.OutsideRange);
         }
 
-        HashSet<(int Column, int Row)> taken = [];
+        List<PlaceRectangle> taken = [];
         for (int index = 0; index < children.Count; index++)
         {
             PortfolioVisualInput child = children[index];
@@ -379,29 +382,29 @@ internal sealed partial class PortfolioDesignService(
         : null;
 
     /// <summary>
-    /// What is wrong with a visual's place, or null: inside <paramref name="columns"/> columns and, on a container's inner grid, <paramref name="rows"/>
-    /// rows (the dashboard itself has no last row); at most 24 rows tall; covering no cell of <paramref name="taken"/>, which it then takes.
+    /// What is wrong with a visual's place, or null (the 20 Nov 2026 decimal layout): each of its four numbers has at most one decimal place; it lies inside
+    /// <paramref name="columns"/> columns and, on a container's inner grid, <paramref name="rows"/> rows (the dashboard itself has no last row); it is 1 to
+    /// 24 rows tall; and it overlaps none of <paramref name="taken"/> by more than 0 (touching edges do not overlap), which it then joins.
     /// </summary>
-    private static FieldIssue? PlaceIssue(PortfolioVisualInput v, int columns, int? rows, HashSet<(int Column, int Row)> taken)
+    private static FieldIssue? PlaceIssue(PortfolioVisualInput v, decimal columns, decimal? rows, List<PlaceRectangle> taken)
     {
-        if (v.LayoutColumn < 0 || v.LayoutWidth < 1 || v.LayoutColumn + v.LayoutWidth > columns || v.LayoutRow < 0 || v.LayoutHeight is < 1 or > MaxHeight
-            || v.LayoutRow + v.LayoutHeight > rows)
+        if (!OneDecimal(v.LayoutColumn) || !OneDecimal(v.LayoutRow) || !OneDecimal(v.LayoutWidth) || !OneDecimal(v.LayoutHeight)
+            || v.LayoutColumn < 0 || v.LayoutWidth < 1 || v.LayoutColumn + v.LayoutWidth > columns || v.LayoutRow is < 0 or > MaxRow
+            || v.LayoutHeight is < 1 or > MaxHeight || v.LayoutRow + v.LayoutHeight > rows)
         {
             return new FieldIssue("layout", FieldIssue.OutsideRange);
         }
 
-        for (int column = v.LayoutColumn; column < v.LayoutColumn + v.LayoutWidth; column++)
+        PlaceRectangle place = new(v.LayoutColumn, v.LayoutRow, v.LayoutColumn + v.LayoutWidth, v.LayoutRow + v.LayoutHeight);
+        if (taken.Exists(place.Overlaps))
         {
-            for (int row = v.LayoutRow; row < v.LayoutRow + v.LayoutHeight; row++)
-            {
-                if (!taken.Add((column, row)))
-                {
-                    return new FieldIssue("layout", FieldIssue.InUse);
-                }
-            }
+            return new FieldIssue("layout", FieldIssue.InUse);
         }
 
+        taken.Add(place);
         return null;
+
+        static bool OneDecimal(decimal value) => decimal.Round(value, 1) == value;
     }
 
     /// <summary>
@@ -699,20 +702,28 @@ internal sealed partial class PortfolioDesignService(
 
     /// <summary>
     /// A visual with its figures, <paramref name="groupsOf"/> calculating them (null without the grouping's permission): a section and a container carry none
-    /// of their own; a container carries its children, each calculated as a top-level visual is.
+    /// of their own; a container carries its children, each calculated as a top-level visual is. Its layout numbers are written shortest (<see cref="Shortest"/>).
     /// </summary>
     internal static PortfolioVisualResult ResultOf(
         PortfolioVisualInput v, Func<PortfolioVisualInput, IReadOnlyList<PortfolioVisualGroup>?> groupsOf, IReadOnlyDictionary<string, PortfolioFieldType> types) =>
         v.VisualType == PortfolioVisualType.Container
             ? new PortfolioVisualResult(
-                v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [],
+                v.Title, v.VisualType, [], PortfolioGroupBy.None,
+                Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [],
                 Children: [.. (v.Children ?? []).Select(child => ResultOf(child, groupsOf, types))])
         : v.Section is { } section
             ? new PortfolioVisualResult(
-                v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [], section, WidgetCode: v.WidgetCode)
+                v.Title, v.VisualType, [], PortfolioGroupBy.None,
+                Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [], section, WidgetCode: v.WidgetCode)
         : new PortfolioVisualResult(
-            v.Title, v.VisualType, v.Measures, v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, groupsOf(v), null, v.Values, v.GroupField,
-            v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes);
+            v.Title, v.VisualType, v.Measures, v.GroupBy, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
+            groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes);
+
+    /// <summary>
+    /// A layout number as the API writes it (the 20 Nov 2026 decimal layout): a whole number without a decimal place (<c>4</c>, not the <c>4.0</c>
+    /// <c>numeric(4,1)</c> reads back), any other with its one (<c>4.5</c>), so a design reads back as it was sent.
+    /// </summary>
+    private static decimal Shortest(decimal value) => value == decimal.Truncate(value) ? decimal.Truncate(value) : decimal.Round(value, 1);
 
     /// <summary>
     /// Each value's field type, in order; null for a visual of fixed measures. A field the register no longer holds (a design saved before it went) has only
@@ -937,10 +948,10 @@ internal sealed partial class PortfolioDesignService(
         static BilingualLabel? Trimmed(BilingualLabel? title) => title is null ? null : new BilingualLabel(title.Ar.Trim(), title.En.Trim());
     }
 
-    private static PortfolioVisualInput Section(string ar, string en, PortfolioSection section, short column, short row, short width, short height) =>
+    private static PortfolioVisualInput Section(string ar, string en, PortfolioSection section, decimal column, decimal row, decimal width, decimal height) =>
         new(new BilingualLabel(ar, en), PortfolioVisualType.Section, [], PortfolioGroupBy.None, column, row, width, height, section);
 
-    private static PortfolioVisualInput Card(string ar, string en, short column, short row, IReadOnlyList<PortfolioMeasure> measures) =>
+    private static PortfolioVisualInput Card(string ar, string en, decimal column, decimal row, IReadOnlyList<PortfolioMeasure> measures) =>
         new(new BilingualLabel(ar, en), PortfolioVisualType.Card, measures, PortfolioGroupBy.None, column, row, 4, 2);
 
     /// <summary>An enum value as the API and the database write it: <c>AveragePlanned</c> as <c>AVERAGE_PLANNED</c>.</summary>
@@ -967,6 +978,13 @@ internal sealed partial class PortfolioDesignService(
 
     /// <summary>A row a visual of fields calculates over: a project, or one published snapshot of it; <see cref="Cell"/> reads a field key's revealed value.</summary>
     private sealed record FieldRow(PortfolioProjectRow Project, Func<string, string?> Cell);
+
+    /// <summary>The area a visual covers on its grid, from its start column and row to its end ones.</summary>
+    private sealed record PlaceRectangle(decimal Left, decimal Top, decimal Right, decimal Bottom)
+    {
+        /// <summary>True when the two share an area larger than 0; edges that touch do not.</summary>
+        public bool Overlaps(PlaceRectangle other) => Left < other.Right && other.Left < Right && Top < other.Bottom && other.Top < Bottom;
+    }
 
     /// <summary>What the values of a filter are: codes, ids (items, departments, entities), yes/no, or years.</summary>
     private enum FilterShape

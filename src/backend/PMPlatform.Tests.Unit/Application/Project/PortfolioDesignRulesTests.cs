@@ -15,13 +15,14 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// catalogue it offers, rules 1 to 6 and the aggregations' arithmetic; and its 18 Nov 2026 more fields: PROJECT.PROJECT_PROFILE, yes/no and date fields, the
 /// LINE visual, rule 7's grain and the period charts over the published history; and its 19 Nov 2026 axes: who takes them, their titles and range, and what is
 /// stored; and its 19 Nov 2026 widgets: one DASHBOARD_WIDGET section per governed widget, named by its code; and its 19 Nov 2026 containers: rules 1 to 6
-/// (dashboard-designer-containers.md), the saved rows nested back and the children calculated as top-level visuals.
+/// (dashboard-designer-containers.md), the saved rows nested back and the children calculated as top-level visuals; and its 20 Nov 2026 decimal layout: places
+/// and sizes in steps of 0.1, overlaps by area (dashboard-designer-decimal-layout.md).
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
     private static PortfolioVisualInput Visual(
-        PortfolioVisualType type = PortfolioVisualType.Bar, PortfolioGroupBy groupBy = PortfolioGroupBy.Sector, short column = 0, short row = 0, short width = 6,
-        short height = 4, params PortfolioMeasure[] measures) =>
+        PortfolioVisualType type = PortfolioVisualType.Bar, PortfolioGroupBy groupBy = PortfolioGroupBy.Sector, decimal column = 0, decimal row = 0, decimal width = 6,
+        decimal height = 4, params PortfolioMeasure[] measures) =>
         new(new BilingualLabel("المشاريع حسب القطاع", "Projects by sector"), type, measures.Length == 0 ? [PortfolioMeasure.Projects] : measures, groupBy, column, row, width, height);
 
     private const string Spend = "FINANCIAL_KPI.FINANCIAL_POSITION.ACTUAL_EXPENDITURE_TO_DATE";
@@ -67,6 +68,63 @@ public sealed class PortfolioDesignRulesTests
     [InlineData(0, 13)]
     public void AVisualStaysInsideTheTwelveColumns(short column, short width) =>
         Assert.Equal(FieldIssue.OutsideRange, Issue(Visual(column: column, width: width))?.Code);
+
+    /// <summary>The 20 Nov 2026 decimal layout: places and sizes in steps of 0.1.</summary>
+    [Fact]
+    public void PlacesAndSizesTakeOneDecimal()
+    {
+        Assert.Null(Issue(Visual(column: 0, width: 4.5m), Visual(column: 4.5m, width: 4.7m, height: 3.3m)));
+        Assert.Null(Issue(Visual(column: 0.1m, row: 0.5m, width: 11.9m, height: 23.5m)));
+        Assert.Null(Issue(Visual(column: 4.50m, width: 4.70m)));
+    }
+
+    [Theory]
+    [InlineData("4.55", "0", "4", "4")]
+    [InlineData("0", "4.55", "4", "4")]
+    [InlineData("0", "0", "4.55", "4")]
+    [InlineData("0", "0", "4", "4.01")]
+    public void APlaceWithTwoDecimalsIsRefused(string column, string row, string width, string height) =>
+        Assert.Equal(
+            new FieldIssue("visuals[0].layout", FieldIssue.OutsideRange),
+            Issue(Visual(column: Number(column), row: Number(row), width: Number(width), height: Number(height))));
+
+    [Fact]
+    public void TouchingEdgesDoNotOverlapButATenthDoes()
+    {
+        Assert.Null(Issue(Visual(column: 0, width: 4.5m), Visual(column: 4.5m, width: 4.5m)));
+        Assert.Null(Issue(Visual(row: 0, height: 2.5m), Visual(row: 2.5m, height: 2)));
+        Assert.Equal(new FieldIssue("visuals[1].layout", FieldIssue.InUse), Issue(Visual(column: 0, width: 4.5m), Visual(column: 4.4m, width: 4.5m)));
+        Assert.Equal(new FieldIssue("visuals[1].layout", FieldIssue.InUse), Issue(Visual(row: 0, height: 2.5m), Visual(row: 2.4m, height: 2)));
+    }
+
+    [Fact]
+    public void AChildAsWideAsItsDecimalContainerFits()
+    {
+        Assert.Null(Issue(Container(width: 4.5m, height: 3.5m, children: [SmallCard(0, 0, width: 4.5m, height: 2.5m)])));
+        Assert.Equal(
+            new FieldIssue("visuals[0].children[0].layout", FieldIssue.OutsideRange),
+            Issue(Container(width: 4.5m, height: 3.5m, children: [SmallCard(0, 0, width: 4.6m, height: 2.5m)])));
+        Assert.Equal(new FieldIssue("visuals[0].layout", FieldIssue.OutsideRange), Issue(Container(height: 1.9m)));
+        Assert.Null(Issue(Container(height: 2.0m)));
+    }
+
+    [Theory]
+    [InlineData("0", "1.0", "0", "1.0", true)]
+    [InlineData("0", "12.0", "0", "24.0", true)]
+    [InlineData("11.0", "1.0", "0", "1.0", true)]
+    [InlineData("0", "0.9", "0", "4", false)]
+    [InlineData("0", "12.1", "0", "4", false)]
+    [InlineData("0", "4", "0", "0.9", false)]
+    [InlineData("0", "4", "0", "24.1", false)]
+    [InlineData("11.1", "1.0", "0", "1.0", false)]
+    [InlineData("-0.1", "4", "0", "4", false)]
+    [InlineData("0", "4", "-0.1", "4", false)]
+    public void DecimalRangesKeepTheirWholeBounds(string column, string width, string row, string height, bool valid) =>
+        Assert.Equal(
+            valid ? null : new FieldIssue("visuals[0].layout", FieldIssue.OutsideRange),
+            Issue(Visual(column: Number(column), row: Number(row), width: Number(width), height: Number(height))));
+
+    private static decimal Number(string value) => decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
 
     [Fact]
     public void ACardIsNotGrouped() =>
@@ -710,10 +768,10 @@ public sealed class PortfolioDesignRulesTests
             JsonNode.Parse(PortfolioDesignService.AxesOf(Visual() with { Axes = Axes(new BilingualLabel(" المحفظة ", "Portfolio  "), min: 0, max: 100, gridlines: false) })!)));
     }
 
-    private static PortfolioVisualInput Container(short column = 0, short row = 0, short width = 12, short height = 6, params PortfolioVisualInput[] children) =>
+    private static PortfolioVisualInput Container(decimal column = 0, decimal row = 0, decimal width = 12, decimal height = 6, params PortfolioVisualInput[] children) =>
         new(new BilingualLabel("حاوية", "Container"), PortfolioVisualType.Container, [], PortfolioGroupBy.None, column, row, width, height, Children: children);
 
-    private static PortfolioVisualInput SmallCard(short column, short row, short width = 4, short height = 2) =>
+    private static PortfolioVisualInput SmallCard(decimal column, decimal row, decimal width = 4, decimal height = 2) =>
         Visual(PortfolioVisualType.Card, PortfolioGroupBy.None, column, row, width, height);
 
     /// <summary>19 Nov 2026 containers: a container holds visuals on its inner grid, its children's places counted from its own first column and row.</summary>

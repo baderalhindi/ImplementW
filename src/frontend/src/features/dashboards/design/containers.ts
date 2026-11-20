@@ -8,12 +8,14 @@ import {
   COLUMNS,
   DEFAULT_SIZE,
   freePlace,
+  gridPlace,
   inReadingOrder,
   MAX_HEIGHT,
   MAX_VISUALS,
   overlaps,
   rowsOf,
   settled,
+  tenth,
   withoutEmptyRows,
 } from './visuals.ts';
 
@@ -55,7 +57,7 @@ export function childrenOf<T extends Nestable<T>>(visual: T): T[] {
 
 /** The rows of a container's inner grid. */
 export function innerRows(container: Box): number {
-  return container.layoutHeight - TITLE_ROWS;
+  return tenth(container.layoutHeight - TITLE_ROWS);
 }
 
 /** How many visuals the design has, each container's children counted (contract rule 5). */
@@ -101,36 +103,71 @@ export function pathWhere<T extends Nestable<T>>(
 /** A child's place on the dashboard's grid, as it is drawn: its container's place, under the title bar, plus its own inner place. */
 export function onDashboard(container: Box, child: Box): Cell {
   return {
-    column: container.layoutColumn + child.layoutColumn,
-    row: container.layoutRow + TITLE_ROWS + child.layoutRow,
+    column: tenth(container.layoutColumn + child.layoutColumn),
+    row: tenth(container.layoutRow + TITLE_ROWS + child.layoutRow),
   };
 }
 
-/** The smallest size a container takes: the columns and rows its children reach, under its title bar, and at least one inner row. */
-export function containerMinSize<T extends Nestable<T>>(
-  container: T,
-): { width: number; height: number } {
-  const children = childrenOf(container);
-  return {
-    width: children.reduce(
-      (most, child) => Math.max(most, child.layoutColumn + child.layoutWidth),
-      1,
-    ),
-    height: Math.max(TITLE_ROWS + 1, TITLE_ROWS + rowsOf(children)),
-  };
+/** The least height a container takes: its title bar and one inner row (contract rule 2). */
+export const CONTAINER_MIN_HEIGHT = TITLE_ROWS + 1;
+
+/**
+ * The children laid out without overlapping, in reading order: each stays where it is unless it lands on one before it, then moves straight
+ * down to just below it.
+ */
+function unstacked<T extends Box>(children: T[]): T[] {
+  const placed: T[] = [];
+  for (const child of inReadingOrder(children)) {
+    let box = child;
+    for (let covered = placed.filter((other) => overlaps(box, other)); covered.length > 0;) {
+      box = {
+        ...box,
+        layoutRow: tenth(Math.max(...covered.map((other) => other.layoutRow + other.layoutHeight))),
+      };
+      covered = placed.filter((other) => overlaps(box, other));
+    }
+    placed.push(box);
+  }
+  return placed;
 }
 
-/** A container sized to `width` × `height`, never smaller than its children need nor past the grid's end edge or the tallest a visual is. */
+/**
+ * A container sized to `width` × `height` (the user, 20 Nov 2026: "free to minimize a visual or container, not fixed"): from one column and
+ * its title bar over one inner row up to the grid's end edge and the tallest a visual is, never held at what its children need. Its children
+ * scale with it: each one's place and size times the new over the old columns, and inner rows, each to a tenth, at least one column by one row
+ * and within the container's columns; where rounding or that least size makes two overlap, the lower moves down, and the container grows to
+ * hold what then reaches below its inner rows.
+ */
 export function containerResized<T extends Nestable<T>>(
   container: T,
   width: number,
   height: number,
 ): T {
-  const least = containerMinSize(container);
+  const layoutWidth = Math.max(1, Math.min(tenth(COLUMNS - container.layoutColumn), tenth(width)));
+  const layoutHeight = Math.max(CONTAINER_MIN_HEIGHT, Math.min(MAX_HEIGHT, tenth(height)));
+  const across = layoutWidth / container.layoutWidth;
+  const down = (layoutHeight - TITLE_ROWS) / innerRows(container);
+  const children = childrenOf(container);
+  if (children.length === 0 || (across === 1 && down === 1)) {
+    return { ...container, layoutWidth, layoutHeight };
+  }
+  const scaled = unstacked(
+    children.map((child) => {
+      const childWidth = Math.min(layoutWidth, Math.max(1, tenth(child.layoutWidth * across)));
+      return {
+        ...child,
+        layoutWidth: childWidth,
+        layoutHeight: Math.max(1, tenth(child.layoutHeight * down)),
+        layoutColumn: Math.min(tenth(layoutWidth - childWidth), tenth(child.layoutColumn * across)),
+        layoutRow: tenth(child.layoutRow * down),
+      };
+    }),
+  );
   return {
     ...container,
-    layoutWidth: Math.max(least.width, Math.min(COLUMNS - container.layoutColumn, width)),
-    layoutHeight: Math.max(least.height, Math.min(MAX_HEIGHT, height)),
+    layoutWidth,
+    layoutHeight: Math.min(MAX_HEIGHT, Math.max(layoutHeight, TITLE_ROWS + rowsOf(scaled))),
+    children: scaled,
   };
 }
 
@@ -163,7 +200,7 @@ export function placedInContainer<T extends Nestable<T>>(
       {
         ...container,
         layoutWidth,
-        layoutColumn: Math.min(container.layoutColumn, COLUMNS - layoutWidth),
+        layoutColumn: Math.min(container.layoutColumn, tenth(COLUMNS - layoutWidth)),
       },
       { ...child, layoutWidth },
       column,
@@ -171,20 +208,19 @@ export function placedInContainer<T extends Nestable<T>>(
       replacing,
     );
   }
-  const height = Math.max(1, Math.min(child.layoutHeight, MAX_HEIGHT - TITLE_ROWS));
+  const height = Math.max(1, Math.min(tenth(child.layoutHeight), MAX_HEIGHT - TITLE_ROWS));
   const placed: T = {
     ...child,
+    layoutWidth: tenth(child.layoutWidth),
     layoutHeight: height,
     layoutColumn: Math.min(
-      container.layoutWidth - child.layoutWidth,
-      Math.max(0, Math.round(column)),
+      tenth(container.layoutWidth - child.layoutWidth),
+      Math.max(0, tenth(column)),
     ),
     // A dropped visual is kept within the inner rows; a child moved or sized in place keeps its row, and the container grows to hold it.
     layoutRow: Math.max(
       0,
-      replacing === null
-        ? Math.min(innerRows(container) - height, Math.round(row))
-        : Math.round(row),
+      replacing === null ? Math.min(tenth(innerRows(container) - height), tenth(row)) : tenth(row),
     ),
   };
   const children = settled([...others, placed], others.length);
@@ -196,7 +232,7 @@ export function placedInContainer<T extends Nestable<T>>(
 export function withChildChanged<T extends Nestable<T>>(container: T, index: number, next: T): T {
   const child = {
     ...next,
-    layoutWidth: Math.max(1, Math.min(container.layoutWidth, next.layoutWidth)),
+    layoutWidth: Math.max(1, Math.min(container.layoutWidth, tenth(next.layoutWidth))),
   };
   return (
     placedInContainer(container, child, child.layoutColumn, child.layoutRow, index) ?? container
@@ -205,7 +241,7 @@ export function withChildChanged<T extends Nestable<T>>(container: T, index: num
 
 /**
  * The design with the visual at `path` changed to `next`. A top-level visual stays where it is put and what it covers moves down (`settled`);
- * a container is never sized smaller than its children need. A child changes within its container, which grows to hold it, and what the grown
+ * a container sized scales its children with it (`containerResized`). A child changes within its container, which grows to hold it, and what the grown
  * container covers moves down.
  */
 export function changedAt<T extends Nestable<T>>(
@@ -217,10 +253,15 @@ export function changedAt<T extends Nestable<T>>(
   if (top === undefined) {
     return [...visuals];
   }
+  // A container resized scales its children from the size it had (`top`).
   const changed =
     path.child === null
       ? isContainer(next)
-        ? containerResized(next, next.layoutWidth, next.layoutHeight)
+        ? containerResized(
+            { ...next, layoutWidth: top.layoutWidth, layoutHeight: top.layoutHeight },
+            next.layoutWidth,
+            next.layoutHeight,
+          )
         : next
       : withChildChanged(top, path.child, next);
   return settled(
@@ -311,8 +352,8 @@ export function moved<T extends Nestable<T>>(
     const inside = placedInContainer(
       container,
       visual,
-      place.column - container.layoutColumn,
-      place.row - container.layoutRow - TITLE_ROWS,
+      tenth(place.column - container.layoutColumn),
+      tenth(place.row - container.layoutRow - TITLE_ROWS),
       null,
     );
     return inside === null
@@ -327,8 +368,8 @@ export function moved<T extends Nestable<T>>(
   }
   const placed: T = {
     ...visual,
-    layoutColumn: Math.min(COLUMNS - visual.layoutWidth, Math.max(0, place.column)),
-    layoutRow: Math.max(0, place.row),
+    layoutColumn: Math.min(tenth(COLUMNS - visual.layoutWidth), Math.max(0, tenth(place.column))),
+    layoutRow: Math.max(0, tenth(place.row)),
   };
   return { visuals: settled([...rest, placed], rest.length), noRoom: false };
 }
@@ -365,14 +406,12 @@ export function withoutEmptyInnerRows<T extends Nestable<T>>(container: T, child
   return { ...container, children: kept, layoutHeight: TITLE_ROWS + rowsOf(kept) };
 }
 
-/** A child's place on its container's inner grid, under the title bar (styles.css draws the container's tracks as the dashboard's own). */
+/**
+ * A child's place on its container's inner grid, under the title bar, its first column and row counted from 1 (styles.css positions it on
+ * columns and rows of the dashboard's own size).
+ */
 export function innerGridPlace(child: Box): CSSProperties {
-  return {
-    '--visual-column': String(child.layoutColumn + 1),
-    '--visual-row': String(child.layoutRow + TITLE_ROWS + 1),
-    '--visual-width': String(child.layoutWidth),
-    '--visual-height': String(child.layoutHeight),
-  } as CSSProperties;
+  return gridPlace({ ...child, layoutRow: child.layoutRow + TITLE_ROWS });
 }
 
 /** A new, empty container titled "Container" at the first free place; null when the grid has no room left or the design is full. */

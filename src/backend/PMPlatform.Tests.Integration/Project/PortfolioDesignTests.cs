@@ -11,7 +11,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// the saved design; a design breaking a rule is refused with 422 <c>PROJECT_PORTFOLIO_DESIGN_INVALID</c> and saves nothing. A bar's axes (the 19 Nov 2026
 /// axes) are saved and read back as set, titles trimmed; a chart drawn with the default axes stores none. Two DASHBOARD_WIDGET sections (the 19 Nov 2026
 /// widgets) are saved and read back with their widget codes; two naming the same widget are refused. A container (the 19 Nov 2026 containers) is saved with
-/// its children and read back with them nested in order, each with its figures; a child covering a sibling or outside its container is refused.
+/// its children and read back with them nested in order, each with its figures; a child covering a sibling or outside its container is refused. A design
+/// with decimal places and sizes (the 20 Nov 2026 decimal layout) is saved and read back exactly; one with two decimal places is refused.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -240,15 +241,60 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
         Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
     }
 
+    [Fact]
+    public async Task ADesignWithDecimalPlacesIsSavedAndReadBackExactly()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+
+        object design = DesignOf(
+            Visual("Left", "CARD", 0, 0, 4.5m, 2, measures: ["PROJECTS"]),
+            Visual("Right", "CARD", 4.5m, 0, 4.7m, 2.3m, measures: ["IN_PROGRESS"]),
+            Visual("Box", "CONTAINER", 0, 2.3m, 4.5m, 3.5m, children: [Visual("Inside", "CARD", 0, 0.5m, 4.5m, 2, measures: ["PROJECTS"])]));
+        string[] expected = ["0,0,4.5,2", "4.5,0,4.7,2.3", "0,2.3,4.5,3.5"];
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        Assert.Equal(expected, PlacesOf(await preview.ReadObjectAsync()));
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        Assert.Equal(expected, PlacesOf(await saved.ReadObjectAsync()));
+
+        using HttpResponseMessage read = await client.GetAsync(Design, manager);
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        JsonObject body = await read.ReadObjectAsync();
+        Assert.Equal(expected, PlacesOf(body));
+        Assert.Equal("0,0.5,4.5,2", Place(body["visuals"]![2]!["children"]![0]!));
+        Assert.Equal(["1:0.0,0.0,4.5,2.0", "2:4.5,0.0,4.7,2.3", "3:0.0,2.3,4.5,3.5", "4:0.0,0.5,4.5,2.0"], await host.Database.QueryAsync(
+            "SELECT sort_order || ':' || layout_column || ',' || layout_row || ',' || layout_width || ',' || layout_height FROM project.portfolio_visual ORDER BY sort_order"));
+
+        object twoDecimals = DesignOf(Visual("Left", "CARD", 0, 0, 4.55m, 2, measures: ["PROJECTS"]));
+        using HttpResponseMessage refused = await client.PutAsync(Design, manager, twoDecimals, ifMatch: null);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+        JsonObject error = await refused.ReadObjectAsync();
+        Assert.Equal(("PROJECT_PORTFOLIO_DESIGN_INVALID", "visuals[0].layout", "OUTSIDE_RANGE"), (error["code"]!.GetValue<string>(),
+            error["errors"]![0]!["field"]!.GetValue<string>(), error["errors"]![0]!["code"]!.GetValue<string>()));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        // The numbers as the JSON carries them, so 4.5 is told from 4.50 and 2 from 2.0.
+        static string[] PlacesOf(JsonObject view) => [.. view["visuals"]!.AsArray().Select(v => Place(v!))];
+
+        static string Place(JsonNode v) =>
+            string.Join(',', v["layoutColumn"]!.ToJsonString(), v["layoutRow"]!.ToJsonString(), v["layoutWidth"]!.ToJsonString(), v["layoutHeight"]!.ToJsonString());
+    }
+
     private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();
 
     private static object DesignOf(params object[] visuals) => new { visuals };
 
-    private static object Widget(string title, string widgetCode, short column, short row, short width, short height) =>
+    private static object Widget(string title, string widgetCode, decimal column, decimal row, decimal width, decimal height) =>
         Visual(title, "SECTION", column, row, width, height, section: "DASHBOARD_WIDGET", widgetCode: widgetCode);
 
     private static object Visual(
-        string title, string type, short column, short row, short width, short height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
+        string title, string type, decimal column, decimal row, decimal width, decimal height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
         object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null) =>
         new
         {

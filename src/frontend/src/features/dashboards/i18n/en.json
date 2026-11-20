@@ -413,8 +413,8 @@
     "galleryHint": "Choose a type to place it on the dashboard.",
     "sectionSettings": "A section shows its own figures; set its titles and size here.",
     "widgetSettings": "A widget shows its own figures; set its titles and size here.",
-    "widthHint": "Columns, 1 to {count}",
-    "heightHint": "Rows, 1 to {count}",
+    "widthHint": "Columns, 1 to {count}, e.g. 4.5",
+    "heightHint": "Rows, 1 to {count}, e.g. 2.5",
     "removeSection": "Remove from dashboard",
     "widgets": "Widgets",
     "addWidget": "Add {title}",
@@ -637,6 +637,6 @@
     "noRoomInContainer": "That visual does not fit in the container: it is wider than the container, or the container is full. Make the visual narrower or the container wider.",
     "containerEmpty": "Drag visuals here to group them.",
     "containerSettings": "A container groups the visuals dragged into it; moving it moves them. Set its titles and size here.",
-    "containerSizeHint": "A container is never smaller than the visuals in it."
+    "containerSizeHint": "Sizing a container scales the visuals in it."
   }
 }

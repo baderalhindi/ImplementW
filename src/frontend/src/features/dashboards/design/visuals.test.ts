@@ -10,10 +10,14 @@ import {
   drillPath,
   fits,
   freePlace,
+  gridPlace,
   newVisual,
+  overlaps,
   packed,
   retitled,
+  rowsOf,
   settled,
+  tenth,
   withoutEmptyRows,
   withType,
 } from './visuals.ts';
@@ -263,6 +267,76 @@ describe('free placement (19 Nov 2026)', () => {
     expect(laidOut.map((v) => [v.layoutColumn, v.layoutRow])).toEqual([
       [0, 0],
       [6, 2],
+    ]);
+  });
+});
+
+describe('decimal places and sizes (20 Nov 2026, decimal layout contract)', () => {
+  const at = (column: number, row: number, width: number, height: number) => ({
+    ...card,
+    layoutColumn: column,
+    layoutRow: row,
+    layoutWidth: width,
+    layoutHeight: height,
+  });
+  const places = (visuals: Visual[]) =>
+    visuals.map((v) => [v.layoutColumn, v.layoutRow, v.layoutWidth, v.layoutHeight]);
+
+  test('two visuals 4.5 wide sit side by side without overlapping; touching edges is no overlap', () => {
+    const first = at(0, 0, 4.5, 2);
+    const second = at(4.5, 0, 4.5, 2);
+    expect(overlaps(first, second)).toBe(false);
+    expect(fits(second, [first], null)).toBe(true);
+    expect(fits(at(4.4, 0, 4.5, 2), [first], null)).toBe(false);
+    // Floating point would make 0.7 + 0.1 a hair short of 0.8: compared in tenths, they only touch.
+    expect(overlaps(at(0.1, 0, 0.7, 1), at(0.8, 0, 1, 1))).toBe(false);
+    expect(fits(at(7.5, 0, 4.5, 2), [], null)).toBe(true);
+    expect(fits(at(7.6, 0, 4.5, 2), [], null)).toBe(false);
+  });
+
+  test('a new visual goes right beside one of a decimal size, and under one of a decimal height', () => {
+    expect(freePlace([at(0, 0, 4.5, 2)], 4.5, 2)).toEqual({ column: 4.5, row: 0 });
+    expect(freePlace([at(0, 0, 12, 2.7)], 4, 2)).toEqual({ column: 0, row: 2.7 });
+    expect(rowsOf([at(0, 0, 12, 2.7), at(0, 2.7, 4, 1.6)])).toBe(4.3);
+  });
+
+  test('what a dropped visual lands on moves to just below its decimal bottom, rounded to a tenth', () => {
+    // The anchor's bottom, 0.1 + 0.7, is 0.7999999999999999 in floating point: what it covers moves to 0.8.
+    const laidOut = settled([at(0, 0, 4, 2), at(0, 0.1, 4.7, 0.7)], 1);
+    expect(places(laidOut)).toEqual([
+      [0, 0.1, 4.7, 0.7],
+      [0, 0.8, 4, 2],
+    ]);
+  });
+
+  test('every computed value is rounded to one decimal place', () => {
+    expect(tenth(0.1 + 0.2)).toBe(0.3);
+    expect(tenth(4.699999)).toBe(4.7);
+    expect(tenth(4.75)).toBe(4.8);
+    expect(packed([at(0.33, 0, 4.66, 2.04)]).map((v) => [v.layoutWidth, v.layoutHeight])).toEqual([
+      [4.7, 2],
+    ]);
+    expect(gridPlace(at(4.5, 0.2 + 0.1, 4.7, 2.7))).toEqual({
+      '--visual-column': '5.5',
+      '--visual-row': '1.3',
+      '--visual-width': '4.7',
+      '--visual-height': '2.7',
+    });
+  });
+
+  test('the dashboard takes out an empty band of any height, and keeps the decimal places beside it', () => {
+    // Rows 2.5 to 4.2 are empty: 1.7 rows; the band between the third and the fourth is 0.3.
+    const laidOut = withoutEmptyRows([
+      at(0, 0, 4.5, 2.5),
+      at(4.5, 0.5, 4, 1.5),
+      at(0, 4.2, 6, 2),
+      at(0, 6.5, 4, 1),
+    ]);
+    expect(places(laidOut)).toEqual([
+      [0, 0, 4.5, 2.5],
+      [4.5, 0.5, 4, 1.5],
+      [0, 2.5, 6, 2],
+      [0, 4.5, 4, 1],
     ]);
   });
 });

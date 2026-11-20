@@ -39055,40 +39055,40 @@
             ]
           },
           "layoutColumn": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "layoutRow": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "layoutWidth": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "layoutHeight": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "null",
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "section": {
             "oneOf": [
@@ -39191,36 +39191,36 @@
             "$ref": "#/components/schemas/PortfolioGroupBy"
           },
           "layoutColumn": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "layoutRow": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "layoutWidth": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "layoutHeight": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
-              "integer",
+              "number",
               "string"
             ],
-            "format": "int16"
+            "format": "double"
           },
           "groups": {
             "type": [

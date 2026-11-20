@@ -343,12 +343,26 @@ export interface Box {
   layoutHeight: number;
 }
 
+/**
+ * A layout value as the API takes it (20 Nov 2026, docs/architecture/dashboard-designer-decimal-layout.md): places and sizes are decimals with
+ * one decimal place, so every computed one is rounded to a tenth and no 4.699999 is sent.
+ */
+export function tenth(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/** A value in whole tenths, so decimals compare exactly (0.7 + 0.1 is not 0.8 in floating point). */
+function tenths(value: number): number {
+  return Math.round(value * 10);
+}
+
+/** Whether two boxes overlap by more than nothing: boxes that only touch do not. */
 export function overlaps(a: Box, b: Box): boolean {
   return (
-    a.layoutColumn < b.layoutColumn + b.layoutWidth &&
-    b.layoutColumn < a.layoutColumn + a.layoutWidth &&
-    a.layoutRow < b.layoutRow + b.layoutHeight &&
-    b.layoutRow < a.layoutRow + a.layoutHeight
+    tenths(a.layoutColumn) < tenths(b.layoutColumn) + tenths(b.layoutWidth) &&
+    tenths(b.layoutColumn) < tenths(a.layoutColumn) + tenths(a.layoutWidth) &&
+    tenths(a.layoutRow) < tenths(b.layoutRow) + tenths(b.layoutHeight) &&
+    tenths(b.layoutRow) < tenths(a.layoutRow) + tenths(a.layoutHeight)
   );
 }
 
@@ -360,40 +374,61 @@ export function fits(box: Box, visuals: Box[], self: number | null): boolean {
     box.layoutWidth >= 1 &&
     box.layoutHeight >= 1 &&
     box.layoutHeight <= MAX_HEIGHT &&
-    box.layoutColumn + box.layoutWidth <= COLUMNS &&
+    tenths(box.layoutColumn) + tenths(box.layoutWidth) <= tenths(COLUMNS) &&
     visuals.every((other, index) => index === self || !overlaps(box, other))
   );
 }
 
-/** The first place, row by row from the top, a box of this size fits. */
+/** Sorted, distinct values. */
+function ascending(values: number[]): number[] {
+  return [...new Set(values.map(tenth))].sort((a, b) => a - b);
+}
+
+/**
+ * The first place, from the top and then from the reading start, a box of `width` × `height` fits beside `boxes`: whole rows and columns are
+ * tried, and the edges of the boxes there are, so a box goes right beside (or under) one of a decimal size; below the lowest box it always fits.
+ */
+function firstFit(boxes: Box[], width: number, height: number): { column: number; row: number } {
+  const bottom = rowsOf(boxes);
+  const rows = ascending([
+    ...Array.from({ length: Math.ceil(bottom) + 1 }, (_, row) => row),
+    ...boxes.map((box) => box.layoutRow + box.layoutHeight),
+  ]);
+  const columns = ascending([
+    ...Array.from({ length: COLUMNS }, (_, column) => column),
+    ...boxes.map((box) => box.layoutColumn + box.layoutWidth),
+  ]).filter((column) => tenths(column) + tenths(width) <= tenths(COLUMNS));
+  for (const row of rows) {
+    for (const column of columns) {
+      const box = {
+        layoutColumn: column,
+        layoutRow: row,
+        layoutWidth: width,
+        layoutHeight: height,
+      };
+      if (boxes.every((other) => !overlaps(box, other))) {
+        return { column, row };
+      }
+    }
+  }
+  return { column: 0, row: bottom };
+}
+
+/** The first place, row by row from the top, a box of this size fits; null when the design is full or the box is larger than a visual may be. */
 export function freePlace(
   visuals: Box[],
   width: number,
   height: number,
 ): { column: number; row: number } | null {
-  if (visuals.length >= MAX_VISUALS) {
+  if (visuals.length >= MAX_VISUALS || width > COLUMNS || height > MAX_HEIGHT) {
     return null;
   }
-  const bottom = visuals.reduce((most, box) => Math.max(most, box.layoutRow + box.layoutHeight), 0);
-  for (let row = 0; row <= bottom; row++) {
-    for (let column = 0; column + width <= COLUMNS; column++) {
-      if (
-        fits(
-          { layoutColumn: column, layoutRow: row, layoutWidth: width, layoutHeight: height },
-          visuals,
-          null,
-        )
-      ) {
-        return { column, row };
-      }
-    }
-  }
-  return null;
+  return firstFit(visuals, width, height);
 }
 
 /** The rows the design takes: the bottom of its lowest visual. */
 export function rowsOf(visuals: Box[]): number {
-  return visuals.reduce((most, box) => Math.max(most, box.layoutRow + box.layoutHeight), 0);
+  return tenth(visuals.reduce((most, box) => Math.max(most, box.layoutRow + box.layoutHeight), 0));
 }
 
 /** A measure's figure as a card, a chart and a table write it; "not available" when it cannot be calculated or may not be seen. */
@@ -481,14 +516,22 @@ export function groupText(
   }
 }
 
-/** A visual's place on the twelve-column grid; on a narrow screen the visuals stack in reading order instead (styles.css). */
-export function gridPlace(visual: Visual): CSSProperties {
+/**
+ * A visual's place on the twelve-column grid, its first column and row counted from 1: styles.css positions it from these decimals; on a
+ * narrow screen the visuals stack in reading order instead.
+ */
+export function gridPlace(visual: Box): CSSProperties {
   return {
-    '--visual-column': String(visual.layoutColumn + 1),
-    '--visual-row': String(visual.layoutRow + 1),
-    '--visual-width': String(visual.layoutWidth),
-    '--visual-height': String(visual.layoutHeight),
+    '--visual-column': String(tenth(visual.layoutColumn + 1)),
+    '--visual-row': String(tenth(visual.layoutRow + 1)),
+    '--visual-width': String(tenth(visual.layoutWidth)),
+    '--visual-height': String(tenth(visual.layoutHeight)),
   } as CSSProperties;
+}
+
+/** The rows a grid draws, so it is as tall as its lowest visual (styles.css). */
+export function gridRows(rows: number): CSSProperties {
+  return { '--grid-rows': String(tenth(rows)) } as CSSProperties;
 }
 
 /** A key for a visual: its place on the grid, which no other visual shares. */
@@ -549,14 +592,14 @@ export function drillPath(
   }
 }
 
-/** A box kept inside the grid: one to twelve columns starting within it, one to twelve rows from the top. */
-function clamped(box: Box): Box {
-  const width = Math.min(COLUMNS, Math.max(1, Math.round(box.layoutWidth)));
+/** A box kept inside the grid: one to twelve columns starting within it, one to twenty-four rows from the top, each to a tenth. */
+export function clamped(box: Box): Box {
+  const width = Math.min(COLUMNS, Math.max(1, tenth(box.layoutWidth)));
   return {
     layoutWidth: width,
-    layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, Math.round(box.layoutHeight))),
-    layoutColumn: Math.min(COLUMNS - width, Math.max(0, Math.round(box.layoutColumn))),
-    layoutRow: Math.max(0, Math.round(box.layoutRow)),
+    layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, tenth(box.layoutHeight))),
+    layoutColumn: Math.min(tenth(COLUMNS - width), Math.max(0, tenth(box.layoutColumn))),
+    layoutRow: Math.max(0, tenth(box.layoutRow)),
   };
 }
 
@@ -571,16 +614,8 @@ export function packed<T extends Box>(visuals: T[]): T[] {
   const placed: T[] = [];
   for (const visual of visuals) {
     const size = clamped(visual);
-    let spot: Box | undefined;
-    for (let row = 0; spot === undefined; row++) {
-      for (let column = 0; column + size.layoutWidth <= COLUMNS && spot === undefined; column++) {
-        const box = { ...size, layoutColumn: column, layoutRow: row };
-        if (placed.every((other) => !overlaps(box, other))) {
-          spot = box;
-        }
-      }
-    }
-    placed.push({ ...visual, ...spot });
+    const spot = firstFit(placed, size.layoutWidth, size.layoutHeight);
+    placed.push({ ...visual, ...size, layoutColumn: spot.column, layoutRow: spot.row });
   }
   return placed;
 }
@@ -604,7 +639,7 @@ export function settled<T extends Box>(visuals: T[], index: number): T[] {
     for (let covered = fixed.filter((other) => overlaps(box, other)); covered.length > 0;) {
       box = {
         ...box,
-        layoutRow: Math.max(...covered.map((other) => other.layoutRow + other.layoutHeight)),
+        layoutRow: tenth(Math.max(...covered.map((other) => other.layoutRow + other.layoutHeight))),
       };
       covered = fixed.filter((other) => overlaps(box, other));
     }
@@ -619,21 +654,39 @@ export function inReadingOrder<T extends Box>(visuals: T[]): T[] {
 }
 
 /**
- * The visuals where they were placed, with the rows no visual covers taken out, so a visual the caller may not see (left out by the
- * dashboard) leaves no empty band; room beside a visual stays as the designer left it.
+ * The visuals where they were placed, with the bands no visual covers taken out (of any height: places are decimals), so a visual the caller
+ * may not see (left out by the dashboard) leaves no empty band; room beside a visual stays as the designer left it.
  */
 export function withoutEmptyRows<T extends Box>(visuals: T[]): T[] {
-  const covered = new Set<number>();
-  for (const visual of visuals) {
-    for (let row = visual.layoutRow; row < visual.layoutRow + visual.layoutHeight; row++) {
-      covered.add(row);
+  // The rows covered, as merged spans in tenths of a row.
+  const spans: { start: number; end: number }[] = [];
+  for (const visual of [...visuals].sort((a, b) => a.layoutRow - b.layoutRow)) {
+    const start = tenths(visual.layoutRow);
+    const end = start + tenths(visual.layoutHeight);
+    const last = spans.at(-1);
+    if (last !== undefined && start <= last.end) {
+      last.end = Math.max(last.end, end);
+    } else {
+      spans.push({ start, end });
     }
   }
-  const rows = [...covered].sort((a, b) => a - b);
+  // Each visual rises by the empty room above it: the gaps before the span it starts in.
+  const emptyAbove = (row: number) => {
+    let empty = 0;
+    let reached = 0;
+    for (const span of spans) {
+      if (span.start > row) {
+        break;
+      }
+      empty += span.start - reached;
+      reached = span.end;
+    }
+    return empty;
+  };
   return inReadingOrder(
-    visuals.map((visual) => {
-      const emptyAbove = visual.layoutRow - rows.filter((row) => row < visual.layoutRow).length;
-      return { ...visual, layoutRow: visual.layoutRow - emptyAbove };
-    }),
+    visuals.map((visual) => ({
+      ...visual,
+      layoutRow: (tenths(visual.layoutRow) - emptyAbove(tenths(visual.layoutRow))) / 10,
+    })),
   );
 }
