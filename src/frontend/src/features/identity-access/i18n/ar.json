@@ -577,7 +577,14 @@
     "newPassword": "كلمة المرور الجديدة",
     "confirmPassword": "تأكيد كلمة المرور الجديدة",
     "setNewPassword": "تعيين كلمة المرور والمتابعة",
-    "backToSignIn": "العودة إلى تسجيل الدخول"
+    "backToSignIn": "العودة إلى تسجيل الدخول",
+    "deviceUnlock": {
+      "faceId": "تسجيل الدخول ببصمة الوجه (Face ID)",
+      "touchId": "تسجيل الدخول ببصمة الإصبع (Touch ID)",
+      "windowsHello": "تسجيل الدخول بـ Windows Hello",
+      "fingerprint": "تسجيل الدخول ببصمة الإصبع",
+      "deviceUnlock": "تسجيل الدخول بقفل هذا الجهاز"
+    }
   },
   "signInMethods": {
     "menu": "طرق تسجيل الدخول",

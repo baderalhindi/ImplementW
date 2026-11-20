@@ -6,11 +6,12 @@
 const KEY = 'pmplatform.deviceUnlock';
 
 async function digest(nationalId: string): Promise<string | null> {
+  return hashOf(`pmplatform:${nationalId}`);
+}
+
+async function hashOf(text: string): Promise<string | null> {
   try {
-    const bytes = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(`pmplatform:${nationalId}`),
-    );
+    const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
     return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('');
   } catch {
     return null;
@@ -48,6 +49,17 @@ export async function hasDeviceUnlock(nationalId: string): Promise<boolean> {
 
 export async function rememberDeviceUnlock(nationalId: string): Promise<void> {
   const hash = await digest(nationalId);
+  if (hash !== null && !read().includes(hash)) {
+    write([...read(), hash]);
+  }
+}
+
+/**
+ * Face ID / Touch ID was added from Sign-in methods (20 Nov 2026): no National ID is in hand there, so the account's id stands for it.
+ * Enough for the sign-in page to offer the one-press button; a National ID sign-in still asks for the number.
+ */
+export async function rememberAccountDeviceUnlock(userId: string): Promise<void> {
+  const hash = await hashOf(`pmplatform:user:${userId}`);
   if (hash !== null && !read().includes(hash)) {
     write([...read(), hash]);
   }

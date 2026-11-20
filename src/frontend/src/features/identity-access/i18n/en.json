@@ -577,7 +577,14 @@
     "newPassword": "New password",
     "confirmPassword": "Confirm the new password",
     "setNewPassword": "Set password and continue",
-    "backToSignIn": "Back to sign-in"
+    "backToSignIn": "Back to sign-in",
+    "deviceUnlock": {
+      "faceId": "Sign in with Face ID",
+      "touchId": "Sign in with Touch ID",
+      "windowsHello": "Sign in with Windows Hello",
+      "fingerprint": "Sign in with your fingerprint",
+      "deviceUnlock": "Sign in with this device's unlock"
+    }
   },
   "signInMethods": {
     "menu": "Sign-in methods",

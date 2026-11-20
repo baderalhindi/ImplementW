@@ -9,12 +9,14 @@ import { FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 
 import { useFocusFirstError, useSaveAction } from '../forms.ts';
 import { problemMessage } from '../problems.ts';
+import { rememberAccountDeviceUnlock } from './deviceUnlockMemory.ts';
 import {
   type MobileNumberStatus,
   type MobileVerificationChallenge,
   type PasskeySummary,
   signInMethodsApi,
 } from './signInMethodsApi.ts';
+import { useSession } from './useSession.ts';
 import {
   creationOptions,
   credentialJson,
@@ -31,6 +33,7 @@ const loadMobileNumber = (signal: AbortSignal) => signInMethodsApi.getMobileNumb
 
 function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
   const { t } = useI18n();
+  const { session } = useSession();
   const formRef = useRef<HTMLFormElement>(null);
   const unlock = deviceUnlock();
   const save = useSaveAction((error, translate) =>
@@ -74,6 +77,10 @@ function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
       return signInMethodsApi.addPasskey(transaction, credentialJson(credential), name.trim());
     });
     if (result.ok) {
+      // The sign-in page offers Face ID / Touch ID in one press on a device that has it saved.
+      if (session !== null) {
+        await rememberAccountDeviceUnlock(session.user.id);
+      }
       onAdded();
     }
   };

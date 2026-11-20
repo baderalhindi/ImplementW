@@ -16,26 +16,18 @@ import {
 } from './deviceUnlockMemory.ts';
 import { MOBILE_PATTERN, toE164 } from './mobileNumber.ts';
 import { sessionApi, type SmsCodeChallenge } from './sessionApi.ts';
-import { nextStep } from './signInSteps.ts';
 import {
-  credentialJson,
-  deviceUnlock,
-  isPasskeyCancelled,
-  platformPasskeysAvailable,
-  requestOptions,
-} from './webAuthn.ts';
+  describePasskeyRefusal,
+  nextStep,
+  type SignInStep,
+  signInWithPasskey,
+} from './signInSteps.ts';
+import { deviceUnlock, platformPasskeysAvailable } from './webAuthn.ts';
 
-export type SignInStep = Awaited<ReturnType<typeof nextStep>>;
+export type { SignInStep };
 
 /** The wait before another code can be sent: the API's resend cooldown. */
 const RESEND_SECONDS = 60;
-
-const describe: ProblemDescriber = (error, t) =>
-  isPasskeyCancelled(error)
-    ? t('identityAccess.signIn.passwordless.passkeyCancelled')
-    : error instanceof ApiError && error.code === 'AUTHENTICATION_REQUIRED'
-      ? t('identityAccess.signIn.passwordless.refused')
-      : problemMessage(error, t);
 
 /** At the code step, a refusal is about the code. */
 const describeCode: ProblemDescriber = (error, t) =>
@@ -72,7 +64,7 @@ export function PasswordlessSignIn({
 }): ReactElement {
   const { t } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
-  const save = useSaveAction(describe);
+  const save = useSaveAction(describePasskeyRefusal);
   const codeSave = useSaveAction(describeCode);
   useFocusFirstError(formRef, save.fieldErrors);
   const unlock = deviceUnlock();
@@ -127,16 +119,7 @@ export function PasswordlessSignIn({
   const signInWithDeviceUnlock = async (
     forNationalId: string | null,
   ): Promise<'signedIn' | 'refused' | 'failed'> => {
-    const result = await save.run(async () => {
-      const { options, transaction } = await sessionApi.beginPasskeySignIn(forNationalId);
-      const credential = (await navigator.credentials.get({
-        publicKey: requestOptions(options),
-      })) as PublicKeyCredential | null;
-      if (credential === null) {
-        throw new DOMException('Nothing was chosen.', 'NotAllowedError');
-      }
-      return nextStep(await sessionApi.signInWithPasskey(transaction, credentialJson(credential)));
-    });
+    const result = await save.run(() => signInWithPasskey(forNationalId));
     if (result.ok) {
       if (forNationalId !== null) {
         await rememberDeviceUnlock(forNationalId);

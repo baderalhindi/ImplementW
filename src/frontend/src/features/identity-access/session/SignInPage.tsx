@@ -17,6 +17,7 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 import { checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { DirectoryPasswordHelp, NewPasswordFields } from './passwordSelfService.tsx';
 import { DeviceUnlockSetup } from './DeviceUnlockSetup.tsx';
+import { DeviceUnlockSignIn } from './DeviceUnlockSignIn.tsx';
 import { PasswordlessSignIn } from './PasswordlessSignIn.tsx';
 import { checkNewPassword } from './passwordUpdate.ts';
 import { SecondFactorForm } from './SecondFactorForm.tsx';
@@ -483,6 +484,16 @@ export function SignInPage(): ReactElement {
                         </span>
                       )}
                     </button>
+                    <DeviceUnlockSignIn
+                      passkeyAvailable={signInOptions.data?.passkeySignInAvailable === true}
+                      onSignedIn={(step) => {
+                        if ('session' in step) {
+                          finish(step.session);
+                        } else {
+                          setSecondFactor(step.secondFactor);
+                        }
+                      }}
+                    />
                   </>
                 )}
                 {tab === 'directory' && (
