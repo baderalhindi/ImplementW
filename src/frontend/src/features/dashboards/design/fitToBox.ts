@@ -50,6 +50,9 @@ const DRAWN_AT_BOX_SIZE: ReadonlySet<string> = new Set([
   'TABLE',
   'TEXT',
   'MAP',
+  // A pie or donut sizes its ring to its room (DonutWithLegend); drawn smaller as well, it would measure a larger room and grow (20 Nov 2026).
+  'PIE',
+  'DONUT',
 ]);
 
 /**

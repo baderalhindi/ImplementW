@@ -26,7 +26,7 @@ describe('fit to box', () => {
   });
 
   test('cards, gauges, pies, donuts, box sections and widgets are fitted; charts, tables, list sections and the map are not', () => {
-    for (const visualType of ['CARD', 'GAUGE', 'PIE', 'DONUT']) {
+    for (const visualType of ['CARD', 'GAUGE']) {
       expect(fitsToBox({ visualType }), visualType).toBe(true);
     }
     for (const section of [
@@ -37,7 +37,7 @@ describe('fit to box', () => {
     ]) {
       expect(fitsToBox({ visualType: 'SECTION', section }), section).toBe(true);
     }
-    for (const visualType of ['BAR', 'COLUMN', 'LINE', 'TABLE']) {
+    for (const visualType of ['BAR', 'COLUMN', 'LINE', 'TABLE', 'PIE', 'DONUT']) {
       expect(fitsToBox({ visualType }), visualType).toBe(false);
     }
     // A table at half size was too small to read (20 Nov 2026): tables and lists scroll at full size.
