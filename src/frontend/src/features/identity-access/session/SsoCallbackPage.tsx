@@ -59,7 +59,8 @@ export function SsoCallbackPage(): ReactElement {
   }, [code, redeemable, run, session, started, state]);
 
   if (session !== null) {
-    return <Navigate to={started?.returnTo ?? '/'} replace />;
+    // A sign-in lands on the Home page (20 Nov 2026), as SignInPage's does.
+    return <Navigate to="/" replace />;
   }
 
   const failure = redeemable ? save.formError : t('identityAccess.signIn.sso.notCompleted');

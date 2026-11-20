@@ -7,11 +7,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { isAppPath } from '@/shared/navigation/appPath.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
@@ -38,10 +37,11 @@ const accountTabs: readonly AccountTab[] = ['microsoft', 'directory'];
 
 const loadSignInOptions = (signal: AbortSignal) => sessionApi.getSignInOptions(signal);
 
-function redirectTarget(state: unknown): string {
-  const from = (state as { from?: unknown } | null)?.from;
-  return isAppPath(from) ? from : '/';
-}
+/**
+ * Where a sign-in lands: the Home page, whoever signs in and whatever page they had opened before (20 Nov 2026, the user: "when signing in
+ * with any user the website goes to the Home page").
+ */
+const SIGNED_IN_PATH = '/';
 
 function Icon({ children }: { children: ReactNode }): ReactElement {
   return (
@@ -195,7 +195,6 @@ function NafathPanel({ passwordless }: { passwordless: ReactNode }): ReactElemen
 export function SignInPage(): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
-  const location = useLocation();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [passwordChange, setPasswordChange] = useState<PasswordChangePending | null>(null);
@@ -229,7 +228,7 @@ export function SignInPage(): ReactElement {
   const signInOptions = useApiResource(loadSignInOptions);
   const singleSignOnAvailable = signInOptions.data?.singleSignOnAvailable === true;
 
-  const target = redirectTarget(location.state);
+  const target = SIGNED_IN_PATH;
   if (session !== null) {
     return <Navigate to={target} replace />;
   }

@@ -251,7 +251,7 @@ describe('sign-in', () => {
     expect(await screen.findByText(en('identityAccess.signIn.wrongCode'))).toBeTruthy();
   });
 
-  test('an administrator signs in with the second factor and returns to the page they asked for', async () => {
+  test('an administrator signs in with the second factor and lands on the Home page, whatever page they asked for', async () => {
     const session = sessionFor(['R01']);
     const api = withIdentityAccessData(mockApi())
       .on('POST', /^\/sessions$/, {
@@ -274,21 +274,15 @@ describe('sign-in', () => {
     await user.type(await screen.findByRole('textbox', { name: /Verification code/ }), '654321');
     await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.verify') }));
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: en('identityAccess.roles.list.title') }),
-    ).toBeTruthy();
-    expect(router.state.location.pathname).toBe('/admin/roles');
+    // A sign-in lands on the Home page (20 Nov 2026), not on the page that was asked for.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/');
+    });
     expect(api.requestsTo('POST', /^\/sessions$/)[0]?.headers.get('Authorization')).toBeNull();
     expect(api.requestsTo('POST', /^\/sessions\/mfa$/)[0]?.body).toEqual({
       mfaToken: 'mfa-token',
       challengeId: 'challenge-1',
       code: '654321',
-    });
-    // The page renders its heading before it reads the list, so wait for the read rather than assume it was sent.
-    await waitFor(() => {
-      expect(api.requestsTo('GET', /^\/roles$/)[0]?.headers.get('Authorization')).toBe(
-        'Bearer test-access-token',
-      );
     });
   });
 
