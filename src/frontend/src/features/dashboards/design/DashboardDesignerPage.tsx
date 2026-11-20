@@ -143,16 +143,27 @@ function withoutFigures(visual: VisualResult): Visual {
     filters: visual.filters,
     axes: visual.axes,
     hiddenColumns: visual.hiddenColumns,
+    columns: visual.columns,
+    showTotals: visual.showTotals,
     ...(visual.children === undefined || visual.children === null
       ? {}
       : { children: visual.children.map(withoutFigures) }),
   });
 }
 
-/** What a visual's figures are calculated from: its type, measures or field values, grouping and filters. */
+/** What a visual's figures are calculated from: its type, measures or field values (or a table's columns), grouping and filters. */
 function figuresBasis(visual: Visual): string {
-  const { visualType, measures, groupBy, values, groupField, groupDateUnit, filters } =
-    normalized(visual);
+  const {
+    visualType,
+    measures,
+    groupBy,
+    values,
+    groupField,
+    groupDateUnit,
+    filters,
+    columns,
+    showTotals,
+  } = normalized(visual);
   return JSON.stringify({
     visualType,
     measures,
@@ -161,6 +172,8 @@ function figuresBasis(visual: Visual): string {
     groupField,
     groupDateUnit,
     filters,
+    columns,
+    showTotals,
   });
 }
 

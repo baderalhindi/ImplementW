@@ -14,7 +14,9 @@ import { GaugeChart } from '../components/Charts.tsx';
 import { DonutWithLegend } from '../components/DonutWithLegend.tsx';
 import { drawnAxes, valueScale } from './axes.ts';
 import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx';
+import { ColumnTable } from './ColumnTable.tsx';
 import { LineChart } from './LineChart.tsx';
+import { hasColumns } from './tableColumns.ts';
 import { Coverage } from '../insights/figures.tsx';
 import { isStatusScale, labelOfValue } from '../presentation.ts';
 import {
@@ -83,6 +85,22 @@ export function VisualBody({
   const lookups = useProjectLookups();
   const [active, setActive] = useState<string | null>(null);
   const groups = visual.groups ?? [];
+
+  if (hasColumns(visual)) {
+    // A column table (tableColumns.ts) is drawn from its `table`, not its groups.
+    const table = visual.table ?? null;
+    return table === null || table.rows.length === 0 ? (
+      <p className="state">{t('dashboards.noData')}</p>
+    ) : (
+      <ColumnTable
+        caption={visual.title[language]}
+        columns={visual.columns ?? []}
+        table={table}
+        showTotals={visual.showTotals !== false}
+        filters={filters}
+      />
+    );
+  }
 
   if (groups.length === 0 || groups.every((group) => group.projects === 0)) {
     return <p className="state">{t('dashboards.noData')}</p>;

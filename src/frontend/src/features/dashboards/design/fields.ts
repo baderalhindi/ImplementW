@@ -334,7 +334,8 @@ export const NO_FIELD_DATA = {
 
 /**
  * A visual as it is compared and sent: its field data and widget code only where it has some, so a design read back equals the one sent; its axes as the API
- * takes them, null for the defaults (axes.ts); a table section's hidden columns, null when none (sectionColumns.ts); a container's children, each so.
+ * takes them, null for the defaults (axes.ts); a table section's hidden columns, null when none (sectionColumns.ts); a column table's columns and
+ * totals choice (tableColumns.ts); a container's children, each so.
  */
 export function normalized<T extends Visual>(visual: T): T {
   const {
@@ -346,6 +347,8 @@ export function normalized<T extends Visual>(visual: T): T {
     widgetCode,
     children,
     hiddenColumns: _hiddenColumns,
+    columns,
+    showTotals: _showTotals,
     ...rest
   } = visual;
   const hiddenColumns = sentHiddenColumns(visual);
@@ -361,6 +364,13 @@ export function normalized<T extends Visual>(visual: T): T {
     ...(filters === undefined || filters === null || filters.length === 0 ? {} : { filters }),
     // Only on a table section, null when every column is shown.
     ...(hiddenColumns === undefined ? {} : { hiddenColumns }),
+    // Only on a table drawn from columns, with whether it shows its totals.
+    ...(visual.visualType !== 'TABLE' ||
+    columns === undefined ||
+    columns === null ||
+    columns.length === 0
+      ? {}
+      : { columns, showTotals: visual.showTotals !== false }),
   } as T;
 }
 

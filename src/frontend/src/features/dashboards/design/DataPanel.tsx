@@ -35,6 +35,8 @@ import {
   withFilter,
 } from './fields.ts';
 import { axisLabels, takesAxes } from './axes.ts';
+import { ColumnsWell } from './ColumnsWell.tsx';
+import { FieldGroup, FieldRow, RemoveButton } from './FieldList.tsx';
 import {
   firstGrouping,
   GROUP_BYS,
@@ -60,7 +62,7 @@ const FIGURES = 'FIGURES';
 /**
  * The selected visual's data, as Power BI's field list offers it (TASK-112): the Portfolio figures and the governed fields by source, searched
  * and ticked; each chosen field's calculation; the grouping, by a project attribute or a status field; and the visual's own filters. A visual
- * draws figures or fields, never both: ticking one kind replaces the other, and the panel says so.
+ * draws figures or fields, never both: ticking one kind replaces the other, and the panel says so. A table has its Columns instead (ColumnsWell).
  */
 export function DataPanel({
   visual,
@@ -84,6 +86,16 @@ export function DataPanel({
   const max = onFields ? MAX_VALUES[type] : MAX_MEASURES[type];
   const chosen = onFields ? values.length : visual.measures.length;
   const descriptor = (key: string) => catalogue.find((field) => field.key === key);
+
+  if (type === 'TABLE') {
+    // A table's values box is its Columns (Power BI's): what groups the rows and what is calculated in each; its filters as any field visual's.
+    return (
+      <>
+        <ColumnsWell visual={visual} fields={fields} onChange={onChange} />
+        <FiltersEditor visual={visual} catalogue={catalogue} onChange={onChange} />
+      </>
+    );
+  }
 
   const offered = catalogue.filter((field) => aggregationsFor(field, type).length > 0);
   const query = search.trim().toLocaleLowerCase();
@@ -348,105 +360,6 @@ export function DataPanel({
         </div>
       )}
     </>
-  );
-}
-
-/** A source's fields under a heading that opens and closes them, with how many of them are chosen. */
-function FieldGroup({
-  name,
-  hint,
-  chosen,
-  open,
-  onToggle,
-  children,
-}: {
-  name: string;
-  /** A word beside the name: "over time" for the published history's fields. */
-  hint: string | null;
-  chosen: number;
-  open: boolean;
-  onToggle: () => void;
-  children: ReactElement[];
-}): ReactElement {
-  const id = useId();
-  return (
-    <div className="designer-data__group">
-      <button
-        type="button"
-        className="designer-data__group-head"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={onToggle}
-      >
-        <span className="designer-data__chevron" aria-hidden="true" />
-        <span className="designer-data__group-name">{name}</span>
-        {hint !== null && <span className="designer-data__over-time">{hint}</span>}
-        {chosen > 0 && <span className="designer-data__count">{chosen}</span>}
-      </button>
-      {open && (
-        <ul id={id} className="designer-data__fields">
-          {children}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function FieldRow({
-  name,
-  hint,
-  checked,
-  disabled,
-  onChange,
-}: {
-  name: string;
-  hint: string | null;
-  checked: boolean;
-  disabled: boolean;
-  onChange: (on: boolean) => void;
-}): ReactElement {
-  return (
-    <li>
-      <label className="designer-data__field">
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={disabled}
-          onChange={(event) => {
-            onChange(event.target.checked);
-          }}
-        />
-        <span className="designer-data__field-name" dir="auto">
-          {name}
-        </span>
-        {hint !== null && <span className="designer-data__type">{hint}</span>}
-      </label>
-    </li>
-  );
-}
-
-function RemoveButton({
-  label,
-  disabled,
-  onClick,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-}): ReactElement {
-  return (
-    <button
-      type="button"
-      className="designer-data__remove"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M6 6l12 12M18 6L6 18" />
-      </svg>
-    </button>
   );
 }
 

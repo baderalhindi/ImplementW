@@ -15,6 +15,7 @@ import {
   sectionTables,
   withColumnShown,
 } from './sectionColumns.ts';
+import { isEditableSection, madeEditable } from './tableColumns.ts';
 import { asLine, MAX_HEIGHT, retitled, tenth, VISUAL_TYPES, withType } from './visuals.ts';
 
 /** The sizes a visual may take where it is: a container's least size, and a child's columns (its container's width). */
@@ -133,6 +134,32 @@ function ColumnChoice({
 }
 
 /**
+ * Make editable (20 Nov 2026, docs/architecture/dashboard-designer-power-table.md): the table section becomes a table visual with the same
+ * columns, at the same place, size and titles, whose columns and calculations can then be changed; an unsaved change as any other.
+ */
+function MakeEditable({
+  sectorSpend,
+  onClick,
+}: {
+  sectorSpend: boolean;
+  onClick: () => void;
+}): ReactElement {
+  const { t } = useI18n();
+  const id = useId();
+  return (
+    <div className="field designer-make-editable">
+      <button type="button" className="button" aria-describedby={id} onClick={onClick}>
+        {t('dashboards.designer.makeEditable')}
+      </button>
+      <p id={id} className="field__hint">
+        {t('dashboards.designer.makeEditableHint')}
+        {sectorSpend && <> {t('dashboards.designer.makeEditableSectorSpend')}</>}
+      </p>
+    </div>
+  );
+}
+
+/**
  * The selected visual's settings: its titles, type, data (DataPanel: values, grouping and filters), a chart's axes (AxesFormat) and size. Only what the type takes is offered, so whatever is chosen
  * saves; a size that would cover another visual is refused by the designer, which says so. A container has its titles and size only.
  */
@@ -209,6 +236,14 @@ export function VisualSettings({
                   : 'dashboards.designer.sectionSettings',
             )}
           </p>
+          {isEditableSection(visual.section) && (
+            <MakeEditable
+              sectorSpend={visual.section === 'SECTOR_TABLE'}
+              onClick={() => {
+                onChange(madeEditable(visual, hiddenColumnsOf(visual)));
+              }}
+            />
+          )}
           {isTable && <ColumnChoice visual={visual} onChange={onChange} />}
         </>
       ) : (

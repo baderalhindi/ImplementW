@@ -88,6 +88,65 @@ export interface FieldDescriptor {
   grain: FieldGrain;
 }
 
+/** What a table column is (20 Nov 2026, docs/architecture/dashboard-designer-power-table.md): a project attribute, a data field or a portfolio figure. */
+export type TableColumnKind = 'DIMENSION' | 'FIELD' | 'MEASURE';
+
+/** A table column's calculation, as Power BI's: NONE ("Don't summarize") groups the rows by the column's value; a figure takes none (null). */
+export type TableAggregation =
+  | 'NONE'
+  | 'COUNT'
+  | 'COUNT_DISTINCT'
+  | 'SUM'
+  | 'AVERAGE'
+  | 'MIN'
+  | 'MAX'
+  | 'COUNT_TRUE'
+  | 'SHARE_TRUE';
+
+/** One column of a table visual: a dimension's, field's or figure's key and its calculation (null for a figure). */
+export interface TableColumn {
+  kind: TableColumnKind;
+  key: string;
+  aggregation: TableAggregation | null;
+}
+
+/** How a table column's cells read: an item's name, a code, text, or a figure of a kind. */
+export type TableColumnType =
+  | 'ITEM'
+  | 'CODE'
+  | 'TEXT'
+  | 'COUNT'
+  | 'PERCENT'
+  | 'DAYS'
+  | 'SAR'
+  | 'DATE'
+  | 'BOOLEAN'
+  | 'ON_PLAN'
+  | 'POINTS';
+
+/** A table cell: a grouping column's key and words, or a calculated value; null when missing or (with `masked`) withheld. */
+export interface TableCell {
+  key: string | null;
+  label: BilingualLabel | null;
+  value: number | null;
+  masked?: boolean;
+}
+
+export interface TableRow {
+  projects: number;
+  /** The project, on a table with one row per project (grouped by its title or ID). */
+  projectId: string | null;
+  cells: TableCell[];
+}
+
+/** A column table's figures: each column's type, the rows (at most 500), the totals over all their projects (null when not shown). */
+export interface TableResult {
+  columnTypes: string[];
+  rows: TableRow[];
+  totals: TableCell[] | null;
+  truncated: boolean;
+}
+
 /** A value a visual draws from a field: the field's key and the calculation over each group's projects. */
 export interface FieldValue {
   field: string;
@@ -155,6 +214,10 @@ export interface Visual {
   children?: Visual[] | null | undefined;
   /** A table section's unticked columns (sectionColumns.ts), null when every column is shown; absent on any other visual. */
   hiddenColumns?: string[] | null | undefined;
+  /** A table's columns (1–12): with them its `measures` are empty, `values` null and it is grouped by none; absent on any other visual. */
+  columns?: TableColumn[] | null | undefined;
+  /** Whether a column table draws its totals row; absent or null means it does. */
+  showTotals?: boolean | null | undefined;
 }
 
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */
@@ -174,6 +237,8 @@ export interface VisualResult extends Visual {
   valueTypes?: FieldType[] | null | undefined;
   /** A container's visuals, each calculated as a top-level visual is. */
   children?: VisualResult[] | null | undefined;
+  /** A column table's figures; its `groups` are then []. */
+  table?: TableResult | null | undefined;
 }
 
 export interface DesignView {

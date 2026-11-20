@@ -29,6 +29,7 @@ import {
   rowsOf,
   withoutEmptyRows,
 } from './visuals.ts';
+import { hasColumns } from './tableColumns.ts';
 import { VisualBody } from './VisualBody.tsx';
 import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
 
@@ -278,7 +279,10 @@ export function DesignedVisuals({
   const split = hasWidgetsToSplit(design.data.visuals, view.widgets);
   const isShown = (visual: VisualResult) =>
     visual.section === undefined || visual.section === null
-      ? visual.groups !== null && !withheld(visual)
+      ? visual.groups !== null &&
+        !withheld(visual) &&
+        // A column table the caller may not see comes back with no table.
+        (!hasColumns(visual) || (visual.table !== null && visual.table !== undefined))
       : sectionShown(visual, sources);
   // A container keeps the visuals the caller may see, with the inner rows they leave empty taken out; one with none left is left out.
   const visible = splitWidgets(

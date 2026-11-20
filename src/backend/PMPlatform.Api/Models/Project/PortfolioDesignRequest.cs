@@ -61,7 +61,9 @@ public sealed record PortfolioVisualRequest(
     PortfolioAxesRequest? Axes = null,
     string? WidgetCode = null,
     IReadOnlyList<PortfolioVisualRequest?>? Children = null,
-    IReadOnlyList<string?>? HiddenColumns = null)
+    IReadOnlyList<string?>? HiddenColumns = null,
+    IReadOnlyList<PortfolioTableColumnRequest?>? Columns = null,
+    bool? ShowTotals = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -72,7 +74,7 @@ public sealed record PortfolioVisualRequest(
         Require(LayoutRow, $"{at}.layoutRow", errors);
         Require(LayoutWidth, $"{at}.layoutWidth", errors);
         Require(LayoutHeight, $"{at}.layoutHeight", errors);
-        if (Measures is null && Section is null && Values is null && VisualType != PortfolioVisualType.Container)
+        if (Measures is null && Section is null && Values is null && Columns is null && VisualType != PortfolioVisualType.Container)
         {
             errors.Add(new FieldError($"{at}.measures", FieldError.Required));
         }
@@ -101,6 +103,14 @@ public sealed record PortfolioVisualRequest(
             }
         }
 
+        for (int i = 0; i < (Columns?.Count ?? 0); i++)
+        {
+            if (Columns![i] is not { Kind: not null, Key: not null })
+            {
+                errors.Add(new FieldError($"{at}.columns[{i}]", FieldError.Required));
+            }
+        }
+
         Axes?.Validate($"{at}.axes", errors);
         for (int i = 0; i < (Children?.Count ?? 0); i++)
         {
@@ -119,7 +129,8 @@ public sealed record PortfolioVisualRequest(
         new(Title!.ToLabel(), VisualType!.Value, Measures ?? [], GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value, Section,
             Values?.Select(v => new PortfolioFieldValue(v!.Field!, v.Aggregation!.Value)).ToList(), GroupField,
             Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes(), WidgetCode,
-            Children?.Select(c => c!.ToInput()).ToList(), HiddenColumns?.Select(c => c!).ToList());
+            Children?.Select(c => c!.ToInput()).ToList(), HiddenColumns?.Select(c => c!).ToList(),
+            Columns?.Select(c => new PortfolioTableColumn(c!.Kind!.Value, c.Key!, c.Aggregation)).ToList(), ShowTotals);
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct
@@ -133,6 +144,12 @@ public sealed record PortfolioVisualRequest(
 
 /// <summary>A value a visual draws: a field key of the data catalogue and its aggregation; how they fit the visual is checked by the service.</summary>
 public sealed record PortfolioFieldValueRequest(string? Field, PortfolioFieldAggregation? Aggregation);
+
+/// <summary>
+/// A column of a TABLE visual (the 20 Nov 2026 Power BI-style table): its kind, its key and its calculation (null for a measure); whether they fit is checked
+/// by the service.
+/// </summary>
+public sealed record PortfolioTableColumnRequest(PortfolioTableColumnKind? Kind, string? Key, PortfolioTableAggregation? Aggregation = null);
 
 /// <summary>A visual's filter: a CODE field key or a dimension key, and the values that pass; their shape is checked by the service.</summary>
 public sealed record PortfolioFieldFilterRequest(string? Field, IReadOnlyList<string>? Values);

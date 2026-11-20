@@ -38749,6 +38749,215 @@
           }
         }
       },
+      "PortfolioTableAggregation": {
+        "enum": [
+          "NONE",
+          "COUNT",
+          "COUNT_DISTINCT",
+          "SUM",
+          "AVERAGE",
+          "MIN",
+          "MAX",
+          "COUNT_TRUE",
+          "SHARE_TRUE",
+          null
+        ]
+      },
+      "PortfolioTableCell": {
+        "required": [
+          "key",
+          "label",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "value": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "masked": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "description": "One cell: a grouped column's string? PortfolioTableCell.Key (an id, a code, a date or a number as written) and BilingualLabel? PortfolioTableCell.Label when the backend names it, or a\ncalculated decimal? PortfolioTableCell.Value. A value the caller may not see is null with bool PortfolioTableCell.Masked true; a missing one is null, never 0, except a count."
+      },
+      "PortfolioTableColumn": {
+        "required": [
+          "kind",
+          "key",
+          "aggregation"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PortfolioTableColumnKind"
+          },
+          "key": {
+            "type": "string"
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableAggregation"
+              }
+            ]
+          }
+        },
+        "description": "A column of a TABLE visual: what it reads and its calculation (null for a PortfolioTableColumnKind.Measure)."
+      },
+      "PortfolioTableColumnKind": {
+        "enum": [
+          "DIMENSION",
+          "FIELD",
+          "MEASURE"
+        ],
+        "description": "What a column of a TABLE visual reads (the 20 Nov 2026 Power BI-style table): a project attribute, a data catalogue field or a portfolio figure."
+      },
+      "PortfolioTableColumnRequest": {
+        "required": [
+          "kind",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableColumnKind"
+              }
+            ]
+          },
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableAggregation"
+              }
+            ]
+          }
+        },
+        "description": "A column of a TABLE visual (the 20 Nov 2026 Power BI-style table): its kind, its key and its calculation (null for a measure); whether they fit is checked\nby the service."
+      },
+      "PortfolioTableColumnType": {
+        "enum": [
+          "ITEM",
+          "CODE",
+          "TEXT",
+          "COUNT",
+          "PERCENT",
+          "DAYS",
+          "SAR",
+          "DATE",
+          "BOOLEAN",
+          "ON_PLAN",
+          "POINTS"
+        ],
+        "description": "How a table column's cells are formatted."
+      },
+      "PortfolioTableResult": {
+        "required": [
+          "columnTypes",
+          "rows",
+          "totals",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "columnTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableColumnType"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableRow"
+            }
+          },
+          "totals": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableCell"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "description": "A column table's figures: a type per column, the rows (at most 500, bool PortfolioTableResult.Truncated beyond), and the totals unless switched off."
+      },
+      "PortfolioTableRow": {
+        "required": [
+          "projects",
+          "projectId",
+          "cells"
+        ],
+        "type": "object",
+        "properties": {
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableCell"
+            }
+          }
+        },
+        "description": "A row: its projects, the project when the row is one project (grouped by its title or ID), and a cell per column in order."
+      },
       "PortfolioTopProject": {
         "required": [
           "projectId",
@@ -39167,6 +39376,21 @@
             "items": {
               "type": "string"
             }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableColumnRequest"
+            }
+          },
+          "showTotals": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },
@@ -39326,6 +39550,31 @@
             "items": {
               "type": "string"
             }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableColumn"
+            }
+          },
+          "showTotals": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "table": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableResult"
+              }
+            ]
           }
         },
         "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."

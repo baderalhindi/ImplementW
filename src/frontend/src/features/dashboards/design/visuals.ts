@@ -35,6 +35,15 @@ import {
   NO_FIELD_DATA,
   valuesFor,
 } from './fields.ts';
+import {
+  asColumnTable,
+  columnHeading,
+  columnName,
+  columnsOf,
+  groupsRows,
+  NEW_TABLE_COLUMNS,
+  withoutColumns,
+} from './tableColumns.ts';
 
 // What a visual may be and how its figures read: the same rules the API checks (PortfolioDesignService), so the designer offers only what
 // saves. A card and a gauge show one figure, the charts a figure per group, a table either. The governed fields' own rules are in fields.ts.
@@ -202,10 +211,15 @@ export function asLine(visual: Visual, fields: readonly FieldDescriptor[]): Visu
  * visual unchanged when the catalogue offers it none.
  */
 export function withType(
-  visual: Visual,
+  before: Visual,
   type: VisualType,
   fields: readonly FieldDescriptor[] = [],
 ): Visual {
+  // A table draws columns (tableColumns.ts): its grouping and figures become columns, and back again for any other type.
+  if (type === 'TABLE') {
+    return asColumnTable(before, columnsOf(before, fields), fields);
+  }
+  const visual = withoutColumns(before);
   if (type === 'LINE') {
     return asLine(visual, fields) ?? visual;
   }
@@ -243,9 +257,25 @@ export function withType(
  * and its grouping until someone writes another.
  */
 export function autoTitle(
-  visual: Pick<Visual, 'measures' | 'groupBy' | 'values' | 'groupField'>,
+  visual: Pick<Visual, 'measures' | 'groupBy' | 'values' | 'groupField' | 'columns'>,
   language: Language,
 ): string {
+  if ((visual.columns?.length ?? 0) > 0) {
+    // A column table: its first calculated column by its first grouping one, "Projects by Sector".
+    const columns = visual.columns ?? [];
+    const figure = columns.find((column) => !groupsRows(column));
+    const grouping = columns.find(groupsRows);
+    const measure =
+      figure === undefined
+        ? translate(language, 'dashboards.designer.measure.PROJECTS')
+        : columnHeading(figure, language);
+    return grouping === undefined
+      ? measure
+      : translate(language, 'dashboards.designer.titleByGroup', {
+          measure,
+          group: columnName(grouping, language),
+        }).replace(/[\u2068\u2069]/g, '');
+  }
   const [value] = visual.values ?? [];
   const measure =
     value === undefined
@@ -313,6 +343,22 @@ export function newVisual(
     return line === null
       ? null
       : { ...line, title: { ar: autoTitle(line, 'ar'), en: autoTitle(line, 'en') } };
+  }
+  if (type === 'TABLE') {
+    // A table starts as Power BI's: the sector, Don't summarize, and its projects.
+    const table: Visual = {
+      title: { ar: '', en: '' },
+      visualType: 'TABLE',
+      measures: [],
+      groupBy: 'NONE',
+      layoutColumn: place.column,
+      layoutRow: place.row,
+      layoutWidth: width,
+      layoutHeight: height,
+      columns: [...NEW_TABLE_COLUMNS],
+      showTotals: true,
+    };
+    return { ...table, title: { ar: autoTitle(table, 'ar'), en: autoTitle(table, 'en') } };
   }
   const measures: Measure[] =
     type === 'COLUMN'

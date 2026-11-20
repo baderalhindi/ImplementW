@@ -391,7 +391,10 @@
       "AVERAGE_ACTUAL": "متوسط الفعلي",
       "GAP_POINTS": "الفارق (نقاط)",
       "NEEDING_FOLLOW_UP": "تحتاج متابعة",
-      "OVERDUE_ACTIONS": "إجراءات متأخرة"
+      "OVERDUE_ACTIONS": "إجراءات متأخرة",
+      "MEASURED": "المقيس",
+      "ON_PLAN": "الالتزام بالخطة",
+      "PROJECT_SHARE": "نسبة المشاريع"
     },
     "groupBy": {
       "NONE": "بلا تجميع (رقم واحد)",
@@ -405,7 +408,9 @@
       "ON_PLAN": "مؤشر الالتزام بالخطة",
       "REGION": "المنطقة",
       "CITY": "المدينة",
-      "PRIORITY": "الأولوية"
+      "PRIORITY": "الأولوية",
+      "TITLE": "عنوان المشروع",
+      "FORMAL_PROJECT_ID": "رقم المشروع الرسمي"
     },
     "other": "{count} أخرى",
     "editVisual": "تعديل {title}",
@@ -441,13 +446,15 @@
     "filterNoValues": "لا توجد قيم للاختيار منها.",
     "fieldCoverage": "{count} من {total} مشروعًا لها قيمة",
     "aggregation": {
+      "NONE": "دون تلخيص",
       "COUNT": "العدد",
       "SUM": "المجموع",
       "AVERAGE": "المتوسط",
       "MIN": "الحد الأدنى",
       "MAX": "الحد الأقصى",
       "COUNT_TRUE": "عدد نعم",
-      "SHARE_TRUE": "نسبة نعم"
+      "SHARE_TRUE": "نسبة نعم",
+      "COUNT_DISTINCT": "عدد القيم المختلفة"
     },
     "aggregationOf": {
       "COUNT": "عدد {field}",
@@ -456,7 +463,8 @@
       "MIN": "الحد الأدنى من {field}",
       "MAX": "الحد الأقصى من {field}",
       "COUNT_TRUE": "{field}: نعم (العدد)",
-      "SHARE_TRUE": "{field}: نعم (النسبة)"
+      "SHARE_TRUE": "{field}: نعم (النسبة)",
+      "COUNT_DISTINCT": "عدد القيم المختلفة من {field}"
     },
     "fieldType": {
       "CODE": "حالة",
@@ -640,6 +648,20 @@
     "noRoomInContainer": "لا يتسع هذا العنصر في الحاوية: فهو أعرض منها، أو أن الحاوية ممتلئة. صغّر عرض العنصر أو وسّع الحاوية.",
     "containerEmpty": "اسحب العناصر المرئية إلى هنا لتجميعها.",
     "containerSettings": "تجمع الحاوية العناصر المرئية المسحوبة إليها، ونقلها ينقلها معها. اضبط عنوانيها وحجمها من هنا.",
-    "containerSizeHint": "تغيير حجم الحاوية يغيّر أحجام العناصر المرئية التي فيها بالنسبة نفسها."
+    "containerSizeHint": "تغيير حجم الحاوية يغيّر أحجام العناصر المرئية التي فيها بالنسبة نفسها.",
+    "columnsLabel": "الأعمدة",
+    "columnsWellHint": "الأعمدة المتروكة على «دون تلخيص» تجمّع الصفوف، وتُحسب البقية داخل كل صف. حتى {count} عمودًا.",
+    "addColumn": "+ إضافة عمود",
+    "showTotals": "إظهار الإجمالي",
+    "makeEditable": "اجعله قابلًا للتعديل",
+    "makeEditableHint": "يحوّل هذا القسم إلى جدول يمكنك تعديله: اختر أعمدته وطريقة حساب كل منها. «تجاهل التغييرات» يعيد القسم.",
+    "makeEditableSectorSpend": "لا يُنقل الجدول الثاني (الإنفاق وتوزيع المحافظ).",
+    "columnAggregationLabel": "طريقة الحساب لـ {column}",
+    "projectDetails": "بيانات المشروع",
+    "tableTruncated": "تظهر أول 500 صف فقط. أضف عامل تصفية لتضييق الجدول.",
+    "moveColumnUp": "نقل {column} للأعلى",
+    "moveColumnDown": "نقل {column} للأسفل",
+    "removeColumn": "إزالة {column}",
+    "columnsFull": "في الجدول {count} عمودًا، وهو الحد الأقصى."
   }
 }

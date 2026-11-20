@@ -17,7 +17,8 @@ namespace PMPlatform.Tests.Unit.Application.Project;
 /// stored; and its 19 Nov 2026 widgets: one DASHBOARD_WIDGET section per governed widget, named by its code; and its 19 Nov 2026 containers: rules 1 to 6
 /// (dashboard-designer-containers.md), the saved rows nested back and the children calculated as top-level visuals; and its 20 Nov 2026 decimal layout: places
 /// and sizes in steps of 0.1, overlaps by area (dashboard-designer-decimal-layout.md); and its 20 Nov 2026 table columns: which visuals hide columns and the
-/// codes' shape (dashboard-designer-table-columns.md).
+/// codes' shape (dashboard-designer-table-columns.md); and its 20 Nov 2026 Power BI-style table: the columns' rules and the table's calculation
+/// (dashboard-designer-power-table.md).
 /// </summary>
 public sealed class PortfolioDesignRulesTests
 {
@@ -1062,5 +1063,336 @@ public sealed class PortfolioDesignRulesTests
         Assert.Equal(["DRAFT", "ACTIVE"], container.Children![1].Groups!.Select(g => g.Key));
         Assert.Null(container.Children![2].Groups);
         Assert.All(container.Children!, child => Assert.Null(child.Children));
+    }
+
+    private static PortfolioTableColumn Dim(string key, PortfolioTableAggregation aggregation = PortfolioTableAggregation.None) => new(PortfolioTableColumnKind.Dimension, key, aggregation);
+
+    private static PortfolioTableColumn Fld(string key, PortfolioTableAggregation aggregation) => new(PortfolioTableColumnKind.Field, key, aggregation);
+
+    private static PortfolioTableColumn Msr(string key) => new(PortfolioTableColumnKind.Measure, key, null);
+
+    /// <summary>A TABLE visual of columns, drawing no measure of its own.</summary>
+    private static PortfolioVisualInput ColumnTable(params PortfolioTableColumn[] columns) =>
+        new(new BilingualLabel("جدول", "Table"), PortfolioVisualType.Table, [], PortfolioGroupBy.None, 0, 0, 12, 6, Columns: columns);
+
+    private static readonly Guid Health1 = Guid.NewGuid(), Education = Guid.NewGuid();
+
+    private static readonly Dictionary<string, BilingualLabel> SectorNames = new(StringComparer.Ordinal)
+    {
+        [Health1.ToString()] = new BilingualLabel("الصحة", "Health"),
+        [Education.ToString()] = new BilingualLabel("التعليم", "Education"),
+    };
+
+    /// <summary>A project of a sector with a budget, progress (planned, actual) and its on-plan label as the indicators calculate it.</summary>
+    private static PortfolioProjectRow Project(
+        Guid sector, decimal? budget = null, (decimal Planned, decimal Actual)? progress = null, ProjectLifecycleState state = ProjectLifecycleState.Active,
+        string title = "مشروع", string? formalId = null, Guid? department = null)
+    {
+        decimal? gap = progress is { } pa ? pa.Actual - pa.Planned : null;
+        ProjectIndicators indicators = progress is { } p
+            ? new ProjectIndicators(gap, PortfolioInsightsService.LabelOf(gap, Thresholds), null, null, [],
+                Progress: ProjectOverallProgress.None with { PlannedPercent = p.Planned, ActualPercent = p.Actual })
+            : ProjectIndicators.None;
+        return new(new PMPlatform.Domain.Project.Project
+        {
+            Id = Guid.NewGuid(),
+            Title = new NarrativeText(title, Language.Ar),
+            LifecycleState = state,
+            ClassificationItemId = sector,
+            FormalProjectId = formalId,
+            RegistrationBudgetSar = budget is { } b ? new Money(b) : null,
+            DepartmentId = department ?? Guid.Empty,
+        }, indicators);
+    }
+
+    private static PortfolioTableResult Table(
+        PortfolioVisualInput visual, IReadOnlyList<PortfolioProjectRow> rows, bool amounts = true,
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>>? cells = null) =>
+        PortfolioDesignService.Table(visual, rows, null, amounts, Thresholds, cells ?? [], ByKey, SectorNames);
+
+    [Fact]
+    public void ATableDrawsColumns() =>
+        Assert.Null(Issue(ColumnTable(Dim("SECTOR"), Msr("PROJECTS"), Fld(Budget, PortfolioTableAggregation.Sum), Dim("TITLE", PortfolioTableAggregation.CountDistinct))));
+
+    [Theory]
+    [InlineData(PortfolioVisualType.Bar)]
+    [InlineData(PortfolioVisualType.Card)]
+    [InlineData(PortfolioVisualType.Column)]
+    public void OnlyATableDrawsColumns(PortfolioVisualType type) =>
+        Assert.Equal(new FieldIssue("visuals[0].columns", FieldIssue.NotAllowed), Issue(ColumnTable(Dim("SECTOR")) with { VisualType = type }));
+
+    [Fact]
+    public void ASectionOrContainerDrawsNoColumns()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].columns", FieldIssue.NotAllowed), Issue(Placed(PortfolioSection.SectorTable, 0) with { Columns = [Dim("SECTOR")] }));
+        Assert.Equal(new FieldIssue("visuals[0].columns", FieldIssue.NotAllowed), Issue(Container() with { Columns = [Dim("SECTOR")] }));
+    }
+
+    private static readonly string[] TwelveDimensions = ["PORTFOLIO", "INITIATIVE", "SECTOR", "DEPARTMENT", "ENTITY", "STATUS", "STAGE", "ON_PLAN", "REGION", "CITY", "PRIORITY", "TITLE"];
+
+    [Fact]
+    public void ATableDrawsOneToTwelveColumns()
+    {
+        PortfolioTableColumn[] twelve = [.. TwelveDimensions.Select(k => Dim(k))];
+        Assert.Null(Issue(ColumnTable(twelve)));
+        Assert.Equal(new FieldIssue("visuals[0].columns", FieldIssue.OutsideRange), Issue(ColumnTable([.. twelve, Dim("FORMAL_PROJECT_ID")])));
+    }
+
+    [Theory]
+    [InlineData(PortfolioTableColumnKind.Dimension, "SECTORS", PortfolioTableAggregation.None, "visuals[0].columns[0].key")]
+    [InlineData(PortfolioTableColumnKind.Dimension, "PROJECT.SECTOR", PortfolioTableAggregation.None, "visuals[0].columns[0].key")]
+    [InlineData(PortfolioTableColumnKind.Measure, "SECTOR", null, "visuals[0].columns[0].key")]
+    [InlineData(PortfolioTableColumnKind.Field, "PROGRESS.PUBLISHED_PROGRESS_HISTORY.ACTUAL_PERCENT", PortfolioTableAggregation.Average, "visuals[0].columns[0].key")]
+    [InlineData(PortfolioTableColumnKind.Field, "PROJECTS", PortfolioTableAggregation.Count, "visuals[0].columns[0].key")]
+    [InlineData((PortfolioTableColumnKind)9, "SECTOR", PortfolioTableAggregation.None, "visuals[0].columns[0].kind")]
+    public void AColumnIsAKnownKeyOfItsKind(PortfolioTableColumnKind kind, string key, PortfolioTableAggregation? aggregation, string field) =>
+        Assert.Equal(new FieldIssue(field, FieldIssue.NotAllowed), Issue(ColumnTable(new PortfolioTableColumn(kind, key, aggregation))));
+
+    [Theory]
+    [InlineData(PortfolioTableColumnKind.Dimension, "SECTOR", PortfolioTableAggregation.Sum, FieldIssue.NotAllowed)]
+    [InlineData(PortfolioTableColumnKind.Dimension, "SECTOR", null, FieldIssue.Required)]
+    [InlineData(PortfolioTableColumnKind.Measure, "PROJECTS", PortfolioTableAggregation.None, FieldIssue.NotAllowed)]
+    [InlineData(PortfolioTableColumnKind.Measure, "PROJECTS", PortfolioTableAggregation.Count, FieldIssue.NotAllowed)]
+    [InlineData(PortfolioTableColumnKind.Field, Health, PortfolioTableAggregation.Sum, FieldIssue.NotAllowed)]
+    [InlineData(PortfolioTableColumnKind.Field, ActualPercent, PortfolioTableAggregation.Sum, FieldIssue.NotAllowed)]
+    [InlineData(PortfolioTableColumnKind.Field, Strategic, PortfolioTableAggregation.Average, FieldIssue.NotAllowed)]
+    [InlineData(PortfolioTableColumnKind.Field, Budget, null, FieldIssue.Required)]
+    public void AColumnTakesTheCalculationsItAllows(PortfolioTableColumnKind kind, string key, PortfolioTableAggregation? aggregation, string code) =>
+        Assert.Equal(new FieldIssue("visuals[0].columns[0].aggregation", code), Issue(ColumnTable(new PortfolioTableColumn(kind, key, aggregation))));
+
+    [Theory]
+    [InlineData(PortfolioTableColumnKind.Dimension, "STATUS", PortfolioTableAggregation.Count)]
+    [InlineData(PortfolioTableColumnKind.Dimension, "ENTITY", PortfolioTableAggregation.CountDistinct)]
+    [InlineData(PortfolioTableColumnKind.Field, Health, PortfolioTableAggregation.None)]
+    [InlineData(PortfolioTableColumnKind.Field, Health, PortfolioTableAggregation.CountDistinct)]
+    [InlineData(PortfolioTableColumnKind.Field, Strategic, PortfolioTableAggregation.ShareTrue)]
+    [InlineData(PortfolioTableColumnKind.Field, PlannedEnd, PortfolioTableAggregation.Max)]
+    [InlineData(PortfolioTableColumnKind.Field, Budget, PortfolioTableAggregation.Average)]
+    [InlineData(PortfolioTableColumnKind.Measure, "PROJECT_SHARE", null)]
+    [InlineData(PortfolioTableColumnKind.Measure, "ON_PLAN", null)]
+    [InlineData(PortfolioTableColumnKind.Measure, "MEASURED", null)]
+    public void AColumnTakesItsKindsCalculations(PortfolioTableColumnKind kind, string key, PortfolioTableAggregation? aggregation) =>
+        Assert.Null(Issue(ColumnTable(new PortfolioTableColumn(kind, key, aggregation))));
+
+    [Fact]
+    public void AColumnIsNamedOnce()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].columns[1]", FieldIssue.Duplicate), Issue(ColumnTable(Dim("SECTOR"), Dim("SECTOR"))));
+        Assert.Null(Issue(ColumnTable(Dim("SECTOR"), Dim("SECTOR", PortfolioTableAggregation.Count))));
+        Assert.Equal(new FieldIssue("visuals[0].columns[1]", FieldIssue.Duplicate), Issue(ColumnTable(Msr("PROJECTS"), Msr("PROJECTS"))));
+    }
+
+    [Fact]
+    public void AColumnTableDrawsNothingElse()
+    {
+        PortfolioVisualInput table = ColumnTable(Dim("SECTOR"), Msr("PROJECTS"));
+        Assert.Equal(new FieldIssue("visuals[0].measures", FieldIssue.NotAllowed), Issue(table with { Measures = [PortfolioMeasure.Projects] }));
+        Assert.Equal(new FieldIssue("visuals[0].values", FieldIssue.NotAllowed), Issue(table with { Values = [Value(Budget, PortfolioFieldAggregation.Sum)] }));
+        Assert.Equal(new FieldIssue("visuals[0].groupBy", FieldIssue.NotAllowed), Issue(table with { GroupBy = PortfolioGroupBy.Sector }));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.NotAllowed), Issue(table with { GroupField = Health }));
+        Assert.Null(Issue(table with { Filters = [new(Health, ["RED"]), new("PROJECT.STATUS", ["ACTIVE"])] }));
+        Assert.Equal(new FieldIssue("visuals[0].filters", FieldIssue.NotAllowed), Issue(table with { Filters = [new(Budget, ["1"])] }));
+    }
+
+    [Theory]
+    [InlineData("SECTOR", "PORTFOLIO_BREAKDOWN_VIEW")]
+    [InlineData("STATUS", "PORTFOLIO_STATUS_VIEW")]
+    [InlineData("TITLE", "PORTFOLIO_SUMMARY_VIEW")]
+    public void AColumnIsReadUnderItsGroupingsPermission(string key, string permission)
+    {
+        Assert.Equal([permission], PortfolioDesignService.PermissionsOf(ColumnTable(Dim(key), Msr("PROJECTS"))));
+        Assert.Equal(
+            ["PORTFOLIO_BREAKDOWN_VIEW", "PORTFOLIO_STATUS_VIEW"],
+            PortfolioDesignService.PermissionsOf(ColumnTable(Dim("SECTOR"), Dim("STATUS", PortfolioTableAggregation.Count), Dim("CITY"))));
+        Assert.Equal(["PORTFOLIO_SUMMARY_VIEW"], PortfolioDesignService.PermissionsOf(ColumnTable(Msr("PROJECTS"), Fld(Budget, PortfolioTableAggregation.Sum))));
+    }
+
+    /// <summary>The rows are grouped by the NONE column, ordered by its Arabic name; each measure is the insights' breakdown row for that sector.</summary>
+    [Fact]
+    public void AMeasureOfARowIsTheInsightsBreakdownRowOfItsGroup()
+    {
+        List<PortfolioProjectRow> rows =
+        [
+            Project(Health1, 100m, (50m, 40m)), Project(Health1, 50.5m, (20m, 25m)), Project(Health1, null, null, ProjectLifecycleState.Suspended),
+            Project(Education, 10m, (60m, 45m)), Project(Education, null, (30m, 30m)),
+        ];
+        PortfolioTableResult table = Table(
+            ColumnTable(Dim("SECTOR"), Msr("PROJECTS"), Msr("VALUE_SAR"), Msr("MEASURED"), Msr("AVERAGE_PLANNED"), Msr("AVERAGE_ACTUAL"), Msr("GAP_POINTS"), Msr("ON_PLAN"),
+                Msr("IN_PROGRESS")),
+            rows);
+
+        Assert.Equal(
+            [PortfolioTableColumnType.Item, PortfolioTableColumnType.Count, PortfolioTableColumnType.Sar, PortfolioTableColumnType.Count, PortfolioTableColumnType.Percent,
+                PortfolioTableColumnType.Percent, PortfolioTableColumnType.Points, PortfolioTableColumnType.OnPlan, PortfolioTableColumnType.Count],
+            table.ColumnTypes);
+
+        // التعليم before الصحة: by the Arabic name.
+        Assert.Equal([Education.ToString(), Health1.ToString()], table.Rows.Select(r => r.Cells[0].Key));
+        Assert.Equal(["التعليم", "الصحة"], table.Rows.Select(r => r.Cells[0].Label!.Ar));
+        foreach (PortfolioTableRow row in table.Rows)
+        {
+            List<PortfolioProjectRow> group = [.. rows.Where(r => r.Project.ClassificationItemId.ToString() == row.Cells[0].Key)];
+            PortfolioBreakdownRow expected = PortfolioInsightsService.RowOf(Guid.Parse(row.Cells[0].Key!), null, group, amounts: true, Thresholds, sector: true);
+            Assert.Equal(expected.Projects, row.Projects);
+            Assert.Equal(
+                [expected.Projects, decimal.Parse(expected.ValueSar!, System.Globalization.CultureInfo.InvariantCulture), expected.Measured, expected.AveragePlannedPercent,
+                    expected.AverageActualPercent, expected.GapPoints],
+                row.Cells.Skip(1).Take(6).Select(c => c.Value));
+            Assert.Equal(expected.OnPlan is { } onPlan ? JsonNamingPolicyCode(onPlan) : null, row.Cells[7].Key);
+            Assert.Null(row.Cells[7].Value);
+            Assert.Null(row.ProjectId);
+        }
+
+        Assert.Equal([2m, 2m], table.Rows.Select(r => r.Cells[8].Value));
+        Assert.Equal("LATE", table.Rows[0].Cells[7].Key);
+        Assert.False(table.Truncated);
+    }
+
+    private static string JsonNamingPolicyCode(OnPlanStatus status) => System.Text.Json.JsonNamingPolicy.SnakeCaseUpper.ConvertName(status.ToString());
+
+    /// <summary>The totals are calculated over every row's projects, never from the rows; a grouped column has no total; off with showTotals false.</summary>
+    [Fact]
+    public void TheTotalsAreCalculatedOverAllTheProjects()
+    {
+        List<PortfolioProjectRow> rows = [Project(Health1, 100m, (50m, 40m)), Project(Health1, 20m, (20m, 25m)), Project(Education, 10m, (60m, 45m))];
+        PortfolioTableResult table = Table(ColumnTable(Dim("SECTOR"), Msr("PROJECTS"), Msr("VALUE_SAR"), Msr("AVERAGE_PLANNED"), Msr("PROJECT_SHARE")), rows);
+        PortfolioBreakdownRow all = PortfolioInsightsService.RowOf(null, null, rows, amounts: true, Thresholds, sector: false);
+
+        Assert.Equal(new PortfolioTableCell(null, null, null), table.Totals![0]);
+        Assert.Equal([3m, 130m, all.AveragePlannedPercent, 100m], table.Totals.Skip(1).Select(c => c.Value));
+        Assert.Equal([33.3m, 66.7m], table.Rows.Select(r => r.Cells[4].Value));
+        Assert.Null(Table(ColumnTable(Dim("SECTOR"), Msr("PROJECTS")) with { ShowTotals = false }, rows).Totals);
+    }
+
+    /// <summary>Two NONE columns group by the pair, ordered by the first then the second (a status in lifecycle order); no NONE column draws one row.</summary>
+    [Fact]
+    public void TwoGroupedColumnsGroupByThePair()
+    {
+        List<PortfolioProjectRow> rows =
+        [
+            Project(Health1), Project(Health1, state: ProjectLifecycleState.Suspended), Project(Health1), Project(Education, state: ProjectLifecycleState.Suspended),
+        ];
+        PortfolioTableResult table = Table(ColumnTable(Dim("SECTOR"), Dim("STATUS"), Msr("PROJECTS")), rows);
+
+        Assert.Equal(
+            [(Education.ToString(), "SUSPENDED", 1m), (Health1.ToString(), "ACTIVE", 2m), (Health1.ToString(), "SUSPENDED", 1m)],
+            table.Rows.Select(r => (r.Cells[0].Key, r.Cells[1].Key, r.Cells[2].Value!.Value)));
+        Assert.Equal([PortfolioTableColumnType.Item, PortfolioTableColumnType.Code, PortfolioTableColumnType.Count], table.ColumnTypes);
+
+        PortfolioTableResult ungrouped = Table(ColumnTable(Msr("PROJECTS"), Dim("SECTOR", PortfolioTableAggregation.CountDistinct)), rows);
+        Assert.Equal(4m, ungrouped.Rows.Single().Cells[0].Value);
+        Assert.Equal(2m, ungrouped.Rows.Single().Cells[1].Value);
+        Assert.Single(Table(ColumnTable(Msr("PROJECTS")), []).Rows);
+        Assert.Empty(Table(ColumnTable(Dim("SECTOR"), Msr("PROJECTS")), []).Rows);
+    }
+
+    /// <summary>The title draws one row per project, named by its title and carrying its id; the formal ID too, counted where it is set.</summary>
+    [Fact]
+    public void ATitleColumnDrawsARowPerProject()
+    {
+        PortfolioProjectRow a = Project(Health1, title: "ب مشروع", formalId: "P-2"), b = Project(Health1, title: "أ مشروع", formalId: null), c = Project(Education, title: "أ مشروع", formalId: "P-1");
+        PortfolioTableResult table = Table(ColumnTable(Dim("TITLE"), Dim("FORMAL_PROJECT_ID"), Msr("PROJECTS")), [a, b, c]);
+
+        Assert.Equal(3, table.Rows.Count);
+        // c and b share a title, so the formal ID orders them, one missing last.
+        Assert.Equal([c.Project.Id, b.Project.Id, a.Project.Id], table.Rows.Select(r => r.ProjectId!.Value));
+        Assert.Equal(a.Project.Id, table.Rows[2].ProjectId);
+        Assert.All(table.Rows, r => Assert.Equal(r.ProjectId.ToString(), r.Cells[0].Key));
+        Assert.Equal("ب مشروع", table.Rows[2].Cells[0].Label!.Ar);
+        Assert.Equal([PortfolioTableColumnType.Text, PortfolioTableColumnType.Code, PortfolioTableColumnType.Count], table.ColumnTypes);
+
+        PortfolioTableResult counted = Table(ColumnTable(Dim("SECTOR"), Dim("FORMAL_PROJECT_ID", PortfolioTableAggregation.Count), Dim("TITLE", PortfolioTableAggregation.CountDistinct)), [a, b, c]);
+        Assert.Equal([(1m, 1m), (1m, 2m)], counted.Rows.Select(r => (r.Cells[1].Value!.Value, r.Cells[2].Value!.Value)));
+    }
+
+    /// <summary>A field column: grouped by its value, summed, averaged and counted distinct over the revealed cells; a sum with none revealed is null.</summary>
+    [Fact]
+    public void AFieldColumnIsCalculatedOverItsRevealedCells()
+    {
+        PortfolioProjectRow a = Project(Health1), b = Project(Health1), c = Project(Education), d = Project(Education);
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = new()
+        {
+            [a.Project.Id] = Cells((Health, "RED"), (Budget, "100.00"), (Strategic, "true")),
+            [b.Project.Id] = Cells((Health, "GREEN"), (Budget, "50.00"), (Strategic, "false")),
+            [c.Project.Id] = Cells((Health, "RED"), (Budget, null), (Strategic, "true")),
+            [d.Project.Id] = Cells((Health, "RED"), (Budget, null), (Strategic, null)),
+        };
+
+        PortfolioTableResult table = Table(
+            ColumnTable(Dim("SECTOR"), Fld(Budget, PortfolioTableAggregation.Sum), Fld(Budget, PortfolioTableAggregation.Average), Fld(Health, PortfolioTableAggregation.CountDistinct),
+                Fld(Strategic, PortfolioTableAggregation.ShareTrue), Fld(Budget, PortfolioTableAggregation.Count)),
+            [a, b, c, d], cells: cells);
+
+        Assert.Equal([null, null, 1m, 100m, 0m], table.Rows[0].Cells.Skip(1).Select(x => x.Value));
+        Assert.Equal([150m, 75m, 2m, 50m, 2m], table.Rows[1].Cells.Skip(1).Select(x => x.Value));
+        Assert.Equal(
+            [PortfolioTableColumnType.Item, PortfolioTableColumnType.Sar, PortfolioTableColumnType.Sar, PortfolioTableColumnType.Count, PortfolioTableColumnType.Percent,
+                PortfolioTableColumnType.Count],
+            table.ColumnTypes);
+
+        PortfolioTableResult byHealth = Table(ColumnTable(Fld(Health, PortfolioTableAggregation.None), Msr("PROJECTS")), [a, b, c, d], cells: cells);
+        Assert.Equal([("GREEN", 1m), ("RED", 3m)], byHealth.Rows.Select(r => (r.Cells[0].Key!, r.Cells[1].Value!.Value)));
+    }
+
+    /// <summary>Without FINANCIAL_VIEW_SENSITIVE the value and a sensitive field are masked, in the rows and the totals; counts are not.</summary>
+    [Fact]
+    public void AmountsAreMaskedWithoutTheAmountsPermission()
+    {
+        PortfolioProjectRow a = Project(Health1, 100m);
+        Dictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells = new() { [a.Project.Id] = Cells((Budget, null)) };
+        PortfolioTableResult table = Table(ColumnTable(Dim("SECTOR"), Msr("VALUE_SAR"), Fld(Budget, PortfolioTableAggregation.Sum), Msr("PROJECTS")), [a], amounts: false, cells);
+
+        foreach (IReadOnlyList<PortfolioTableCell> row in new[] { table.Rows[0].Cells, table.Totals! })
+        {
+            Assert.Equal(new PortfolioTableCell(null, null, null, Masked: true), row[1]);
+            Assert.Equal(new PortfolioTableCell(null, null, null, Masked: true), row[2]);
+            Assert.Equal(new PortfolioTableCell(null, null, 1m), row[3]);
+        }
+
+        Assert.False(Table(ColumnTable(Dim("SECTOR"), Msr("VALUE_SAR")), [a]).Rows[0].Cells[1].Masked);
+    }
+
+    /// <summary>At most 500 rows, the totals still over every project.</summary>
+    [Fact]
+    public void ATableDrawsAtMostFiveHundredRows()
+    {
+        List<PortfolioProjectRow> rows = [.. Enumerable.Range(0, 501).Select(i => Project(Health1, title: $"مشروع {i:D3}"))];
+        PortfolioTableResult table = Table(ColumnTable(Dim("TITLE"), Msr("PROJECTS")), rows);
+
+        Assert.Equal(500, table.Rows.Count);
+        Assert.True(table.Truncated);
+        Assert.Equal(501m, table.Totals![1].Value);
+        Assert.Equal("مشروع 000", table.Rows[0].Cells[0].Label!.Ar);
+        Assert.False(Table(ColumnTable(Dim("TITLE"), Msr("PROJECTS")), [.. rows.Take(500)]).Truncated);
+    }
+
+    /// <summary>The visual's filters narrow the table's projects.</summary>
+    [Fact]
+    public void FiltersNarrowATable()
+    {
+        List<PortfolioProjectRow> rows = [Project(Health1), Project(Health1, state: ProjectLifecycleState.Suspended), Project(Education)];
+        PortfolioTableResult table = Table(ColumnTable(Dim("SECTOR"), Msr("PROJECTS")) with { Filters = [new("PROJECT.STATUS", ["ACTIVE"])] }, rows);
+        Assert.Equal([1m, 1m], table.Rows.Select(r => r.Cells[1].Value));
+        Assert.Equal(2m, table.Totals![1].Value);
+    }
+
+    /// <summary>A column table echoes its columns, has no groups and its figures in table; without its permission, neither.</summary>
+    [Fact]
+    public void AColumnTableIsEchoedWithItsTable()
+    {
+        PortfolioVisualInput visual = ColumnTable(Dim("SECTOR"), Msr("PROJECTS")) with { ShowTotals = false };
+        PortfolioTableResult figures = Table(visual, [Project(Health1)]);
+        IReadOnlyDictionary<string, PortfolioFieldType> types = new Dictionary<string, PortfolioFieldType>(StringComparer.Ordinal);
+
+        PortfolioVisualResult result = PortfolioDesignService.ResultOf(visual, _ => throw new InvalidOperationException(), types, _ => figures);
+        Assert.Empty(result.Groups!);
+        Assert.Same(figures, result.Table);
+        Assert.Equal(visual.Columns, result.Columns);
+        Assert.False(result.ShowTotals);
+        Assert.Empty(result.Measures);
+
+        PortfolioVisualResult withheld = PortfolioDesignService.ResultOf(visual, _ => [], types, _ => null);
+        Assert.Null(withheld.Groups);
+        Assert.Null(withheld.Table);
     }
 }

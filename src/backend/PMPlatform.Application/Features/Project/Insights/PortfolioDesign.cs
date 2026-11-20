@@ -52,13 +52,16 @@ public sealed record PortfolioAxes(PortfolioAxis Category, PortfolioValueAxis Va
 /// chart may set its <paramref name="Axes"/> (the 19 Nov 2026 axes). A <see cref="PortfolioSection.DashboardWidget"/> section names the governed widget it
 /// draws by its <paramref name="WidgetCode"/> (the 19 Nov 2026 widgets); any other visual names none. A <see cref="PortfolioVisualType.Container"/> draws
 /// nothing of its own and holds <paramref name="Children"/> (the 19 Nov 2026 containers), placed on its inner grid; any other visual holds none. A table
-/// section names the columns it does not show in <paramref name="HiddenColumns"/> (the 20 Nov 2026 table columns); null or empty shows them all.
+/// section names the columns it does not show in <paramref name="HiddenColumns"/> (the 20 Nov 2026 table columns); null or empty shows them all. A
+/// <see cref="PortfolioVisualType.Table"/> may draw <paramref name="Columns"/> instead of measures or values (the 20 Nov 2026 Power BI-style table), with
+/// a totals row unless <paramref name="ShowTotals"/> is false; null or empty draws none.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
-    IReadOnlyList<PortfolioVisualInput>? Children = null, IReadOnlyList<string>? HiddenColumns = null);
+    IReadOnlyList<PortfolioVisualInput>? Children = null, IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null,
+    bool? ShowTotals = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -88,13 +91,14 @@ public sealed record PortfolioVisualGroup(
 /// <c>ValueTypes</c> gives each value's field type, so a viewer without <c>DASHBOARD_DESIGN</c> (who cannot read the catalogue) formats it; null for fixed
 /// measures and a section. A bar, column or line chart echoes its <c>Axes</c> as set (null for the defaults); a <c>DASHBOARD_WIDGET</c> section its
 /// <c>WidgetCode</c>. A container carries no groups of its own (an empty list) and its <c>Children</c>, in order, each calculated as a top-level visual is;
-/// <c>Children</c> is null on any other visual. A table section echoes its <c>HiddenColumns</c> (null when it shows every column).
+/// <c>Children</c> is null on any other visual. A table section echoes its <c>HiddenColumns</c> (null when it shows every column). A column table echoes
+/// its <c>Columns</c> and <c>ShowTotals</c>, has no groups (an empty list) and its figures in <c>Table</c>; both are null without its permissions.
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null,
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
     PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null,
-    IReadOnlyList<string>? HiddenColumns = null);
+    IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioTableResult? Table = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -134,7 +138,7 @@ public interface IPortfolioVisualRepository
 /// <inheritdoc cref="IPortfolioDesignService"/>
 internal sealed partial class PortfolioDesignService(
     IPortfolioVisualRepository repository, PortfolioProjectRows projectRows, IAuthorizationEngine engine, OnPlanPolicy onPlanPolicy, IConfigurationResolver resolver,
-    IPortfolioFieldReader fieldReader, TimeProvider timeProvider) : IPortfolioDesignService
+    IPortfolioFieldReader fieldReader, IMasterDataResolver masterData, IOrganizationDirectory organizations, TimeProvider timeProvider) : IPortfolioDesignService
 {
     public const int MaxTitleLength = 100;
     private const decimal Columns = 12;
@@ -370,6 +374,7 @@ internal sealed partial class PortfolioDesignService(
         v.Title is null || string.IsNullOrWhiteSpace(v.Title.Ar) || string.IsNullOrWhiteSpace(v.Title.En) ? new FieldIssue("title", FieldIssue.Required)
         : v.Title.Ar.Trim().Length > MaxTitleLength || v.Title.En.Trim().Length > MaxTitleLength ? new FieldIssue("title", FieldIssue.OutsideRange)
         : !Enum.IsDefined(v.VisualType) || !Enum.IsDefined(v.GroupBy) ? new FieldIssue("visualType", FieldIssue.NotAllowed)
+        : v.Columns is { Count: > 0 } && v.VisualType != PortfolioVisualType.Table ? new FieldIssue("columns", FieldIssue.NotAllowed)
         : (v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
             : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections) : DrawingIssue(v, catalogue))
                 ?? AxesIssue(v)
@@ -482,6 +487,11 @@ internal sealed partial class PortfolioDesignService(
     /// </summary>
     private static FieldIssue? DrawingIssue(PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue)
     {
+        if (v.Columns is { Count: > 0 } columns)
+        {
+            return ColumnsIssue(v, columns, catalogue) ?? FiltersIssue(v, catalogue);
+        }
+
         FieldIssue? drawn = v.Values is { Count: > 0 } values
             ? (v.Measures?.Count ?? 0) != 0 ? new("values", FieldIssue.NotAllowed) : ValuesIssue(v.VisualType, values, catalogue)
             : v.VisualType == PortfolioVisualType.Line ? (v.Measures?.Count ?? 0) != 0 ? new("measures", FieldIssue.NotAllowed) : new("values", FieldIssue.Required)
@@ -698,13 +708,13 @@ internal sealed partial class PortfolioDesignService(
             .Where(v => v.Section is null && v.VisualType != PortfolioVisualType.Container)];
         bool amounts = !(await engine.GetRecordScopeAsync(callerId, PermissionCatalogue.FinancialViewSensitive, cancellationToken).ConfigureAwait(false)).IsEmpty;
         OnPlanThresholds thresholds = await onPlanPolicy.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false);
-        ProjectStageSet? stages = drawn.Any(v => v.GroupBy == PortfolioGroupBy.Stage)
+        ProjectStageSet? stages = drawn.Any(v => v.GroupBy == PortfolioGroupBy.Stage || (v.Columns ?? []).Any(c => c is { Kind: PortfolioTableColumnKind.Dimension, Key: "STAGE" }))
             ? await resolver.ResolveStagesAsync(now, cancellationToken).ConfigureAwait(false)
             : null;
 
         // Each permission's projects are read once, however many visuals use it.
         Dictionary<string, IReadOnlyList<PortfolioProjectRow>?> rowsByPermission = new(StringComparer.Ordinal);
-        foreach (string permission in drawn.Select(v => PermissionOf(v.GroupBy)).Distinct(StringComparer.Ordinal))
+        foreach (string permission in drawn.SelectMany(PermissionsOf).Distinct(StringComparer.Ordinal))
         {
             RecordScope scope = await engine.GetRecordScopeAsync(callerId, permission, cancellationToken).ConfigureAwait(false);
             rowsByPermission[permission] = scope.IsEmpty ? null : await projectRows.ListAsync(scope, filters, cancellationToken).ConfigureAwait(false);
@@ -719,10 +729,26 @@ internal sealed partial class PortfolioDesignService(
 
         Dictionary<string, PortfolioFieldDescriptor> catalogue = fieldReader.Fields.ToDictionary(f => f.Key, StringComparer.Ordinal);
         Dictionary<string, PortfolioFieldType> types = catalogue.ToDictionary(f => f.Key, f => f.Value.Type, StringComparer.Ordinal);
-        return new PortfolioDesignView(isStandard, updatedAt, [.. visuals.Select(v => ResultOf(v, GroupsOf, types))]);
+        IReadOnlyDictionary<string, BilingualLabel> labels = await TableLabelsAsync(
+            drawn, rowsByPermission.Values.OfType<IReadOnlyList<PortfolioProjectRow>>().SelectMany(rows => rows), cancellationToken).ConfigureAwait(false);
+        return new PortfolioDesignView(isStandard, updatedAt, [.. visuals.Select(v => ResultOf(v, GroupsOf, types, TableOf))]);
 
         IReadOnlyList<PortfolioVisualGroup>? GroupsOf(PortfolioVisualInput v) =>
             rowsByPermission[PermissionOf(v.GroupBy)] is { } rows ? Groups(v, rows, stages, amounts, thresholds, cells, catalogue) : null;
+
+        // A column table's projects are those every permission it needs reaches.
+        PortfolioTableResult? TableOf(PortfolioVisualInput v)
+        {
+            List<IReadOnlyList<PortfolioProjectRow>?> reached = [.. PermissionsOf(v).Select(permission => rowsByPermission[permission])];
+            if (reached.Exists(rows => rows is null))
+            {
+                return null;
+            }
+
+            List<HashSet<Guid>> ids = [.. reached.Skip(1).Select(rows => rows!.Select(r => r.Project.Id).ToHashSet())];
+            List<PortfolioProjectRow> population = [.. reached[0]!.Where(r => ids.TrueForAll(set => set.Contains(r.Project.Id)))];
+            return Table(v, population, stages, amounts, thresholds, cells, catalogue, labels);
+        }
     }
 
     /// <summary>
@@ -730,20 +756,27 @@ internal sealed partial class PortfolioDesignService(
     /// of their own; a container carries its children, each calculated as a top-level visual is. Its layout numbers are written shortest (<see cref="Shortest"/>).
     /// </summary>
     internal static PortfolioVisualResult ResultOf(
-        PortfolioVisualInput v, Func<PortfolioVisualInput, IReadOnlyList<PortfolioVisualGroup>?> groupsOf, IReadOnlyDictionary<string, PortfolioFieldType> types) =>
+        PortfolioVisualInput v, Func<PortfolioVisualInput, IReadOnlyList<PortfolioVisualGroup>?> groupsOf, IReadOnlyDictionary<string, PortfolioFieldType> types,
+        Func<PortfolioVisualInput, PortfolioTableResult?>? tableOf = null) =>
         v.VisualType == PortfolioVisualType.Container
             ? new PortfolioVisualResult(
                 v.Title, v.VisualType, [], PortfolioGroupBy.None,
                 Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [],
-                Children: [.. (v.Children ?? []).Select(child => ResultOf(child, groupsOf, types))])
+                Children: [.. (v.Children ?? []).Select(child => ResultOf(child, groupsOf, types, tableOf))])
         : v.Section is { } section
             ? new PortfolioVisualResult(
                 v.Title, v.VisualType, [], PortfolioGroupBy.None,
                 Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight), [], section, WidgetCode: v.WidgetCode,
                 HiddenColumns: HiddenColumnsOf(v))
+        : IsColumnTable(v)
+            ? ColumnTableResultOf(v, tableOf?.Invoke(v))
         : new PortfolioVisualResult(
             v.Title, v.VisualType, v.Measures, v.GroupBy, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
             groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes);
+
+    private static PortfolioVisualResult ColumnTableResultOf(PortfolioVisualInput v, PortfolioTableResult? table) =>
+        new(v.Title, v.VisualType, [], PortfolioGroupBy.None, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
+            table is null ? null : [], Filters: v.Filters, Columns: v.Columns, ShowTotals: v.ShowTotals, Table: table);
 
     /// <summary>
     /// A layout number as the API writes it (the 20 Nov 2026 decimal layout): a whole number without a decimal place (<c>4</c>, not the <c>4.0</c>
@@ -758,9 +791,10 @@ internal sealed partial class PortfolioDesignService(
     internal static IReadOnlyList<PortfolioFieldType>? ValueTypesOf(PortfolioVisualInput v, IReadOnlyDictionary<string, PortfolioFieldType> types) =>
         v.Values is { Count: > 0 } values ? [.. values.Select(value => types.GetValueOrDefault(value.Field, PortfolioFieldType.Count))] : null;
 
-    /// <summary>The field keys a visual reads: its values' fields, its grouping field and its filters' fields that are not dimensions.</summary>
+    /// <summary>The field keys a visual reads: its values' fields, its field columns, its grouping field and its filters' fields that are not dimensions.</summary>
     private static IEnumerable<string> FieldKeysOf(PortfolioVisualInput v) =>
         (v.Values ?? []).Select(value => value.Field)
+            .Concat((v.Columns ?? []).Where(c => c.Kind == PortfolioTableColumnKind.Field).Select(c => c.Key))
             .Concat(v.GroupField is { } key ? [key] : [])
             .Concat((v.Filters ?? []).Select(f => f.Field).Where(field => !Dimensions.ContainsKey(field)));
 
@@ -776,22 +810,14 @@ internal sealed partial class PortfolioDesignService(
     {
         PortfolioFieldDescriptor? FieldOf(string key) => catalogue.GetValueOrDefault(key);
         bool IsSnapshotField(string key) => FieldOf(key)?.Grain == PortfolioFieldGrain.Snapshot;
-        IReadOnlyList<PortfolioFieldCell> CellsOf(PortfolioProjectRow row, string key) => cells.GetValueOrDefault(row.Project.Id)?.GetValueOrDefault(key) ?? [];
 
         bool snapshotVisual = (visual.Values ?? []).Any(v => IsSnapshotField(v.Field));
-        List<PortfolioFieldFilter> projectFilters = [.. (visual.Filters ?? []).Where(f => !IsSnapshotField(f.Field))];
         List<PortfolioFieldFilter> snapshotFilters = [.. (visual.Filters ?? []).Where(f => IsSnapshotField(f.Field))];
         List<string> snapshotKeys = [.. FieldKeysOf(visual).Where(IsSnapshotField).Distinct(StringComparer.Ordinal)];
 
-        bool Passes(PortfolioFieldFilter filter, FieldRow row) =>
-            filter.Values.Contains(
-                Dimensions.TryGetValue(filter.Field, out PortfolioGroupBy dimension) ? KeyOf(dimension, row.Project) : FilterKeyOf(FieldOf(filter.Field), row.Cell(filter.Field)),
-                StringComparer.OrdinalIgnoreCase);
-
-        List<FieldRow> projects = [.. rows.Select(r => new FieldRow(r, key => CellsOf(r, key) is [var first, ..] ? first.Value : null))
-            .Where(r => projectFilters.All(f => Passes(f, r)))];
+        List<FieldRow> projects = FilteredProjects(visual, rows, cells, catalogue);
         List<FieldRow> members = snapshotVisual
-            ? [.. projects.SelectMany(p => SnapshotsOf(p.Project, key => CellsOf(p.Project, key), snapshotKeys)).Where(r => snapshotFilters.All(f => Passes(f, r)))]
+            ? [.. projects.SelectMany(p => SnapshotsOf(p.Project, key => CellsOf(cells, p.Project, key), snapshotKeys)).Where(r => snapshotFilters.All(f => Passes(f, r, catalogue)))]
             : projects;
 
         PortfolioVisualGroup GroupOf(string? key, BilingualLabel? label, IReadOnlyList<FieldRow> group)
@@ -834,6 +860,26 @@ internal sealed partial class PortfolioDesignService(
             : groups.OrderBy(g => g.Key is null).ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal);
         return [.. scaled.Select(g => GroupOf(g.Key, visual.GroupBy == PortfolioGroupBy.Stage && g.Key is { } code ? stages?.Find(code)?.Name : null, [.. g]))];
     }
+
+    /// <summary>A visual's projects with their first cell of each field, narrowed by its filters on projects (a snapshot filter narrows snapshots, in <see cref="Groups"/>).</summary>
+    private static List<FieldRow> FilteredProjects(
+        PortfolioVisualInput visual, IReadOnlyList<PortfolioProjectRow> rows, IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells,
+        IReadOnlyDictionary<string, PortfolioFieldDescriptor> catalogue)
+    {
+        List<PortfolioFieldFilter> projectFilters = [.. (visual.Filters ?? []).Where(f => catalogue.GetValueOrDefault(f.Field)?.Grain != PortfolioFieldGrain.Snapshot)];
+        return [.. rows.Select(r => new FieldRow(r, key => CellsOf(cells, r, key) is [var first, ..] ? first.Value : null))
+            .Where(r => projectFilters.All(f => Passes(f, r, catalogue)))];
+    }
+
+    private static IReadOnlyList<PortfolioFieldCell> CellsOf(
+        IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells, PortfolioProjectRow row, string key) =>
+        cells.GetValueOrDefault(row.Project.Id)?.GetValueOrDefault(key) ?? [];
+
+    /// <summary>Whether a row passes a filter: its dimension's key or its field's comparable value is one of the filter's values, ignoring case.</summary>
+    private static bool Passes(PortfolioFieldFilter filter, FieldRow row, IReadOnlyDictionary<string, PortfolioFieldDescriptor> catalogue) =>
+        filter.Values.Contains(
+            Dimensions.TryGetValue(filter.Field, out PortfolioGroupBy dimension) ? KeyOf(dimension, row.Project) : FilterKeyOf(catalogue.GetValueOrDefault(filter.Field), row.Cell(filter.Field)),
+            StringComparer.OrdinalIgnoreCase);
 
     /// <summary>A project's published snapshots as rows, oldest first: each of <paramref name="keys"/> (snapshot-grain) read from that snapshot's cell.</summary>
     private static IEnumerable<FieldRow> SnapshotsOf(PortfolioProjectRow project, Func<string, IReadOnlyList<PortfolioFieldCell>> cellsOf, IReadOnlyCollection<string> keys)
@@ -946,7 +992,8 @@ internal sealed partial class PortfolioDesignService(
         return new(
             new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
             v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit,
-            v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode, HiddenColumns: v.HiddenColumns);
+            v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode, HiddenColumns: v.HiddenColumns,
+            Columns: data?.Columns, ShowTotals: data?.ShowTotals);
     }
 
     /// <summary>A table section's hidden columns as saved and echoed: null when it hides none (an empty list or null), so a design reads back as it was drawn.</summary>
@@ -954,8 +1001,9 @@ internal sealed partial class PortfolioDesignService(
 
     /// <summary>What <c>data_fields</c> holds for a visual that names any data field; null for one that names none (fixed measures, a section, a container).</summary>
     private static string? DataFieldsOf(PortfolioVisualInput v) =>
-        v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null
-            ? JsonSerializer.Serialize(new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit), StoredJson)
+        v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null || IsColumnTable(v)
+            ? JsonSerializer.Serialize(
+                new PortfolioVisualDataFields(v.Values, v.GroupField, v.Filters, v.GroupDateUnit, IsColumnTable(v) ? v.Columns : null, IsColumnTable(v) ? v.ShowTotals : null), StoredJson)
             : null;
 
     /// <summary>
@@ -1005,9 +1053,13 @@ internal sealed partial class PortfolioDesignService(
     [GeneratedRegex("^[0-9]{4}$", RegexOptions.CultureInvariant)]
     private static partial Regex YearShape();
 
-    /// <summary>The JSON of <c>data_fields</c>: the visual's values, grouping field and its date unit, and filters, as the API carries them.</summary>
+    /// <summary>
+    /// The JSON of <c>data_fields</c>: the visual's values, grouping field and its date unit, and filters, and a column table's columns and totals switch, as
+    /// the API carries them.
+    /// </summary>
     private sealed record PortfolioVisualDataFields(
-        IReadOnlyList<PortfolioFieldValue>? Values, string? GroupField, IReadOnlyList<PortfolioFieldFilter>? Filters, PortfolioDateUnit? GroupDateUnit = null);
+        IReadOnlyList<PortfolioFieldValue>? Values, string? GroupField, IReadOnlyList<PortfolioFieldFilter>? Filters, PortfolioDateUnit? GroupDateUnit = null,
+        IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null);
 
     /// <summary>A row a visual of fields calculates over: a project, or one published snapshot of it; <see cref="Cell"/> reads a field key's revealed value.</summary>
     private sealed record FieldRow(PortfolioProjectRow Project, Func<string, string?> Cell);

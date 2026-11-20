@@ -391,7 +391,10 @@
       "AVERAGE_ACTUAL": "Average actual",
       "GAP_POINTS": "Gap (points)",
       "NEEDING_FOLLOW_UP": "Needing follow-up",
-      "OVERDUE_ACTIONS": "Overdue actions"
+      "OVERDUE_ACTIONS": "Overdue actions",
+      "MEASURED": "Measured",
+      "ON_PLAN": "On plan",
+      "PROJECT_SHARE": "Share of projects"
     },
     "groupBy": {
       "NONE": "Nothing (one figure)",
@@ -405,7 +408,9 @@
       "ON_PLAN": "On-plan indicator",
       "REGION": "Region",
       "CITY": "City",
-      "PRIORITY": "Priority"
+      "PRIORITY": "Priority",
+      "TITLE": "Project title",
+      "FORMAL_PROJECT_ID": "Formal Project ID"
     },
     "other": "{count} others",
     "editVisual": "Edit {title}",
@@ -441,13 +446,15 @@
     "filterNoValues": "There are no values to choose from.",
     "fieldCoverage": "{count} of {total} projects have a value",
     "aggregation": {
+      "NONE": "Don't summarize",
       "COUNT": "Count",
       "SUM": "Sum",
       "AVERAGE": "Average",
       "MIN": "Minimum",
       "MAX": "Maximum",
       "COUNT_TRUE": "Count of yes",
-      "SHARE_TRUE": "Share of yes"
+      "SHARE_TRUE": "Share of yes",
+      "COUNT_DISTINCT": "Count distinct"
     },
     "aggregationOf": {
       "COUNT": "Count of {field}",
@@ -456,7 +463,8 @@
       "MIN": "Minimum of {field}",
       "MAX": "Maximum of {field}",
       "COUNT_TRUE": "{field}: yes (count)",
-      "SHARE_TRUE": "{field}: yes (share)"
+      "SHARE_TRUE": "{field}: yes (share)",
+      "COUNT_DISTINCT": "Count distinct of {field}"
     },
     "fieldType": {
       "CODE": "Status",
@@ -640,6 +648,20 @@
     "noRoomInContainer": "That visual does not fit in the container: it is wider than the container, or the container is full. Make the visual narrower or the container wider.",
     "containerEmpty": "Drag visuals here to group them.",
     "containerSettings": "A container groups the visuals dragged into it; moving it moves them. Set its titles and size here.",
-    "containerSizeHint": "Sizing a container scales the visuals in it."
+    "containerSizeHint": "Sizing a container scales the visuals in it.",
+    "columnsLabel": "Columns",
+    "columnsWellHint": "Columns set to “Don't summarize” group the rows; the others are calculated within each row. Up to {count}.",
+    "addColumn": "+ Add column",
+    "showTotals": "Show totals",
+    "makeEditable": "Make editable",
+    "makeEditableHint": "Turns this section into a table you can change: choose its columns and how each is calculated. Discard changes brings the section back.",
+    "makeEditableSectorSpend": "The second table (spend and portfolio split) is not carried over.",
+    "columnAggregationLabel": "Calculation for {column}",
+    "projectDetails": "Project details",
+    "tableTruncated": "Only the first 500 rows are shown. Add a filter to narrow the table.",
+    "moveColumnUp": "Move {column} up",
+    "moveColumnDown": "Move {column} down",
+    "removeColumn": "Remove {column}",
+    "columnsFull": "The table has {count} columns, the most it takes."
   }
 }

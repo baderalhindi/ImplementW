@@ -13,7 +13,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// widgets) are saved and read back with their widget codes; two naming the same widget are refused. A container (the 19 Nov 2026 containers) is saved with
 /// its children and read back with them nested in order, each with its figures; a child covering a sibling or outside its container is refused. A design
 /// with decimal places and sizes (the 20 Nov 2026 decimal layout) is saved and read back exactly; one with two decimal places is refused. A table section's
-/// hidden columns (the 20 Nov 2026 table columns) are saved and read back; a card hiding columns is refused.
+/// hidden columns (the 20 Nov 2026 table columns) are saved and read back; a card hiding columns is refused. A TABLE of columns (the 20 Nov 2026 Power
+/// BI-style table) previews, saves and reads back with its table of figures; a card with columns is refused.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -329,6 +330,67 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             [.. view["visuals"]!.AsArray().Select(v => v!["hiddenColumns"] is JsonArray codes ? string.Join(',', codes.Select(c => c!.GetValue<string>())) : null)];
     }
 
+    [Fact]
+    public async Task AColumnTableIsSavedAndReadBackWithItsTable()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+        object[] columns =
+        [
+            new { kind = "DIMENSION", key = "SECTOR", aggregation = "NONE" },
+            new { kind = "MEASURE", key = "PROJECTS", aggregation = (string?)null },
+            new { kind = "MEASURE", key = "VALUE_SAR", aggregation = (string?)null },
+        ];
+        object design = DesignOf(Visual("By sector", "TABLE", 0, 0, 12, 6, measures: [], columns: columns));
+
+        // The rows are the insights' sector breakdown: the same sectors with the same projects.
+        using HttpResponseMessage insights = await client.GetAsync("/api/v1/portfolio-insights", manager);
+        Assert.Equal(HttpStatusCode.OK, insights.StatusCode);
+        string[] bySector = [.. (await insights.ReadObjectAsync())["bySector"]!["rows"]!.AsArray()
+            .Select(r => $"{r!["itemId"]!.GetValue<string>()}:{r["projects"]!.GetValue<int>()}").Order(StringComparer.Ordinal)];
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        AssertTable(await preview.ReadObjectAsync(), bySector);
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        AssertTable(await saved.ReadObjectAsync(), bySector);
+
+        using HttpResponseMessage read = await client.GetAsync(Design, manager);
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        AssertTable(await read.ReadObjectAsync(), bySector);
+        Assert.Equal(["TABLE:{}:SECTOR,PROJECTS,VALUE_SAR"], await host.Database.QueryAsync(
+            "SELECT visual_type || ':' || measures::text || ':' || (SELECT string_agg(c ->> 'key', ',') FROM jsonb_array_elements(data_fields -> 'columns') c) FROM project.portfolio_visual"));
+
+        // Columns on anything but a table are refused, and nothing is saved.
+        object card = DesignOf(Visual("Card", "CARD", 0, 0, 4, 2, measures: ["PROJECTS"], columns: columns));
+        using HttpResponseMessage refused = await client.PutAsync(Design, manager, card, ifMatch: null);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+        JsonObject error = await refused.ReadObjectAsync();
+        Assert.Equal(("PROJECT_PORTFOLIO_DESIGN_INVALID", "visuals[0].columns", "NOT_ALLOWED"), (error["code"]!.GetValue<string>(),
+            error["errors"]![0]!["field"]!.GetValue<string>(), error["errors"]![0]!["code"]!.GetValue<string>()));
+        Assert.Equal(["1"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        // The table: a type per column, a row per sector, its projects counted in the row and in the totals.
+        static void AssertTable(JsonObject view, string[] bySector)
+        {
+            JsonNode visual = view["visuals"]![0]!;
+            Assert.Equal(["SECTOR", "PROJECTS", "VALUE_SAR"], visual["columns"]!.AsArray().Select(c => c!["key"]!.GetValue<string>()));
+            Assert.Empty(visual["groups"]!.AsArray());
+            JsonNode table = visual["table"]!;
+            Assert.Equal(["ITEM", "COUNT", "SAR"], table["columnTypes"]!.AsArray().Select(t => t!.GetValue<string>()));
+            JsonArray rows = table["rows"]!.AsArray();
+            Assert.Equal(bySector, rows.Select(r => $"{r!["cells"]![0]!["key"]!.GetValue<string>()}:{r["projects"]!.GetValue<int>()}").Order(StringComparer.Ordinal));
+            Assert.All(rows, row => Assert.Equal(row!["projects"]!.GetValue<int>(), row["cells"]![1]!["value"]!.GetValue<int>()));
+            Assert.Equal(rows.Sum(r => r!["projects"]!.GetValue<int>()), table["totals"]![1]!["value"]!.GetValue<int>());
+            Assert.False(table["truncated"]!.GetValue<bool>());
+        }
+    }
+
     private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();
 
     private static object DesignOf(params object[] visuals) => new { visuals };
@@ -338,7 +400,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
 
     private static object Visual(
         string title, string type, decimal column, decimal row, decimal width, decimal height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
-        object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null, string[]? hiddenColumns = null) =>
+        object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null, string[]? hiddenColumns = null, object[]? columns = null) =>
         new
         {
             title = new { ar = $"عنوان {title}", en = title },
@@ -355,5 +417,6 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             widgetCode,
             children,
             hiddenColumns,
+            columns,
         };
 }

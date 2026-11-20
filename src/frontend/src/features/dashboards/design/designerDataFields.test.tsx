@@ -235,7 +235,7 @@ describe('the Data panel', () => {
     designerApi();
     const user = userEvent.setup();
     renderApp({ path: DESIGNER, session: session() });
-    await addVisual(user, 'TABLE');
+    await addVisual(user, 'COLUMN');
     await waitFor(() => fieldControl(FIELD.ACTUAL_EXPENDITURE));
 
     // The eight fixed figures come before the first projection.
@@ -262,7 +262,7 @@ describe('the Data panel', () => {
     designerApi();
     const user = userEvent.setup();
     renderApp({ path: DESIGNER, session: session() });
-    await addVisual(user, 'TABLE');
+    await addVisual(user, 'COLUMN');
     await waitFor(() => fieldControl(FIELD.ACTUAL_EXPENDITURE));
 
     await user.type(searchBox(), 'expenditure');
@@ -318,32 +318,30 @@ describe('a value from a field', () => {
     });
   });
 
-  test('a table takes up to six values, a bar one', async () => {
+  // A table takes columns instead (dashboard-designer-power-table.md); a column chart takes the most field values of the charts.
+  test('a column chart takes up to three values, a bar one', async () => {
     const api = designerApi();
     const user = userEvent.setup();
     renderApp({ path: DESIGNER, session: session() });
-    await addVisual(user, 'TABLE');
-    const seven = [
+    await addVisual(user, 'COLUMN');
+    const four = [
       FIELD.APPROVED_BUDGET,
       FIELD.ACTUAL_EXPENDITURE,
       FIELD.FORECAST_AT_COMPLETION,
-      FIELD.ACTUAL_PERCENT,
-      FIELD.PLANNED_PERCENT,
       FIELD.OPEN_RISKS,
-      FIELD.FINISH_VARIANCE_DAYS,
     ];
-    for (const key of seven.slice(0, 6)) {
+    for (const key of four.slice(0, 3)) {
       await chooseField(user, key);
     }
-    // The seventh is not taken: its tick is refused (disabled) or has no effect.
-    const seventh = fieldControl(present(seven[6]));
-    if (!seventh.disabled) {
-      await user.click(seventh);
+    // The fourth is not taken: its tick is refused (disabled) or has no effect.
+    const fourth = fieldControl(present(four[3]));
+    if (!fourth.disabled) {
+      await user.click(fourth);
     }
     await waitFor(() => {
-      expect(lastPreviewed(api)?.values?.map((value) => value.field)).toEqual(seven.slice(0, 6));
+      expect(lastPreviewed(api)?.values?.map((value) => value.field)).toEqual(four.slice(0, 3));
     });
-    expect(fieldControl(present(seven[6])).checked).toBe(false);
+    expect(fieldControl(present(four[3])).checked).toBe(false);
 
     // A bar draws one: a second field takes the first one's place.
     await addVisual(user, 'BAR');
