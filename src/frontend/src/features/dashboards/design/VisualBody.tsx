@@ -18,6 +18,8 @@ import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx'
 import { ColumnTable } from './ColumnTable.tsx';
 import { LineChart } from './LineChart.tsx';
 import { MapVisual } from './MapVisual.tsx';
+import { RISK_COUNT_FIELD } from './riskFields.ts';
+import { useDesignRiskMatrix } from './riskMatrixContext.ts';
 import { hasColumns } from './tableColumns.ts';
 import { Coverage } from '../insights/figures.tsx';
 import { isStatusScale, labelOfValue } from '../presentation.ts';
@@ -37,6 +39,7 @@ import {
   isPercentValue,
   valueTypeOf,
 } from './fields.ts';
+import { sourceOf } from './recordSources.ts';
 import { drillPath, fieldGroupText, formatValue, groupText, isPercent } from './visuals.ts';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
@@ -88,6 +91,7 @@ export function VisualBody({
 }): ReactElement {
   const { t, language } = useI18n();
   const lookups = useProjectLookups();
+  const riskMatrix = useDesignRiskMatrix();
   const [active, setActive] = useState<string | null>(null);
   const groups = visual.groups ?? [];
 
@@ -107,7 +111,10 @@ export function VisualBody({
     );
   }
 
-  if (groups.length === 0 || groups.every((group) => group.projects === 0)) {
+  // A card of risks with no risk reads 0, a count of nothing; a project figure with no project to measure reads "No data" (20 Nov 2026).
+  const countsNone =
+    visual.visualType === 'CARD' && sourceOf(visual) === 'RISKS' && groups.length > 0;
+  if (!countsNone && (groups.length === 0 || groups.every((group) => group.projects === 0))) {
     return <p className="state">{t('dashboards.noData')}</p>;
   }
 
@@ -146,7 +153,12 @@ export function VisualBody({
     return <p className="state">{t('dashboards.noData')}</p>;
   }
   const measure = onFields ? null : (visual.measures[0] ?? null);
-  const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
+  // A visual on Risks counts risks: its groups' counts are risks, and no list opens from them.
+  const onRisks = visual.source === 'RISKS';
+  const projectsHint = (count: number) =>
+    onRisks
+      ? t('dashboards.designer.riskGroupHint', { count })
+      : t('dashboards.drill.projects', { count });
   const text = (index: number) => {
     const group = groups[index];
     if (group === undefined) {
@@ -154,7 +166,7 @@ export function VisualBody({
     }
     return groupField === null
       ? groupText(visual.groupBy, group, lookups, t, language)
-      : fieldGroupText(groupField, visual.groupDateUnit ?? null, group, t, language);
+      : fieldGroupText(groupField, visual.groupDateUnit ?? null, group, t, language, riskMatrix);
   };
   const rowDrill = (key: string | null) =>
     onFields || filters === undefined
@@ -213,7 +225,12 @@ export function VisualBody({
             <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
           )}
           {onFields ? (
-            <FieldCoverage count={whole.measured} of={whole.projects} />
+            <FieldCoverage
+              count={whole.measured}
+              of={whole.projects}
+              risks={onRisks}
+              shown={!onRisks || fieldValues[0]?.field !== RISK_COUNT_FIELD}
+            />
           ) : measure !== null && (isPercent(measure) || measure === 'GAP_POINTS') ? (
             <Coverage kind="progress" count={whole.measured} of={whole.projects} />
           ) : measure === 'VALUE_SAR' ? (
@@ -504,13 +521,28 @@ function ValuesTable({
 }
 
 /** How many of a field visual's projects have its first value revealed (the others are unknown, restricted or masked). */
-function FieldCoverage({ count, of }: { count: number; of: number }): ReactElement {
+function FieldCoverage({
+  count,
+  of,
+  risks = false,
+  shown = true,
+}: {
+  count: number;
+  of: number;
+  /** Whether the visual counts risks: then of its risks. */
+  risks?: boolean;
+  /** False for the number of risks, which every risk has. */
+  shown?: boolean;
+}): ReactElement | null {
   const { t } = useI18n();
-  return (
+  return shown ? (
     <span className="insights__coverage">
-      {t('dashboards.designer.fieldCoverage', { count, total: of })}
+      {t(risks ? 'dashboards.designer.riskFieldCoverage' : 'dashboards.designer.fieldCoverage', {
+        count,
+        total: of,
+      })}
     </span>
-  );
+  ) : null;
 }
 
 /** A figure's words, as a link to its records when it has one. */

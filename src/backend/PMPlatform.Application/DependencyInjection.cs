@@ -332,6 +332,8 @@ public static class DependencyInjection
         services.AddScoped<INotificationConditionSource, RiskConditionSource>();
         services.AddScoped<IRiskCloseoutReader, RiskCloseoutReader>();
         services.AddScoped<IRiskExposureReader, RiskExposureReader>();
+        // The 20 Nov 2026 record sources: the dashboard designer's risk visuals read the register under RISK_VIEW (edge 3; Project declares the reader).
+        services.AddScoped<IPortfolioRiskReader, PortfolioRiskReader>();
 
         // TASK-057: WF-07's issues and challenges — severity computed from impacts on the shared scale and pinned, escalations published
         // to WF-15 once each, resolutions validated through WF-11 (edges 24, 28), and the issue side of edge 15. The repository is

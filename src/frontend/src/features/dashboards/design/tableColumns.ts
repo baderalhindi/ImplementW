@@ -1,5 +1,6 @@
 import { formatPoints } from '@/features/projects/presentation.ts';
 import { sarCompact, sarExactLabel } from '@/shared/format/money.ts';
+import { type RiskMatrix } from '@/features/risks/riskRules.ts';
 import { type Language, translate, type TranslationKey } from '@/shared/i18n/i18n.ts';
 import { type SortDirection } from '@/shared/ui/SortHeader.tsx';
 
@@ -10,6 +11,7 @@ import {
   type GroupBy,
   type Measure,
   ON_PLAN_MEASURES,
+  type RecordSource,
   type Section,
   type TableAggregation,
   type TableCell,
@@ -18,7 +20,22 @@ import {
   type TableRow,
   type Visual,
 } from './designApi.ts';
-import { codeText, fieldName, filterFits, formatDayNumber, NO_FIELD_DATA } from './fields.ts';
+import {
+  codeText,
+  fieldName,
+  fieldParts,
+  filterFits,
+  formatDayNumber,
+  NO_FIELD_DATA,
+} from './fields.ts';
+import {
+  isRiskCount,
+  isRiskField,
+  RISK_PROJECT_DIMENSIONS,
+  RISK_TABLE_COLUMNS,
+  riskCountText,
+  riskMissingText,
+} from './riskFields.ts';
 import { type HiddenColumns } from './sectionColumns.ts';
 
 // A Power BI-style table (20 Nov 2026, docs/architecture/dashboard-designer-power-table.md): columns, each a project attribute, a data field or a
@@ -75,6 +92,21 @@ export const NEW_TABLE_COLUMNS: readonly TableColumn[] = [
   { kind: 'DIMENSION', key: 'SECTOR', aggregation: 'NONE' },
   { kind: 'MEASURE', key: 'PROJECTS', aggregation: null },
 ];
+
+/** The Project details a table on `source` offers: a risk's project attributes (its project's title is the Project risk field). */
+export function tableDimensionsFor(source: RecordSource): readonly TableDimension[] {
+  return source === 'RISKS' ? RISK_PROJECT_DIMENSIONS : TABLE_DIMENSIONS;
+}
+
+/** The Portfolio figures a table on `source` offers: none on Risks, whose figures are the risk fields' calculations. */
+export function tableMeasuresFor(source: RecordSource): readonly TableMeasure[] {
+  return source === 'RISKS' ? [] : TABLE_MEASURES;
+}
+
+/** The columns a table on `source` starts with. */
+export function firstColumnsFor(source: RecordSource): readonly TableColumn[] {
+  return source === 'RISKS' ? RISK_TABLE_COLUMNS : NEW_TABLE_COLUMNS;
+}
 
 const DIMENSION_AGGREGATIONS: readonly TableAggregation[] = ['NONE', 'COUNT', 'COUNT_DISTINCT'];
 
@@ -174,6 +206,12 @@ export function columnName(column: Pick<TableColumn, 'kind' | 'key'>, language: 
 
 /** A column's heading, Power BI's way: its name when it groups the rows or is a figure, else "Count of Sector", "Sum of Registration budget". */
 export function columnHeading(column: TableColumn, language: Language): string {
+  if (
+    column.kind === 'FIELD' &&
+    isRiskCount({ field: column.key, aggregation: column.aggregation })
+  ) {
+    return riskCountText(language);
+  }
   const name = columnName(column, language);
   return column.aggregation === null || column.aggregation === 'NONE'
     ? name
@@ -269,7 +307,7 @@ export function columnsOf(visual: Visual, fields: readonly FieldDescriptor[]): T
           .map((value) => ({ kind: 'FIELD', key: value.field, aggregation: value.aggregation }))
       : visual.measures.map((measure) => ({ kind: 'MEASURE', key: measure, aggregation: null }));
   const columns = [...grouping, ...figures].slice(0, MAX_COLUMNS);
-  return figures.length === 0 ? [...NEW_TABLE_COLUMNS] : columns;
+  return figures.length === 0 ? [...firstColumnsFor(visual.source ?? 'PROJECTS')] : columns;
 }
 
 /** A visual as a column table: its columns, totals shown unless turned off, no measures, values or grouping, and the filters that still fit. */
@@ -449,6 +487,8 @@ export interface CellNames {
   itemLabel: (id: string) => string | null;
   departmentName: (id: string) => string | null;
   entityName: (id: string) => string | null;
+  /** The risk matrix in force, which names a risk's rating and levels; null or absent where it is not read. */
+  riskMatrix?: RiskMatrix | null;
 }
 
 /** The words a cell with no figure reads: its group's, as the dashboard's tables name it, or a yes/no, a code, a status. */
@@ -475,14 +515,18 @@ function groupWords(
       case 'ON_PLAN':
         return t('dashboards.insights.notMeasured');
       default:
-        return t('dashboards.designer.notSet');
+        return (
+          (column.kind === 'FIELD' && isRiskField(column.key)
+            ? riskMissingText(fieldParts(column.key).fieldCode, t)
+            : null) ?? t('dashboards.designer.notSet')
+        );
     }
   }
   if (key === 'TRUE' || key === 'FALSE') {
     return t(key === 'TRUE' ? 'dashboards.designer.yes' : 'dashboards.designer.no');
   }
   if (column.kind === 'FIELD') {
-    return label ?? codeText(column.key, key, language, t);
+    return label ?? codeText(column.key, key, language, t, names.riskMatrix ?? null);
   }
   switch (column.key) {
     case 'STATUS':

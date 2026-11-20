@@ -489,7 +489,9 @@
       "SAR": "ريال",
       "BOOLEAN": "نعم/لا",
       "DATE": "تاريخ",
-      "DATE_TIME": "تاريخ"
+      "DATE_TIME": "تاريخ",
+      "TEXT": "نص",
+      "ITEM": "عنصر"
     },
     "fieldSource": {
       "CHANGE_REQUEST_CHANGE_POSITION": "طلبات التغيير",
@@ -508,7 +510,8 @@
       "SCHEDULE_SCHEDULE_HEALTH_STATUS": "الجدول الزمني (مباشر)",
       "SUSPENSION_OPEN_REQUESTS": "طلبات التعليق",
       "PROJECT_PROJECT_PROFILE": "سجل المشروع",
-      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": "سجل التقدم المنشور"
+      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": "سجل التقدم المنشور",
+      "RISK": "المخاطر"
     },
     "field": {
       "CHANGE_REQUEST_CHANGE_POSITION": {
@@ -604,6 +607,25 @@
         "OVERALL_HEALTH": "الصحة العامة عبر الزمن",
         "ACTUAL_PERCENT": "التقدم الفعلي عبر الزمن",
         "PLANNED_PERCENT": "التقدم المخطط عبر الزمن"
+      },
+      "RISK": {
+        "RISK": "عدد المخاطر",
+        "TITLE": "العنوان",
+        "PROJECT": "المشروع",
+        "STATUS": "حالة الخطر",
+        "CATEGORY": "الفئة",
+        "OWNER": "المالك",
+        "RATING": "التصنيف",
+        "PROBABILITY": "الاحتمالية",
+        "IMPACT": "الأثر",
+        "SCORE": "الدرجة",
+        "IDENTIFIED_DATE": "تاريخ التحديد",
+        "NEXT_REVIEW_DATE": "تاريخ المراجعة القادمة",
+        "CLOSED_DATE": "تاريخ الإغلاق",
+        "REVIEW_OVERDUE": "المراجعة متأخرة",
+        "MATERIALISED": "تحقق الخطر",
+        "OPEN_ACTIONS": "إجراءات المعالجة المفتوحة",
+        "REOPENED": "مرات إعادة الفتح"
       }
     },
     "filterField": "التصفية حسب",
@@ -623,6 +645,16 @@
         "PROGRESS_METHOD": {
           "STAGES": "مراحل المشروع",
           "SCHEDULE": "الجدول الزمني"
+        }
+      },
+      "RISK": {
+        "RATING": {
+          "VERY_LOW": "منخفض جدًا",
+          "LOW": "منخفض",
+          "MEDIUM": "متوسط",
+          "HIGH": "مرتفع",
+          "VERY_HIGH": "مرتفع جدًا",
+          "CRITICAL": "حرج"
         }
       }
     },
@@ -750,6 +782,18 @@
       "WHITE": "أبيض"
     },
     "textTooLong": "اختصر النص إلى 2000 حرف أو أقل.",
-    "textInvalidCharacter": "احذف علامة الجدولة أو أي حرف تحكم آخر: لا يُحتفظ إلا بفواصل الأسطر."
+    "textInvalidCharacter": "احذف علامة الجدولة أو أي حرف تحكم آخر: لا يُحتفظ إلا بفواصل الأسطر.",
+    "source": {
+      "label": "المصدر",
+      "hint": "ما يعدّه العنصر المرئي: صف لكل مشروع، أو صف لكل خطر.",
+      "PROJECTS": "المشاريع",
+      "RISKS": "المخاطر"
+    },
+    "replacedBySource": "استُبدلت الأرقام بالأرقام الأولى للمصدر الجديد: يعدّ العنصر المرئي سجلات مصدر واحد.",
+    "itemFields": "العناصر والأشخاص",
+    "riskCount": "عدد المخاطر",
+    "riskGroupHint": "{count} من المخاطر",
+    "riskFieldCoverage": "{count} من {total} من المخاطر لها قيمة",
+    "filtersHintRisks": "تُحتسب المخاطر التي تحمل إحدى القيم المحددة فقط (قيمها أو قيم مشروعها). حتى {count} عوامل تصفية."
   }
 }

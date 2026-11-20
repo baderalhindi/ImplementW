@@ -47,6 +47,15 @@ public enum PortfolioFieldType
 
     /// <summary>A moment in UTC (<c>yyyy-MM-ddTHH:mm:ssZ</c>): as a date, by its UTC date.</summary>
     DateTime = 8,
+
+    /// <summary>A record's own text, such as a title (the 20 Nov 2026 record sources): the value is the record's id, the text its label; counted only.</summary>
+    Text = 9,
+
+    /// <summary>
+    /// A master-data item, a person or a project (the 20 Nov 2026 record sources): the value is its id, its name the label; groups, filters (by id) and is
+    /// counted.
+    /// </summary>
+    Item = 10,
 }
 
 /// <summary>What a field's rows are: one per project, or one per published snapshot of a project (its history over time).</summary>
@@ -72,7 +81,7 @@ public sealed record PortfolioFieldDescriptor(
     /// </summary>
     public static IReadOnlyList<PortfolioFieldAggregation> AggregationsOf(PortfolioFieldType type) => type switch
     {
-        PortfolioFieldType.Code => [PortfolioFieldAggregation.Count],
+        PortfolioFieldType.Code or PortfolioFieldType.Text or PortfolioFieldType.Item => [PortfolioFieldAggregation.Count],
         PortfolioFieldType.Percent => [PortfolioFieldAggregation.Count, PortfolioFieldAggregation.Average, PortfolioFieldAggregation.Min, PortfolioFieldAggregation.Max],
         PortfolioFieldType.Count or PortfolioFieldType.Days or PortfolioFieldType.Sar =>
             [PortfolioFieldAggregation.Count, PortfolioFieldAggregation.Sum, PortfolioFieldAggregation.Average, PortfolioFieldAggregation.Min, PortfolioFieldAggregation.Max],

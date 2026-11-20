@@ -12235,8 +12235,17 @@
         "tags": [
           "Project"
         ],
-        "summary": "The data catalogue a visual may draw, group by and filter on (the 18 Nov 2026 data fields): every project-grain field of the projection register of\na type a visual calculates with, and the aggregations its type allows. A value is still read under its own projection's permission.",
+        "summary": "The data catalogue a visual may draw, group by and filter on (the 18 Nov 2026 data fields): every project-grain field of the projection register of\na type a visual calculates with, and the aggregations its type allows. A value is still read under its own projection's permission. With\n`source=RISKS` (the 20 Nov 2026 record sources), the risk fields instead, each read under `RISK_VIEW`.",
         "operationId": "Project_GetPortfolioDesignFields",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PortfolioRecordSource"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -38283,7 +38292,9 @@
           "SAR",
           "BOOLEAN",
           "DATE",
-          "DATE_TIME"
+          "DATE_TIME",
+          "TEXT",
+          "ITEM"
         ],
         "description": "What a designer field holds: the register's value types."
       },
@@ -38718,6 +38729,13 @@
             "format": "int32"
           }
         }
+      },
+      "PortfolioRecordSource": {
+        "enum": [
+          "PROJECTS",
+          "RISKS",
+          null
+        ]
       },
       "PortfolioSection": {
         "enum": [
@@ -39652,6 +39670,16 @@
                 "$ref": "#/components/schemas/PortfolioMapOptionsRequest"
               }
             ]
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioRecordSource"
+              }
+            ]
           }
         }
       },
@@ -39854,6 +39882,16 @@
               },
               {
                 "$ref": "#/components/schemas/PortfolioMapOptions"
+              }
+            ]
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioRecordSource"
               }
             ]
           }

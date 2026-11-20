@@ -34,6 +34,7 @@ import {
 import { hasColumns } from './tableColumns.ts';
 import { frameOf, isTextBox } from './textBox.ts';
 import { TextBoxBody } from './TextBoxBody.tsx';
+import { countsRisks, RiskMatrixContext, useRiskMatrixWhen } from './riskMatrixContext.ts';
 import { VisualBody } from './VisualBody.tsx';
 import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
 
@@ -308,6 +309,8 @@ export function DesignedVisuals({
     ),
     { keepWhileReloading: true },
   );
+  // The risk matrix names a risk visual's ratings and levels: read only when the design has one.
+  const riskMatrix = useRiskMatrixWhen(countsRisks(design.data?.visuals ?? []));
   if (design.data === undefined || insights.data === undefined) {
     return design.loading || insights.loading ? (
       <LoadingState />
@@ -361,31 +364,33 @@ export function DesignedVisuals({
   });
   const shown = split ? packed(visible) : withoutEmptyRows(visible);
   return shown.length === 0 ? null : (
-    <section className="insights" aria-labelledby="designed-visuals">
-      <h2 id="designed-visuals" className="visually-hidden">
-        {t('dashboards.insights.headlineLabel')}
-      </h2>
-      <div className="visual-grid" data-section="designed" style={gridRows(rowsOf(shown))}>
-        {shown.map((visual) =>
-          // No two visuals share a place, so the place names one.
-          isContainer(visual) ? (
-            <ContainerFrame
-              key={placeKey(visual)}
-              container={visual}
-              filters={filters}
-              sources={sources}
-            />
-          ) : (
-            <PlacedVisual
-              key={placeKey(visual)}
-              visual={visual}
-              filters={filters}
-              sources={sources}
-              place={gridPlace(visual)}
-            />
-          ),
-        )}
-      </div>
-    </section>
+    <RiskMatrixContext value={riskMatrix}>
+      <section className="insights" aria-labelledby="designed-visuals">
+        <h2 id="designed-visuals" className="visually-hidden">
+          {t('dashboards.insights.headlineLabel')}
+        </h2>
+        <div className="visual-grid" data-section="designed" style={gridRows(rowsOf(shown))}>
+          {shown.map((visual) =>
+            // No two visuals share a place, so the place names one.
+            isContainer(visual) ? (
+              <ContainerFrame
+                key={placeKey(visual)}
+                container={visual}
+                filters={filters}
+                sources={sources}
+              />
+            ) : (
+              <PlacedVisual
+                key={placeKey(visual)}
+                visual={visual}
+                filters={filters}
+                sources={sources}
+                place={gridPlace(visual)}
+              />
+            ),
+          )}
+        </div>
+      </section>
+    </RiskMatrixContext>
   );
 }

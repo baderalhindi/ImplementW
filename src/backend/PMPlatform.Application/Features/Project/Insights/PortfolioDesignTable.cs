@@ -123,7 +123,8 @@ internal sealed partial class PortfolioDesignService
     /// <summary>
     /// What is wrong with a column table, or null (its field relative to the visual): 1 to 12 columns, each a known key of its kind with a calculation it takes
     /// — a dimension none, a count or a distinct count; a field none, a distinct count or its type's own; a measure none at all — no two alike; and the visual's
-    /// own measures, values, grouping and grouping field left empty.
+    /// own measures, values, grouping and grouping field left empty. A table of risks (the 20 Nov 2026 record sources) takes no portfolio figure: its fields
+    /// carry the figures.
     /// </summary>
     private static FieldIssue? ColumnsIssue(PortfolioVisualInput v, IReadOnlyList<PortfolioTableColumn> columns, Dictionary<string, PortfolioFieldDescriptor> catalogue)
     {
@@ -134,7 +135,7 @@ internal sealed partial class PortfolioDesignService
 
         for (int index = 0; index < columns.Count; index++)
         {
-            if (ColumnIssue(columns[index], catalogue) is { } issue)
+            if (ColumnIssue(columns[index], catalogue, measures: !IsRisks(v)) is { } issue)
             {
                 return new($"columns[{index}]{issue.Field}", issue.Code);
             }
@@ -154,11 +155,16 @@ internal sealed partial class PortfolioDesignService
     }
 
     /// <summary>What is wrong with one column, or null; the field is relative to the column (<c>""</c>, <c>.kind</c>, <c>.key</c> or <c>.aggregation</c>).</summary>
-    private static FieldIssue? ColumnIssue(PortfolioTableColumn? column, Dictionary<string, PortfolioFieldDescriptor> catalogue)
+    private static FieldIssue? ColumnIssue(PortfolioTableColumn? column, Dictionary<string, PortfolioFieldDescriptor> catalogue, bool measures)
     {
         if (column?.Key is null)
         {
             return new(string.Empty, FieldIssue.Required);
+        }
+
+        if (!measures && column.Kind == PortfolioTableColumnKind.Measure)
+        {
+            return new(".kind", FieldIssue.NotAllowed);
         }
 
         IReadOnlyList<PortfolioTableAggregation>? allowed = column.Kind switch
@@ -256,17 +262,20 @@ internal sealed partial class PortfolioDesignService
     /// (one row per project by the title or ID; one row when none), each other column calculated over the row's projects — a measure exactly as the insights'
     /// breakdown row (<see cref="PortfolioInsightsService.RowOf"/>), a field over its revealed cells (<see cref="Aggregate"/>). Rows run by their first grouped
     /// column, then the next: a scale (status, stage, on-plan) in its order, a named cell by its Arabic name, a number or date by its value, a code by itself,
-    /// missing last; at most <see cref="MaxTableRows"/>. The totals are calculated over every row's projects.
+    /// missing last; at most <see cref="MaxTableRows"/>. The totals are calculated over every row's projects. A table of risks (the 20 Nov 2026 record sources)
+    /// is calculated over its projects' <paramref name="records"/> instead: its rows group risks (one per risk by the title), a row's project count is its
+    /// distinct projects, and a row is one project's when it is grouped by the project, its title or ID, or a risk's title.
     /// </summary>
     internal static PortfolioTableResult Table(
         PortfolioVisualInput visual, IReadOnlyList<PortfolioProjectRow> rows, ProjectStageSet? stages, bool amounts, OnPlanThresholds thresholds,
         IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, IReadOnlyList<PortfolioFieldCell>>> cells, IReadOnlyDictionary<string, PortfolioFieldDescriptor> catalogue,
-        IReadOnlyDictionary<string, BilingualLabel> labels)
+        IReadOnlyDictionary<string, BilingualLabel> labels, PortfolioRecords? records = null)
     {
         IReadOnlyList<PortfolioTableColumn> columns = visual.Columns ?? [];
-        List<FieldRow> projects = FilteredProjects(visual, rows, cells, catalogue);
+        List<FieldRow> projects = records is not null ? FilteredRecords(visual, rows, records, catalogue) : FilteredProjects(visual, rows, cells, catalogue);
         List<int> grouped = [.. Enumerable.Range(0, columns.Count).Where(i => columns[i].Aggregation == PortfolioTableAggregation.None)];
-        bool perProject = grouped.Any(i => columns[i] is { Kind: PortfolioTableColumnKind.Dimension, Key: TitleKey or FormalProjectIdKey });
+        bool perProject = grouped.Any(i => columns[i] is { Kind: PortfolioTableColumnKind.Dimension, Key: TitleKey or FormalProjectIdKey }
+            || (records is not null && columns[i] is { Kind: PortfolioTableColumnKind.Field, Key: PortfolioRiskFields.Project or PortfolioRiskFields.Title }));
 
         // Each project's grouped cells, with the value its row is grouped and sorted by.
         List<(FieldRow Member, GroupedCell[] Keys)> keyed = [.. projects.Select(m => (m, grouped.Select(i => GroupedCellOf(columns[i], m)).ToArray()))];
@@ -277,7 +286,8 @@ internal sealed partial class PortfolioDesignService
                 .OrderBy(g => g.Keys, GroupedCellComparer.Instance)];
 
         List<PortfolioTableRow> tableRows = [.. groups.Take(MaxTableRows).Select(g =>
-            new PortfolioTableRow(g.Members.Count, perProject ? g.Members[0].Project.Project.Id : null, CellsOf(g.Members, g.Keys)))];
+            new PortfolioTableRow(
+                g.Members.Select(m => m.Project.Project.Id).Distinct().Count(), perProject ? g.Members[0].Project.Project.Id : null, CellsOf(g.Members, g.Keys)))];
         return new PortfolioTableResult(
             [.. columns.Select(c => ColumnTypeOf(c, catalogue))], tableRows,
             visual.ShowTotals == false ? null : CellsOf(projects, null),
@@ -307,9 +317,12 @@ internal sealed partial class PortfolioDesignService
             {
                 PortfolioFieldDescriptor? field = catalogue.GetValueOrDefault(column.Key);
                 string? key = TableKeyOf(field, member.Cell(column.Key));
-                decimal? number = key is null || field is null ? null : field.IsDate() ? DayNumber(key) : Number(key);
+                bool named = field?.Type is PortfolioFieldType.Item or PortfolioFieldType.Text;
+                decimal? number = key is null || field is null || named ? null : field.IsDate() ? DayNumber(key) : Number(key);
                 bool masked = key is null && field is { IsSensitive: true } && !amounts;
-                return new GroupedCell(key, new PortfolioTableCell(key, null, number, masked), number, field?.Type is PortfolioFieldType.Code or PortfolioFieldType.Boolean ? key : null, null);
+                BilingualLabel? name = named && key is not null ? labels.GetValueOrDefault(key) : null;
+                string? text = named ? name?.Ar ?? key : field?.Type is PortfolioFieldType.Code or PortfolioFieldType.Boolean ? key : null;
+                return new GroupedCell(key, new PortfolioTableCell(key, name, number, masked), number, text, null);
             }
 
             if (column.Key == TitleKey)
@@ -425,6 +438,8 @@ internal sealed partial class PortfolioDesignService
                 PortfolioFieldType.Sar => PortfolioTableColumnType.Sar,
                 PortfolioFieldType.Boolean => PortfolioTableColumnType.Boolean,
                 PortfolioFieldType.Date or PortfolioFieldType.DateTime => PortfolioTableColumnType.Date,
+                PortfolioFieldType.Item => PortfolioTableColumnType.Item,
+                PortfolioFieldType.Text => PortfolioTableColumnType.Text,
                 _ => PortfolioTableColumnType.Count,
             },
             PortfolioTableColumnKind.Measure => ColumnMeasures[column.Key] switch

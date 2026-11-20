@@ -21,9 +21,10 @@ import {
   freeAggregations,
   MAX_COLUMNS,
   movedColumn,
-  TABLE_DIMENSIONS,
-  TABLE_MEASURES,
+  tableDimensionsFor,
+  tableMeasuresFor,
 } from './tableColumns.ts';
+import { sourceOf } from './recordSources.ts';
 import { measureHint } from './visuals.ts';
 
 const DETAILS = 'DETAILS';
@@ -73,20 +74,28 @@ export function ColumnsWell({
 
   const query = search.trim().toLocaleLowerCase();
   const matches = (words: string) => query === '' || words.toLocaleLowerCase().includes(query);
-  const details: Offer[] = TABLE_DIMENSIONS.map((key) => ({
-    kind: 'DIMENSION' as const,
-    key,
-    name: columnName({ kind: 'DIMENSION', key }, language),
-    hint: null,
-    source: null,
-  })).filter((offer) => matches(offer.name));
-  const figures: Offer[] = TABLE_MEASURES.map((key) => ({
-    kind: 'MEASURE' as const,
-    key,
-    name: columnName({ kind: 'MEASURE', key }, language),
-    hint: null,
-    source: measureHint(key, t),
-  })).filter((offer) => matches(offer.name));
+  // A table on Risks offers its risks' project attributes and the risk fields; the Portfolio figures count projects, so not those.
+  const source = sourceOf(visual);
+  const dimensions = tableDimensionsFor(source);
+  const measures = tableMeasuresFor(source);
+  const details: Offer[] = dimensions
+    .map((key) => ({
+      kind: 'DIMENSION' as const,
+      key,
+      name: columnName({ kind: 'DIMENSION', key }, language),
+      hint: null,
+      source: null,
+    }))
+    .filter((offer) => matches(offer.name));
+  const figures: Offer[] = measures
+    .map((key) => ({
+      kind: 'MEASURE' as const,
+      key,
+      name: columnName({ kind: 'MEASURE', key }, language),
+      hint: null,
+      source: measureHint(key, t),
+    }))
+    .filter((offer) => matches(offer.name));
   // A column table is calculated over projects: the fields over time are not offered.
   const offered = catalogue.filter((field) => field.grain === 'PROJECT');
   const sources = [...new Set(offered.map((field) => field.projectionCode))].flatMap((code) => {
@@ -279,7 +288,7 @@ export function ColumnsWell({
               <FieldGroup
                 name={t('dashboards.designer.projectDetails')}
                 hint={null}
-                chosen={chosenOf('DIMENSION', TABLE_DIMENSIONS)}
+                chosen={chosenOf('DIMENSION', dimensions)}
                 open={open(DETAILS)}
                 onToggle={() => {
                   toggleGroup(DETAILS);
@@ -292,7 +301,7 @@ export function ColumnsWell({
               <FieldGroup
                 name={t('dashboards.designer.portfolioFigures')}
                 hint={null}
-                chosen={chosenOf('MEASURE', TABLE_MEASURES)}
+                chosen={chosenOf('MEASURE', measures)}
                 open={open(FIGURES)}
                 onToggle={() => {
                   toggleGroup(FIGURES);

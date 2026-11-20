@@ -45,7 +45,15 @@ import {
   withoutContainer,
   withoutVisual,
 } from './containers.ts';
-import { designApi, type Visual, type VisualResult, type VisualType } from './designApi.ts';
+import {
+  designApi,
+  type FieldDescriptor,
+  type Visual,
+  type VisualResult,
+  type VisualType,
+} from './designApi.ts';
+import { sourceOf } from './recordSources.ts';
+import { countsRisks, RiskMatrixContext, useRiskMatrixWhen } from './riskMatrixContext.ts';
 import { lineStart, normalized } from './fields.ts';
 import { hiddenColumnsOf } from './sectionColumns.ts';
 import { SectionBody } from './SectionBody.tsx';
@@ -144,6 +152,7 @@ function withoutFigures(visual: VisualResult): Visual {
   return normalized({
     title: visual.title,
     visualType: visual.visualType,
+    source: visual.source,
     measures: visual.measures,
     groupBy: visual.groupBy,
     layoutColumn: visual.layoutColumn,
@@ -168,10 +177,11 @@ function withoutFigures(visual: VisualResult): Visual {
   });
 }
 
-/** What a visual's figures are calculated from: its type, measures or field values (or a table's columns), grouping and filters. */
+/** What a visual's figures are calculated from: its type, record source, measures or field values (or a table's columns), grouping and filters. */
 function figuresBasis(visual: Visual): string {
   const {
     visualType,
+    source,
     measures,
     groupBy,
     values,
@@ -183,6 +193,7 @@ function figuresBasis(visual: Visual): string {
   } = normalized(visual);
   return JSON.stringify({
     visualType,
+    source,
     measures,
     groupBy,
     values,
@@ -256,6 +267,23 @@ export function DashboardDesignerPage(): ReactElement {
   );
   // The governed fields the Data panel offers; until they load (or when they cannot be read) the Portfolio figures still are.
   const fields = useApiResource(useCallback((signal: AbortSignal) => designApi.fields(signal), []));
+  // The risk fields (record sources, 20 Nov 2026) are read once a visual counts risks or the Source select is opened, and the risk matrix that
+  // names their ratings and levels with them.
+  const [risksAsked, setRisksAsked] = useState(false);
+  const risksWanted = risksAsked || countsRisks(visuals);
+  const riskFields = useApiResource(
+    useCallback(
+      (signal: AbortSignal) =>
+        risksWanted ? designApi.fields(signal, 'RISKS') : Promise.resolve<FieldDescriptor[]>([]),
+      [risksWanted],
+    ),
+  );
+  const riskMatrix = useRiskMatrixWhen(risksWanted);
+  /** The catalogue of a visual's source. */
+  const fieldsOf = (visual: Visual) => (sourceOf(visual) === 'RISKS' ? riskFields : fields);
+  const askForRisks = useCallback(() => {
+    setRisksAsked(true);
+  }, []);
   const showsCompletion = useShowsCompletion();
   const sources: SectionSources = {
     insights: insights.data,
@@ -892,7 +920,7 @@ export function DashboardDesignerPage(): ReactElement {
           ) : visual.section === undefined || visual.section === null ? (
             <VisualBody
               visual={figuresOf(visual)}
-              fields={fields.data}
+              fields={fieldsOf(visual).data}
               places={view.data?.places}
             />
           ) : sectionShown(visual, sources) ? (
@@ -975,274 +1003,284 @@ export function DashboardDesignerPage(): ReactElement {
   };
 
   return (
-    <div className="designer">
-      {ghost !== null && (
-        <div className="designer__ghost" aria-hidden="true" style={{ left: ghost.x, top: ghost.y }}>
-          {ghost.label}
-        </div>
-      )}
-      <PageHeader
-        title={t('dashboards.designer.title')}
-        description={t('dashboards.designer.intro')}
-        actions={
-          <>
-            <Link className="button button--quiet" to={PORTFOLIO_DASHBOARD_PATH}>
-              {t('dashboards.designer.viewDashboard')}
-            </Link>
-            <button
-              type="button"
-              className="button"
-              disabled={busy || isStandard}
-              onClick={() => {
-                setConfirmation({
-                  title: t('dashboards.designer.reset'),
-                  body: t('dashboards.designer.resetConfirm'),
-                  confirmLabel: t('dashboards.designer.reset'),
-                  destructive: true,
-                  action: designApi.reset,
-                  describeProblem: dashboardProblemMessage,
-                });
-              }}
-            >
-              {t('dashboards.designer.reset')}
-            </button>
-            <button
-              type="button"
-              className="button"
-              disabled={busy || !dirty}
-              onClick={() => {
-                relayout(() => saved.map(keyed));
-                setSelectedKey(null);
-                setPlaceProblem(null);
-              }}
-            >
-              {t('dashboards.designer.discard')}
-            </button>
-            <button
-              type="button"
-              className="button button--primary"
-              disabled={busy || !dirty || visuals.length === 0}
-              onClick={() => {
-                void save();
-              }}
-            >
-              {t('dashboards.designer.save')}
-            </button>
-          </>
-        }
-      />
-      <PageNotice notice={notice} />
-      <p className="designer__status" role="status">
-        {dirty
-          ? t('dashboards.designer.unsaved')
-          : isStandard
-            ? t('dashboards.designer.standard')
-            : t('dashboards.designer.savedState')}
-      </p>
-      <FormAlert message={previewError ?? placeProblem} />
-      <div className="designer__workspace">
-        <div className="designer__canvas-frame">
-          <h2 className="visually-hidden">{t('dashboards.designer.canvasLabel')}</h2>
-          {visuals.length === 0 ? <p className="state">{t('dashboards.designer.empty')}</p> : null}
+    <RiskMatrixContext value={riskMatrix}>
+      <div className="designer">
+        {ghost !== null && (
           <div
-            ref={canvas}
-            className="visual-grid designer__canvas"
-            style={gridRows(Math.ceil(rowsOf(visuals)) + SPARE_ROWS)}
+            className="designer__ghost"
+            aria-hidden="true"
+            style={{ left: ghost.x, top: ghost.y }}
           >
-            {visuals.map((visual) =>
-              isContainer(visual)
-                ? renderContainer(visual)
-                : renderVisual(visual, gridPlace(visual)),
-            )}
-            {draggingKey !== null &&
-              guides.map((guide) => (
-                <span
-                  key={`${guide.axis}-${String(guide.at)}`}
-                  className={`designer__guide designer__guide--${guide.axis} designer__guide--${guide.line}`}
-                  style={{ '--guide-at': String(guide.at) } as CSSProperties}
-                  aria-hidden="true"
-                />
-              ))}
+            {ghost.label}
           </div>
-        </div>
-        <aside className="designer__pane">
-          <section className="designer__gallery" aria-labelledby="designer-gallery">
-            <h2 id="designer-gallery" className="designer__heading">
-              {t('dashboards.designer.gallery')}
-            </h2>
-            <p className="designer__hint">{t('dashboards.designer.galleryHint')}</p>
-            <ul className="designer__types">
-              {GALLERY_TYPES.map((type) => (
-                <li key={type}>
+        )}
+        <PageHeader
+          title={t('dashboards.designer.title')}
+          description={t('dashboards.designer.intro')}
+          actions={
+            <>
+              <Link className="button button--quiet" to={PORTFOLIO_DASHBOARD_PATH}>
+                {t('dashboards.designer.viewDashboard')}
+              </Link>
+              <button
+                type="button"
+                className="button"
+                disabled={busy || isStandard}
+                onClick={() => {
+                  setConfirmation({
+                    title: t('dashboards.designer.reset'),
+                    body: t('dashboards.designer.resetConfirm'),
+                    confirmLabel: t('dashboards.designer.reset'),
+                    destructive: true,
+                    action: designApi.reset,
+                    describeProblem: dashboardProblemMessage,
+                  });
+                }}
+              >
+                {t('dashboards.designer.reset')}
+              </button>
+              <button
+                type="button"
+                className="button"
+                disabled={busy || !dirty}
+                onClick={() => {
+                  relayout(() => saved.map(keyed));
+                  setSelectedKey(null);
+                  setPlaceProblem(null);
+                }}
+              >
+                {t('dashboards.designer.discard')}
+              </button>
+              <button
+                type="button"
+                className="button button--primary"
+                disabled={busy || !dirty || visuals.length === 0}
+                onClick={() => {
+                  void save();
+                }}
+              >
+                {t('dashboards.designer.save')}
+              </button>
+            </>
+          }
+        />
+        <PageNotice notice={notice} />
+        <p className="designer__status" role="status">
+          {dirty
+            ? t('dashboards.designer.unsaved')
+            : isStandard
+              ? t('dashboards.designer.standard')
+              : t('dashboards.designer.savedState')}
+        </p>
+        <FormAlert message={previewError ?? placeProblem} />
+        <div className="designer__workspace">
+          <div className="designer__canvas-frame">
+            <h2 className="visually-hidden">{t('dashboards.designer.canvasLabel')}</h2>
+            {visuals.length === 0 ? (
+              <p className="state">{t('dashboards.designer.empty')}</p>
+            ) : null}
+            <div
+              ref={canvas}
+              className="visual-grid designer__canvas"
+              style={gridRows(Math.ceil(rowsOf(visuals)) + SPARE_ROWS)}
+            >
+              {visuals.map((visual) =>
+                isContainer(visual)
+                  ? renderContainer(visual)
+                  : renderVisual(visual, gridPlace(visual)),
+              )}
+              {draggingKey !== null &&
+                guides.map((guide) => (
+                  <span
+                    key={`${guide.axis}-${String(guide.at)}`}
+                    className={`designer__guide designer__guide--${guide.axis} designer__guide--${guide.line}`}
+                    style={{ '--guide-at': String(guide.at) } as CSSProperties}
+                    aria-hidden="true"
+                  />
+                ))}
+            </div>
+          </div>
+          <aside className="designer__pane">
+            <section className="designer__gallery" aria-labelledby="designer-gallery">
+              <h2 id="designer-gallery" className="designer__heading">
+                {t('dashboards.designer.gallery')}
+              </h2>
+              <p className="designer__hint">{t('dashboards.designer.galleryHint')}</p>
+              <ul className="designer__types">
+                {GALLERY_TYPES.map((type) => (
+                  <li key={type}>
+                    <button
+                      type="button"
+                      className="designer__type"
+                      // A line draws fields only: it waits for the catalogue to give it one.
+                      disabled={type === 'LINE' && lineStart(fields.data ?? []) === null}
+                      onPointerDown={(event) => {
+                        startGalleryDrag(event, t(`dashboards.designer.type.${type}`), () =>
+                          newVisual(type, visuals, fields.data ?? []),
+                        );
+                      }}
+                      onClick={() => {
+                        clickedTile(() => {
+                          add(type);
+                        });
+                      }}
+                    >
+                      <VisualIcon type={type} />
+                      <span className="designer__type-name">
+                        {t(`dashboards.designer.type.${type}`)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+                <li>
                   <button
                     type="button"
                     className="designer__type"
-                    // A line draws fields only: it waits for the catalogue to give it one.
-                    disabled={type === 'LINE' && lineStart(fields.data ?? []) === null}
                     onPointerDown={(event) => {
-                      startGalleryDrag(event, t(`dashboards.designer.type.${type}`), () =>
-                        newVisual(type, visuals, fields.data ?? []),
+                      startGalleryDrag(event, t('dashboards.designer.type.CONTAINER'), () =>
+                        newContainer(visuals),
                       );
                     }}
                     onClick={() => {
                       clickedTile(() => {
-                        add(type);
+                        append(newContainer(visuals));
                       });
                     }}
                   >
-                    <VisualIcon type={type} />
+                    <VisualIcon type="CONTAINER" />
                     <span className="designer__type-name">
-                      {t(`dashboards.designer.type.${type}`)}
+                      {t('dashboards.designer.type.CONTAINER')}
                     </span>
                   </button>
                 </li>
-              ))}
-              <li>
-                <button
-                  type="button"
-                  className="designer__type"
-                  onPointerDown={(event) => {
-                    startGalleryDrag(event, t('dashboards.designer.type.CONTAINER'), () =>
-                      newContainer(visuals),
-                    );
+              </ul>
+              {unplaced.length > 0 && (
+                <section className="designer__widgets" aria-labelledby="designer-widgets">
+                  <h3 id="designer-widgets" className="designer__subheading">
+                    {t('dashboards.designer.widgets')}
+                  </h3>
+                  <ul className="designer__widget-list">
+                    {unplaced.map((widget) => (
+                      <li key={widget.code}>
+                        <button
+                          type="button"
+                          className="designer__widget-tile"
+                          aria-label={t('dashboards.designer.addWidget', {
+                            title: widget.title[language],
+                          })}
+                          onPointerDown={(event) => {
+                            startGalleryDrag(event, widget.title[language], () =>
+                              newWidgetVisual(widget, visuals),
+                            );
+                          }}
+                          onClick={() => {
+                            clickedTile(() => {
+                              append(newWidgetVisual(widget, visuals));
+                            });
+                          }}
+                        >
+                          <span className="designer__widget-name">{widget.title[language]}</span>
+                          <span className="designer__widget-add" aria-hidden="true">
+                            {t('dashboards.designer.add')}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              <p className="designer__hint">{t('dashboards.designer.keyboardHint')}</p>
+            </section>
+            <section className="designer__settings" aria-labelledby="designer-settings">
+              <h2 id="designer-settings" className="designer__heading">
+                {t('dashboards.designer.properties')}
+              </h2>
+              {current === undefined ? (
+                <p className="designer__hint">{t('dashboards.designer.selectHint')}</p>
+              ) : (
+                <VisualSettings
+                  key={current.key}
+                  visual={current}
+                  fields={fieldsOf(current)}
+                  projectFields={fields.data ?? []}
+                  onSourceOpen={askForRisks}
+                  bounds={boundsOf(current)}
+                  textRefused={textRefusedOf(current.key)}
+                  onChange={(next) => {
+                    place(current.key, next);
                   }}
-                  onClick={() => {
-                    clickedTile(() => {
-                      append(newContainer(visuals));
-                    });
+                  onReplace={
+                    visuals.some((visual) => visual.key === current.key)
+                      ? (next) => {
+                          replace(current.key, next);
+                        }
+                      : undefined
+                  }
+                  onDuplicate={() => {
+                    duplicate(current);
                   }}
-                >
-                  <VisualIcon type="CONTAINER" />
-                  <span className="designer__type-name">
-                    {t('dashboards.designer.type.CONTAINER')}
-                  </span>
-                </button>
-              </li>
-            </ul>
-            {unplaced.length > 0 && (
-              <section className="designer__widgets" aria-labelledby="designer-widgets">
-                <h3 id="designer-widgets" className="designer__subheading">
-                  {t('dashboards.designer.widgets')}
-                </h3>
-                <ul className="designer__widget-list">
-                  {unplaced.map((widget) => (
-                    <li key={widget.code}>
-                      <button
-                        type="button"
-                        className="designer__widget-tile"
-                        aria-label={t('dashboards.designer.addWidget', {
-                          title: widget.title[language],
-                        })}
-                        onPointerDown={(event) => {
-                          startGalleryDrag(event, widget.title[language], () =>
-                            newWidgetVisual(widget, visuals),
-                          );
-                        }}
-                        onClick={() => {
-                          clickedTile(() => {
-                            append(newWidgetVisual(widget, visuals));
-                          });
-                        }}
-                      >
-                        <span className="designer__widget-name">{widget.title[language]}</span>
-                        <span className="designer__widget-add" aria-hidden="true">
-                          {t('dashboards.designer.add')}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            <p className="designer__hint">{t('dashboards.designer.keyboardHint')}</p>
-          </section>
-          <section className="designer__settings" aria-labelledby="designer-settings">
-            <h2 id="designer-settings" className="designer__heading">
-              {t('dashboards.designer.properties')}
-            </h2>
-            {current === undefined ? (
-              <p className="designer__hint">{t('dashboards.designer.selectHint')}</p>
-            ) : (
-              <VisualSettings
-                key={current.key}
-                visual={current}
-                fields={fields}
-                bounds={boundsOf(current)}
-                textRefused={textRefusedOf(current.key)}
-                onChange={(next) => {
-                  place(current.key, next);
-                }}
-                onReplace={
-                  visuals.some((visual) => visual.key === current.key)
-                    ? (next) => {
-                        replace(current.key, next);
-                      }
-                    : undefined
-                }
-                onDuplicate={() => {
-                  duplicate(current);
-                }}
-                onRemove={() => {
-                  remove(current.key);
-                }}
-              />
-            )}
-          </section>
-        </aside>
-      </div>
-      <Dialog
-        open={removing !== undefined}
-        title={t('dashboards.designer.removeContainer')}
-        onClose={() => {
-          setRemovingKey(null);
-        }}
-      >
-        <p>
-          {t('dashboards.designer.removeContainerBody', {
-            title: removing?.title[language] ?? '',
-          })}
-        </p>
-        <div className="form__actions">
-          <button
-            type="button"
-            className="button button--danger"
-            onClick={() => {
-              removeContainer(false);
-            }}
-          >
-            {t('dashboards.designer.removeWithVisuals')}
-          </button>
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={() => {
-              removeContainer(true);
-            }}
-          >
-            {t('dashboards.designer.keepVisuals')}
-          </button>
-          <button
-            type="button"
-            className="button"
-            onClick={() => {
-              setRemovingKey(null);
-            }}
-          >
-            {t('dashboards.designer.cancel')}
-          </button>
+                  onRemove={() => {
+                    remove(current.key);
+                  }}
+                />
+              )}
+            </section>
+          </aside>
         </div>
-      </Dialog>
-      <ConfirmDialog
-        confirmation={confirmation}
-        onClose={() => {
-          setConfirmation(null);
-        }}
-        onDone={() => {
-          setConfirmation(null);
-          setNotice({ tone: 'success', message: t('dashboards.designer.wasReset') });
-          load();
-        }}
-      />
-    </div>
+        <Dialog
+          open={removing !== undefined}
+          title={t('dashboards.designer.removeContainer')}
+          onClose={() => {
+            setRemovingKey(null);
+          }}
+        >
+          <p>
+            {t('dashboards.designer.removeContainerBody', {
+              title: removing?.title[language] ?? '',
+            })}
+          </p>
+          <div className="form__actions">
+            <button
+              type="button"
+              className="button button--danger"
+              onClick={() => {
+                removeContainer(false);
+              }}
+            >
+              {t('dashboards.designer.removeWithVisuals')}
+            </button>
+            <button
+              type="button"
+              className="button button--primary"
+              onClick={() => {
+                removeContainer(true);
+              }}
+            >
+              {t('dashboards.designer.keepVisuals')}
+            </button>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setRemovingKey(null);
+              }}
+            >
+              {t('dashboards.designer.cancel')}
+            </button>
+          </div>
+        </Dialog>
+        <ConfirmDialog
+          confirmation={confirmation}
+          onClose={() => {
+            setConfirmation(null);
+          }}
+          onDone={() => {
+            setConfirmation(null);
+            setNotice({ tone: 'success', message: t('dashboards.designer.wasReset') });
+            load();
+          }}
+        />
+      </div>
+    </RiskMatrixContext>
   );
 }

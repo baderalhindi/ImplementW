@@ -21,6 +21,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// a card, a text box without words or in the wrong language are refused and save nothing. Two MAP visuals (the 20 Nov 2026 map visual) with different
 /// filters, one in a container with its options set, preview, save and read back with their groups per city — an approved project in the test city among
 /// them — each a bar's by city with the same filters, and none for local.r06, who lacks the city grouping's permission; map options on a card, a map grouped by sector or drawing an average are refused and save nothing.
+/// Visuals of risks (the 20 Nov 2026 record sources) over two risks of an approved project — the number of risks, a bar by status and a table of their titles —
+/// preview, save and read back, local.r02 holding RISK_VIEW at ALL; the risk fields are listed; a gauge of risks is refused and saves nothing.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class PortfolioDesignTests(ProjectTestHost host)
@@ -718,6 +720,109 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
         }
     }
 
+    [Fact]
+    public async Task VisualsOfRisksCountTheRisksOfTheProjectsAndAreSavedAndReadBack()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        Guid projectId = await host.UnderReviewAsync(client, sessions);
+        await host.DecideAndDeliverAsync(projectId, ApprovalTaskDecision.Approve);
+        string manager = sessions.Approver;
+        Guid open = await RiskAsync(projectId, "Supply delay", "IDENTIFIED");
+        Guid closed = await RiskAsync(projectId, "Staff shortage", "CLOSED");
+
+        using (HttpResponseMessage fieldsResponse = await client.GetAsync($"{Design}/fields?source=RISKS", manager))
+        {
+            Assert.Equal(HttpStatusCode.OK, fieldsResponse.StatusCode);
+            JsonArray fields = (await fieldsResponse.ReadObjectAsync())["fields"]!.AsArray();
+            Assert.Equal(("RISK.RISK", "COUNT"), (fields[0]!["key"]!.GetValue<string>(), fields[0]!["type"]!.GetValue<string>()));
+            Assert.Equal(("TEXT", "ITEM"), (Field(fields, "RISK.TITLE")["type"]!.GetValue<string>(), Field(fields, "RISK.PROJECT")["type"]!.GetValue<string>()));
+            Assert.Contains("CLOSED", Field(fields, "RISK.STATUS")["values"]!.AsArray().Select(v => v!.GetValue<string>()));
+        }
+
+        object[] count = [new { field = "RISK.RISK", aggregation = "COUNT" }];
+        object design = DesignOf(
+            Visual("Number of risks", "CARD", 0, 0, 3, 2, values: count, source: "RISKS"),
+            Visual("Risks by status", "BAR", 3, 0, 6, 4, values: count, groupField: "RISK.STATUS", source: "RISKS"),
+            Visual("Risk register", "TABLE", 0, 4, 12, 6, source: "RISKS", columns:
+            [
+                new { kind = "FIELD", key = "RISK.TITLE", aggregation = "NONE" },
+                new { kind = "FIELD", key = "RISK.PROJECT", aggregation = "NONE" },
+                new { kind = "FIELD", key = "RISK.STATUS", aggregation = "NONE" },
+            ]));
+
+        using HttpResponseMessage preview = await client.PostAsync($"{Design}/preview", manager, design);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        AssertRisks(await preview.ReadObjectAsync());
+
+        using HttpResponseMessage saved = await client.PutAsync(Design, manager, design, ifMatch: null);
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        using (HttpResponseMessage read = await client.GetAsync(Design, manager))
+        {
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+            AssertRisks(await read.ReadObjectAsync());
+        }
+
+        Assert.Equal(["RISKS", "RISKS", "RISKS"], await host.Database.QueryAsync("SELECT data_fields->>'source' FROM project.portfolio_visual ORDER BY sort_order"));
+
+        using HttpResponseMessage reset = await client.PostAsync($"{Design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, reset.StatusCode);
+
+        object gauge = DesignOf(Visual("Risk gauge", "GAUGE", 0, 0, 4, 3, values: count, source: "RISKS"));
+        using HttpResponseMessage refused = await client.PutAsync(Design, manager, gauge, ifMatch: null);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, refused.StatusCode);
+        JsonObject body = await refused.ReadObjectAsync();
+        Assert.Equal(("PROJECT_PORTFOLIO_DESIGN_INVALID", "visuals[0].source", "NOT_ALLOWED"), (body["code"]!.GetValue<string>(),
+            body["errors"]![0]!["field"]!.GetValue<string>(), body["errors"]![0]!["code"]!.GetValue<string>()));
+        Assert.Equal(["0"], await host.Database.QueryAsync("SELECT count(*)::text FROM project.portfolio_visual"));
+
+        void AssertRisks(JsonObject view)
+        {
+            JsonArray visuals = view["visuals"]!.AsArray();
+            Assert.All(visuals, v => Assert.Equal("RISKS", v!["source"]!.GetValue<string>()));
+
+            JsonNode card = Assert.Single(visuals[0]!["groups"]!.AsArray())!;
+            Assert.Equal((2, 1), (card["values"]![0]!.GetValue<int>(), card["projects"]!.GetValue<int>()));
+            Assert.Equal(
+                [("CLOSED", 1), ("IDENTIFIED", 1)],
+                visuals[1]!["groups"]!.AsArray().Select(g => (g!["key"]!.GetValue<string>(), g["values"]![0]!.GetValue<int>())).OrderBy(g => g.Item1));
+
+            JsonNode table = visuals[2]!["table"]!;
+            Assert.Equal(["TEXT", "ITEM", "CODE"], table["columnTypes"]!.AsArray().Select(t => t!.GetValue<string>()));
+            JsonArray rows = table["rows"]!.AsArray();
+            Assert.Equal(
+                [(open.ToString(), "Supply delay", "IDENTIFIED"), (closed.ToString(), "Staff shortage", "CLOSED")],
+                rows.Select(r => (r!["cells"]![0]!["key"]!.GetValue<string>(), r["cells"]![0]!["label"]!["en"]!.GetValue<string>(), r["cells"]![2]!["key"]!.GetValue<string>()))
+                    .OrderByDescending(r => r.Item2, StringComparer.Ordinal));
+            Assert.All(rows, r =>
+            {
+                Assert.Equal(projectId.ToString(), r!["cells"]![1]!["key"]!.GetValue<string>());
+                Assert.Equal(projectId.ToString(), r["projectId"]!.GetValue<string>());
+                Assert.False(string.IsNullOrEmpty(r["cells"]![1]!["label"]!["en"]!.GetValue<string>()));
+            });
+        }
+    }
+
+    /// <summary>A WF-06 risk of the project as the register holds it, written directly as the dashboard tests write theirs (its category need not be published).</summary>
+    private async Task<Guid> RiskAsync(Guid projectId, string title, string status)
+    {
+        Guid id = Guid.NewGuid();
+        (string closedAt, string closedBy, string rationale, string rationaleLang) = status == "CLOSED"
+            ? ("now()", $"'{IdentityDatabase.SeedPrincipalId}'", "'Resolved.'", "'en'")
+            : ("NULL", "NULL", "NULL", "NULL");
+        await host.Database.ExecuteAsync($"""
+            BEGIN; SET LOCAL session_replication_role = replica;
+            INSERT INTO risk.risk (id, project_id, title, title_lang, description, description_lang, risk_category_item_id, status, identified_date, closed_at,
+                                   closed_by_user_id, closure_rationale, closure_rationale_lang, reopened_count, created_at, created_by, updated_at, updated_by)
+            VALUES ('{id}', '{projectId}', '{title}', 'en', 'A risk.', 'en', '{Guid.NewGuid()}', '{status}', current_date - 10, {closedAt},
+                    {closedBy}, {rationale}, {rationaleLang}, 0, now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}');
+            COMMIT;
+            """);
+        return id;
+    }
+
+    private static JsonNode Field(JsonArray fields, string key) => fields.Single(f => f!["key"]!.GetValue<string>() == key)!;
+
     private static int Int(JsonNode node, string property) => node[property]!.GetValue<int>();
 
     private static object DesignOf(params object[] visuals) => new { visuals };
@@ -728,7 +833,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
     private static object Visual(
         string title, string type, decimal column, decimal row, decimal width, decimal height, string[]? measures = null, string groupBy = "NONE", object[]? values = null,
         object? axes = null, string? section = null, string? widgetCode = null, object[]? children = null, string[]? hiddenColumns = null, object[]? columns = null,
-        object? text = null, object[]? filters = null, object? map = null) =>
+        object? text = null, object[]? filters = null, object? map = null, string? groupField = null, string? source = null) =>
         new
         {
             title = new { ar = $"عنوان {title}", en = title },
@@ -749,5 +854,7 @@ public sealed class PortfolioDesignTests(ProjectTestHost host)
             text,
             filters,
             map,
+            groupField,
+            source,
         };
 }

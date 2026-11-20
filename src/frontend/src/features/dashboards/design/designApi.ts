@@ -135,9 +135,25 @@ export type GroupBy =
   | 'CITY'
   | 'PRIORITY';
 
-/** A governed field's type (the register's ProjectionValueType). */
+/**
+ * A governed field's type (the register's ProjectionValueType). A record source's fields (20 Nov 2026,
+ * docs/architecture/dashboard-designer-record-sources.md) add TEXT (a title, a name) and ITEM (a master-data item, a person or a project,
+ * whose cells and groups carry its label).
+ */
 export type FieldType =
-  'CODE' | 'COUNT' | 'PERCENT' | 'DAYS' | 'SAR' | 'BOOLEAN' | 'DATE' | 'DATE_TIME';
+  | 'CODE'
+  | 'COUNT'
+  | 'PERCENT'
+  | 'DAYS'
+  | 'SAR'
+  | 'BOOLEAN'
+  | 'DATE'
+  | 'DATE_TIME'
+  | 'TEXT'
+  | 'ITEM';
+
+/** What a visual counts (20 Nov 2026, record sources): one row per project (the default), or one per risk. */
+export type RecordSource = 'PROJECTS' | 'RISKS';
 
 /** A field value's calculation; COUNT_TRUE and SHARE_TRUE are a yes/no field's (the projects whose value is yes, and their share in %). */
 export type FieldAggregation =
@@ -261,6 +277,8 @@ export interface VisualAxes {
 export interface Visual {
   title: BilingualLabel;
   visualType: VisualType;
+  /** The records the visual counts; absent or null for projects (recordSources.ts). */
+  source?: RecordSource | null | undefined;
   measures: Measure[];
   groupBy: GroupBy;
   layoutColumn: number;
@@ -350,10 +368,11 @@ export const designApi = {
         body: { visuals },
       })
     ).data,
-  /** The governed fields a visual may draw, group by and filter on. */
-  fields: async (signal?: AbortSignal) =>
+  /** The governed fields a visual may draw, group by and filter on: the projects' (no `source`), or a record source's. */
+  fields: async (signal?: AbortSignal, source?: RecordSource) =>
     (
       await apiRequest<{ fields: FieldDescriptor[] }>('/portfolio-insights/design/fields', {
+        ...(source === undefined || source === 'PROJECTS' ? {} : { query: { source } }),
         signal,
       })
     ).data.fields,

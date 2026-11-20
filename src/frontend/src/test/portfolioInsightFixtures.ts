@@ -383,6 +383,8 @@ export const AGGREGATIONS_OF: Record<FieldType, FieldAggregation[]> = {
   BOOLEAN: ['COUNT', 'COUNT_TRUE', 'SHARE_TRUE'],
   DATE: ['COUNT', 'MIN', 'MAX'],
   DATE_TIME: ['COUNT', 'MIN', 'MAX'],
+  TEXT: ['COUNT'],
+  ITEM: ['COUNT'],
 };
 
 /** The status codes of the RAG-like projections (the register's Values for their CODE fields). */
@@ -473,6 +475,60 @@ export function designFieldsFixture(): { fields: FieldDescriptor[] } {
       field(FIELD.HISTORY_HEALTH, 'WF-02', 'CODE', { values: RAG, grain: 'SNAPSHOT' }),
       field(FIELD.HISTORY_ACTUAL_PERCENT, 'WF-02', 'PERCENT', { grain: 'SNAPSHOT' }),
       field(FIELD.HISTORY_PLANNED_PERCENT, 'WF-02', 'PERCENT', { grain: 'SNAPSHOT' }),
+    ],
+  };
+}
+
+// The Risks record source (20 Nov 2026, dashboard-designer-record-sources.md): GET /portfolio-insights/design/fields?source=RISKS.
+
+/** The risk statuses, in the Risk module's order. */
+export const RISK_STATUSES = ['IDENTIFIED', 'ASSESSED', 'TREATMENT', 'MONITORING', 'CLOSED'];
+
+/** The risk matrix's rating codes (riskFixtures.ts's standard ones); probability and impact are its levels. */
+export const RISK_RATINGS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const RISK_LEVELS = ['1', '2', '3', '4', '5'];
+
+export const RISK_FIELD = {
+  RISK: 'RISK.RISK',
+  TITLE: 'RISK.TITLE',
+  PROJECT: 'RISK.PROJECT',
+  STATUS: 'RISK.STATUS',
+  CATEGORY: 'RISK.CATEGORY',
+  OWNER: 'RISK.OWNER',
+  RATING: 'RISK.RATING',
+  PROBABILITY: 'RISK.PROBABILITY',
+  IMPACT: 'RISK.IMPACT',
+  SCORE: 'RISK.SCORE',
+  IDENTIFIED_DATE: 'RISK.IDENTIFIED_DATE',
+  NEXT_REVIEW_DATE: 'RISK.NEXT_REVIEW_DATE',
+  CLOSED_DATE: 'RISK.CLOSED_DATE',
+  REVIEW_OVERDUE: 'RISK.REVIEW_OVERDUE',
+  MATERIALISED: 'RISK.MATERIALISED',
+  OPEN_ACTIONS: 'RISK.OPEN_ACTIONS',
+  REOPENED: 'RISK.REOPENED',
+} as const;
+
+/** The fields endpoint's body for the Risks source: one row per risk, in the contract table's order. */
+export function riskFieldsFixture(): { fields: FieldDescriptor[] } {
+  return {
+    fields: [
+      field(RISK_FIELD.RISK, 'WF-06', 'COUNT'),
+      field(RISK_FIELD.TITLE, 'WF-06', 'TEXT'),
+      field(RISK_FIELD.PROJECT, 'WF-06', 'ITEM'),
+      field(RISK_FIELD.STATUS, 'WF-06', 'CODE', { values: RISK_STATUSES }),
+      field(RISK_FIELD.CATEGORY, 'WF-06', 'ITEM'),
+      field(RISK_FIELD.OWNER, 'WF-06', 'ITEM'),
+      field(RISK_FIELD.RATING, 'WF-06', 'CODE', { values: RISK_RATINGS }),
+      field(RISK_FIELD.PROBABILITY, 'WF-06', 'CODE', { values: RISK_LEVELS }),
+      field(RISK_FIELD.IMPACT, 'WF-06', 'CODE', { values: RISK_LEVELS }),
+      field(RISK_FIELD.SCORE, 'WF-06', 'COUNT'),
+      field(RISK_FIELD.IDENTIFIED_DATE, 'WF-06', 'DATE'),
+      field(RISK_FIELD.NEXT_REVIEW_DATE, 'WF-06', 'DATE'),
+      field(RISK_FIELD.CLOSED_DATE, 'WF-06', 'DATE'),
+      field(RISK_FIELD.REVIEW_OVERDUE, 'WF-06', 'BOOLEAN'),
+      field(RISK_FIELD.MATERIALISED, 'WF-06', 'BOOLEAN'),
+      field(RISK_FIELD.OPEN_ACTIONS, 'WF-06', 'COUNT'),
+      field(RISK_FIELD.REOPENED, 'WF-06', 'COUNT'),
     ],
   };
 }

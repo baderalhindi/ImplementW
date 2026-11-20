@@ -489,7 +489,9 @@
       "SAR": "SAR",
       "BOOLEAN": "Yes/no",
       "DATE": "Date",
-      "DATE_TIME": "Date"
+      "DATE_TIME": "Date",
+      "TEXT": "Text",
+      "ITEM": "Item"
     },
     "fieldSource": {
       "CHANGE_REQUEST_CHANGE_POSITION": "Change requests",
@@ -508,7 +510,8 @@
       "SCHEDULE_SCHEDULE_HEALTH_STATUS": "Schedule (live)",
       "SUSPENSION_OPEN_REQUESTS": "Suspensions",
       "PROJECT_PROJECT_PROFILE": "Project record",
-      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": "Published progress history"
+      "PROGRESS_PUBLISHED_PROGRESS_HISTORY": "Published progress history",
+      "RISK": "Risks"
     },
     "field": {
       "CHANGE_REQUEST_CHANGE_POSITION": {
@@ -604,6 +607,25 @@
         "OVERALL_HEALTH": "Health over time",
         "ACTUAL_PERCENT": "Actual progress over time",
         "PLANNED_PERCENT": "Planned progress over time"
+      },
+      "RISK": {
+        "RISK": "Number of risks",
+        "TITLE": "Title",
+        "PROJECT": "Project",
+        "STATUS": "Risk status",
+        "CATEGORY": "Category",
+        "OWNER": "Owner",
+        "RATING": "Rating",
+        "PROBABILITY": "Probability",
+        "IMPACT": "Impact",
+        "SCORE": "Score",
+        "IDENTIFIED_DATE": "Identified date",
+        "NEXT_REVIEW_DATE": "Next review date",
+        "CLOSED_DATE": "Closed date",
+        "REVIEW_OVERDUE": "Review overdue",
+        "MATERIALISED": "Materialised",
+        "OPEN_ACTIONS": "Open treatment actions",
+        "REOPENED": "Times reopened"
       }
     },
     "filterField": "Filter on",
@@ -623,6 +645,16 @@
         "PROGRESS_METHOD": {
           "STAGES": "Project stages",
           "SCHEDULE": "Schedule"
+        }
+      },
+      "RISK": {
+        "RATING": {
+          "VERY_LOW": "Very low",
+          "LOW": "Low",
+          "MEDIUM": "Medium",
+          "HIGH": "High",
+          "VERY_HIGH": "Very high",
+          "CRITICAL": "Critical"
         }
       }
     },
@@ -750,6 +782,18 @@
       "WHITE": "White"
     },
     "textTooLong": "Shorten the text to 2000 characters or fewer.",
-    "textInvalidCharacter": "Remove the tab or other control character: only line breaks are kept."
+    "textInvalidCharacter": "Remove the tab or other control character: only line breaks are kept.",
+    "source": {
+      "label": "Source",
+      "hint": "What the visual counts: one row per project, or one per risk.",
+      "PROJECTS": "Projects",
+      "RISKS": "Risks"
+    },
+    "replacedBySource": "The figures were replaced by the new source's first ones: a visual counts one source's records.",
+    "itemFields": "Items and people",
+    "riskCount": "Number of risks",
+    "riskGroupHint": "{count} risks",
+    "riskFieldCoverage": "{count} of {total} risks have a value",
+    "filtersHintRisks": "Only risks with one of the ticked values (theirs, or their project's) are counted. Up to {count} filters."
   }
 }

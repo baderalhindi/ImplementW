@@ -19,7 +19,8 @@ import {
 import { mapOptionsOf } from './mapVisual.ts';
 import { isEditableSection, madeEditable } from './tableColumns.ts';
 import { TextBoxSettings } from './TextBoxSettings.tsx';
-import { asLine, MAX_HEIGHT, retitled, tenth, VISUAL_TYPES, withType } from './visuals.ts';
+import { sourceOf, typesFor } from './recordSources.ts';
+import { asLine, MAX_HEIGHT, retitled, tenth, withType } from './visuals.ts';
 
 /** The sizes a visual may take where it is: a container's least size, and a child's columns (its container's width). */
 export interface SizeBounds {
@@ -212,6 +213,8 @@ function MakeEditable({
 export function VisualSettings({
   visual,
   fields,
+  projectFields,
+  onSourceOpen,
   bounds,
   textRefused,
   onChange,
@@ -220,7 +223,12 @@ export function VisualSettings({
   onRemove,
 }: {
   visual: Visual;
+  /** The catalogue of the visual's source (recordSources.ts). */
   fields: ApiResource<FieldDescriptor[]>;
+  /** The projects' catalogue, which a visual switched back to Projects starts from. */
+  projectFields: readonly FieldDescriptor[];
+  /** The Source select was opened: the risk fields are asked for. */
+  onSourceOpen: () => void;
   bounds: SizeBounds;
   /** What the API refused in a text box's words, by language. */
   textRefused?: Partial<Record<'ar' | 'en', string>> | undefined;
@@ -335,7 +343,8 @@ export function VisualSettings({
                   change(withType(visual, event.target.value as VisualType, fields.data ?? []));
                 }}
               >
-                {VISUAL_TYPES.map((type) => (
+                {/* A visual on Risks takes the types that count risks; any other is not listed. */}
+                {typesFor(sourceOf(visual)).map((type) => (
                   <option
                     key={type}
                     value={type}
@@ -352,7 +361,13 @@ export function VisualSettings({
               </select>
             </div>
           )}
-          <DataPanel visual={visual} fields={fields} onChange={change} />
+          <DataPanel
+            visual={visual}
+            fields={fields}
+            projectFields={projectFields}
+            onSourceOpen={onSourceOpen}
+            onChange={change}
+          />
           {isMap && <MapOptionsChoice visual={visual} onChange={onChange} />}
           {takesAxes(visual.visualType) && <AxesFormat visual={visual} onChange={onChange} />}
         </>

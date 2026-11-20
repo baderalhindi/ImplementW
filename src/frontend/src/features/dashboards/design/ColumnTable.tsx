@@ -27,6 +27,8 @@ import {
   sortedRows,
   type TableSort,
 } from './tableColumns.ts';
+import { riskCellPath } from './riskFields.ts';
+import { useDesignRiskMatrix } from './riskMatrixContext.ts';
 import { drillPath, GROUP_BYS } from './visuals.ts';
 
 const ON_PLAN: readonly string[] = ['ON_TRACK', 'LATE', 'STALLED'];
@@ -55,12 +57,14 @@ export function ColumnTable({
 }): ReactElement {
   const { t, language } = useI18n();
   const lookups = useProjectLookups();
+  const riskMatrix = useDesignRiskMatrix();
+  const names = { ...lookups, riskMatrix };
   const selection = useRowSelection();
   const [sort, setSort] = useState<{ key: string; direction: SortDirection }>(UNSORTED);
   const types = table.columnTypes;
   const textOf = (cell: TableCell, at: number) => {
     const column = columns[at];
-    return column === undefined ? '' : cellText(column, types[at], cell, lookups, t, language);
+    return column === undefined ? '' : cellText(column, types[at], cell, names, t, language);
   };
   const order: TableSort | null =
     sort.key === '' ? null : { column: Number(sort.key), direction: sort.direction };
@@ -69,11 +73,19 @@ export function ColumnTable({
     row.projectId ?? row.cells.map((cell) => cell.key ?? cell.label?.en ?? '').join('|');
   const groupsAny = columns.some(groupsRows);
   // With no grouping column there is one row, which is already the total.
-  const totals = showTotals && groupsAny ? table.totals : null;
+  // A table of grouping columns only (a list of risks) has nothing to total.
+  const totals = showTotals && groupsAny && !columns.every(groupsRows) ? table.totals : null;
 
   /** Where a grouping cell opens: the project for its title or ID, the projects list filtered by its attribute; nowhere in the designer. */
   const hrefOf = (column: TableColumn, cell: TableCell, row: TableRow): string | undefined => {
-    if (filters === undefined || column.kind !== 'DIMENSION' || column.aggregation !== 'NONE') {
+    if (filters === undefined) {
+      return undefined;
+    }
+    if (column.kind === 'FIELD') {
+      // A table on Risks: a project cell opens its project, a risk's title the risk.
+      return riskCellPath(column, cell, row, columns);
+    }
+    if (column.kind !== 'DIMENSION' || column.aggregation !== 'NONE') {
       return undefined;
     }
     if (column.key === 'TITLE' || column.key === 'FORMAL_PROJECT_ID') {
@@ -134,7 +146,15 @@ export function ColumnTable({
       href === undefined ? (
         <span dir="auto">{words}</span>
       ) : (
-        <Link to={href} title={t('dashboards.drill.projects', { count: row?.projects ?? 0 })}>
+        <Link
+          to={href}
+          title={
+            column.kind === 'FIELD'
+              ? undefined
+              : t('dashboards.drill.projects', { count: row?.projects ?? 0 })
+          }
+          dir="auto"
+        >
           {words}
         </Link>
       );

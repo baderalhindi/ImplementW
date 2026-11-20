@@ -17,8 +17,8 @@ import {
   aggregationsFor,
   dimensionKey,
   drawsFields,
-  FILTER_DIMENSIONS,
   fieldName,
+  filterDimensionsFor,
   filterFieldName,
   filterFieldsFor,
   filterOptions,
@@ -37,10 +37,12 @@ import {
 import { axisLabels, takesAxes } from './axes.ts';
 import { ColumnsWell } from './ColumnsWell.tsx';
 import { FieldGroup, FieldRow, RemoveButton } from './FieldList.tsx';
+import { groupBysOf, sourceOf, takesSource } from './recordSources.ts';
+import { useDesignRiskMatrix } from './riskMatrixContext.ts';
+import { SourceSelect } from './SourceSelect.tsx';
 import {
   firstGrouping,
   GROUP_BYS,
-  groupBysFor,
   MAX_MEASURES,
   measureHint,
   measuresFor,
@@ -60,6 +62,9 @@ const REPLACED_NOTE = {
 /** The Data panel's first group: the Portfolio figures (`measures`), before the governed fields' sources. */
 const FIGURES = 'FIGURES';
 
+/** The Data panel's Project details on Risks: the project attributes a risk is grouped by. */
+const DETAILS = 'DETAILS';
+
 /**
  * The selected visual's data, as Power BI's field list offers it (TASK-112): the Portfolio figures and the governed fields by source, searched
  * and ticked; each chosen field's calculation; the grouping, by a project attribute or a status field; and the visual's own filters. A visual
@@ -68,13 +73,29 @@ const FIGURES = 'FIGURES';
 export function DataPanel({
   visual,
   fields,
+  projectFields,
+  onSourceOpen,
   onChange,
 }: {
   visual: Visual;
+  /** The catalogue of the visual's source: the projects' fields, or a record source's. */
   fields: ApiResource<FieldDescriptor[]>;
+  /** The projects' catalogue, which a visual switched back to Projects starts from. */
+  projectFields: readonly FieldDescriptor[];
+  /** The Source select was opened: the risk fields are asked for. */
+  onSourceOpen: () => void;
   onChange: (next: Visual) => void;
 }): ReactElement {
   const { t, language } = useI18n();
+  const source = sourceOf(visual);
+  const sourceSelect = takesSource(visual.visualType) ? (
+    <SourceSelect
+      visual={visual}
+      projectFields={projectFields}
+      onOpen={onSourceOpen}
+      onChange={onChange}
+    />
+  ) : null;
   const id = useId();
   const [search, setSearch] = useState('');
   // Every group starts open, so each field is in view at once; a group is closed by its heading.
@@ -92,6 +113,7 @@ export function DataPanel({
     // A table's values box is its Columns (Power BI's): what groups the rows and what is calculated in each; its filters as any field visual's.
     return (
       <>
+        {sourceSelect}
         <ColumnsWell visual={visual} fields={fields} onChange={onChange} />
         <FiltersEditor visual={visual} catalogue={catalogue} onChange={onChange} />
       </>
@@ -101,7 +123,8 @@ export function DataPanel({
   const offered = catalogue.filter((field) => aggregationsFor(field, type).length > 0);
   const query = search.trim().toLocaleLowerCase();
   const matches = (words: string) => query === '' || words.toLocaleLowerCase().includes(query);
-  const figures = measuresFor(type).filter((measure) =>
+  // A visual on Risks counts risks: the Portfolio figures, which count projects, are not offered.
+  const figures = (source === 'PROJECTS' ? measuresFor(type) : []).filter((measure) =>
     matches(t(`dashboards.designer.measure.${measure}`)),
   );
   const sources = [...new Set(offered.map((field) => field.projectionCode))].flatMap((code) => {
@@ -187,12 +210,22 @@ export function DataPanel({
   };
 
   const sourceOpen = (group: string) => query !== '' || !closed.has(group);
+  // On Risks, the risks' project attributes are offered as Project details: ticking one groups the visual by it, through each risk's project.
+  const details =
+    source === 'PROJECTS' || groupsByFieldOnly(type, grainOf(visual, catalogue))
+      ? []
+      : groupBysOf(type, source).filter(
+          (groupBy) => groupBy !== 'NONE' && matches(t(`dashboards.designer.groupBy.${groupBy}`)),
+        );
+  const groupedByDetail = (groupBy: GroupBy) =>
+    (visual.groupField ?? null) === null && visual.groupBy === groupBy;
   // A bar, column or line chart's data is two boxes, as Power BI's wells: the category axis (the grouping), then the value axis (the values).
   const wells = takesAxes(type) ? axisLabels(type) : null;
   const groupBy = <GroupBySelect visual={visual} catalogue={catalogue} onChange={onChange} />;
 
   return (
     <>
+      {sourceSelect}
       {wells !== null && (
         <fieldset className="field field--group designer-well" aria-describedby={`${id}-category`}>
           <legend className="field__label designer-well__label">{t(wells.category)}</legend>
@@ -351,7 +384,35 @@ export function DataPanel({
               })}
             </FieldGroup>
           ))}
-          {query !== '' && figures.length === 0 && sources.length === 0 && (
+          {details.length > 0 && (
+            <FieldGroup
+              name={t('dashboards.designer.projectDetails')}
+              hint={null}
+              chosen={details.filter(groupedByDetail).length}
+              open={sourceOpen(DETAILS)}
+              onToggle={() => {
+                toggleGroup(DETAILS);
+              }}
+            >
+              {details.map((groupBy) => {
+                const checked = groupedByDetail(groupBy);
+                return (
+                  <FieldRow
+                    key={groupBy}
+                    name={t(`dashboards.designer.groupBy.${groupBy}`)}
+                    hint={null}
+                    checked={checked}
+                    disabled={checked}
+                    onChange={() => {
+                      setReplaced(null);
+                      onChange({ ...visual, groupBy, groupField: null, groupDateUnit: null });
+                    }}
+                  />
+                );
+              })}
+            </FieldGroup>
+          )}
+          {query !== '' && figures.length === 0 && sources.length === 0 && details.length === 0 && (
             <p className="designer__hint">{t('dashboards.designer.noFieldMatch')}</p>
           )}
         </div>
@@ -386,6 +447,7 @@ function FieldOptions({ fields }: { fields: readonly FieldDescriptor[] }): React
       label: t('dashboards.designer.dateFields'),
       of: fields.filter((f) => isDateType(f.type)),
     },
+    { label: t('dashboards.designer.itemFields'), of: fields.filter((f) => f.type === 'ITEM') },
   ];
   return (
     <>
@@ -423,7 +485,7 @@ function GroupBySelect({
   const id = useId();
   const grain = grainOf(visual, catalogue);
   const fieldsOnly = groupsByFieldOnly(visual.visualType, grain);
-  const groupings = fieldsOnly ? [] : groupBysFor(visual.visualType);
+  const groupings = fieldsOnly ? [] : groupBysOf(visual.visualType, sourceOf(visual));
   const groupFields = drawsFields(visual)
     ? groupFieldsFor(grain, visual.visualType, catalogue)
     : [];
@@ -512,6 +574,7 @@ function FiltersEditor({
 }): ReactElement {
   const { t, language } = useI18n();
   const lookups = useProjectLookups();
+  const riskMatrix = useDesignRiskMatrix();
   const id = useId();
   const grain = grainOf(visual, catalogue);
   // The filter being added: null while none is, '' while its field is being picked, then the field until its first value is ticked.
@@ -519,7 +582,9 @@ function FiltersEditor({
   const filters = visual.filters ?? [];
   const used = new Set(filters.map((filter) => filter.field));
   const testable = filterFieldsFor(grain, catalogue).filter((field) => !used.has(field.key));
-  const dimensions = FILTER_DIMENSIONS.filter((dimension) => !used.has(dimensionKey(dimension)));
+  const dimensions = filterDimensionsFor(sourceOf(visual)).filter(
+    (dimension) => !used.has(dimensionKey(dimension)),
+  );
   const change = (next: FieldFilter[]) => {
     onChange({ ...visual, filters: next.length === 0 ? null : next });
   };
@@ -528,14 +593,19 @@ function FiltersEditor({
     <fieldset className="field field--group designer-data" aria-describedby={`${id}-hint`}>
       <legend className="field__label">{t('dashboards.designer.filtersLabel')}</legend>
       <p id={`${id}-hint`} className="field__hint">
-        {t('dashboards.designer.filtersHint', { count: MAX_FILTERS })}
+        {t(
+          sourceOf(visual) === 'RISKS'
+            ? 'dashboards.designer.filtersHintRisks'
+            : 'dashboards.designer.filtersHint',
+          { count: MAX_FILTERS },
+        )}
       </p>
       {filters.map((filter, at) => (
         <FilterValues
           key={filter.field}
           field={filter.field}
           chosen={filter.values}
-          options={filterOptions(filter.field, catalogue, lookups, language, t)}
+          options={filterOptions(filter.field, catalogue, lookups, language, t, riskMatrix)}
           onChange={(chosen) => {
             change(
               withFilter(filters, at, chosen.length === 0 ? null : { ...filter, values: chosen }),
@@ -550,7 +620,7 @@ function FiltersEditor({
         <FilterValues
           field={adding}
           chosen={[]}
-          options={filterOptions(adding, catalogue, lookups, language, t)}
+          options={filterOptions(adding, catalogue, lookups, language, t, riskMatrix)}
           onChange={(chosen) => {
             setAdding(null);
             change([...filters, { field: adding, values: chosen }]);

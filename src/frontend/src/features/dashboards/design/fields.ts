@@ -1,4 +1,5 @@
 import { formatPoints, PROJECT_STATUSES } from '@/features/projects/presentation.ts';
+import { type RiskMatrix } from '@/features/risks/riskRules.ts';
 import { type ProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { type OnPlanStatus } from '@/features/projects/api/types.ts';
 import { sarCompact } from '@/shared/format/money.ts';
@@ -17,11 +18,19 @@ import {
   type FieldType,
   type FieldValue,
   type GroupBy,
+  type RecordSource,
   type Visual,
   type VisualResult,
   type VisualType,
 } from './designApi.ts';
 import { mapOptionsOf } from './mapVisual.ts';
+import {
+  isRiskCount,
+  RISK_PROJECT_DIMENSIONS,
+  RISK_PROJECTION,
+  riskCodeText,
+  riskCountText,
+} from './riskFields.ts';
 import { sentText } from './textBox.ts';
 
 // The governed fields a designed visual draws (TASK-112, data fields contract): their names, the calculations each visual type takes, how a
@@ -63,6 +72,9 @@ export function fieldName(key: string, language: Language): string {
 
 /** "Sum of Actual expenditure to date": a value's words, as a title, a series and a column heading read it. */
 export function fieldValueText(value: FieldValue, language: Language): string {
+  if (isRiskCount(value)) {
+    return riskCountText(language);
+  }
   // translate() isolates each parameter for display; a stored title is plain text.
   return translate(language, `dashboards.designer.aggregationOf.${value.aggregation}`, {
     field: fieldName(value.field, language),
@@ -194,9 +206,14 @@ export function grainOf(
   return fields.find((field) => field.key === key)?.grain ?? 'PROJECT';
 }
 
-/** Whether a field may group a visual: a status, a yes/no or a date field. */
-function groups(field: FieldDescriptor): boolean {
+/** Whether a field may filter a visual: a status, a yes/no or a date field. */
+function isFilterable(field: FieldDescriptor): boolean {
   return field.type === 'CODE' || field.type === 'BOOLEAN' || isDateType(field.type);
+}
+
+/** Whether a field may group a visual: a status, a yes/no or a date field, or an item (a risk's project, category or owner). */
+function groups(field: FieldDescriptor): boolean {
+  return isFilterable(field) || field.type === 'ITEM';
 }
 
 /**
@@ -268,7 +285,7 @@ export function filterFieldsFor(
 ): FieldDescriptor[] {
   return fields.filter(
     (field) =>
-      (field.grain === 'PROJECT' && groups(field)) ||
+      (field.grain === 'PROJECT' && isFilterable(field)) ||
       (field.grain === 'SNAPSHOT' && grain === 'SNAPSHOT' && field.type === 'CODE'),
   );
 }
@@ -344,6 +361,7 @@ export const NO_FIELD_DATA = {
  */
 export function normalized<T extends Visual>(visual: T): T {
   const {
+    source,
     values,
     groupField,
     groupDateUnit,
@@ -361,6 +379,8 @@ export function normalized<T extends Visual>(visual: T): T {
   const hiddenColumns = sentHiddenColumns(visual);
   return {
     ...rest,
+    // The record source only where it is not the projects, so a design saved before reads back equal.
+    ...(source === 'RISKS' ? { source } : {}),
     // Children only on a container, which always sends its list (empty or not), each child as a top-level visual is sent.
     ...(visual.visualType === 'CONTAINER' ? { children: (children ?? []).map(normalized) } : {}),
     // A text box's words only on a text box, with its whole format (sentText).
@@ -411,6 +431,17 @@ export function dimensionKey(groupBy: GroupBy): string {
   return `${DIMENSION_PREFIX}${groupBy}`;
 }
 
+/** The project attributes a visual on `source` may filter on: a risk's through its project, which has no on-plan indicator for it. */
+export function filterDimensionsFor(
+  source: RecordSource,
+): readonly Exclude<GroupBy, 'NONE' | 'STAGE'>[] {
+  return source === 'RISKS'
+    ? FILTER_DIMENSIONS.filter((dimension) =>
+        (RISK_PROJECT_DIMENSIONS as readonly GroupBy[]).includes(dimension),
+      )
+    : FILTER_DIMENSIONS;
+}
+
 /** The project attribute a filter tests, or null when it tests a field. */
 export function dimensionOf(key: string): GroupBy | null {
   const groupBy = key.slice(DIMENSION_PREFIX.length);
@@ -434,8 +465,17 @@ const ON_PLAN_VALUES: readonly OnPlanStatus[] = ['ON_TRACK', 'LATE', 'STALLED'];
  * A CODE field's value in words: the designer's own word for a field whose projection has no vocabulary (the project profile's funding
  * source, participation and progress method), else as the dashboard's widgets label it.
  */
-export function codeText(key: string, value: string, language: Language, t: Translate): string {
+export function codeText(
+  key: string,
+  value: string,
+  language: Language,
+  t: Translate,
+  riskMatrix: RiskMatrix | null = null,
+): string {
   const { projectionCode, fieldCode } = fieldParts(key);
+  if (projectionCode === RISK_PROJECTION) {
+    return riskCodeText(fieldCode, value, language, t, riskMatrix);
+  }
   const own = `dashboards.designer.fieldValue.${projectionCode.replace('.', '_')}.${fieldCode}.${value}`;
   const word = translate(language, own);
   return word === own ? labelOfValue(projectionCode, value, null, language, t).text : word;
@@ -466,6 +506,7 @@ export function filterOptions(
   lookups: ProjectLookups,
   language: Language,
   t: Translate,
+  riskMatrix: RiskMatrix | null = null,
 ): SelectOption[] {
   switch (dimensionOf(key)) {
     case null: {
@@ -478,7 +519,7 @@ export function filterOptions(
       }
       return (field?.values ?? []).map((value) => ({
         value,
-        label: codeText(key, value, language, t),
+        label: codeText(key, value, language, t, riskMatrix),
       }));
     }
     case 'STATUS':

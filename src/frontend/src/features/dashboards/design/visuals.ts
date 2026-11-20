@@ -2,6 +2,7 @@ import { type CSSProperties } from 'react';
 
 import { formatPoints } from '@/features/projects/presentation.ts';
 import { NO_STAGE, NOT_MEASURED } from '@/features/projects/register/projectFilterValues.ts';
+import { type RiskMatrix } from '@/features/risks/riskRules.ts';
 import { sarCompact } from '@/shared/format/money.ts';
 import { type Language, translate, type TranslationKey } from '@/shared/i18n/i18n.ts';
 
@@ -25,6 +26,7 @@ import {
   dateKeyText,
   drawsFields,
   fieldName,
+  fieldParts,
   fieldValueText,
   filterFits,
   firstGroupField,
@@ -38,6 +40,7 @@ import {
   valuesFor,
 } from './fields.ts';
 import { MAP_PLACES, mapVisual } from './mapVisual.ts';
+import { isRiskField, riskFigures, riskMissingText } from './riskFields.ts';
 import { textBoxVisual } from './textBox.ts';
 import {
   asColumnTable,
@@ -259,6 +262,18 @@ export function withType(
   type: VisualType,
   fields: readonly FieldDescriptor[] = [],
 ): Visual {
+  const next = withTypeOnProjects(before, type, fields);
+  // A visual on Risks draws risk fields only: where none of its values fit the new type, it starts again from the number of risks.
+  return before.source === 'RISKS' && type !== 'TABLE' && !drawsFields(next)
+    ? { ...next, ...riskFigures(type) }
+    : next;
+}
+
+function withTypeOnProjects(
+  before: Visual,
+  type: VisualType,
+  fields: readonly FieldDescriptor[],
+): Visual {
   // A table draws columns (tableColumns.ts): its grouping and figures become columns, and back again for any other type.
   if (type === 'TABLE') {
     return asColumnTable(before, columnsOf(before, fields), fields);
@@ -322,6 +337,7 @@ function mapTitle(visual: Pick<Visual, 'measures' | 'values'>, language: Languag
 export function autoTitle(
   visual: Pick<Visual, 'measures' | 'groupBy' | 'values' | 'groupField' | 'columns'> & {
     visualType?: VisualType;
+    source?: Visual['source'];
   },
   language: Language,
 ): string {
@@ -333,6 +349,10 @@ export function autoTitle(
     const columns = visual.columns ?? [];
     const figure = columns.find((column) => !groupsRows(column));
     const grouping = columns.find(groupsRows);
+    if (figure === undefined && visual.source === 'RISKS') {
+      // A list of risks, one per row: "Risks".
+      return translate(language, 'dashboards.designer.source.RISKS');
+    }
     const measure =
       figure === undefined
         ? translate(language, 'dashboards.designer.measure.PROJECTS')
@@ -578,7 +598,7 @@ export interface GroupNames {
 }
 
 /**
- * A group's words when the visual groups by a field: a period ("Mar 2026", "2026") for a date field (the visual's `groupDateUnit` says so),
+ * A group's words when the visual groups by a field: an item by its label: a period ("Mar 2026", "2026") for a date field (the visual's `groupDateUnit` says so),
  * Yes or No for a yes/no field, a status's word, or "not set" for the projects whose value is not revealed.
  */
 export function fieldGroupText(
@@ -587,16 +607,23 @@ export function fieldGroupText(
   group: VisualGroup,
   t: Translate,
   language: Language,
+  riskMatrix: RiskMatrix | null = null,
 ): string {
   if (group.key === null) {
-    return t('dashboards.designer.notSet');
+    // A risk not assessed has no rating, which is said, as the Risk feature says it.
+    return (
+      (isRiskField(groupField) ? riskMissingText(fieldParts(groupField).fieldCode, t) : null) ??
+      t('dashboards.designer.notSet')
+    );
   }
   if (dateUnit !== null) {
     return dateKeyText(group.key, dateUnit, language);
   }
-  return group.key === 'TRUE' || group.key === 'FALSE'
-    ? booleanText(group.key, t)
-    : codeText(groupField, group.key, language, t);
+  if (group.key === 'TRUE' || group.key === 'FALSE') {
+    return booleanText(group.key, t);
+  }
+  // An item (a risk's project, category or owner) by the words the API gave it.
+  return group.label?.[language] ?? codeText(groupField, group.key, language, t, riskMatrix);
 }
 
 /** A group's words: its item, department or entity name, its status, stage or on-plan label, or "not set" for the projects with none. */
