@@ -16,7 +16,7 @@ import { type NotificationSummary } from '../api/types.ts';
 import { headline, isAppRoute, isUnread } from '../presentation.ts';
 import { unreadCountStore } from '../unreadCount.ts';
 
-/** How many of the newest notifications the top bar lists. */
+/** How many of the newest unread notifications the top bar lists. */
 export const RECENT_COUNT = 6;
 
 /**
@@ -56,7 +56,8 @@ function MonthlyUpdatePinned({ onClose }: { onClose: () => void }): ReactElement
 }
 
 /**
- * The top bar's notification list (the 27 Oct 2026 review): the newest notifications, unread ones marked. Choosing one reads it and opens
+ * The top bar's notification list (the 27 Oct 2026 review): the newest unread notifications only (20 Nov 2026); the read ones are in All
+ * notifications. Choosing one reads it and opens
  * the record it is about, or the inbox when it names none. The Notifications menu keeps every screen; this is the quick look.
  */
 export function RecentNotifications({ onClose }: { onClose: () => void }): ReactElement {
@@ -64,7 +65,9 @@ export function RecentNotifications({ onClose }: { onClose: () => void }): React
   const navigate = useNavigate();
   const recent = useApiResource(
     useCallback(
-      (signal: AbortSignal) => notificationsApi.list({ page: 1, pageSize: RECENT_COUNT }, signal),
+      // Only the unread ones (20 Nov 2026): what has been read is in All notifications.
+      (signal: AbortSignal) =>
+        notificationsApi.list({ page: 1, pageSize: RECENT_COUNT, unread: true }, signal),
       [],
     ),
   );
@@ -93,7 +96,7 @@ export function RecentNotifications({ onClose }: { onClose: () => void }): React
           <p className="notification-menu__empty">{t('notifications.bell.unavailable')}</p>
         )
       ) : recent.data.items.length === 0 ? (
-        <p className="notification-menu__empty">{t('notifications.list.empty')}</p>
+        <p className="notification-menu__empty">{t('notifications.bell.noneUnread')}</p>
       ) : (
         <ul className="notification-menu__list">
           {recent.data.items.map((notification) => {
