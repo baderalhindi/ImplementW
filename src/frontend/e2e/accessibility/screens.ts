@@ -252,6 +252,7 @@ export const SCREENS: Screen[] = [
     state: {
       enter: async (page) => {
         const credential = credentialOf('administrator');
+        await page.getByRole('tab', { name: 'Regular account' }).click();
         await page.locator('input[name="username"]').fill(credential.username);
         await page.locator('input[name="password"]').fill(credential.password);
         await page.locator('form button[type="submit"]').click();

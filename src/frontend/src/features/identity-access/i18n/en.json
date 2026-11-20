@@ -477,6 +477,7 @@
   "signIn": {
     "title": "Sign in to the platform",
     "username": "Username",
+    "usernameOrEmail": "Username or email address",
     "password": "Password",
     "submit": "Sign in",
     "signingIn": "Signing in…",

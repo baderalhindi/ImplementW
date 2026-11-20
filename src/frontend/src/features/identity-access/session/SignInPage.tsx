@@ -325,7 +325,7 @@ export function SignInPage(): ReactElement {
     >
       <FormAlert message={save.formError} />
       <CredentialField
-        label={t('identityAccess.signIn.username')}
+        label={t('identityAccess.signIn.usernameOrEmail')}
         name="username"
         autoComplete="username"
         value={username}
@@ -463,6 +463,7 @@ export function SignInPage(): ReactElement {
               >
                 {tab === 'microsoft' && (
                   <>
+                    <FormAlert message={save.formError} />
                     <button
                       type="button"
                       className="sign-in__provider"
@@ -482,11 +483,16 @@ export function SignInPage(): ReactElement {
                         </span>
                       )}
                     </button>
-                    <p className="sign-in__divider">{t('identityAccess.signIn.or')}</p>
                   </>
                 )}
-                <h2 className="sign-in__subtitle">{t('identityAccess.signIn.directoryTitle')}</h2>
-                {credentialsForm}
+                {tab === 'directory' && (
+                  <>
+                    <h2 className="sign-in__subtitle">
+                      {t('identityAccess.signIn.directoryTitle')}
+                    </h2>
+                    {credentialsForm}
+                  </>
+                )}
               </div>
             </div>
           ) : (

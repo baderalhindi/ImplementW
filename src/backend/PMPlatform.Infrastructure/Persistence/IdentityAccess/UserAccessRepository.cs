@@ -42,6 +42,17 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken) =>
         LocalCredentialAsync(u => u.Username == username, cancellationToken);
 
+    public async Task<string?> FindUsernameByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        string pattern = AdministrationPersistence.ExactPattern(email);
+        List<string> usernames = await context.Set<User>().AsNoTracking()
+            .Where(u => EF.Functions.ILike(u.Email, pattern, AdministrationPersistence.LikeEscape))
+            .Select(u => u.Username)
+            .Take(2)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        return usernames.Count == 1 ? usernames[0] : null;
+    }
+
     public Task<LocalCredential?> FindLocalCredentialByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         LocalCredentialAsync(u => u.Id == userId, cancellationToken);
 

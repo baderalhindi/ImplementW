@@ -60,6 +60,34 @@ public sealed class LocalAccountTests(IdentityTestHost host)
     }
 
     [Fact]
+    public async Task TheEmailAddressSignsInAsTheUsernameDoes()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string admin = (await client.SignInOrFailAsync(1)).AccessToken;
+        string username = Name();
+        HttpResponseMessage created = await client.SendAsync(
+            HttpMethod.Post,
+            Users,
+            admin,
+            new
+            {
+                userType = "INTERNAL",
+                username,
+                displayName = "Local account",
+                email = $"{username}@test.local",
+                accountSource = "LOCAL",
+                temporaryPassword = Strong,
+                mustChangePassword = false,
+            });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        Assert.Equal(HttpStatusCode.Created, (await SignInAsync(client, $"{username}@test.local", Strong)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await SignInAsync(client, $"{username.ToUpperInvariant()}@TEST.LOCAL", Strong)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SignInAsync(client, $"{username}@test.local", "Wrong4Password9")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SignInAsync(client, $"nobody.{username}@test.local", Strong)).StatusCode);
+    }
+
+    [Fact]
     public async Task FiveWrongPasswordsLockTheAccountUntilAnAdministratorUnlocksIt()
     {
         using HttpClient client = host.Api.CreateClient();

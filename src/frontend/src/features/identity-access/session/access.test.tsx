@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
@@ -40,14 +40,10 @@ describe('the administration guard', () => {
         expect(menuLink('common.menu.administration')).toBeNull();
         unmount();
       }
-      // The shell's unread badge (TASK-040) and audit navigation (TASK-074) are the only calls besides its approval
-      // count (kept apart by mockApi); nothing administrative is asked for.
-      expect(
-        api.requests.filter(
-          (request) =>
-            request.path !== '/notifications/unread-count' && request.path !== '/audit-access',
-        ),
-      ).toHaveLength(0);
+      // The shell's unread badge (TASK-040), audit navigation (TASK-074) and banner images (review round 8) are the only
+      // calls besides its approval count (kept apart by mockApi); nothing administrative is asked for.
+      const shellPaths = ['/notifications/unread-count', '/audit-access', '/banner-images'];
+      expect(api.requests.filter((request) => !shellPaths.includes(request.path))).toHaveLength(0);
     },
   );
 
@@ -92,12 +88,28 @@ describe('a created administration role', () => {
   });
 });
 
+/** Opens the Regular account tab, where the credentials form is. */
+async function openRegularAccount(user = userEvent.setup()) {
+  await user.click(
+    await screen.findByRole('tab', { name: en('identityAccess.signIn.tabs.directory') }),
+  );
+}
+
+/** Opens the Regular account tab and types the account name. */
+async function typeAccountName(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await openRegularAccount(user);
+  await user.type(
+    screen.getByRole('textbox', { name: en('identityAccess.signIn.usernameOrEmail') }),
+    name,
+  );
+}
+
 const PASSWORD_CHANGE = {
   body: { passwordChangeToken: 'change-token', expiresAt: '2099-01-01T00:00:00Z' },
 };
 
 async function signInWithTemporaryPassword(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(await screen.findByRole('textbox', { name: /Username/ }), 'local.person');
+  await typeAccountName(user, 'local.person');
   await user.type(screen.getByLabelText(/Password/), 'temporary-pass1');
   await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.submit') }));
   await screen.findByRole('heading', { name: en('identityAccess.signIn.newPasswordTitle') });
@@ -208,17 +220,61 @@ describe('sign-in with a temporary password (the 5 Nov 2026 review §6.1)', () =
     await user.click(
       screen.getByRole('button', { name: en('identityAccess.signIn.backToSignIn') }),
     );
-    expect(screen.getByRole('textbox', { name: /Username/ })).toBeTruthy();
+    expect(
+      screen.getByRole('textbox', { name: en('identityAccess.signIn.usernameOrEmail') }),
+    ).toBeTruthy();
   });
 });
 
 describe('sign-in', () => {
+  test('the Microsoft tab holds only the Microsoft sign-in; Regular account holds the username or email form', async () => {
+    mockApi();
+    renderApp({ path: '/sign-in' });
+    const user = userEvent.setup();
+
+    const panel = await screen.findByRole('tabpanel');
+    expect(
+      within(panel).getByRole('button', {
+        name: new RegExp(en('identityAccess.signIn.microsoft.submit')),
+      }),
+    ).toBeTruthy();
+    expect(within(panel).queryByRole('textbox')).toBeNull();
+    expect(within(panel).queryByText(en('identityAccess.signIn.or'))).toBeNull();
+
+    await user.click(screen.getByRole('tab', { name: en('identityAccess.signIn.tabs.directory') }));
+
+    const regular = screen.getByRole('tabpanel');
+    expect(
+      within(regular).getByRole('textbox', { name: en('identityAccess.signIn.usernameOrEmail') }),
+    ).toBeTruthy();
+    expect(
+      within(regular).queryByRole('button', {
+        name: new RegExp(en('identityAccess.signIn.microsoft.submit')),
+      }),
+    ).toBeNull();
+  });
+
+  test('an email address is sent as the account name', async () => {
+    const api = mockApi().on('POST', /^\/sessions$/, problem(401, 'AUTHENTICATION_REQUIRED'));
+    renderApp({ path: '/sign-in' });
+    const user = userEvent.setup();
+
+    await typeAccountName(user, ' r02@ahda.test ');
+    await user.type(screen.getByLabelText(/Password/), 'a-password-1');
+    await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.submit') }));
+
+    await screen.findByText(en('identityAccess.signIn.wrongCredentials'));
+    expect(api.requestsTo('POST', /^\/sessions$/).at(-1)?.body).toMatchObject({
+      username: 'r02@ahda.test',
+    });
+  });
+
   test('a rejected password reads as a wrong username or password, not an ended session', async () => {
     mockApi().on('POST', /^\/sessions$/, problem(401, 'AUTHENTICATION_REQUIRED'));
     renderApp({ path: '/sign-in' });
     const user = userEvent.setup();
 
-    await user.type(await screen.findByRole('textbox', { name: /Username/ }), 'local.person');
+    await typeAccountName(user, 'local.person');
     await user.type(screen.getByLabelText(/Password/), 'wrong-password');
     await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.submit') }));
 
@@ -242,7 +298,7 @@ describe('sign-in', () => {
     renderApp({ path: '/sign-in' });
     const user = userEvent.setup();
 
-    await user.type(await screen.findByRole('textbox', { name: /Username/ }), 'test.admin');
+    await typeAccountName(user, 'test.admin');
     await user.type(screen.getByLabelText(/Password/), 'local-test-password');
     await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.submit') }));
     await user.type(await screen.findByRole('textbox', { name: /Verification code/ }), '000000');
@@ -268,7 +324,7 @@ describe('sign-in', () => {
     const { router } = renderApp({ path: '/admin/roles' });
     const user = userEvent.setup();
 
-    await user.type(await screen.findByRole('textbox', { name: /Username/ }), 'test.admin');
+    await typeAccountName(user, 'test.admin');
     await user.type(screen.getByLabelText(/Password/), 'local-test-password');
     await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.submit') }));
     await user.type(await screen.findByRole('textbox', { name: /Verification code/ }), '654321');
@@ -291,13 +347,15 @@ describe('sign-in', () => {
     renderApp({ path: '/sign-in' });
     const user = userEvent.setup();
 
-    await user.type(await screen.findByRole('textbox', { name: /Username/ }), 'local.r02');
+    await typeAccountName(user, 'local.r02');
     await user.type(screen.getByLabelText(/Password/), 'local-test-password');
     await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.submit') }));
 
     expect(await screen.findByText(en('common.problems.rateLimited'))).toBeTruthy();
     expect(api.requestsTo('POST', /^\/sessions$/)).toHaveLength(1);
-    expect(screen.getByRole('textbox', { name: /Username/ })).toBeTruthy();
+    expect(
+      screen.getByRole('textbox', { name: en('identityAccess.signIn.usernameOrEmail') }),
+    ).toBeTruthy();
   });
 
   test("a forgotten password leads to AHDA's reset page when the build names it", async () => {
@@ -305,6 +363,7 @@ describe('sign-in', () => {
     try {
       mockApi();
       renderApp({ path: '/sign-in' });
+      await openRegularAccount();
 
       const link = await screen.findByRole('link', {
         name: en('identityAccess.signIn.forgotPassword'),
@@ -322,6 +381,7 @@ describe('sign-in', () => {
       try {
         mockApi();
         renderApp({ path: '/sign-in' });
+        await openRegularAccount();
 
         expect(
           await screen.findByText(en('identityAccess.signIn.forgotPasswordContact')),

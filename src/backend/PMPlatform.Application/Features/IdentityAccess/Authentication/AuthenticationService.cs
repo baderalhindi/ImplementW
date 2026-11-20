@@ -50,6 +50,7 @@ internal sealed partial class AuthenticationService(
 
     public async Task<AuthenticationResult> SignInWithPasswordAsync(string username, string password, CancellationToken cancellationToken)
     {
+        username = await AccountNameAsync(username, cancellationToken).ConfigureAwait(false);
         if (!string.IsNullOrWhiteSpace(username)
             && await users.FindLocalCredentialAsync(username.Trim(), cancellationToken).ConfigureAwait(false) is { } credential)
         {
@@ -70,6 +71,19 @@ internal sealed partial class AuthenticationService(
                     : AuthenticateWithDirectoryAsync(attempt, username, password, cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// What was typed as the account name: a username, or an email address (20 Nov 2026), which becomes the username of the one account
+    /// holding it. A name no account's email matches is kept as typed, so it fails or reaches the directory exactly as a username would.
+    /// </summary>
+    private async Task<string> AccountNameAsync(string typed, CancellationToken cancellationToken)
+    {
+        string name = typed.Trim();
+        return !name.Contains('@', StringComparison.Ordinal)
+            || await users.FindLocalCredentialAsync(name, cancellationToken).ConfigureAwait(false) is not null
+            ? typed
+            : await users.FindUsernameByEmailAsync(name, cancellationToken).ConfigureAwait(false) ?? typed;
     }
 
     public async Task<AuthenticationResult> CompletePasswordChangeAsync(string passwordChangeToken, string newPassword, CancellationToken cancellationToken)

@@ -24,6 +24,12 @@ public interface IUserAccessRepository
     /// <summary>A local account's credential by its username; null for a directory account or no account.</summary>
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The username of the one account with this email address, compared without regard to case (20 Nov 2026: "Regular account" signs in by
+    /// username or email); null when no account, or more than one, has it.
+    /// </summary>
+    public Task<string?> FindUsernameByEmailAsync(string email, CancellationToken cancellationToken);
+
     /// <summary>The user, if their password lives in the directory.</summary>
     public Task<DirectoryAccount?> FindDirectoryAccountAsync(Guid userId, CancellationToken cancellationToken);
 
