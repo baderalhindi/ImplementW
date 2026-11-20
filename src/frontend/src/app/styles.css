@@ -2204,6 +2204,28 @@ select.field__input {
   .sign-in__account {
     padding-inline-start: var(--space-8);
   }
+
+  /* Face ID / Touch ID sits at the foot of the account card, level with "Sign in with biometrics" beside it: the tab
+     box fills the panel's height, and the Nafath panel keeps the tab box's padding and border below its last button. */
+  .sign-in__nafath {
+    padding-block-end: calc(var(--space-4) + 1px);
+  }
+
+  .sign-in__account > .sign-in__tabs {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .sign-in__tabs > .sign-in__tabpanel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .sign-in__tabpanel > .sign-in__divider {
+    margin-block-start: auto;
+  }
 }
 
 .sign-in__panel {
