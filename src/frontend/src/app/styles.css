@@ -7897,7 +7897,7 @@ tr[data-flagged='true'] {
   gap: var(--space-2);
 }
 
-.visual__body > :is(.axis-chart, .axis-chart__frame--bar, .line-chart, .distribution--donut) {
+.visual__body > :is(.axis-chart, .axis-chart__frame--bar, .line-chart) {
   flex: 1;
   min-block-size: 0;
 }
@@ -7922,18 +7922,7 @@ tr[data-flagged='true'] {
   max-inline-size: 10rem;
 }
 
-/* A designed pie or donut grows with its visual's height, from its usual size up to 24rem, and stays round. */
-.visual__body > .distribution--donut {
-  grid-template-rows: minmax(0, 1fr);
-  align-items: center;
-}
-
-.visual__body > .distribution--donut > .donut {
-  inline-size: auto;
-  block-size: clamp(10.5rem, 100%, 24rem);
-  aspect-ratio: 1;
-}
-
+/* A designed pie's disc is the size of a donut's ring (20 Nov 2026: every donut and pie in one design, the governed widgets'). */
 .visual__body > .distribution--donut > .donut--pie svg {
   max-inline-size: none;
 }

@@ -1,5 +1,4 @@
 import { type CSSProperties, type ReactElement, useState } from 'react';
-import { Link } from 'react-router';
 
 import { OverriddenBadge } from '@/features/progress/components/ProgressBadges.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -18,7 +17,8 @@ import {
   shownFigures,
 } from '../presentation.ts';
 
-import { BarChart, ColumnChart, DonutChart, GaugeChart } from './Charts.tsx';
+import { BarChart, ColumnChart, GaugeChart } from './Charts.tsx';
+import { DonutWithLegend } from './DonutWithLegend.tsx';
 import { sarExactLabel } from '@/shared/format/money.ts';
 
 // The allowlisted visualisations of FG-01 §10 (TASK-069 `DashboardWidgetType`). Each presents the source's values as
@@ -167,25 +167,23 @@ export function DistributionBody({
   const lift = (key: string) => (active === null ? '' : active === key ? 'is-active' : 'is-dimmed');
   return (
     <div className="widget__body">
-      {buckets.length > 0 && (
+      {buckets.length > 0 && form === 'donut' && (
+        <DonutWithLegend
+          buckets={buckets}
+          caption={title}
+          countHeading={t(countedKey(projectionCode))}
+          totalLabel={t('dashboards.distribution.total')}
+          active={active}
+          onActive={setActive}
+        />
+      )}
+      {buckets.length > 0 && form !== 'donut' && (
         <div className={`distribution distribution--${form}`}>
-          {form === 'donut' && (
-            <DonutChart
-              buckets={buckets}
-              active={active}
-              onActive={setActive}
-              totalLabel={t('dashboards.distribution.total')}
-            />
-          )}
           {form === 'columns' && (
             <ColumnChart buckets={buckets} active={active} onActive={setActive} />
           )}
           {form === 'bars' && <BarChart buckets={buckets} active={active} onActive={setActive} />}
-          <table
-            className={
-              form === 'donut' ? 'widget__distribution distribution__donut' : 'visually-hidden'
-            }
-          >
+          <table className="visually-hidden">
             <caption className="visually-hidden">{title}</caption>
             <thead>
               <tr>
@@ -209,14 +207,8 @@ export function DistributionBody({
                 >
                   <th scope="row">
                     <span className="distribution__key" aria-hidden="true" />
-                    {/* The donut's table is its visible legend: there a value links. Under bars and columns the table is hidden and they link. */}
-                    {form === 'donut' && bucket.href !== undefined ? (
-                      <Link className="drill-link" to={bucket.href} title={bucket.hint}>
-                        {bucket.text}
-                      </Link>
-                    ) : (
-                      bucket.text
-                    )}
+                    {/* Under bars and columns the table is hidden and the marks link. */}
+                    {bucket.text}
                   </th>
                   <td>
                     <span className="widget__count figure" dir="ltr">

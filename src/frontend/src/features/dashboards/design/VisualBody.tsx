@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactElement, useState } from 'react';
+import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 
 import { OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
@@ -10,7 +10,8 @@ import { TableContainer } from '@/shared/ui/Layout.tsx';
 
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { bucketColors, type ChartBucket } from '../charts.ts';
-import { DonutChart, GaugeChart } from '../components/Charts.tsx';
+import { GaugeChart } from '../components/Charts.tsx';
+import { DonutWithLegend } from '../components/DonutWithLegend.tsx';
 import { drawnAxes, valueScale } from './axes.ts';
 import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx';
 import { LineChart } from './LineChart.tsx';
@@ -315,39 +316,15 @@ export function VisualBody({
         color: colors[index] ?? 'var(--chart-single)',
       }));
       return (
-        <div className="distribution distribution--donut">
-          <DonutChart
-            buckets={buckets}
-            active={active}
-            onActive={setActive}
-            totalLabel={first.text}
-            pie={visual.visualType === 'PIE'}
-          />
-          <ul className="grouped-columns__legend">
-            {buckets.map((bucket) => {
-              const words = (
-                <>
-                  <span
-                    className="distribution__key"
-                    style={{ '--chart-color': bucket.color } as CSSProperties}
-                  />
-                  {`${bucket.text} (${bucket.value ?? String(bucket.count)})`}
-                </>
-              );
-              return (
-                <li key={bucket.key}>
-                  {bucket.href === undefined ? (
-                    words
-                  ) : (
-                    <Link className="drill-link" to={bucket.href} title={bucket.hint}>
-                      {words}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <DonutWithLegend
+          buckets={buckets}
+          caption={visual.title[language]}
+          countHeading={first.text}
+          totalLabel={t('dashboards.distribution.total')}
+          active={active}
+          onActive={setActive}
+          pie={visual.visualType === 'PIE'}
+        />
       );
     }
     case 'COLUMN':
