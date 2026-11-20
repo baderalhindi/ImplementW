@@ -7923,6 +7923,11 @@ tr[data-flagged='true'] {
   flex: 1;
   min-block-size: 0;
   overflow: auto;
+  /*
+   * Its own stacking layer, so what it holds (a table's positioned container) is painted inside it and its scroll bar over them (20 Nov
+   * 2026: the scroll bar showed behind the tables of By sector).
+   */
+  isolation: isolate;
 }
 
 /*
