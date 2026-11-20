@@ -8938,14 +8938,23 @@ tr[data-flagged='true'] {
 .axis-chart__bar-track {
   position: relative;
   grid-column: 2;
-  /* Thicker as its row grows, within reason. */
-  block-size: clamp(0.75rem, 35%, 1.75rem);
-  align-self: center;
+  /* As tall as its row (at least 1rem), so the bar inside it can size from the row in the designer and on the dashboard alike. */
+  align-self: stretch;
+  min-block-size: 1rem;
 }
 
+/* A linked row (on the dashboard) fills its row as an unlinked one does, so its bar sizes from the row too. */
+.axis-chart__row > .axis-chart__link {
+  align-self: stretch;
+}
+
+/*
+ * The bar, centred in its row: 70% of the row's height, never thinner than 0.75rem nor thicker than 2rem (20 Nov 2026: the bars were
+ * thinner on the Portfolio dashboard than in the designer, where a percentage height did not resolve the same way).
+ */
 .axis-chart__bar.widget__bar {
   position: absolute;
-  inset-block: 0;
+  inset-block: max(0px, min(15%, calc(50% - 0.375rem)), calc(50% - 1rem));
   block-size: auto;
   min-inline-size: 0;
 }
