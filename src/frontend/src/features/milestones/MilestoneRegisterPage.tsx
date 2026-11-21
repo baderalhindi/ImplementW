@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -17,9 +18,11 @@ import {
   matchesFilter,
   REGISTER_FILTERS,
   type RegisterFilter,
+  type MilestoneEntry,
 } from './milestoneRules.ts';
 import { isForbidden, milestoneProblemMessage } from './problems.ts';
 import { useMilestoneLookups, useMilestonePortfolio } from './useMilestoneData.ts';
+import { milestonesApi } from './api/milestonesApi.ts';
 
 const DEFAULT_FILTER: RegisterFilter = 'all';
 
@@ -33,6 +36,14 @@ export function MilestoneRegisterPage(): ReactElement | null {
   const { t } = useI18n();
   const { session } = useSession();
   const portfolio = useMilestonePortfolio();
+  const rowActions = useRowActions<MilestoneEntry>({
+    permission: 'SCHEDULE_EDIT',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ milestone }) => milestone.title.text,
+    editTo: ({ milestone, project }) => `/projects/${project.id}/milestones?edit=${milestone.id}`,
+    remove: ({ milestone }) => milestonesApi.remove(milestone.id),
+    onDeleted: portfolio.reload,
+  });
   const lookups = useMilestoneLookups();
   const [filter, setFilter] = useState<RegisterFilter>(DEFAULT_FILTER);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -129,6 +140,7 @@ export function MilestoneRegisterPage(): ReactElement | null {
             </EmptyState>
           ) : (
             <MilestoneTable
+              actions={rowActions}
               caption={t('milestones.register.caption')}
               entries={shown}
               today={today}

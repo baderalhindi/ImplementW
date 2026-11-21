@@ -1,4 +1,4 @@
-using PMPlatform.Application.Common.Authorization;
+﻿using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Domain.IdentityAccess;
 using static PMPlatform.Tests.Unit.Application.Authorization.AuthorizationScenario;
 
@@ -486,6 +486,10 @@ public sealed class ShippedGrantTests
         [PermissionCatalogue.ProjectActivate] = "R02:ALL R03:DEPT",
         [PermissionCatalogue.ProjectImport] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R07:ALL R08:ENTITY",
         [PermissionCatalogue.ProjectImportApprove] = "R02:ALL",
+        [PermissionCatalogue.ProjectDelete] = "R02:ALL",
+        [PermissionCatalogue.ProjectManagerChange] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.ProjectRegistrationEdit] = "R02:ALL",
+        [PermissionCatalogue.UserNationalIdView] = "R01:ALL",
         [PermissionCatalogue.ProjectFollowUp] = "R02:ALL R03:DEPT",
         [PermissionCatalogue.ProgressView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ENTITY",
         [PermissionCatalogue.ProgressSubmit] = "R04:OWN",
@@ -562,6 +566,9 @@ public sealed class ShippedGrantTests
         [PermissionCatalogue.IntegrationAlertManage] = "R01:ALL",
         [PermissionCatalogue.IntegrationConfigure] = "R01:ALL",
         [PermissionCatalogue.DataImport] = "R01:ALL",
+
+        // The 17 Nov 2026 dashboard designer: the Portfolio Manager designs the Portfolio dashboard for everyone (dashboard-designer.md D-1).
+        [PermissionCatalogue.DashboardDesign] = "R02:ALL",
     };
 
     private static string ScopeCode(DataScope scope) => scope switch

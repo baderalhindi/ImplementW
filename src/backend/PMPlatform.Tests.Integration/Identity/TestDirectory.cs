@@ -20,6 +20,12 @@ internal static class TestDirectory
     /// <summary>The entryUUID of local.r0<paramref name="n"/>, which is that person's directory subject.</summary>
     public static string Subject(int n) => $"00000000-0012-4000-8000-{n:D12}";
 
+    /// <summary>The account e-mail an identity provider asserts for <see cref="Subject"/>(n): the e-mail IdentityDatabase gives local.r0n.</summary>
+    public static string? EmailOf(string subject) =>
+        subject.StartsWith("00000000-0012-4000-8000-", StringComparison.Ordinal) && int.TryParse(subject[^12..], out int n) && n is > 0 and < 10
+            ? $"r{n:D2}@identity.test"
+            : null;
+
     /// <summary>In the directory, with no platform user.</summary>
     public static readonly string UnregisteredSubject = Subject(99);
 

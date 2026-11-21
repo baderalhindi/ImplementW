@@ -33,12 +33,24 @@ public static class IdentityAccessAuditEvents
     public const string UserUpdated = "IdentityAccess.UserUpdated";
     public const string UserActivated = "IdentityAccess.UserActivated";
     public const string UserDisabled = "IdentityAccess.UserDisabled";
+    public const string UserDeleted = "IdentityAccess.UserDeleted";
+    public const string UserNationalIdChanged = "IdentityAccess.UserNationalIdChanged";
+    public const string UserNationalIdRevealed = "IdentityAccess.UserNationalIdRevealed";
+    public const string DepartmentDeleted = "IdentityAccess.DepartmentDeleted";
+    public const string UserPermissionOverrideSet = "IdentityAccess.UserPermissionOverrideSet";
+    public const string UserPermissionOverrideCleared = "IdentityAccess.UserPermissionOverrideCleared";
 
     /// <summary>AUTHENTICATION: a local account changed its password: a temporary one at sign-in, its own while signed in, or through a reset link.</summary>
     public const string PasswordChanged = "IdentityAccess.PasswordChanged";
 
     /// <summary>AUTHENTICATION: a reset link was queued for a local account. A request naming no such account, or within the cooldown, sends nothing and records nothing.</summary>
     public const string PasswordResetRequested = "IdentityAccess.PasswordResetRequested";
+
+    /// <summary>AUTHENTICATION: a person added a passkey (Face ID, Touch ID or device unlock) to their own account.</summary>
+    public const string PasskeyRegistered = "IdentityAccess.PasskeyRegistered";
+
+    /// <summary>AUTHENTICATION: a person removed one of their own passkeys.</summary>
+    public const string PasskeyRemoved = "IdentityAccess.PasskeyRemoved";
 
     /// <summary>PRIVILEGED_ACTION: an administrator issued a local account a new temporary password.</summary>
     public const string PasswordReset = "IdentityAccess.PasswordReset";
@@ -77,5 +89,8 @@ public static class IdentityAccessAuditEvents
     public const string ExternalEntitySuspended = "IdentityAccess.ExternalEntitySuspended";
     public const string ExternalEntityActivated = "IdentityAccess.ExternalEntityActivated";
     public const string ExternalEntityRetired = "IdentityAccess.ExternalEntityRetired";
+
+    /// <summary>PRIVILEGED_ACTION: an external entity nothing referenced was erased.</summary>
+    public const string ExternalEntityDeleted = "IdentityAccess.ExternalEntityDeleted";
     public const string IdentityIntegrationTested = "IdentityAccess.IdentityIntegrationTested";
 }

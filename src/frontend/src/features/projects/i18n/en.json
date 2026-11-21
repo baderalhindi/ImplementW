@@ -71,7 +71,17 @@
     "isStrategic": "Strategic project"
   },
   "filters": {
-    "q": "Title or Formal Project ID"
+    "q": "Title or Formal Project ID",
+    "registered": "Registration",
+    "allRegistered": "All projects",
+    "registeredOnly": "Registered projects only",
+    "stage": "Current stage",
+    "allStages": "All stages",
+    "onPlan": "On plan",
+    "allOnPlan": "Any on-plan state",
+    "measured": "Progress measured",
+    "allMeasured": "All projects",
+    "measuredOnly": "Measured projects only"
   },
   "list": {
     "order": "Most recently changed first.",
@@ -83,7 +93,9 @@
     "description": "Every project your role can see, at any stage.",
     "emptyForRole": "Your role does not give you access to any project yet.",
     "emptyForRoleDescription": "You see the projects your role assignments reach: those of your sector, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments.",
-    "empty": "No projects yet"
+    "empty": "No projects yet",
+    "emptyHint": "Use Import or Create project above to add the first one.",
+    "createFirst": "Register the first project"
   },
   "mine": {
     "title": "My projects",
@@ -109,7 +121,8 @@
       "organization": "Ownership and participation",
       "budgetSchedule": "Budget and schedule",
       "location": "Location",
-      "strategy": "Strategy and follow-up"
+      "strategy": "Strategy and follow-up",
+      "stagePlan": "Stage plan"
     },
     "neededToSubmit": "Needed before submitting for review.",
     "stillNeeded": "To save, fill in: {fields}.",
@@ -133,8 +146,10 @@
     "followUpOwnerHint": "The RPMO staff member who follows the project up.",
     "changeOwner": "Change",
     "clearOwner": "Remove",
-    "governanceProfileInfoLabel": "What is the governance profile?",
-    "governanceProfileInfo": "The governance profile sets how closely AHDA controls this project: which details are required before submission and which plans need AHDA's approval. AHDA confirms it at review."
+    "projectManagerHint": "The R04 holder who will manage the project. Submitting the registration proposes them; AHDA can change the manager later.",
+    "viaChangeRequest": "Approved: changes only through a change request.",
+    "editReason": "Reason for the change",
+    "editReasonHint": "Recorded with the change, beside each field’s old and new value."
   },
   "workspace": {
     "revision": "Revision {revision}",
@@ -154,28 +169,38 @@
       "issuesChallenges": "Issues & challenges",
       "changeRequests": "Change requests",
       "suspension": "Suspension",
-      "closeout": "Closeout",
+      "closeout": "Closure",
       "externalRequests": "External requests",
       "reviews": "Review history",
       "documents": "Documents",
       "activity": "Activity history",
       "audit": "Audit history (formal)"
+    },
+    "groups": {
+      "label": "Project section groups",
+      "overview": "Overview",
+      "planning": "Planning",
+      "performance": "Performance",
+      "risks": "Risks",
+      "requests": "Requests",
+      "records": "Records"
     }
   },
   "overview": {
     "missingForSubmission": "Before this project can be submitted for review, fill in:",
     "declaredBaseline": "Entered by legacy intake: its baseline is declared, not approved.",
     "next": {
-      "DRAFT": "Draft. Complete the registration and submit it for AHDA's review.",
-      "SUBMITTED": "Submitted. AHDA has not started its review yet; until it does, the registrant can withdraw it.",
-      "UNDER_REVIEW": "Under AHDA's review. The registration cannot be changed until the review ends.",
-      "RETURNED": "Returned by AHDA's review. Change the registration and submit it again as the next revision.",
-      "APPROVED_PLANNED": "Approved and planned. AHDA activates the project when work starts.",
-      "ACTIVE": "Active.",
-      "SUSPENDED": "Suspended. Work is on hold until an approved resumption takes effect; the Project Manager requests it from the Suspension tab, or closes the project without completion from the Closeout tab.",
-      "COMPLETED": "Completed. Delivery has ended; Stage 2, Closure, follows once every post-project obligation is settled.",
-      "CLOSED": "Closed. The project is terminal and read-only: its records are kept as history and nothing can be changed."
-    }
+      "DRAFT": "Complete the registration and submit it for AHDA's review.",
+      "SUBMITTED": "AHDA has not started its review yet; until it does, the registrant can withdraw it.",
+      "UNDER_REVIEW": "The registration cannot be changed until AHDA's review ends.",
+      "RETURNED": "Change the registration and submit it again as the next revision.",
+      "APPROVED_PLANNED": "AHDA activates the project when work starts.",
+      "SUSPENDED": "Work is on hold until an approved resumption takes effect; the Project Manager requests it from the Suspension tab, or closes the project without completion from the Closeout tab.",
+      "COMPLETED": "Delivery has ended; Stage 2, Closure, follows once every post-project obligation is settled.",
+      "CLOSED": "The project is terminal and read-only: its records are kept as history and nothing can be changed."
+    },
+    "facts": "Project details",
+    "kpis": "Project at a glance"
   },
   "location": {
     "edit": "Change location",
@@ -203,7 +228,11 @@
   "delete": {
     "title": "Delete draft",
     "body": "Delete the draft “{title}”? It is removed permanently and cannot be recovered.",
-    "confirm": "Delete draft"
+    "confirm": "Delete draft",
+    "anyTitle": "Delete project",
+    "anyBody": "Delete the project “{title}”? It and its records leave every list, dashboard and report. Their data stays on file, and bringing it back needs a technical request.",
+    "anyConfirm": "Delete project",
+    "typeToConfirm": "Type {text} to confirm"
   },
   "submit": {
     "title": "Submit for review",
@@ -236,23 +265,34 @@
     "created": "The draft was created.",
     "updated": "The registration was saved.",
     "locationUpdated": "The location was saved.",
-    "deleted": "The draft was deleted.",
+    "deleted": "The project was deleted.",
     "submitted": "The project was submitted for review.",
     "withdrawn": "The submission was withdrawn; the project is a draft again.",
     "reviewStarted": "AHDA's review has started.",
-    "activated": "The project is now active."
+    "activated": "The project is now active.",
+    "stagePlanNotSaved": "The registration was saved, but its stage plan was not. Open the stage plan and save it again.",
+    "progressMethodNotSaved": "The registration was saved, but its progress method was not. Set it from the Overview."
   },
   "problems": {
     "referenceInvalid": "One of the chosen values is no longer available: a classification, profile, region or city that is not published, an inactive sector or entity, or a city outside the chosen region. Choose again.",
     "participationInvalid": "An entity-managed project must name its external entity.",
-    "incomplete": "The registration budget and both planned dates are needed before the project can be submitted.",
+    "incomplete": "The registration budget, both planned dates and a complete stage plan are needed before the project can be submitted.",
     "managerInvalid": "This person cannot be the Project Manager: they must hold the Project Manager role over this project now.",
     "notEditable": "The project can no longer be changed in its current state. Reload the page to see it.",
     "inUse": "This draft is referenced by another record and cannot be deleted.",
     "invalidTransition": "The project is no longer in a state that allows this. Reload the page to see its current state.",
     "reviewRouteMissing": "No approval route is configured for project registration yet, so the review cannot start. Ask an administrator.",
     "permissionDenied": "Your role does not allow this for this project.",
-    "notFound": "The project was not found, or you do not have access to it."
+    "notFound": "The project was not found, or you do not have access to it.",
+    "stagesNotConfigured": "No project stages are published, so there is no stage plan to set. Ask an administrator to publish the project stages.",
+    "stagePlanInvalid": "Check the stage plan: each stage that applies needs dates within the project’s planned dates, and at least one stage must apply.",
+    "stagePlanUnderReview": "The registration is under review, and the stage plan is reviewed with it. It can change again only if AHDA returns the registration.",
+    "stagePlanChangeRequired": "The registration is approved, so changing the stage plan needs an approved schedule change request. Choose the change it implements.",
+    "managerUnchanged": "This person already manages the project.",
+    "changeRequestRequired": "The budget, the planned dates and the governance profile of an approved project change only through a change request.",
+    "editAsDraft": "This registration is a draft: edit it as a draft.",
+    "progressMethodUnchanged": "The project already uses this progress method.",
+    "progressMethodReasonRequired": "A progress update has been approved: give a reason for changing the method."
   },
   "fundingSource": {
     "STRATEGY_BUDGET_FULL": "Yes, in full",
@@ -337,7 +377,9 @@
     "owner": "Action owner",
     "due": "Due",
     "onPlan": "On plan",
-    "gap": "Gap"
+    "gap": "Gap",
+    "mainReason": "Main reason",
+    "emptyHint": "No project in your scope needs follow-up now: none is stalled, late or suspended, and no action is overdue."
   },
   "import": {
     "nav": "Import projects",
@@ -462,7 +504,9 @@
       "MAX_LENGTH": "Too long",
       "ENUM_VALUE": "Not one of the allowed values",
       "NOT_ALLOWED": "Not allowed here",
-      "OWNER_UNMATCHED": "No active AHDA user has this name: left empty unless you map it"
+      "OWNER_UNMATCHED": "No active AHDA user has this name: left empty unless you map it",
+      "NOT_ARABIC": "Write this in Arabic.",
+      "NOT_ENGLISH": "Write this in English, without Arabic letters."
     },
     "fileLevel": "Whole file",
     "background": "{rows} rows in {file}: validating in the background. You will get a notification when it is done; you may leave this page.",
@@ -482,12 +526,107 @@
     "TitleAscending": "Title, A to Z",
     "TitleDescending": "Title, Z to A",
     "FormalIdAscending": "Project ID, lowest first",
-    "FormalIdDescending": "Project ID, highest first"
+    "FormalIdDescending": "Project ID, highest first",
+    "ValueDescending": "Value, highest first"
   },
   "bulk": {
     "delete": "Delete {count} drafts",
     "deleteTitle": "Delete {count} draft projects?",
     "deleteBody": "These drafts will be deleted: {names}. This cannot be undone.",
-    "onlyDrafts": "Only drafts can be deleted. A submitted project is withdrawn or closed."
+    "onlyDrafts": "Only drafts can be deleted. A submitted project is withdrawn or closed.",
+    "any": {
+      "delete": "Delete selected ({count})",
+      "deleteTitle": "Delete the selected projects?",
+      "deleteBody": "These projects and their records will leave every list, dashboard and report: {names}. Their data stays on file, and bringing it back needs a technical request."
+    }
+  },
+  "stagePlan": {
+    "intro": "Each stage is pre-filled from the project stages AHDA publishes, with its weight. Untick a stage that does not apply; give each stage that applies its planned dates within the project’s. AHDA reviews the plan with the registration.",
+    "weight": "Weight {weight}%",
+    "applies": "Applies to this project",
+    "plannedStart": "Planned start",
+    "plannedEnd": "Planned end",
+    "startingPercent": "Starting point %",
+    "startingPercentHint": "How far this stage had come when the project entered the platform.",
+    "errors": {
+      "required": "Enter the date.",
+      "beforeProject": "The stage cannot start before the project’s planned start.",
+      "outsideProject": "The stage must end on or after its start and by the project’s planned end.",
+      "percent": "Enter a percentage from 0 to 100, with at most two decimal places.",
+      "notAllowed": "This value is not allowed here.",
+      "noneApplies": "At least one stage must apply."
+    },
+    "title": "Stage plan",
+    "notSet": "This project has no stage plan yet. Set it once; after that, a change to it needs an approved schedule change request.",
+    "revision": "Stage plan revision {revision}.",
+    "version": "Stages and weights of version {version}.",
+    "changeNeedsRequest": "The registration is approved, so changing a stage’s dates or whether it applies implements an approved schedule change request.",
+    "changeAuthorization": "Approved schedule change",
+    "authorizationOption": "{title} (approved {date})",
+    "changeAuthorizationHint": "The change request this change implements.",
+    "noAuthorization": "No approved schedule change request is waiting to be applied to this plan. Raise a schedule change request first.",
+    "reason": "Reason for the change",
+    "save": "Save the stage plan"
+  },
+  "stageProgress": {
+    "setPlan": "Set the stage plan",
+    "openPlan": "Stage plan",
+    "current": "Current stage",
+    "planned": "Planned",
+    "actual": "Actual",
+    "notApplicable": "Does not apply to this project.",
+    "notRecorded": "Not recorded",
+    "gap": "Gap",
+    "versionUsed": "Weighed by stage version {version}"
+  },
+  "changeManager": {
+    "action": "Assign / change",
+    "title": "Assign or change the Project Manager",
+    "none": "No Project Manager is named yet.",
+    "current": "Current Project Manager: {name}.",
+    "handover": "The project’s open tasks and update requests held by the current manager pass to the new one, and both are told.",
+    "newManager": "New Project Manager",
+    "newManagerHint": "Someone who holds the Project Manager role over this project.",
+    "reason": "Reason for the change",
+    "confirm": "Change the Project Manager",
+    "done": "The Project Manager was changed."
+  },
+  "progressMethod": {
+    "title": "Progress method",
+    "label": "Progress method",
+    "methods": {
+      "STAGES": "Project stages",
+      "SCHEDULE": "Schedule"
+    },
+    "explain": {
+      "STAGES": "Overall progress is the sum of each stage's weight × its completion. Execution follows the schedule once there is an approved baseline, and is entered monthly until then.",
+      "SCHEDULE": "Overall progress is the schedule's weighted progress, and planned progress comes from the baseline. It needs an approved baseline."
+    },
+    "none": "Not set",
+    "change": "Change method",
+    "reason": "Reason for the change",
+    "reasonRequired": "A progress update has been approved, so the change needs a reason. It is kept in the project's history.",
+    "reasonOptional": "Optional. The change is kept in the project's history.",
+    "unchanged": "The project already uses this method.",
+    "confirm": "Save method"
+  },
+  "overallProgress": {
+    "title": "Overall progress",
+    "setUp": "Set the progress method.",
+    "setUpMethod": "Choose whether this project's progress is calculated from its schedule or its stages. Until then it shows its declared figure.",
+    "setUpPlan": "This project is measured by its stages but has no stage plan yet.",
+    "chooseMethod": "Choose the progress method",
+    "source": {
+      "SCHEDULE": "Calculated from the schedule",
+      "STAGES": "Calculated from the stages",
+      "DECLARED": "Declared figure — no progress method set"
+    },
+    "asOf": "As of {date}",
+    "declaredFrom": "Source: {source}",
+    "actual": "Actual",
+    "planned": "Planned to date",
+    "noBaseline": "No approved baseline yet: the schedule gives no figure until one is approved.",
+    "cardTitle": "How progress is calculated",
+    "setUpPlanTitle": "Set the stage plan."
   }
 }

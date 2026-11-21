@@ -14,9 +14,10 @@ import { type ProjectDetail } from '../api/types.ts';
 import { Detail } from '../components/Detail.tsx';
 import { GapValue, OnPlanBadge } from '../components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
-import { formatSar, languageTag } from '../presentation.ts';
+import { languageTag } from '../presentation.ts';
 import { projectProblemMessage } from '../problems.ts';
 import { useProjectLookups } from '../useProjectLookups.ts';
+import { sarWhole } from '@/shared/format/money.ts';
 
 /** One printable page of a project (the 5 Nov 2026 review §3 row 11), for whoever can read it; amounts only with FINANCIAL_VIEW_SENSITIVE. */
 export function ProjectCardPage(): ReactElement {
@@ -116,7 +117,7 @@ function CardView({ project }: { project: ProjectDetail }): ReactElement {
               notAvailable
             ) : (
               <span dir="ltr">
-                {t('projects.money.sar', { amount: formatSar(project.registrationBudgetSar) })}
+                {t('projects.money.sar', { amount: sarWhole(project.registrationBudgetSar) })}
               </span>
             )}
           </Detail>

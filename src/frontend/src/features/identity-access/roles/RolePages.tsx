@@ -6,8 +6,11 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { CheckboxField, SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { CancelLink } from '@/shared/ui/CancelLink.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { rolesApi } from '../api/identityAccessApi.ts';
 import {
@@ -17,6 +20,7 @@ import {
   type RoleSummary,
 } from '../api/types.ts';
 import { ConfirmDialog, type Confirmation } from '../components/ConfirmDialog.tsx';
+import { useRowActions } from '../components/RowActions.tsx';
 import {
   checkText,
   ROLE_CODE_LENGTH,
@@ -142,6 +146,40 @@ export function RoleListPage(): ReactElement {
   const mayManage = useCan('ROLE_MANAGE');
   const load = useCallback((signal: AbortSignal) => rolesApi.list(signal), []);
   const roles = useApiResource(load);
+  // The eight built-in roles are edited but never deleted: approvals, the matrix and every assignment name them.
+  const rowActions = useRowActions<RoleSummary>({
+    permission: 'ROLE_MANAGE',
+    name: (role) => labelOf(role.name, language),
+    editTo: (role) => `/admin/roles/${role.id}/edit`,
+    deletable: (role) => !role.isSystem,
+    remove: (role) => rolesApi.delete(role.id, null),
+    onDeleted: () => {
+      roles.reload();
+    },
+  });
+  const selection = useRowSelection();
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const chosenDeletable = (roles.data ?? []).filter(
+    (role) => selection.selected.has(role.id) && !role.isSystem,
+  );
+  /** Deletes every chosen role that is not built in, confirmed by naming them. */
+  const confirmDeleteMany = () => {
+    const chosen = chosenDeletable;
+    setConfirmation({
+      title: t('common.rowActions.deleteTitle'),
+      body: t('common.rowActions.deleteBody', {
+        name: chosen.map((role) => labelOf(role.name, language)).join('، '),
+      }),
+      confirmLabel: t('common.rowActions.delete'),
+      destructive: true,
+      action: async () => {
+        for (const role of chosen) {
+          await rolesApi.delete(role.id, null);
+        }
+        selection.clear();
+      },
+    });
+  };
 
   return (
     <>
@@ -171,22 +209,45 @@ export function RoleListPage(): ReactElement {
       )}
       {roles.data !== undefined &&
         (roles.data.length === 0 ? (
-          <EmptyState title={t('identityAccess.roles.list.empty')} />
+          <EmptyState title={t('identityAccess.roles.list.empty')} reason="setup" />
         ) : (
-          <TableContainer caption={t('identityAccess.roles.list.title')}>
+          <TableContainer
+            caption={t('identityAccess.roles.list.title')}
+            selection={{
+              selection,
+              exportName: 'roles',
+              actions:
+                rowActions !== undefined && chosenDeletable.length > 0 ? (
+                  <button
+                    type="button"
+                    className="button button--danger"
+                    onClick={confirmDeleteMany}
+                  >
+                    {t('common.rowActions.delete')}
+                  </button>
+                ) : undefined,
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader ids={roles.data.map((role) => role.id)} selection={selection} />
                 <th scope="col">{t('identityAccess.roles.fields.code')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.name')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.externalEligible')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.state')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.allowedScopes')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.landing')}</th>
+                {rowActions !== undefined && <th scope="col">{t('common.table.actions')}</th>}
               </tr>
             </thead>
             <tbody>
               {roles.data.map((role) => (
                 <tr key={role.id}>
+                  <SelectRowCell
+                    id={role.id}
+                    name={labelOf(role.name, language)}
+                    selection={selection}
+                  />
                   <td>{role.code}</td>
                   <td>
                     <Link to={`/admin/roles/${role.id}`}>{labelOf(role.name, language)}</Link>
@@ -201,11 +262,25 @@ export function RoleListPage(): ReactElement {
                     <ScopesText scopes={role.allowedScopes} />
                   </td>
                   <td>{t(landingLabelKey(role.landingDashboardCode))}</td>
+                  {rowActions !== undefined && (
+                    <td className="cell--actions">{rowActions.render(role)}</td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </TableContainer>
         ))}
+      {rowActions?.dialog}
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          roles.reload();
+        }}
+      />
     </>
   );
 }
@@ -363,9 +438,7 @@ function RoleCreateForm({ roles }: { roles: RoleSummary[] }): ReactElement {
         <button type="submit" className="button button--primary" disabled={save.saving}>
           {save.saving ? t('common.states.saving') : t('identityAccess.roles.create.submit')}
         </button>
-        <Link className="button" to="/admin/roles">
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink fallback="/admin/roles" />
       </div>
     </form>
   );
@@ -623,7 +696,7 @@ export function RoleDetailPage(): ReactElement {
         <h2 id="profiles-heading">{t('identityAccess.roles.detail.profiles')}</h2>
         <p className="form__note">{t('identityAccess.roles.detail.profilesNote')}</p>
         {detail.profiles.length === 0 ? (
-          <EmptyState title={t('identityAccess.roles.detail.noProfiles')} />
+          <EmptyState title={t('identityAccess.roles.detail.noProfiles')} reason="setup" />
         ) : (
           <ul className="link-list">
             {detail.profiles.map((profile) => (
@@ -702,8 +775,8 @@ function RoleNameForm({ role, etag }: { role: RoleDetail; etag: string | null })
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
     const valid = save.validate({
-      'name.ar': checkText(nameAr, { required: true }),
-      'name.en': checkText(nameEn, { required: true }),
+      'name.ar': checkText(nameAr, { required: true, script: 'ar' }),
+      'name.en': checkText(nameEn, { required: true, script: 'en' }),
     });
     if (!valid) {
       return;
@@ -745,9 +818,7 @@ function RoleNameForm({ role, etag }: { role: RoleDetail; etag: string | null })
         <button type="submit" className="button button--primary" disabled={save.saving}>
           {save.saving ? t('common.states.saving') : t('common.actions.save')}
         </button>
-        <Link className="button" to={`/admin/roles/${role.id}`}>
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink fallback={`/admin/roles/${role.id}`} />
       </div>
     </form>
   );

@@ -240,6 +240,59 @@ public sealed class ProjectImportTests(ProjectTestHost host)
         }
     }
 
+    /// <summary>
+    /// Review round 8, point 01: a dashboard count opens a list of the same projects. Each count of the portfolio figures equals the total of the
+    /// register or Follow-up list filtered as its link filters them, and the filters narrow by the same rules (stage, on-plan, measured, period).
+    /// </summary>
+    [Fact]
+    public async Task EachDashboardCountEqualsTheListItOpens()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        string reference = $"DRL-{Guid.NewGuid():N}"[..20];
+        using HttpResponseMessage submitted = await SubmitAsync(client, sessions.Reviewer, await WorkbookAsync([await RowAsync(reference, status: "نشط")]), string.Empty);
+        Guid batchId = AdministrationApi.IdOf(JsonNode.Parse(await submitted.Content.ReadAsStringAsync())!.AsObject());
+        using HttpResponseMessage approved = await PostAsync(client, sessions.Approver, $"{Batches}/{batchId}/approve");
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+
+        async Task<JsonNode> ReadJsonAsync(string path)
+        {
+            using HttpResponseMessage response = await GetAsync(client, sessions.Approver, path);
+            string body = await response.Content.ReadAsStringAsync();
+            Assert.True(response.StatusCode == HttpStatusCode.OK, $"{path}: {body}");
+            return JsonNode.Parse(body)!;
+        }
+
+        async Task<int> TotalAsync(string path) => (await ReadJsonAsync(path))["totalCount"]!.GetValue<int>();
+
+        JsonNode insights = await ReadJsonAsync("/api/v1/portfolio-insights");
+        JsonNode headline = insights["headline"] ?? throw new InvalidOperationException("The approver reads no headline.");
+        JsonNode onPlan = insights["onPlan"] ?? throw new InvalidOperationException("The approver reads no on-plan counts.");
+        Assert.Equal(headline["registeredProjects"]!.GetValue<int>(), await TotalAsync("/api/v1/projects?registered=true&pageSize=1"));
+        Assert.Equal(headline["measured"]!.GetValue<int>(), await TotalAsync("/api/v1/projects?registered=true&measured=true&pageSize=1"));
+        Assert.Equal(onPlan["notMeasured"]!.GetValue<int>(), await TotalAsync("/api/v1/projects?registered=true&onPlan=NOT_MEASURED&pageSize=1"));
+        Assert.Equal(onPlan["late"]!.GetValue<int>(), await TotalAsync("/api/v1/projects?registered=true&onPlan=LATE&pageSize=1"));
+        Assert.Equal(headline["needingFollowUp"]!.GetValue<int>(), await TotalAsync("/api/v1/project-follow-ups?pageSize=1"));
+        JsonNode reasons = insights["followUpReasons"] ?? throw new InvalidOperationException("The approver reads no follow-up reasons.");
+        Assert.Equal(reasons["openObstacle"]!.GetValue<int>(), await TotalAsync("/api/v1/project-follow-ups?mainReason=OPEN_OBSTACLE&pageSize=1"));
+        if (insights["byCurrentStage"] is JsonArray stages)
+        {
+            JsonNode none = stages.Single(s => s!["stageCode"] is null)!;
+            Assert.Equal(none["projects"]!.GetValue<int>(), await TotalAsync("/api/v1/projects?registered=true&stage=NONE&pageSize=1"));
+        }
+
+        // The imported row: active, planned 90% against actual 83%, with an obstacle, no stage, planned 2025 to 2027.
+        Assert.Equal(1, await TotalAsync($"/api/v1/projects?q={reference}&registered=true&measured=true&stage=NONE&sort=value:desc"));
+        Assert.Equal(0, await TotalAsync($"/api/v1/projects?q={reference}&onPlan=NOT_MEASURED"));
+        JsonNode item = Assert.Single((await ReadJsonAsync($"/api/v1/project-follow-ups?period=2026&pageSize=100"))["items"]!.AsArray(), i => i!["legacyReference"]?.GetValue<string>() == reference)!;
+        string first = item["indicators"]!["followUpReasons"]![0]!.GetValue<string>();
+        Assert.Contains((await ReadJsonAsync($"/api/v1/project-follow-ups?mainReason={first}&pageSize=100"))["items"]!.AsArray(), i => i!["legacyReference"]?.GetValue<string>() == reference);
+        Assert.DoesNotContain((await ReadJsonAsync("/api/v1/project-follow-ups?period=2030&pageSize=100"))["items"]!.AsArray(), i => i!["legacyReference"]?.GetValue<string>() == reference);
+
+        using HttpResponseMessage refused = await GetAsync(client, sessions.Approver, "/api/v1/projects?onPlan=SOMETIMES");
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+    }
+
     internal static Task<HttpResponseMessage> GetAsync(HttpClient client, string token, string path)
     {
         HttpRequestMessage request = new(HttpMethod.Get, path);

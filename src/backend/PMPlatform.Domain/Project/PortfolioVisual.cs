@@ -1,0 +1,242 @@
+using PMPlatform.Domain.Common;
+
+namespace PMPlatform.Domain.Project;
+
+/// <summary>How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer).</summary>
+public enum PortfolioVisualType
+{
+    /// <summary>One figure, with a second one under it when given.</summary>
+    Card = 1,
+
+    /// <summary>Horizontal bars, one per group.</summary>
+    Bar = 2,
+
+    /// <summary>Vertical columns, one per group, side by side per measure.</summary>
+    Column = 3,
+
+    Pie = 4,
+
+    Donut = 5,
+
+    /// <summary>A table: a row per group, a column per measure.</summary>
+    Table = 6,
+
+    /// <summary>One percentage on a half dial.</summary>
+    Gauge = 7,
+
+    /// <summary>One of the dashboard's own sections (<see cref="PortfolioSection"/>), drawn as it always was, placed and sized like any visual.</summary>
+    Section = 8,
+
+    /// <summary>A line per value over the groups in key order: figures over time (the 18 Nov 2026 designer fields).</summary>
+    Line = 9,
+
+    /// <summary>
+    /// A framed, titled box holding other visuals (the 19 Nov 2026 containers): it draws no figure of its own; its children are placed on its inner grid, one
+    /// level only.
+    /// </summary>
+    Container = 10,
+
+    /// <summary>
+    /// The designer's own words (the 20 Nov 2026 text box): a heading, a note or an explanation in both languages, drawn as text; it draws no figure and holds
+    /// nothing, and may be a container's child.
+    /// </summary>
+    Text = 11,
+
+    /// <summary>
+    /// A map of one figure per place (the 20 Nov 2026 map visual): a fixed count or amount, or one field value, per city or region, narrowed by the visual's
+    /// filters; placed as often as the designer likes, and may be a container's child.
+    /// </summary>
+    Map = 12,
+}
+
+/// <summary>
+/// The Portfolio dashboard's own sections a design places (18 Nov 2026: the whole dashboard is designed): the tables and lists of the insights, the
+/// projects map and the governed widgets. Each keeps its own figures, links and permission; at most one of each in a design, except
+/// <see cref="DashboardWidget"/>, at most one per widget.
+/// </summary>
+public enum PortfolioSection
+{
+    PortfolioTable = 1,
+    InitiativeTable = 2,
+
+    /// <summary>The table by sector with its spend and portfolio split.</summary>
+    SectorTable = 3,
+
+    /// <summary>Projects by lifecycle status, with each one's share.</summary>
+    StatusTable = 4,
+
+    /// <summary>Projects by current stage with their value.</summary>
+    CurrentStageTable = 5,
+
+    OnPlanCounts = 6,
+    FollowUpReasons = 7,
+    TopFollowUp = 8,
+
+    /// <summary>Update completion by delivering entity (AHDA's people holding EXTERNAL_REQUEST_VIEW).</summary>
+    EntityCompletion = 9,
+
+    ProjectLocations = 10,
+
+    /// <summary>The governed widgets of the dashboard's published version (FG-01).</summary>
+    DashboardWidgets = 11,
+
+    /// <summary>The table of update completion by entity, with its period (the 13 Nov 2026 review).</summary>
+    EntityCompletionTable = 12,
+
+    /// <summary>
+    /// One governed widget of the dashboard, named by <see cref="PortfolioVisual.WidgetCode"/> (the 19 Nov 2026 widgets): unlike the other sections, a design
+    /// may hold several, one per widget.
+    /// </summary>
+    DashboardWidget = 13,
+}
+
+/// <summary>
+/// What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3), then the boxes
+/// of its on-plan indicator and follow-up reasons (the 20 Nov 2026 box sections).
+/// </summary>
+public enum PortfolioMeasure
+{
+    Projects = 1,
+
+    /// <summary>Projects ACTIVE.</summary>
+    InProgress = 2,
+
+    /// <summary>The sum of the registration budgets, in SAR; withheld without the amounts permission.</summary>
+    ValueSar = 3,
+
+    /// <summary>The simple average of the measured projects' planned percent.</summary>
+    AveragePlanned = 4,
+
+    AverageActual = 5,
+
+    /// <summary>Average actual less average planned, in points.</summary>
+    GapPoints = 6,
+
+    NeedingFollowUp = 7,
+
+    /// <summary>Projects whose next action is past its due date.</summary>
+    OverdueActions = 8,
+
+    /// <summary>
+    /// Projects on track: a box of the on-plan indicator (<see cref="PortfolioSection.OnPlanCounts"/>, the 20 Nov 2026 box sections), counted as that
+    /// section counts it and read under its permission, as are <see cref="Late"/>, <see cref="Stalled"/> and <see cref="NotMeasured"/>.
+    /// </summary>
+    OnTrack = 9,
+
+    Late = 10,
+
+    Stalled = 11,
+
+    /// <summary>Projects with no on-plan status.</summary>
+    NotMeasured = 12,
+
+    /// <summary>
+    /// Projects needing follow-up whose first reason is that the project is stalled: a box of <see cref="PortfolioSection.FollowUpReasons"/> (the 20 Nov 2026
+    /// box sections), each project counted once under its first reason as that section counts it and read under its permission, as are the four after it.
+    /// </summary>
+    FollowUpStalled = 13,
+
+    FollowUpSuspended = 14,
+
+    FollowUpLate = 15,
+
+    FollowUpActionOverdue = 16,
+
+    FollowUpOpenObstacle = 17,
+}
+
+/// <summary>What the projects of a visual are grouped by: a project attribute, or none for one figure over them all.</summary>
+public enum PortfolioGroupBy
+{
+    None = 1,
+    Portfolio = 2,
+    Initiative = 3,
+    Sector = 4,
+    Department = 5,
+    Entity = 6,
+    Status = 7,
+    Stage = 8,
+    OnPlan = 9,
+    Region = 10,
+    City = 11,
+    Priority = 12,
+}
+
+/// <summary>
+/// One visual of the Portfolio dashboard as its designer placed it, the same for everyone who opens the dashboard (the 17 Nov 2026 dashboard
+/// designer: the Portfolio Manager changes it, with no approval). It names a type, measures and a grouping from fixed lists, never an expression,
+/// and takes a place on the twelve-column grid. With no visual saved, the dashboard shows the standard design.
+/// </summary>
+public sealed class PortfolioVisual : AuditedEntity
+{
+    /// <summary>The reading order, from 1, over the whole design: a container, then its children in their order, then the next top-level visual.</summary>
+    public short SortOrder { get; set; }
+
+    /// <summary>
+    /// The <see cref="PortfolioVisualType.Container"/> this visual is placed in (the 19 Nov 2026 containers), or null for a visual on the dashboard itself. A child's
+    /// place and size count the container's inner grid: its <see cref="LayoutWidth"/> columns and <see cref="LayoutHeight"/> − 1 rows under its title bar.
+    /// </summary>
+    public Guid? ParentId { get; set; }
+
+    public required string TitleAr { get; set; }
+
+    public required string TitleEn { get; set; }
+
+    public PortfolioVisualType VisualType { get; set; }
+
+    /// <summary>One to three <see cref="PortfolioMeasure"/> codes, in the order they are drawn; none for a <see cref="PortfolioVisualType.Section"/>.</summary>
+    public List<string> Measures { get; set; } = [];
+
+    /// <summary>The section a <see cref="PortfolioVisualType.Section"/> places; null for any other type.</summary>
+    public PortfolioSection? Section { get; set; }
+
+    public PortfolioGroupBy GroupBy { get; set; }
+
+    // The four layout numbers are decimals in steps of 0.1 (the 20 Nov 2026 decimal layout): a visual 4.5 columns wide is placed at column 4.5.
+
+    /// <summary>The first grid column, from 0, counted from the reading start (the right in Arabic); at most one decimal place.</summary>
+    public decimal LayoutColumn { get; set; }
+
+    /// <summary>The first grid row, from 0; at most one decimal place.</summary>
+    public decimal LayoutRow { get; set; }
+
+    /// <summary>Columns taken, 1.0 to 12.0; at most one decimal place.</summary>
+    public decimal LayoutWidth { get; set; }
+
+    /// <summary>Rows taken, 1.0 to 24.0; at most one decimal place.</summary>
+    public decimal LayoutHeight { get; set; }
+
+    /// <summary>
+    /// The data catalogue's fields the visual names (the 18 Nov 2026 data fields), as JSON in the API's shape: <c>{"values":[…],"groupField":…,"filters":[…]}</c>;
+    /// a MAP visual's options too (<c>"map":{"showList","showCounts"}</c>, the 20 Nov 2026 map visual), so a MAP always has it. Null for a visual that names
+    /// none (fixed measures, a section). Each field is a registered projection's field, never a table, column or expression
+    /// (BR-DSH-030); the design service checks the content, and this column holds only what it wrote.
+    /// </summary>
+    public string? DataFields { get; set; }
+
+    /// <summary>
+    /// How a bar, column or line chart draws its axes (the 19 Nov 2026 axes), as JSON in the API's shape: <c>{"category":{"show","title"},"value":{"show","title",
+    /// "min","max","gridlines"}}</c>. Null for the defaults (both shown, no titles, an automatic range, gridlines) and for any other type.
+    /// </summary>
+    public string? Axes { get; set; }
+
+    /// <summary>
+    /// The code of the governed widget a <see cref="PortfolioSection.DashboardWidget"/> section draws (the 19 Nov 2026 widgets), 1–50 characters of
+    /// <c>[A-Za-z0-9_.-]</c>, at most one visual per code; null for any other visual. The dashboard's definition is not read here, so a code it no longer has
+    /// draws nothing.
+    /// </summary>
+    public string? WidgetCode { get; set; }
+
+    /// <summary>
+    /// The columns a table section does not show (the 20 Nov 2026 table columns): codes of <c>^[A-Z_]{1,40}$</c>, at most 20, no repeats, on a
+    /// <see cref="PortfolioVisualType.Section"/> of one of the seven table sections only; null when every column is shown. The backend draws no table, so
+    /// only the shape is checked, and a code the table does not have hides nothing.
+    /// </summary>
+    public List<string>? HiddenColumns { get; set; }
+
+    /// <summary>
+    /// What a <see cref="PortfolioVisualType.Text"/> visual says and how (the 20 Nov 2026 text box), as JSON in the API's shape:
+    /// <c>{"ar","en","size","align","bold"}</c>, each text 1–2000 characters, line breaks kept. Null on any other visual; the design service checks the content.
+    /// </summary>
+    public string? TextBox { get; set; }
+}

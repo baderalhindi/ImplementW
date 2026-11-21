@@ -1,3 +1,4 @@
+import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
 import {
   type FollowUpReason,
   type NarrativeText,
@@ -56,6 +57,15 @@ export interface PortfolioStageCount {
   percent: number;
 }
 
+/** Projects by current stage (review round 7, item 1); `stageCode` null counts those with none yet. `valueSar` is null without amounts. */
+export interface PortfolioCurrentStage {
+  stageCode: string | null;
+  name: BilingualLabel | null;
+  projects: number;
+  valueSar: string | null;
+  valueEntered: number;
+}
+
 export interface PortfolioOnPlan {
   onTrack: number;
   late: number;
@@ -94,6 +104,7 @@ export interface PortfolioInsights {
   onPlan: PortfolioOnPlan | null;
   followUpReasons: PortfolioFollowUpReasons | null;
   topFollowUp: PortfolioTopProject[] | null;
+  byCurrentStage?: PortfolioCurrentStage[] | null;
 }
 
 export type PortfolioCardDimension = 'PORTFOLIO' | 'INITIATIVE' | 'SECTOR';

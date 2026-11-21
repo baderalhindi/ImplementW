@@ -6,10 +6,10 @@
       {
         "heading": "Sign in",
         "paragraphs": [
-          "Sign in with your AHDA username and password. The form appears under the Microsoft tab and the [[identityAccess.signIn.tabs.directory]] tab alike. The other sign-in options are marked [[identityAccess.signIn.comingSoon]] and cannot be used yet.",
+          "Sign in with your AHDA username or email address and your password under the [[identityAccess.signIn.tabs.directory]] tab; the [[identityAccess.signIn.tabs.microsoft]] tab holds only the Microsoft sign-in. Once you add Face ID or Touch ID under [[identityAccess.signInMethods.menu]] in the account menu, a button under it signs you in with one press in that browser. You can also use [[identityAccess.signIn.passwordless.submit]]: enter your National ID or Iqama number, then verify with Face ID or Touch ID (a passkey you added for the device under [[identityAccess.signInMethods.menu]] in the account menu) or with a code sent by SMS to the mobile number you verified there. Options marked [[identityAccess.signIn.comingSoon]] cannot be used yet.",
           "The platform does not reset passwords itself. If you have forgotten yours, use the link or the contact shown under the password field."
         ],
-        "note": "If you hold the System Administrator role, or another role AHDA requires it for, the platform also asks for the verification code from your authenticator app each time you sign in; the first time, it shows a key to add to the app. Some administrative actions ask for a fresh code."
+        "note": "If your account needs a verification code, the platform asks for it from your authenticator app each time you sign in; the first time, it shows a key to add to the app."
       },
       {
         "heading": "Choose your language",
@@ -74,7 +74,7 @@
       {
         "heading": "Arrange it your way",
         "paragraphs": [
-          "Portfolio Managers, Sector Managers and Executives can choose [[dashboards.personalize.open]] to hide, show and reorder the optional widgets, then [[dashboards.personalize.save]]. [[dashboards.personalize.reset]] puts the standard layout back. The fixed widgets always stay."
+          "The Portfolio Manager designs the Portfolio Dashboard for everyone under [[common.menu.dashboardsReports]] → [[dashboards.designer.nav]]: add a card, chart, table or gauge, drag it into place, size it by its corner, choose its values and grouping, then [[dashboards.designer.save]]. [[dashboards.designer.reset]] puts the standard design back."
         ],
         "note": "Changing the layout never changes the figures, and other people keep their own layout."
       },
@@ -100,7 +100,7 @@
       {
         "heading": "Administer access and organisation",
         "paragraphs": [
-          "[[common.menu.administration]] holds [[identityAccess.nav.users]], [[identityAccess.nav.roles]], [[identityAccess.nav.permissionMatrix]], [[identityAccess.nav.roleAssignments]], [[identityAccess.nav.organization]], [[identityAccess.nav.departments]] and [[identityAccess.nav.entities]].",
+          "[[common.menu.administration]] holds [[identityAccess.nav.users]], [[identityAccess.nav.roles]], [[identityAccess.nav.permissionMatrix]], [[identityAccess.nav.roleAssignments]], [[identityAccess.nav.departments]] and [[identityAccess.nav.entities]].",
           "What a role may do is its permission profile. To change it, open [[identityAccess.nav.permissionMatrix]], choose the profile and open a version: start a new version or copy one into a new profile, set the scope of each permission, and save. Three people take part: you prepare the change, another administrator validates it and a third publishes it, and none of them may hold the profile. People keep the version they were given until you move them to the new one."
         ],
         "steps": [

@@ -30,6 +30,7 @@ import {
   EMPTY_REGISTRATION,
   moneyString,
   type RegistrationValues,
+  valuesOf,
 } from './registration.ts';
 
 // No audit permission: FG-06's two history tabs follow GET /audit-access (audit-activity/rules.test.ts). Every other
@@ -214,7 +215,18 @@ describe('registration checks (registration.ts)', () => {
     expect(moneyString('12')).toBe('12.00');
     expect(moneyString('12.5')).toBe('12.50');
     expect(formatSar('1500000.50')).toBe('1,500,000.50');
-    expect(formatSar('-999.00')).toBe('-999.00');
+    expect(formatSar('1500000.00')).toBe('1,500,000');
+    expect(formatSar('-999.00')).toBe('-999');
+    expect(formatSar('0.00')).toBe('0');
+  });
+
+  test('an edit form opens on the budget without ".00" and still sends two decimals', () => {
+    const whole = valuesOf(projectDetail({ registrationBudgetSar: '1500000.00' }));
+    expect(whole.registrationBudgetSar).toBe('1500000');
+    expect(moneyString(whole.registrationBudgetSar)).toBe('1500000.00');
+    expect(
+      valuesOf(projectDetail({ registrationBudgetSar: '1500000.50' })).registrationBudgetSar,
+    ).toBe('1500000.50');
   });
 });
 

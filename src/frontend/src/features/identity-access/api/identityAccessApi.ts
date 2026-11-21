@@ -1,3 +1,4 @@
+import { type DeletionOutcome } from '../deletion.ts';
 import { apiRequest, type ApiResponse, type QueryValue } from '@/shared/api/httpClient.ts';
 
 import {
@@ -6,6 +7,7 @@ import {
   type AccessRelationshipQuery,
   type AccessRelationshipSummary,
   type BilingualLabel,
+  type DataScope,
   type DepartmentCreateRequest,
   type DepartmentDetail,
   type DepartmentQuery,
@@ -18,6 +20,7 @@ import {
   type ExternalEntityUpdateRequest,
   type Page,
   type PermissionGrantSetRequest,
+  type PermissionOverrideEffect,
   type PermissionProfileCreateRequest,
   type PermissionProfileDetail,
   type PermissionProfileMigration,
@@ -30,7 +33,8 @@ import {
   type RoleSummary,
   type UserCreateRequest,
   type UserDetail,
-  type UserQuery,
+  type UserListRequest,
+  type UserPermissions,
   type UserSummary,
   type UserUpdateRequest,
   type PersonLookupQuery,
@@ -74,7 +78,7 @@ export const personLookupsApi = {
 };
 
 export const usersApi = {
-  list: (query: UserQuery, signal?: AbortSignal) =>
+  list: (query: UserListRequest, signal?: AbortSignal) =>
     data(apiRequest<Page<UserSummary>>('/users', { query: { ...query }, signal })),
   get: (id: string, signal?: AbortSignal) => apiRequest<UserDetail>(`/users/${id}`, { signal }),
   create: (request: UserCreateRequest) =>
@@ -83,6 +87,34 @@ export const usersApi = {
     apiRequest<UserDetail>(`/users/${id}`, { method: 'PUT', body: request, ifMatch: etag }),
   activate: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/activate`, etag),
   disable: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/disable`, etag),
+  remove: (id: string, etag: string | null) => command<undefined>(`/users/${id}/delete`, etag),
+  setNationalId: (id: string, nationalId: string | null, etag: string | null) =>
+    apiRequest<UserDetail>(`/users/${id}/national-id`, {
+      method: 'PUT',
+      body: { nationalId },
+      ifMatch: etag,
+    }),
+  revealNationalId: (id: string) => apiRequest<{ nationalId: string }>(`/users/${id}/national-id`),
+  permissions: (id: string, signal?: AbortSignal) =>
+    data(apiRequest<UserPermissions>(`/users/${id}/permissions`, { signal })),
+  setPermission: (
+    id: string,
+    code: string,
+    request: {
+      effect: PermissionOverrideEffect;
+      dataScope: DataScope | null;
+      reason: { text: string; language: string };
+    },
+  ) =>
+    apiRequest<UserPermissions>(`/users/${id}/permissions/${code}`, {
+      method: 'PUT',
+      body: request,
+    }),
+  clearPermission: (id: string, code: string, reason: { text: string; language: string }) =>
+    apiRequest<UserPermissions>(`/users/${id}/permissions/${code}/clear`, {
+      method: 'POST',
+      body: { reason },
+    }),
   resetPassword: (id: string, password: string | null, etag: string | null) =>
     apiRequest<UserDetail>(`/users/${id}/reset-password`, {
       method: 'POST',
@@ -198,9 +230,10 @@ export const departmentsApi = {
     }),
   activate: (id: string) => command<DepartmentDetail>(`/departments/${id}/activate`),
   deactivate: (id: string) => command<DepartmentDetail>(`/departments/${id}/deactivate`),
+  remove: (id: string) => command<undefined>(`/departments/${id}/delete`),
 };
 
-export type ExternalEntityTransition = 'suspend' | 'activate' | 'retire';
+export type ExternalEntityTransition = 'suspend' | 'activate';
 
 // ADM-013
 export const externalEntitiesApi = {
@@ -225,4 +258,6 @@ export const externalEntitiesApi = {
     }),
   transition: (id: string, transition: ExternalEntityTransition) =>
     command<ExternalEntityDetail>(`/external-entities/${id}/${transition}`),
+  /** Erases an entity nothing uses; otherwise nothing is deleted and the answer says what uses it. */
+  remove: (id: string) => command<DeletionOutcome>(`/external-entities/${id}/remove`),
 };

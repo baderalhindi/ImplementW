@@ -17,13 +17,13 @@
       "missing-menu": {
         "question": "A colleague has a menu or a screen that I do not see. Why?",
         "answer": [
-          "You see only the menus and screens your roles allow: a menu with no screen open to you is not shown, and [[common.menu.administration]] appears only to those who administer the platform. If you need a screen or data for your work, ask your manager to request the role from the System Administrator."
+          "You see only the menus and screens your roles allow; a menu with no screen open to you is not shown. If you need a screen or data for your work, ask your manager to request the role from the System Administrator."
         ]
       },
       "missing-project": {
         "question": "I cannot find a project I work on.",
         "answer": [
-          "You see a project only when one of your roles reaches it: for example as its Project Manager, through its owning sector, or through your entity. Search the [[projects.nav.register]] by title or Formal Project ID. If it is still not there, ask for the role assignment that covers it."
+          "You see a project only when one of your role assignments covers it. Search the [[projects.nav.register]] by title or Formal Project ID. If it is still not there, ask for the role assignment that covers it."
         ]
       },
       "access-denied": {
@@ -87,7 +87,7 @@
       "no-progress-button": {
         "question": "I do not see [[progress.actions.start]] on a project.",
         "answer": [
-          "Progress is reported by the project's Project Manager while the project is [[projects.status.ACTIVE]]. If you are not its Project Manager, or the project is not active yet, the button does not appear."
+          "You report progress on a project you manage while it is [[projects.status.ACTIVE]]. Before the project is active, the button does not appear."
         ]
       },
       "blocked-task": {

@@ -1,4 +1,5 @@
-import { type ReactElement, useState } from 'react';
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
+import { type ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -6,6 +7,7 @@ import { type SessionUser } from '@/features/identity-access/session/sessionApi.
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { isForbidden } from '@/features/risks/problems.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { useCreateParam } from '@/shared/navigation/useCreateParam.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { canRaiseConcerns } from './access.ts';
@@ -15,6 +17,8 @@ import { ConcernFormDialog } from './dialogs/ConcernFormDialog.tsx';
 import { concernPath } from './paths.ts';
 import { concernProblemMessage } from './problems.ts';
 import { useConcernLookups, useProjectConcerns } from './useConcernData.ts';
+import { type ConcernEntry } from './concernRules.ts';
+import { concernsApi } from './api/concernsApi.ts';
 
 /** The words of each register: SCR-083 lists issues, SCR-085 challenges. */
 const REGISTER_TEXT = {
@@ -54,8 +58,17 @@ export function ProjectConcerns({
   const { t } = useI18n();
   const navigate = useNavigate();
   const concerns = useProjectConcerns(project.id, concernType);
+  const rowActions = useRowActions<ConcernEntry>({
+    permission: 'CONCERN_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ concern }) => concern.title.text,
+    editTo: ({ concern, project: owner }) => `${concernPath(owner.id, concern.id)}?edit=1`,
+    remove: ({ concern }) => concernsApi.remove(concern.id),
+    onDeleted: concerns.reload,
+  });
   const lookups = useConcernLookups();
-  const [creating, setCreating] = useState(false);
+  // Review round 8, point 08: the Home's quick action opens the form with ?create=1.
+  const [creating, setCreating] = useCreateParam();
   const text = REGISTER_TEXT[concernType];
 
   if (concerns.data === undefined) {
@@ -107,6 +120,7 @@ export function ProjectConcerns({
         </EmptyState>
       ) : (
         <ConcernRegisterView
+          actions={rowActions}
           entries={entries}
           lookups={lookups}
           userId={user.id}
@@ -114,7 +128,7 @@ export function ProjectConcerns({
           caption={t(text.caption)}
         />
       )}
-      {creating && (
+      {creating && raiser && (
         <ConcernFormDialog
           editing={null}
           concernType={concernType}

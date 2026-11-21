@@ -12,6 +12,9 @@ public static class MasterDataConfigAuditEvents
     public const string ItemValidated = "MasterDataConfig.ItemValidated";
     public const string ItemPublished = "MasterDataConfig.ItemPublished";
     public const string ItemRetired = "MasterDataConfig.ItemRetired";
+
+    /// <summary>An item nothing referenced was deleted (review round 7, item 3).</summary>
+    public const string ItemDeleted = "MasterDataConfig.ItemDeleted";
     public const string KpiDefinitionCreated = "MasterDataConfig.KpiDefinitionCreated";
     public const string KpiDefinitionUpdated = "MasterDataConfig.KpiDefinitionUpdated";
     public const string KpiDefinitionValidated = "MasterDataConfig.KpiDefinitionValidated";

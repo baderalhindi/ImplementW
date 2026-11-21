@@ -57,6 +57,14 @@ public interface IProgressRepository
 
     public void Add(ProgressSubmission submission);
 
+    /// <summary>Review round 7, item 1: a period's stages, in stage order. Tracked when <paramref name="track"/>.</summary>
+    public Task<IReadOnlyList<ProgressStageEntry>> ListStagesAsync(Guid submissionId, bool track, CancellationToken cancellationToken);
+
+    /// <summary>Not tracked: the stages of these submissions, by submission, in stage order.</summary>
+    public Task<ILookup<Guid, ProgressStageEntry>> ReadStagesAsync(IReadOnlyCollection<Guid> submissionIds, CancellationToken cancellationToken);
+
+    public void Add(ProgressStageEntry entry);
+
     public void Add(PublishedProgressSnapshot snapshot);
 
     public void Add(ProjectHealthStatus healthStatus);

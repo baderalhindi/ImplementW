@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Infrastructure.Secrets;
@@ -10,9 +11,9 @@ namespace PMPlatform.Infrastructure.Identity.Nafath;
 /// <summary>
 /// Nafath identity verification over OpenID Connect (TASK-068): the authorization code flow with PKCE, the platform as a
 /// confidential client (<see cref="OpenIdConnectRelyingParty"/>), each transaction bound to the user being verified.
-/// The verification is that Nafath issued a valid ID token, for this client and this transaction, asserting a subject.
-/// Nothing in that token is kept or passed on — not the subject, which may be the person's national id, nor any other
-/// claim (OQ-007, nafath-data-minimisation.md): the platform records a reference of its own and the time.
+/// The verification is that Nafath issued a valid ID token, for this client and this transaction, asserting a national identity
+/// that matches the one recorded for the user (client review, item 7; SR-53). Nothing in that token is kept: the identity is passed on
+/// only as a keyed fingerprint for that comparison, and the platform records a reference of its own and the time.
 /// </summary>
 internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProvider
 {
@@ -21,6 +22,7 @@ internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProv
     private readonly IConfiguration _configuration;
     private readonly NafathOptions _options;
     private readonly IdentityVerificationPolicy _policy;
+    private readonly INationalIdProtector _nationalIds;
     private readonly OpenIdConnectRelyingParty _relyingParty;
     private readonly ILogger<NafathIdentityVerifier> _logger;
 
@@ -28,6 +30,7 @@ internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProv
         IConfiguration configuration,
         IOptions<NafathOptions> options,
         IdentityVerificationPolicy policy,
+        INationalIdProtector nationalIds,
         IHttpClientFactory httpClients,
         TimeProvider timeProvider,
         ILogger<NafathIdentityVerifier> logger)
@@ -35,6 +38,7 @@ internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProv
         _configuration = configuration;
         _options = options.Value;
         _policy = policy;
+        _nationalIds = nationalIds;
         _logger = logger;
         _relyingParty = new OpenIdConnectRelyingParty(
             new RelyingPartySettings(
@@ -62,7 +66,7 @@ internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProv
 
     public async Task<IdentityVerificationResult> CompleteAsync(Guid userId, string code, string state, string transaction, CancellationToken cancellationToken)
     {
-        if (Client is not { } client)
+        if (Client is not { } client || !_nationalIds.IsConfigured)
         {
             return IdentityVerificationResult.Failed(AuthenticationFailure.NotConfigured);
         }
@@ -75,8 +79,8 @@ internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProv
             return IdentityVerificationResult.Failed(failure ?? AuthenticationFailure.Rejected);
         }
 
-        // An ID token that identifies no one verifies no one. The subject is checked for presence and then dropped.
-        if (!idToken.Claims.TryGetValue("sub", out object? subject) || subject is not string { Length: > 0 })
+        // An ID token that identifies no one verifies no one. The national identity is fingerprinted for the comparison and then dropped.
+        if (!idToken.Claims.TryGetValue(_options.NationalIdClaim, out object? asserted) || asserted is not string { Length: > 0 } nationalId)
         {
             LogNoSubject(_logger, userId);
             return IdentityVerificationResult.Failed(AuthenticationFailure.Rejected);
@@ -84,7 +88,7 @@ internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProv
 
         string reference = Guid.NewGuid().ToString();
         LogVerified(_logger, userId, reference);
-        return IdentityVerificationResult.Verified(reference);
+        return IdentityVerificationResult.Verified(reference, _nationalIds.Fingerprint(nationalId.Trim()));
     }
 
     public IdentityVerificationIntegrationStatus Describe() => new(

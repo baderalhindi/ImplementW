@@ -1,6 +1,9 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement } from 'react';
+import { Link } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { useCarriedFilters } from '@/features/projects/register/carriedFilters.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -8,6 +11,8 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { RiskRegisterView } from './components/RiskRegisterView.tsx';
 import { isForbidden, riskProblemMessage } from './problems.ts';
 import { matrixOf, useRiskLookups, useRiskMatrix, useRiskPortfolio } from './useRiskData.ts';
+import { type RiskEntry } from './riskRules.ts';
+import { risksApi } from './api/risksApi.ts';
 
 /**
  * SCR-080 Risk Register across the projects the person may see: the same summary, filters and table as a project's
@@ -16,7 +21,16 @@ import { matrixOf, useRiskLookups, useRiskMatrix, useRiskPortfolio } from './use
  */
 export function RiskRegisterPage(): ReactElement {
   const { t } = useI18n();
-  const portfolio = useRiskPortfolio();
+  const carried = useCarriedFilters();
+  const portfolio = useRiskPortfolio(carried.values, carried.key);
+  const rowActions = useRowActions<RiskEntry>({
+    permission: 'RISK_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ risk }) => risk.title.text,
+    editTo: ({ risk, project: owner }) => `/projects/${owner.id}/risks/${risk.id}?edit=1`,
+    remove: ({ risk }) => risksApi.remove(risk.id),
+    onDeleted: portfolio.reload,
+  });
   const matrixState = useRiskMatrix();
   const lookups = useRiskLookups();
 
@@ -57,12 +71,19 @@ export function RiskRegisterPage(): ReactElement {
   return (
     <>
       {header}
-      {entries.length === 0 ? (
+      {entries.length === 0 && carried.chips.length > 0 ? (
+        <EmptyState title={t('risks.empty.filtered')} reason="filter">
+          <Link to="/risks">{t('common.filters.clear')}</Link>
+        </EmptyState>
+      ) : entries.length === 0 ? (
         <EmptyState title={t('risks.empty.register.title')}>
           <p>{t('risks.empty.register.body')}</p>
         </EmptyState>
       ) : (
         <RiskRegisterView
+          actions={rowActions}
+          chips={carried.chips}
+          clearedChips={carried.cleared}
           entries={entries}
           matrix={matrixOf(matrixState)}
           lookups={lookups}

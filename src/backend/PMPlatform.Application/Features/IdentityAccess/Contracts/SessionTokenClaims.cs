@@ -41,6 +41,12 @@ public static class SessionTokenClaims
     /// <summary>RFC 8176 "pwd" is the directory's; a local account's password says so apart.</summary>
     public const string LocalPasswordMethod = "local-pwd";
 
+    /// <summary>A passkey: a device-held key unlocked by the person's biometric or device unlock (13 Nov 2026 review).</summary>
+    public const string PasskeyMethod = "passkey";
+
+    /// <summary>RFC 8176 "sms": a code sent by SMS.</summary>
+    public const string SmsCodeMethod = "sms";
+
     public const string PasswordChangeAudience = "pmplatform-session-password-change";
 
     public const string PasswordResetAudience = "pmplatform-password-reset";
@@ -56,6 +62,8 @@ public static class SessionTokenClaims
         Contracts.AuthenticationMethod.Directory => DirectoryMethod,
         Contracts.AuthenticationMethod.SingleSignOn => SingleSignOnMethod,
         Contracts.AuthenticationMethod.LocalPassword => LocalPasswordMethod,
+        Contracts.AuthenticationMethod.Passkey => PasskeyMethod,
+        Contracts.AuthenticationMethod.SmsCode => SmsCodeMethod,
         _ => throw new ArgumentOutOfRangeException(nameof(method), method, null),
     };
 
@@ -64,6 +72,8 @@ public static class SessionTokenClaims
         DirectoryMethod => Contracts.AuthenticationMethod.Directory,
         SingleSignOnMethod => Contracts.AuthenticationMethod.SingleSignOn,
         LocalPasswordMethod => Contracts.AuthenticationMethod.LocalPassword,
+        PasskeyMethod => Contracts.AuthenticationMethod.Passkey,
+        SmsCodeMethod => Contracts.AuthenticationMethod.SmsCode,
         _ => null,
     };
 

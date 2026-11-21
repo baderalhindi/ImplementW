@@ -85,7 +85,7 @@ describe('the return from the identity provider', () => {
     ssoTransaction.save({ transaction: 'sealed', returnTo: '/admin/users' });
   });
 
-  test('redeems the code once, forgets the transaction and opens the route the person asked for', async () => {
+  test('redeems the code once, forgets the transaction and opens the Home page, whatever route was asked for', async () => {
     const api = withIdentityAccessData(mockApi()).on('POST', /^\/sessions\/sso$/, {
       status: 201,
       body: sessionFor(['R01']),
@@ -93,7 +93,7 @@ describe('the return from the identity provider', () => {
     const { router } = renderApp({ path: CALLBACK });
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/admin/users');
+      expect(router.state.location.pathname).toBe('/');
     });
     const redeemed = api.requestsTo('POST', /^\/sessions\/sso$/);
     expect(redeemed).toHaveLength(1);
@@ -127,8 +127,9 @@ describe('the return from the identity provider', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: en('identityAccess.signIn.verify') }));
 
+    // A sign-in lands on the Home page (20 Nov 2026), whatever route was asked for.
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/admin/users');
+      expect(router.state.location.pathname).toBe('/');
     });
     expect(api.requestsTo('POST', /^\/sessions\/mfa$/)[0]?.body).toEqual({
       mfaToken: 'mfa-token',

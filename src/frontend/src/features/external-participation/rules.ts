@@ -154,6 +154,8 @@ export function responseFieldCode(
       return null;
     case 'DATE':
       return isCalendarDate(value) ? null : 'MALFORMED';
+    case 'CODE':
+      return /^[A-Z0-9_-]{1,50}$/.test(value) ? null : 'MALFORMED';
     case 'NUMBER': {
       if (!NUMBER_PATTERN.test(value)) {
         return 'MALFORMED';

@@ -18,6 +18,9 @@ public sealed class PermissionCatalogue
     /// <summary>ADM-002/003 User List and Detail (TASK-031).</summary>
     public const string UserView = "USER_VIEW";
 
+    /// <summary>Client review, item 7: read a user's full National ID or Iqama number; every reveal is audited. Everyone else sees it masked.</summary>
+    public const string UserNationalIdView = "USER_NATIONAL_ID_VIEW";
+
     /// <summary>ADM-004/005 Create and Edit User; activate and disable (MOD-080) (TASK-031).</summary>
     public const string UserManage = "USER_MANAGE";
 
@@ -86,6 +89,12 @@ public sealed class PermissionCatalogue
     public const string ProjectActivate = "PROJECT_ACTIVATE";
 
     /// <summary>
+    /// Client review, item 4: delete a project in any state, within the grant's scope. The project and its records leave the platform's
+    /// reads and stay in the database. PROJECT_REGISTER alone deletes only one's own DRAFT.
+    /// </summary>
+    public const string ProjectDelete = "PROJECT_DELETE";
+
+    /// <summary>
     /// The 2 Nov 2026 review (R3-4): prepare a project import batch from RPMO's workbook — validate it, map its names, choose each row's
     /// action and submit the batch for approval — for the projects of the grant's scope; a row outside it is refused.
     /// </summary>
@@ -99,6 +108,18 @@ public sealed class PermissionCatalogue
     /// update compliance and dated follow-up notes — on the projects the grant's scope covers. Internal users only.
     /// </summary>
     public const string ProjectFollowUp = "PROJECT_FOLLOW_UP";
+
+    /// <summary>
+    /// Review round 7, item 2: assign or change a project's Project Manager at any state but CLOSED, with a reason; the project's open tasks and update
+    /// requests move to the new manager. R02 over every project, a department's manager over its own (R03, DEPT).
+    /// </summary>
+    public const string ProjectManagerChange = "PROJECT_MANAGER_CHANGE";
+
+    /// <summary>
+    /// Review round 7, item 4: edit the registration fields of a project past its review, at any state but CLOSED, with a reason and an audit of old and
+    /// new values. The budget, the planned dates and the governance profile still change only through a change request. R02, over every project.
+    /// </summary>
+    public const string ProjectRegistrationEdit = "PROJECT_REGISTRATION_EDIT";
 
     /// <summary>
     /// WF-02: a project's reporting periods, progress submissions, published snapshots and Overall Project Health (SCR-048,
@@ -291,6 +312,9 @@ public sealed class PermissionCatalogue
     /// <summary>Why projects need follow-up and the top 10 (§3).</summary>
     public const string PortfolioFollowUpView = "PORTFOLIO_FOLLOW_UP_VIEW";
 
+    /// <summary>Change the Portfolio dashboard's visuals for everyone, with no approval (the 17 Nov 2026 designer). The Portfolio Manager holds it.</summary>
+    public const string DashboardDesign = "DASHBOARD_DESIGN";
+
     /// <summary>
     /// WF-13 (TASK-066): start the review of a submitted contribution revision and accept, return or reject it, as the request's assigned
     /// reviewer. Internal users only; never an edit of the submitted values (EXT-P-10).
@@ -423,6 +447,7 @@ public sealed class PermissionCatalogue
         [
             new(IdentityIntegrationManage, "IDENTITY_ACCESS", AccessMode.Write),
             new(UserView, "IDENTITY_ACCESS", AccessMode.Read),
+            new(UserNationalIdView, "IDENTITY_ACCESS", AccessMode.Read),
             new(UserManage, "IDENTITY_ACCESS", AccessMode.Write),
             new(RoleView, "IDENTITY_ACCESS", AccessMode.Read),
             new(RoleManage, "IDENTITY_ACCESS", AccessMode.Write),
@@ -444,7 +469,10 @@ public sealed class PermissionCatalogue
             new(ProjectActivate, "PROJECT", AccessMode.Write),
             new(ProjectImport, "PROJECT", AccessMode.Write),
             new(ProjectImportApprove, "PROJECT", AccessMode.Write),
+            new(ProjectDelete, "PROJECT", AccessMode.Write),
             new(ProjectFollowUp, "PROJECT", AccessMode.Write),
+            new(ProjectManagerChange, "PROJECT", AccessMode.Write),
+            new(ProjectRegistrationEdit, "PROJECT", AccessMode.Write),
             new(ProgressView, "PROGRESS", AccessMode.Read),
             new(ProgressSubmit, "PROGRESS", AccessMode.Write),
             new(ProgressReview, "PROGRESS", AccessMode.Write),
@@ -487,6 +515,7 @@ public sealed class PermissionCatalogue
             new(PortfolioBreakdownView, "PROJECT", AccessMode.Read),
             new(PortfolioStatusView, "PROJECT", AccessMode.Read),
             new(PortfolioFollowUpView, "PROJECT", AccessMode.Read),
+            new(DashboardDesign, "DASHBOARDS", AccessMode.Write),
             new(ExternalContributionReview, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionApply, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
@@ -529,7 +558,7 @@ public sealed class PermissionCatalogue
     /// </summary>
     private static readonly string[] ManagerPermissions =
     [
-        ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProjectRegister, ProjectReview, ProjectActivate, ProjectImport, ProjectFollowUp,
+        ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProjectRegister, ProjectReview, ProjectActivate, ProjectImport, ProjectFollowUp, ProjectManagerChange,
         ProgressView, ProgressReview, ScheduleView, TaskView, MilestoneView, RiskView, RiskManage, RiskAssess, RiskAccept, RiskReopen,
         ConcernView, ConcernRaise, ConcernEscalationResolve, ChangeRequestView, ChangeRequestRaise, ChangeRequestReview,
         SuspensionView, SuspensionRaise, SuspensionReview, CloseoutView, CloseoutRaise, CloseoutReview, CloseoutWaive,
@@ -553,6 +582,7 @@ public sealed class PermissionCatalogue
         // R01 System Administrator: administration, configuration, operations; no business data, no approval (Appendix A.1).
         new("R01", IdentityIntegrationManage, DataScope.All),
         new("R01", UserView, DataScope.All),
+        new("R01", UserNationalIdView, DataScope.All),
         new("R01", UserManage, DataScope.All),
         new("R01", RoleView, DataScope.All),
         new("R01", RoleManage, DataScope.All),
@@ -583,6 +613,9 @@ public sealed class PermissionCatalogue
         new("R02", ReportCompose, DataScope.Own),
         .. Role("R02", DataScope.All, ManagerPermissions),
         new("R02", ProjectImportApprove, DataScope.All),
+        new("R02", DashboardDesign, DataScope.All),
+        new("R02", ProjectDelete, DataScope.All),
+        new("R02", ProjectRegistrationEdit, DataScope.All),
 
         // R03 Department Manager: the same authority over its own department.
         new("R03", MasterDataView, DataScope.All),

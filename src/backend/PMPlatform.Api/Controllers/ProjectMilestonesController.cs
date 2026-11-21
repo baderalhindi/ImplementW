@@ -93,4 +93,20 @@ public sealed class ProjectMilestonesController(IProjectMilestoneService milesto
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
             ? Respond(await milestones.CancelAsync(CallerId, milestoneId, version, cancellationToken))
             : problem!;
+
+    /// <summary>Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.</summary>
+    [HttpDelete("{milestoneId:guid}")]
+    [RequirePermission(PermissionCatalogue.ScheduleEdit)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [EndpointName("Schedule_DeleteMilestone")]
+    public async Task<IActionResult> Delete(Guid milestoneId, CancellationToken cancellationToken)
+    {
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationError? error = await milestones.DeleteAsync(CallerId, milestoneId, version, cancellationToken);
+        return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
+    }
 }

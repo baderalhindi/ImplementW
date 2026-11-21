@@ -1282,6 +1282,197 @@
         }
       }
     },
+    "/api/v1/banner-images": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "operationId": "IdentityAccess_ListBannerImages",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerImageList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Adds an image, or replaces the one with the same code: a WebP of at most 300 KB, with its captions, alt text, focal point and credit.",
+        "operationId": "IdentityAccess_SaveBannerImage",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerImageSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/banner-images/{imageId}/content": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The image itself. It changes only when uploaded again, so the browser keeps it for a day.",
+        "operationId": "IdentityAccess_GetBannerImageContent",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileContentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/banner": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The person's choice; the green banner when they never chose.",
+        "operationId": "IdentityAccess_GetBannerPreference",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerPreferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Saves the choice. One image takes exactly one image, the turns at least one (422 `IDENTITY_ACCESS_BANNER_IMAGES_INVALID`).",
+        "operationId": "IdentityAccess_SetBannerPreference",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BannerPreferenceRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BannerPreferenceRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BannerPreferenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerPreferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/quick-actions": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The person's choice; `actions` null while they keep their role's set.",
+        "operationId": "IdentityAccess_GetQuickActions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickActionsDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Saves the choice: at most six distinct codes (422 `IDENTITY_ACCESS_QUICK_ACTIONS_INVALID`), or `actions` null to restore the role's set.",
+        "operationId": "IdentityAccess_SetQuickActions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickActionsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickActionsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuickActionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuickActionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/change-authorizations": {
       "get": {
         "tags": [
@@ -3283,6 +3474,118 @@
         }
       }
     },
+    "/api/v1/users/current/passkeys": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "operationId": "IdentityAccess_ListPasskeys",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Stores the passkey the device created, once its answer verifies for this person's ceremony.",
+        "operationId": "IdentityAccess_CreatePasskey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeySummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/passkeys/registration-options": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The options for `navigator.credentials.create` on the device in hand. Nothing is stored until the device answers.",
+        "operationId": "IdentityAccess_GetPasskeyRegistrationOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/passkeys/{passkeyId}/delete": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Removes one of the person's passkeys; the device can no longer sign them in. Answers the passkeys left.",
+        "operationId": "IdentityAccess_DeletePasskey",
+        "parameters": [
+          {
+            "name": "passkeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboard-definitions": {
       "get": {
         "tags": [
@@ -4178,6 +4481,31 @@
         }
       }
     },
+    "/api/v1/departments/{departmentId}/delete": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Client review, item 6: out of administration and pickers for good; records keep its name. 409 while anything depends on it.",
+        "operationId": "IdentityAccess_DeleteDepartment",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/display-names": {
       "get": {
         "tags": [
@@ -4399,6 +4727,29 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "DocumentManagement"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "DocumentManagement_DeleteDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -5526,6 +5877,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExternalEntityDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-entities/{externalEntityId}/remove": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Erases an entity nothing references; otherwise nothing is deleted and the answer lists what uses it.",
+        "operationId": "IdentityAccess_DeleteExternalEntity",
+        "parameters": [
+          {
+            "name": "externalEntityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionOutcome"
                 }
               }
             }
@@ -7581,6 +7964,29 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "FinancialKpi_DeleteKpiAssignment",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
       }
     },
     "/api/v1/kpi-assignments/{assignmentId}/suspend": {
@@ -8589,6 +8995,27 @@
         }
       }
     },
+    "/api/v1/users/current/managed-project-attention": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Every project PROJECT_VIEW reaches for the caller that names them as manager, with the period due by month end and the overdue counts.",
+        "operationId": "Project_ListManagedProjectAttention",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedProjectAttentionList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/management-concerns/import-template/content": {
       "get": {
         "tags": [
@@ -8833,6 +9260,29 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "ManagementConcern_DeleteConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -9527,6 +9977,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MasterDataItemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master-data-items/{itemId}/remove": {
+      "post": {
+        "tags": [
+          "MasterDataConfig"
+        ],
+        "summary": "Review round 7, item 3: deletes an item nothing references, in any state; one something references is retired instead, and the answer says how\nmany records reference it. A shipped item is neither.",
+        "operationId": "MasterDataConfig_RemoveMasterDataItem",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionOutcome"
                 }
               }
             }
@@ -11603,6 +12085,321 @@
         }
       }
     },
+    "/api/v1/portfolio-insights/design": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The Portfolio dashboard's design with the caller's figures, under the same filters as the insights (the 17 Nov 2026 designer): the saved design, or the\nstandard one while nobody has saved one (`isStandard`). A visual whose grouping the caller holds no insights permission for has `groups` null.",
+        "operationId": "Project_GetPortfolioDesign",
+        "parameters": [
+          {
+            "name": "DepartmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ExternalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ClassificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "RegionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "CityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProjectLifecycleState"
+            }
+          },
+          {
+            "name": "PriorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Saves the design for everyone who opens the Portfolio dashboard, as a whole, with no approval: the Portfolio Manager decides it.",
+        "operationId": "Project_SavePortfolioDesign",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/design/fields": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The data catalogue a visual may draw, group by and filter on (the 18 Nov 2026 data fields): every project-grain field of the projection register of\na type a visual calculates with, and the aggregations its type allows. A value is still read under its own projection's permission. With\n`source=RISKS` (the 20 Nov 2026 record sources), the risk fields instead, each read under `RISK_VIEW`.",
+        "operationId": "Project_GetPortfolioDesignFields",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PortfolioRecordSource"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignFields"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/design/preview": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "A design being edited, with the caller's figures, not saved.",
+        "operationId": "Project_PreviewPortfolioDesign",
+        "parameters": [
+          {
+            "name": "DepartmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ExternalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "ClassificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "RegionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "CityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProjectLifecycleState"
+            }
+          },
+          {
+            "name": "PriorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "StrategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioDesignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioDesignView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/design/reset": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Back to the standard design.",
+        "operationId": "Project_ResetPortfolioDesign",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/post-project-obligations": {
       "get": {
         "tags": [
@@ -12684,7 +13481,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "Filters: `departmentId`, `reason` (one follow-up reason), `followUpOwnerUserId`.",
+        "summary": "Filters: `departmentId`, `reason` (one follow-up reason), `followUpOwnerUserId`; and, from a dashboard count (review round 8,\npoint 01), `mainReason` (the first reason only, as the dashboard counts) and the dashboard's filter bar.",
         "operationId": "Project_ListProjectFollowUps",
         "parameters": [
           {
@@ -12724,6 +13521,88 @@
           },
           {
             "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mainReason",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "externalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "classificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "regionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "period",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -13541,6 +14420,29 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "Schedule_DeleteMilestone",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
       }
     },
     "/api/v1/project-milestones/{milestoneId}/cancel": {
@@ -13674,7 +14576,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title, Formal Project ID or legacy reference), and the filter bar's\n`classificationItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId`, `priorityItemId`,\n`regionItemId`, `cityItemId` and `period`, a year the planned period touches (the 2 Nov 2026 review). Most recently changed\nfirst.",
+        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title, Formal Project ID or legacy reference), and the filter bar's\n`classificationItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId`, `priorityItemId`,\n`regionItemId`, `cityItemId` and `period`, a year the planned period touches (the 2 Nov 2026 review). Review round 8, point 01,\nadds what the portfolio dashboard counts by: `registered` (past registration), `stage` (a current stage's code, or `NONE`),\n`onPlan` (ON_TRACK, LATE, STALLED or NOT_MEASURED), `measured`, and the sort `value:desc`. Most recently changed first.",
         "operationId": "Project_ListProjects",
         "parameters": [
           {
@@ -13804,6 +14706,36 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "registered",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onPlan",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "measured",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -13996,7 +14928,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "HARD_DRAFT: a DRAFT, by the person who created it. R-40: a project that is not there — deleted already, or never the\ncaller's to see — is 204 as well.",
+        "summary": "A holder of PROJECT_DELETE deletes a project in any state, keeping its data (client review, item 4). Otherwise HARD_DRAFT: a DRAFT,\nby the person who created it. R-40: a project that is not there — deleted already, or never the caller's to see — is 204 as well.",
         "operationId": "Project_DeleteProject",
         "parameters": [
           {
@@ -14209,6 +15141,291 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/set-progress-method": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Review round 8, point 02: sets how the project's overall progress is calculated, `SCHEDULE` or `STAGES`, by whoever may set its stage\nplan. Once a progress update is approved a reason is required (`PROJECT_PROGRESS_METHOD_REASON_REQUIRED`). Requires `If-Match` (R-21).",
+        "operationId": "Project_SetProgressMethod",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressMethodRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressMethodRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressMethodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/change-manager": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Review round 7, item 2: assigns or changes the Project Manager, at any state but CLOSED, with a reason. The new manager must hold R04 over the\nproject; its open tasks and update requests pass to them and both managers are told. Requires `If-Match` (R-21).",
+        "operationId": "Project_ChangeProjectManager",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectManagerChangeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectManagerChangeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectManagerChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/edit-registration": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Review round 7, item 4: edits the registration of a project past its first submission, at any state but CLOSED, with a reason. The budget, the\nplanned dates and the governance profile must stay as they are: they change through a change request. Requires `If-Match` (R-21).",
+        "operationId": "Project_EditProjectRegistration",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRegistrationEditRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRegistrationEditRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRegistrationEditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-stage-plans/{projectId}": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The plan. A stage not planned yet reads as applying, undated.",
+        "operationId": "Project_GetProjectStagePlan",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStagePlan"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The whole plan. While the registration is DRAFT or RETURNED, by its writer, and a stage's dates may wait for submission; once approved, by its\nwriter or whoever records the project's progress, once freely when it has no plan and otherwise with an approved schedule change's\n`changeAuthorizationId`. Requires the project's `If-Match` (R-21).",
+        "operationId": "Project_UpdateProjectStagePlan",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectStagePlanRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectStagePlanRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectStagePlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStagePlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-stages": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Each stage applying and undated; none when no PROJECT_STAGE version is published.",
+        "operationId": "Project_ListProjectStages",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStagePage"
                 }
               }
             }
@@ -14438,6 +15655,29 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "ProjectTask_DeleteTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -16048,6 +17288,29 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "Risk_DeleteRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -17888,6 +19151,231 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignInOptionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/passkey-challenge": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Passkey sign-in (13 Nov 2026 review): options for `navigator.credentials.get`. With a National ID (sign-in with\nbiometrics), only its owner's passkey will verify, and the answer is the same whether or not anyone has that number.\nWithout one (the Face ID / Touch ID button), the passkey the device offers signs its owner in. Nothing is stored server-side.",
+        "operationId": "IdentityAccess_CreatePasskeyChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyChallengeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyChallengeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyChallengeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/passkey": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Signs in with the passkey the device answered with. A passkey is both factors: no authenticator code follows.",
+        "operationId": "IdentityAccess_CreatePasskeySession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCredentialRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCredentialRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/national-id-check": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Sign-in with biometrics, first step (the client's decision, 13 Nov 2026): whether the National ID or Iqama number\nbelongs to a person who may sign in. Answered plainly, so it tells a caller whether a number has an account; the\n`SignIn` rate limit bounds how fast numbers can be tried (AUTH-T35).",
+        "operationId": "IdentityAccess_CheckNationalId",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricSignInRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricSignInRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricSignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NationalIdCheckDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/sms-code-challenge": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Sign-in with biometrics, the first time on a device: sends a code to the mobile number, if it is the one on the profile\nof the National ID's owner. 422 `IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED` or `IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH`\notherwise, or `IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT` within the resend wait.",
+        "operationId": "IdentityAccess_CreateSmsCodeChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmsSignInChallenge"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/sms": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Signs in with an SMS code. It proves the phone only: a person who requires MFA continues to their second factor.",
+        "operationId": "IdentityAccess_CreateSmsSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsSessionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsSessionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsSessionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
                 }
               }
             }
@@ -19836,6 +21324,265 @@
         }
       }
     },
+    "/api/v1/users/{userId}/delete": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Client review, item 5: takes the user out of the platform for good; their history stays. A command, as the row is kept. R-40: a user who is not there is 204 as well.",
+        "operationId": "IdentityAccess_DeleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/national-id": {
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Client review, item 7: records, replaces or removes (null) the user's National ID or Iqama number. The response shows it masked.",
+        "operationId": "IdentityAccess_SetUserNationalId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNationalIdRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNationalIdRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNationalIdRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The full number, for a holder of USER_NATIONAL_ID_VIEW; every reveal is audited and the response is never cached.",
+        "operationId": "IdentityAccess_RevealUserNationalId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NationalIdDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/permissions": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "What the user's roles give them and what has been adjusted for them, permission by permission (client review, item 5).",
+        "operationId": "IdentityAccess_ListUserPermissions",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/permissions/{permissionCode}": {
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Grants or removes one permission for this user, on top of their roles. Applies at once; the reason is required and audited.",
+        "operationId": "IdentityAccess_SetUserPermissionOverride",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "permissionCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/permissions/{permissionCode}/clear": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Puts one permission back to what the user's roles give. The reason is required and audited.",
+        "operationId": "IdentityAccess_ClearUserPermissionOverride",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "permissionCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideClearRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideClearRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideClearRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/{userId}/disable": {
       "post": {
         "tags": [
@@ -19868,12 +21615,33 @@
         }
       }
     },
+    "/api/v1/users/current/mobile-number": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The caller's own mobile number and whether it is verified, for the account page's sign-in methods (13 Nov 2026 review).",
+        "operationId": "IdentityAccess_GetOwnMobileNumber",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileNumberStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/current/mobile-verification-challenge": {
       "post": {
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "ADR-004: sends a code to the caller's own mobile number. 503 until the SMS provider exists (TASK-103).",
+        "summary": "ADR-004: sends a code to the caller's own mobile number. 503 where no SMS gateway is configured.",
         "operationId": "IdentityAccess_CreateMobileVerificationChallenge",
         "responses": {
           "200": {
@@ -19940,6 +21708,7 @@
           "MIGRATED",
           "MANUAL",
           "EXPIRED",
+          "USER_DELETED",
           null
         ]
       },
@@ -21923,9 +23692,146 @@
         "enum": [
           "DIRECTORY",
           "SINGLE_SIGN_ON",
-          "LOCAL_PASSWORD"
+          "LOCAL_PASSWORD",
+          "PASSKEY",
+          "SMS_CODE"
         ],
         "description": "How the session's user proved their identity."
+      },
+      "BannerImageList": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BannerImageSummary"
+            }
+          }
+        }
+      },
+      "BannerImageSummary": {
+        "required": [
+          "id",
+          "code",
+          "caption",
+          "alt",
+          "focalX",
+          "focalY",
+          "credit",
+          "width",
+          "height"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "caption": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "alt": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "focalX": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "focalY": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "credit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "width": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "An image the welcome banner can show, without its content, which is read from its own address."
+      },
+      "BannerPreferenceDetail": {
+        "required": [
+          "style",
+          "imageIds"
+        ],
+        "type": "object",
+        "properties": {
+          "style": {
+            "$ref": "#/components/schemas/BannerStyle"
+          },
+          "imageIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "One person's banner: the style and the images chosen, in the order they show."
+      },
+      "BannerPreferenceRequest": {
+        "required": [
+          "style"
+        ],
+        "type": "object",
+        "properties": {
+          "style": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "imageIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "A person's banner (review round 8, point 07): `style` DEFAULT, IMAGE or ROTATE, and the images chosen, in order."
+      },
+      "BannerStyle": {
+        "enum": [
+          "DEFAULT",
+          "IMAGE",
+          "ROTATE"
+        ],
+        "description": "How the Home welcome banner looks for one person (review round 8, point 07)."
       },
       "BaselineActivityDetail": {
         "required": [
@@ -22220,6 +24126,21 @@
         },
         "description": "A bilingual label as a request carries it (R-17), validated before it becomes a BilingualLabel."
       },
+      "BiometricSignInRequest": {
+        "required": [
+          "nationalId"
+        ],
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The first step of sign-in with biometrics: the person's National ID or Iqama number, ten digits. The passkey challenge\nand the SMS code challenge both take it."
+      },
       "BusinessLinkDetail": {
         "required": [
           "id",
@@ -22443,7 +24364,8 @@
           "REBASELINE",
           "COMMITMENT_CHANGE",
           "PROFILE_CHANGE",
-          "SCOPE_CHANGE"
+          "SCOPE_CHANGE",
+          "STAGE_PLAN_CHANGE"
         ],
         "description": "ERD `change_authorization.authorization_scope`: the one kind of change an authorisation permits."
       },
@@ -24873,7 +26795,8 @@
         "enum": [
           "NARRATIVE",
           "NUMBER",
-          "DATE"
+          "DATE",
+          "CODE"
         ],
         "description": "WF-13 §5.2's item types the platform's schemas use: free text with its language, a number in a range, a date."
       },
@@ -26200,6 +28123,34 @@
           "PROGRESS_UPDATE",
           null
         ]
+      },
+      "DeletionOutcome": {
+        "required": [
+          "deleted",
+          "clearedCount",
+          "blockedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "clearedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "blockedBy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecordUse"
+            }
+          }
+        },
+        "description": "What deleting a record did: deleted it after clearing it from int DeletionOutcome.ClearedCount rows, or nothing, because of IReadOnlyList&lt;RecordUse&gt; DeletionOutcome.BlockedBy."
       },
       "DepartmentCreateRequest": {
         "required": [
@@ -28195,6 +30146,47 @@
                 "$ref": "#/components/schemas/MaskingRule"
               }
             ]
+          }
+        }
+      },
+      "FileContentResult": {
+        "type": "object",
+        "properties": {
+          "fileContents": {
+            "type": "string",
+            "format": "byte"
+          },
+          "contentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fileDownloadName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastModified": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "entityTag": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EntityTagHeaderValue"
+              }
+            ]
+          },
+          "enableRangeProcessing": {
+            "type": "boolean"
           }
         }
       },
@@ -30704,6 +32696,7 @@
         },
         "description": "One attempt as ADM-048 lists it: codes, times and correlation; never a payload, a secret or a provider's message."
       },
+      "JsonElement": {},
       "KpiAssignmentCreateRequest": {
         "required": [
           "projectId",
@@ -31908,6 +33901,70 @@
         ],
         "description": "The two platform languages (ADR-012). Persisted as the ISO 639-1 code in a `char(2)` column."
       },
+      "ManagedProjectAttention": {
+        "required": [
+          "projectId",
+          "updateDueDate",
+          "overdueTasks",
+          "overdueMilestones"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updateDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "overdueTasks": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overdueMilestones": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "What waits on one project the caller manages (review round 8, point 13): the earliest progress and financial reporting period due by the end\nof this month and not yet published, and the tasks and milestones past their dates. A project that never started an update has no period\nyet, so none is due for it: the same rule as FG-01's reporting completeness."
+      },
+      "ManagedProjectAttentionList": {
+        "required": [
+          "today",
+          "monthEnd",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "monthEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagedProjectAttention"
+            }
+          }
+        },
+        "description": "Every project the caller manages and may view, with what waits on it; `MonthEnd` is the last day \"this month\" covers."
+      },
       "MaskingRule": {
         "enum": [
           "WITHHOLD",
@@ -32929,6 +34986,33 @@
         },
         "description": "A document to attach as evidence: the document, the version of it to pin, and the EVIDENCE_TYPE item it is evidence of."
       },
+      "MobileNumberStatus": {
+        "required": [
+          "mobileNumber",
+          "verifiedAt",
+          "verificationAvailable"
+        ],
+        "type": "object",
+        "properties": {
+          "mobileNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verifiedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "verificationAvailable": {
+            "type": "boolean"
+          }
+        },
+        "description": "The signed-in person's own mobile number as their account page shows it: the number an administrator recorded, when its\nholder verified it (ADR-004), and whether this environment can send the code to verify it."
+      },
       "MobileVerificationChallenge": {
         "required": [
           "challengeId",
@@ -33099,6 +35183,13 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/Language"
             }
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectMonthlyStage"
+            },
+            "description": "Review round 7, item 1: the stages of the project's plan that apply, each with its planned % today. When there are any, the answer gives the current\nstage and its % complete instead of the overall figure."
           }
         },
         "description": "A request waiting on its responder, with what the window pre-fills: the open draft's values, or last month's from the project."
@@ -33199,6 +35290,30 @@
           }
         },
         "description": "Free text in the language it was entered in (ERD D-7; R-18)."
+      },
+      "NationalIdCheckDetail": {
+        "required": [
+          "registered"
+        ],
+        "type": "object",
+        "properties": {
+          "registered": {
+            "type": "boolean"
+          }
+        },
+        "description": "Whether a National ID or Iqama number belongs to a person who may sign in."
+      },
+      "NationalIdDetail": {
+        "required": [
+          "nationalId"
+        ],
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": "string"
+          }
+        },
+        "description": "A user's full National ID or Iqama number, for a holder of USER_NATIONAL_ID_VIEW; the reveal is audited."
       },
       "NotificationChannel": {
         "enum": [
@@ -34700,6 +36815,234 @@
           }
         }
       },
+      "PasskeyChallengeRequest": {
+        "required": [
+          "nationalId"
+        ],
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Starts a passkey sign-in: with string? PasskeyChallengeRequest.NationalId (sign-in with biometrics) only its owner's passkey will verify;\nwithout it (the Face ID / Touch ID button) the passkey the device offers signs its owner in."
+      },
+      "PasskeyCreateRequest": {
+        "required": [
+          "transaction",
+          "credential",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "credential": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PasskeyCredential"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A new passkey for the signed-in person: the device's answer, its transaction, and the device's name."
+      },
+      "PasskeyCredential": {
+        "required": [
+          "id",
+          "rawId",
+          "type",
+          "response"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "response": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PasskeyCredentialResponse"
+              }
+            ]
+          }
+        },
+        "description": "A WebAuthn `PublicKeyCredential` as the browser serialises it (`toJSON()`): every binary value base64url. A\nregistration answers with `attestationObject`; a sign-in with `authenticatorData`, `signature` and `userHandle`."
+      },
+      "PasskeyCredentialRequest": {
+        "required": [
+          "transaction",
+          "credential"
+        ],
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "credential": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PasskeyCredential"
+              }
+            ]
+          }
+        },
+        "description": "The device's answer to a passkey sign-in and the transaction it answers."
+      },
+      "PasskeyCredentialResponse": {
+        "required": [
+          "clientDataJson",
+          "attestationObject",
+          "authenticatorData",
+          "signature",
+          "userHandle",
+          "transports"
+        ],
+        "type": "object",
+        "properties": {
+          "clientDataJson": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attestationObject": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "authenticatorData": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "signature": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userHandle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "transports": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The authenticator's response inside a PasskeyCredential."
+      },
+      "PasskeyList": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PasskeySummary"
+            }
+          }
+        },
+        "description": "The signed-in person's passkeys, newest first."
+      },
+      "PasskeyOptionsDetail": {
+        "required": [
+          "options",
+          "transaction"
+        ],
+        "type": "object",
+        "properties": {
+          "options": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "transaction": {
+            "type": "string"
+          }
+        },
+        "description": "The start of a passkey ceremony: `options` for `navigator.credentials.create` or `.get`, binary values\nbase64url-encoded, and the sealed `transaction` to send back with the device's answer."
+      },
+      "PasskeySummary": {
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "lastUsedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "One of the signed-in person's passkeys, as their account page lists it. The key material is never shown."
+      },
       "PasswordChangeRequest": {
         "required": [
           "passwordChangeToken",
@@ -34809,6 +37152,13 @@
           }
         },
         "description": "ADM-008 (TASK-110): a DRAFT's whole grid and its change summary. A permission left out is not held."
+      },
+      "PermissionOverrideEffect": {
+        "enum": [
+          "GRANT",
+          "REMOVE",
+          null
+        ]
       },
       "PermissionProfileCreateRequest": {
         "required": [
@@ -35259,6 +37609,100 @@
           }
         }
       },
+      "PortfolioAxes": {
+        "required": [
+          "category",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/PortfolioAxis"
+          },
+          "value": {
+            "$ref": "#/components/schemas/PortfolioValueAxis"
+          }
+        },
+        "description": "How a bar, column or line chart draws its axes (the 19 Nov 2026 axes, dashboard-designer-axes.md); absent means the defaults: both axes shown, no titles, an automatic range and gridlines."
+      },
+      "PortfolioAxesRequest": {
+        "required": [
+          "category",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioAxisRequest"
+              }
+            ]
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioValueAxisRequest"
+              }
+            ]
+          }
+        },
+        "description": "How a bar, column or line chart draws its axes (the 19 Nov 2026 axes): both axes, each saying whether it is shown; a title, when given, in both languages.\nWhich types take axes, the titles' length and the range are checked by the service."
+      },
+      "PortfolioAxis": {
+        "required": [
+          "show",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": "boolean"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          }
+        },
+        "description": "A chart's category axis (the 19 Nov 2026 axes): shown or hidden, and a title in both languages or none."
+      },
+      "PortfolioAxisRequest": {
+        "required": [
+          "show"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          }
+        },
+        "description": "The category axis: shown or not, and its title (null for none)."
+      },
       "PortfolioBreakdown": {
         "required": [
           "rows",
@@ -35607,6 +38051,295 @@
         },
         "description": "A project of a printable group card."
       },
+      "PortfolioCurrentStage": {
+        "required": [
+          "stageCode",
+          "name",
+          "projects",
+          "valueSar",
+          "valueEntered"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "valueSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valueEntered": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Projects by their current stage (review round 7, item 1): the first applicable stage below 100% in the latest published stage-based update, or as\nimported. string? PortfolioCurrentStage.StageCode null counts the projects with none yet. Stages run in stage order; a value is null when the caller may not see amounts."
+      },
+      "PortfolioDateUnit": {
+        "enum": [
+          "YEAR",
+          "MONTH",
+          null
+        ]
+      },
+      "PortfolioDesignFields": {
+        "required": [
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldDescriptor"
+            }
+          }
+        },
+        "description": "The fields the designer offers, in the register's order."
+      },
+      "PortfolioDesignRequest": {
+        "required": [
+          "visuals"
+        ],
+        "type": "object",
+        "properties": {
+          "visuals": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualRequest"
+            }
+          }
+        },
+        "description": "The Portfolio dashboard's design as a whole, in reading order (the 17 Nov 2026 designer). Each field is required here; how they fit together — a grouping\nthe type takes, a place on the grid no other visual holds — is checked by the service (422 `PROJECT_PORTFOLIO_DESIGN_INVALID`). A container's\n`children` (the 19 Nov 2026 containers) are visuals of the same shape, counted in the design's 60."
+      },
+      "PortfolioDesignView": {
+        "required": [
+          "isStandard",
+          "updatedAt",
+          "visuals"
+        ],
+        "type": "object",
+        "properties": {
+          "isStandard": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "visuals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualResult"
+            }
+          }
+        },
+        "description": "The Portfolio dashboard's design with its figures. bool PortfolioDesignView.IsStandard is true while nobody has saved a design."
+      },
+      "PortfolioFieldAggregation": {
+        "enum": [
+          "COUNT",
+          "SUM",
+          "AVERAGE",
+          "MIN",
+          "MAX",
+          "COUNT_TRUE",
+          "SHARE_TRUE"
+        ],
+        "description": "How a visual calculates a field over the projects (or snapshots) of a group (the 18 Nov 2026 data fields), over the cells revealed to the caller only."
+      },
+      "PortfolioFieldDescriptor": {
+        "required": [
+          "key",
+          "projectionCode",
+          "sourceDomain",
+          "fieldCode",
+          "type",
+          "isSensitive",
+          "values",
+          "aggregations"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "projectionCode": {
+            "type": "string"
+          },
+          "sourceDomain": {
+            "type": "string"
+          },
+          "fieldCode": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PortfolioFieldType"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aggregations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldAggregation"
+            }
+          },
+          "grain": {
+            "$ref": "#/components/schemas/PortfolioFieldGrain"
+          }
+        },
+        "description": "One field the designer offers (the 18 Nov 2026 data catalogue): its key `&lt;PROJECTION_CODE&gt;.&lt;FIELD_CODE&gt;`, the projection it belongs to\n(code and domain), its field code, its type, whether it is sensitive, the codes a CODE field takes (the register's values, in the source's order), the\naggregations its type allows, and its grain."
+      },
+      "PortfolioFieldFilter": {
+        "required": [
+          "field",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A visual's filter: a CODE field key or a dimension key (`PROJECT.&lt;GROUP_BY&gt;`) and the values that pass. A project passes when its value is\none of them; a value not revealed, and a dimension's null key, never passes."
+      },
+      "PortfolioFieldFilterRequest": {
+        "required": [
+          "field",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A visual's filter: a CODE field key or a dimension key, and the values that pass; their shape is checked by the service."
+      },
+      "PortfolioFieldGrain": {
+        "enum": [
+          "PROJECT",
+          "SNAPSHOT"
+        ],
+        "description": "What a field's rows are: one per project, or one per published snapshot of a project (its history over time).",
+        "default": "PROJECT"
+      },
+      "PortfolioFieldType": {
+        "enum": [
+          "CODE",
+          "COUNT",
+          "PERCENT",
+          "DAYS",
+          "SAR",
+          "BOOLEAN",
+          "DATE",
+          "DATE_TIME",
+          "TEXT",
+          "ITEM"
+        ],
+        "description": "What a designer field holds: the register's value types."
+      },
+      "PortfolioFieldValue": {
+        "required": [
+          "field",
+          "aggregation"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "aggregation": {
+            "$ref": "#/components/schemas/PortfolioFieldAggregation"
+          }
+        },
+        "description": "One value a visual draws: a field of the data catalogue (string PortfolioFieldDescriptor.Key) and its calculation."
+      },
+      "PortfolioFieldValueRequest": {
+        "required": [
+          "field",
+          "aggregation"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioFieldAggregation"
+              }
+            ]
+          }
+        },
+        "description": "A value a visual draws: a field key of the data catalogue and its aggregation; how they fit the visual is checked by the service."
+      },
       "PortfolioFollowUpReasons": {
         "required": [
           "stalled",
@@ -35668,6 +38401,23 @@
           }
         },
         "description": "Each project counted once, under its first reason in the Follow-up list's order."
+      },
+      "PortfolioGroupBy": {
+        "enum": [
+          "NONE",
+          "PORTFOLIO",
+          "INITIATIVE",
+          "SECTOR",
+          "DEPARTMENT",
+          "ENTITY",
+          "STATUS",
+          "STAGE",
+          "ON_PLAN",
+          "REGION",
+          "CITY",
+          "PRIORITY"
+        ],
+        "description": "What the projects of a visual are grouped by: a project attribute, or none for one figure over them all."
       },
       "PortfolioHeadline": {
         "required": [
@@ -35870,9 +38620,72 @@
             "items": {
               "$ref": "#/components/schemas/PortfolioTopProject"
             }
+          },
+          "byCurrentStage": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioCurrentStage"
+            }
           }
         },
         "description": "What the Excel's dashboard answers (the 5 Nov 2026 review §3). A section is null when the caller holds no permission for it: permissions decide, never a role code. Averages are simple\naverages of project percentages. A project without both percentages is unmeasured, never zero."
+      },
+      "PortfolioMapOptions": {
+        "type": "object",
+        "properties": {
+          "showList": {
+            "type": "boolean",
+            "default": true
+          },
+          "showCounts": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "description": "How a PortfolioVisualType.Map visual is drawn (the 20 Nov 2026 map visual, dashboard-designer-map-visual.md): whether the list of regions and\ncities is shown beside the map, and whether each marker carries its number. Absent, both are shown."
+      },
+      "PortfolioMapOptionsRequest": {
+        "type": "object",
+        "properties": {
+          "showList": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "showCounts": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "How a MAP visual is drawn (the 20 Nov 2026 map visual): the list of regions and cities beside the map, and the number on each marker; each absent or null\nproperty is shown (true). Whether the visual is a map is checked by the service."
+      },
+      "PortfolioMeasure": {
+        "enum": [
+          "PROJECTS",
+          "IN_PROGRESS",
+          "VALUE_SAR",
+          "AVERAGE_PLANNED",
+          "AVERAGE_ACTUAL",
+          "GAP_POINTS",
+          "NEEDING_FOLLOW_UP",
+          "OVERDUE_ACTIONS",
+          "ON_TRACK",
+          "LATE",
+          "STALLED",
+          "NOT_MEASURED",
+          "FOLLOW_UP_STALLED",
+          "FOLLOW_UP_SUSPENDED",
+          "FOLLOW_UP_LATE",
+          "FOLLOW_UP_ACTION_OVERDUE",
+          "FOLLOW_UP_OPEN_OBSTACLE"
+        ],
+        "description": "What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3), then the boxes\nof its on-plan indicator and follow-up reasons (the 20 Nov 2026 box sections)."
       },
       "PortfolioOnPlan": {
         "required": [
@@ -35916,6 +38729,31 @@
             "format": "int32"
           }
         }
+      },
+      "PortfolioRecordSource": {
+        "enum": [
+          "PROJECTS",
+          "RISKS",
+          null
+        ]
+      },
+      "PortfolioSection": {
+        "enum": [
+          "PORTFOLIO_TABLE",
+          "INITIATIVE_TABLE",
+          "SECTOR_TABLE",
+          "STATUS_TABLE",
+          "CURRENT_STAGE_TABLE",
+          "ON_PLAN_COUNTS",
+          "FOLLOW_UP_REASONS",
+          "TOP_FOLLOW_UP",
+          "ENTITY_COMPLETION",
+          "PROJECT_LOCATIONS",
+          "DASHBOARD_WIDGETS",
+          "ENTITY_COMPLETION_TABLE",
+          "DASHBOARD_WIDGET",
+          null
+        ]
       },
       "PortfolioSplit": {
         "required": [
@@ -35969,6 +38807,415 @@
             "format": "double"
           }
         }
+      },
+      "PortfolioTableAggregation": {
+        "enum": [
+          "NONE",
+          "COUNT",
+          "COUNT_DISTINCT",
+          "SUM",
+          "AVERAGE",
+          "MIN",
+          "MAX",
+          "COUNT_TRUE",
+          "SHARE_TRUE",
+          null
+        ]
+      },
+      "PortfolioTableCell": {
+        "required": [
+          "key",
+          "label",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "value": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "masked": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "description": "One cell: a grouped column's string? PortfolioTableCell.Key (an id, a code, a date or a number as written) and BilingualLabel? PortfolioTableCell.Label when the backend names it, or a\ncalculated decimal? PortfolioTableCell.Value. A value the caller may not see is null with bool PortfolioTableCell.Masked true; a missing one is null, never 0, except a count."
+      },
+      "PortfolioTableColumn": {
+        "required": [
+          "kind",
+          "key",
+          "aggregation"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PortfolioTableColumnKind"
+          },
+          "key": {
+            "type": "string"
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableAggregation"
+              }
+            ]
+          }
+        },
+        "description": "A column of a TABLE visual: what it reads and its calculation (null for a PortfolioTableColumnKind.Measure)."
+      },
+      "PortfolioTableColumnKind": {
+        "enum": [
+          "DIMENSION",
+          "FIELD",
+          "MEASURE"
+        ],
+        "description": "What a column of a TABLE visual reads (the 20 Nov 2026 Power BI-style table): a project attribute, a data catalogue field or a portfolio figure."
+      },
+      "PortfolioTableColumnRequest": {
+        "required": [
+          "kind",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableColumnKind"
+              }
+            ]
+          },
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aggregation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableAggregation"
+              }
+            ]
+          }
+        },
+        "description": "A column of a TABLE visual (the 20 Nov 2026 Power BI-style table): its kind, its key and its calculation (null for a measure); whether they fit is checked\nby the service."
+      },
+      "PortfolioTableColumnType": {
+        "enum": [
+          "ITEM",
+          "CODE",
+          "TEXT",
+          "COUNT",
+          "PERCENT",
+          "DAYS",
+          "SAR",
+          "DATE",
+          "BOOLEAN",
+          "ON_PLAN",
+          "POINTS"
+        ],
+        "description": "How a table column's cells are formatted."
+      },
+      "PortfolioTableResult": {
+        "required": [
+          "columnTypes",
+          "rows",
+          "totals",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "columnTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableColumnType"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableRow"
+            }
+          },
+          "totals": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableCell"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "description": "A column table's figures: a type per column, the rows (at most 500, bool PortfolioTableResult.Truncated beyond), and the totals unless switched off."
+      },
+      "PortfolioTableRow": {
+        "required": [
+          "projects",
+          "projectId",
+          "cells"
+        ],
+        "type": "object",
+        "properties": {
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableCell"
+            }
+          }
+        },
+        "description": "A row: its projects, the project when the row is one project (grouped by its title or ID), and a cell per column in order."
+      },
+      "PortfolioTextAlign": {
+        "enum": [
+          "START",
+          "CENTER",
+          "END"
+        ],
+        "description": "Where a text box's lines are aligned, counted from the reading start: PortfolioTextAlign.Start is the right in Arabic."
+      },
+      "PortfolioTextBox": {
+        "required": [
+          "ar",
+          "en",
+          "size",
+          "align",
+          "bold"
+        ],
+        "type": "object",
+        "properties": {
+          "ar": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          },
+          "size": {
+            "$ref": "#/components/schemas/PortfolioTextSize"
+          },
+          "align": {
+            "$ref": "#/components/schemas/PortfolioTextAlign"
+          },
+          "bold": {
+            "type": "boolean"
+          },
+          "fontSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "italic": {
+            "type": "boolean",
+            "default": false
+          },
+          "underline": {
+            "type": "boolean",
+            "default": false
+          },
+          "color": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "background": {
+            "type": "string",
+            "default": "NONE"
+          },
+          "border": {
+            "type": "boolean",
+            "default": false
+          },
+          "borderColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verticalAlign": {
+            "$ref": "#/components/schemas/PortfolioTextVerticalAlign"
+          }
+        },
+        "description": "What a PortfolioVisualType.Text visual says (the 20 Nov 2026 text box, dashboard-designer-map-text.md): its words in both languages, each\n1–2000 characters once trimmed with its line breaks (`\\n`) kept, how large and where they are drawn, and whether in bold. Its formatting (the 20 Nov\n2026 text formatting, dashboard-designer-text-format.md) is optional, each absent property its default, so a text box saved before reads as it was drawn:\nFontSize a whole 8–96 px or null for the Size preset; Color and BorderColor a\n`#RRGGBB` colour or null for the theme's; Background`CARD` (the visuals' card colour), `NONE` or a colour."
+      },
+      "PortfolioTextBoxRequest": {
+        "required": [
+          "ar",
+          "en",
+          "size",
+          "align",
+          "bold"
+        ],
+        "type": "object",
+        "properties": {
+          "ar": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "en": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "size": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextSize"
+              }
+            ]
+          },
+          "align": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextAlign"
+              }
+            ]
+          },
+          "bold": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "fontSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "italic": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "underline": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "color": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "background": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "border": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "borderColor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verticalAlign": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextVerticalAlign"
+              }
+            ]
+          }
+        },
+        "description": "What a TEXT visual says (the 20 Nov 2026 text box): its words in both languages as a visual's title is (R-17: present, not blank, each in its own\nlanguage), its line breaks kept and no other control character; its size, alignment and bold. Its formatting (the 20 Nov 2026 text formatting) is optional,\neach absent or null property its default: no custom font size, no italic or underline, the theme's text and border colours, no background, no border, at\nthe top. Whether the visual is a text box, the trimmed length (2000), the font size's range and the colours' shape are checked by the service."
+      },
+      "PortfolioTextSize": {
+        "enum": [
+          "SMALL",
+          "NORMAL",
+          "LARGE",
+          "HEADING"
+        ],
+        "description": "How large a text box's words are drawn (the 20 Nov 2026 text box), from small to a heading."
+      },
+      "PortfolioTextVerticalAlign": {
+        "enum": [
+          "TOP",
+          "MIDDLE",
+          "BOTTOM"
+        ],
+        "description": "Where a text box's lines sit within its box, from the top (the 20 Nov 2026 text formatting).",
+        "default": "TOP"
       },
       "PortfolioTopProject": {
         "required": [
@@ -36048,6 +39295,625 @@
             "format": "date"
           }
         }
+      },
+      "PortfolioValueAxis": {
+        "required": [
+          "show",
+          "title",
+          "min",
+          "max",
+          "gridlines"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": "boolean"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "min": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "max": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "gridlines": {
+            "type": "boolean"
+          }
+        },
+        "description": "A chart's value axis (the 19 Nov 2026 axes): shown or hidden, a title or none, a start and an end (null = automatic; the start below the end when both\nare given) and whether gridlines are drawn."
+      },
+      "PortfolioValueAxisRequest": {
+        "required": [
+          "show",
+          "gridlines"
+        ],
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "gridlines": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "min": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "max": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "The value axis: shown or not, its title (null for none), its start and end (null = automatic) and whether gridlines are drawn."
+      },
+      "PortfolioVisualGroup": {
+        "required": [
+          "key",
+          "label",
+          "projects",
+          "measured",
+          "valueEntered",
+          "values",
+          "onPlan"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "measured": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "valueEntered": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "null",
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          "onPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnPlanStatus"
+              }
+            ]
+          }
+        },
+        "description": "One group of a visual: its key (an item, department or entity id, a status, stage or on-plan code; null for the projects with none, and for the one group of an\nungrouped visual), the stage's name when it is a stage, and one value per measure in the visual's order. A value is null when it cannot be calculated (an average\nwith nothing measured) or the caller may not see it (an amount). int PortfolioVisualGroup.Measured and int PortfolioVisualGroup.ValueEntered say how many projects the averages and the\nvalue cover."
+      },
+      "PortfolioVisualRequest": {
+        "required": [
+          "title",
+          "visualType",
+          "measures",
+          "groupBy",
+          "layoutColumn",
+          "layoutRow",
+          "layoutWidth",
+          "layoutHeight"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "visualType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioVisualType"
+              }
+            ]
+          },
+          "measures": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioMeasure"
+            }
+          },
+          "groupBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioGroupBy"
+              }
+            ]
+          },
+          "layoutColumn": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "layoutRow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "layoutWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "layoutHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "section": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioSection"
+              }
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldValueRequest"
+            }
+          },
+          "groupField": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldFilterRequest"
+            }
+          },
+          "groupDateUnit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioDateUnit"
+              }
+            ]
+          },
+          "axes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioAxesRequest"
+              }
+            ]
+          },
+          "widgetCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "children": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualRequest"
+            }
+          },
+          "hiddenColumns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableColumnRequest"
+            }
+          },
+          "showTotals": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "text": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextBoxRequest"
+              }
+            ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioMapOptionsRequest"
+              }
+            ]
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioRecordSource"
+              }
+            ]
+          }
+        }
+      },
+      "PortfolioVisualResult": {
+        "required": [
+          "title",
+          "visualType",
+          "measures",
+          "groupBy",
+          "layoutColumn",
+          "layoutRow",
+          "layoutWidth",
+          "layoutHeight",
+          "groups"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "visualType": {
+            "$ref": "#/components/schemas/PortfolioVisualType"
+          },
+          "measures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioMeasure"
+            }
+          },
+          "groupBy": {
+            "$ref": "#/components/schemas/PortfolioGroupBy"
+          },
+          "layoutColumn": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "layoutRow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "layoutWidth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "layoutHeight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "groups": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualGroup"
+            }
+          },
+          "section": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioSection"
+              }
+            ]
+          },
+          "values": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldValue"
+            }
+          },
+          "groupField": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldFilter"
+            }
+          },
+          "valueTypes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioFieldType"
+            }
+          },
+          "groupDateUnit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioDateUnit"
+              }
+            ]
+          },
+          "axes": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioAxes"
+              }
+            ]
+          },
+          "widgetCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "children": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioVisualResult"
+            }
+          },
+          "hiddenColumns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTableColumn"
+            }
+          },
+          "showTotals": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "table": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTableResult"
+              }
+            ]
+          },
+          "text": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioTextBox"
+              }
+            ]
+          },
+          "map": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioMapOptions"
+              }
+            ]
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioRecordSource"
+              }
+            ]
+          }
+        },
+        "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."
+      },
+      "PortfolioVisualType": {
+        "enum": [
+          "CARD",
+          "BAR",
+          "COLUMN",
+          "PIE",
+          "DONUT",
+          "TABLE",
+          "GAUGE",
+          "SECTION",
+          "LINE",
+          "CONTAINER",
+          "TEXT",
+          "MAP"
+        ],
+        "description": "How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer)."
       },
       "PostProjectObligationCreateRequest": {
         "required": [
@@ -36398,9 +40264,43 @@
         "enum": [
           "WORK_BREAKDOWN",
           "DECLARED",
-          "NOT_AVAILABLE"
+          "NOT_AVAILABLE",
+          "STAGE_WEIGHTED"
         ],
         "description": "Where a submission's calculated figure comes from. A project with no work breakdown reports its declared figure until it has one."
+      },
+      "ProgressFigureSource": {
+        "enum": [
+          "SCHEDULE",
+          "STAGES",
+          "DECLARED",
+          null
+        ]
+      },
+      "ProgressMethodRequest": {
+        "required": [
+          "progressMethod"
+        ],
+        "type": "object",
+        "properties": {
+          "progressMethod": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "How a project's overall progress is calculated (review round 8, point 02): `SCHEDULE` or `STAGES`, required. A reason is required\nby the project once a progress update is approved, and kept in its history either way."
       },
       "ProgressOverrideRequest": {
         "required": [
@@ -36449,6 +40349,173 @@
           }
         },
         "description": "Returning a submission says why."
+      },
+      "ProgressStageDetail": {
+        "required": [
+          "stageCode",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "applies",
+          "plannedPercent",
+          "percentComplete",
+          "previousPercent",
+          "isFromSchedule",
+          "actualStartDate",
+          "actualFinishDate",
+          "note",
+          "decreaseReason"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": "string"
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "applies": {
+            "type": "boolean"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "percentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "previousPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isFromSchedule": {
+            "type": "boolean"
+          },
+          "actualStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "actualFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "decreaseReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          }
+        },
+        "description": "One stage of a period: its name and weight in the version the period weighs by, whether it applies, the planned % on the period's date, the % complete\nand the last published period's (decimal? ProgressStageDetail.PreviousPercent, below which a decrease needs a reason), and whether the schedule measures it."
+      },
+      "ProgressStageRequest": {
+        "required": [
+          "stageCode"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "percentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "actualStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "actualFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "decreaseReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "One stage: its code, % complete 0–100 to two places, actual start and finish, an optional one-line note, and why a % went down."
       },
       "ProgressSubmissionDetail": {
         "required": [
@@ -36629,9 +40696,37 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid"
+          },
+          "stageConfigurationVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "stageVersionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "currentStageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgressStageDetail"
+            }
           }
         },
-        "description": "One revision of a period's progress, with actual and planned side by side (ADR-009). decimal ProgressSubmissionDetail.ActualPercent is\nthe reported figure: the override when bool ProgressSubmissionDetail.IsOverridden, else the calculated one, which is always kept.\nGuid? ProgressSubmissionDetail.ProjectIntakeId marks the ADR-014 opening position."
+        "description": "One revision of a period's progress, with actual and planned side by side (ADR-009). decimal ProgressSubmissionDetail.ActualPercent is\nthe reported figure: the override when bool ProgressSubmissionDetail.IsOverridden, else the calculated one, which is always kept.\nGuid? ProgressSubmissionDetail.ProjectIntakeId marks the ADR-014 opening position. A stage-based period (review round 7, item 1) has its IReadOnlyList&lt;ProgressStageDetail&gt; ProgressSubmissionDetail.Stages,\nweighed by the PROJECT_STAGE version int? ProgressSubmissionDetail.StageVersionNo, and names its string? ProgressSubmissionDetail.CurrentStageCode."
       },
       "ProgressSubmissionPage": {
         "required": [
@@ -36701,9 +40796,18 @@
                 "$ref": "#/components/schemas/ProgressOverrideRequest"
               }
             ]
+          },
+          "stages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProgressStageRequest"
+            }
           }
         },
-        "description": "What a person writes on a DRAFT, as a whole (R-5): the narrative and the override. There is no actual or planned\npercentage: both are derived (ADR-009), and an unknown property is ignored."
+        "description": "What a person writes on a DRAFT, as a whole (R-5): the narrative and the override, and on a stage-based period each stage's % complete and dates\n(review round 7, item 1; omitted, they stay as they are). There is no project-level actual or planned percentage: both are derived (ADR-009), and an\nunknown property is ignored."
       },
       "ProgressSubmissionStartRequest": {
         "required": [
@@ -37189,6 +41293,14 @@
           "isCanceled": {
             "type": "boolean",
             "default": false
+          },
+          "proposedProjectManagerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The Project Manager the registration form names (review round 7, item 2); the submission proposes them.",
+            "format": "uuid"
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."
@@ -38487,9 +42599,19 @@
                 "$ref": "#/components/schemas/EntityUpdateCompliance"
               }
             ]
+          },
+          "progress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectOverallProgress"
+              }
+            ]
           }
         },
-        "description": "The register's calculated columns (R3-3): the gap between actual and planned progress, in points, the on-plan indicator, the days to\nthe planned end, the next action's due status and the follow-up reasons, most urgent first. A value that cannot be calculated is null:\nno gap without both percentages, none for a project not started or closed."
+        "description": "The register's calculated columns (R3-3): the gap between actual and planned progress, in points, the on-plan indicator, the days to\nthe planned end, the next action's due status and the follow-up reasons, most urgent first. A value that cannot be calculated is null:\nno gap without both percentages, none for a project not started or closed. The gap is taken from ProjectOverallProgress? ProjectIndicators.Progress, the project's one\noverall figure (review round 8, point 02)."
       },
       "ProjectionCoverage": {
         "enum": [
@@ -38607,6 +42729,33 @@
           "CLOSED"
         ],
         "description": "TASK-041 (Draft → Submitted → Under Review → Returned / Approved-Planned; Planned → Active), TASK-062\n(Active ↔ Suspended), TASK-063 (Completed → Closed; Closed is terminal)."
+      },
+      "ProjectManagerChangeRequest": {
+        "required": [
+          "projectManagerUserId",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "projectManagerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "The new Project Manager and why the project changes hands (review round 7, item 2). Both are required."
       },
       "ProjectMilestoneCreateRequest": {
         "required": [
@@ -38876,12 +43025,127 @@
         ],
         "description": "ERD `project_milestone.status`. WF-03 plans and cancels a milestone; ACHIEVED is set by WF-03 when WF-05 accepts an\nachievement of it (ICD-04, TASK-050). ACHIEVED and CANCELLED are final."
       },
+      "ProjectMonthlyStage": {
+        "required": [
+          "stageCode",
+          "name",
+          "weightPercent",
+          "plannedPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "A stage of the project's plan that applies, as the monthly update shows it: its name, weight and planned % today."
+      },
       "ProjectOutcome": {
         "enum": [
           "COMPLETED",
           "TERMINATED_WITHOUT_COMPLETION"
         ],
         "description": "How a closed project ended (WF-10 §8 ProjectOutcomeType, BR-CLO-038): through an effected completion, or closed from SUSPENDED without\none. A terminated project is never reported as completed (CLO-CC-27, BR-CLO-039)."
+      },
+      "ProjectOverallProgress": {
+        "required": [
+          "method",
+          "source",
+          "actualPercent",
+          "plannedPercent",
+          "asOf",
+          "currentStageCode",
+          "stages",
+          "needsSetup",
+          "methodChangeNeedsReason"
+        ],
+        "type": "object",
+        "properties": {
+          "method": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectProgressMethod"
+              }
+            ]
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProgressFigureSource"
+              }
+            ]
+          },
+          "actualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "asOf": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "currentStageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStageFigure"
+            }
+          },
+          "needsSetup": {
+            "type": "boolean"
+          },
+          "methodChangeNeedsReason": {
+            "type": "boolean"
+          }
+        },
+        "description": "            A project's one overall progress figure (review round 8, point 02), the same on the Overview, the register, the dashboards and the cards. The\n            gap and the on-plan label are calculated from decimal? ProjectOverallProgress.ActualPercent and decimal? ProjectOverallProgress.PlannedPercent.\n            * Schedule method: the work breakdown's weighted progress and the baseline's planned % today, while the project has an active baseline.\n* Stage method: Σ weight × % complete over the stages that apply, and the same sum over each stage's planned % today from the plan's dates.\n* No method: the declared figure, as imported or entered, labelled as declared.bool ProjectOverallProgress.NeedsSetup is true while there is no method, or the stage method has no plan. bool ProjectOverallProgress.MethodChangeNeedsReason is true once\n            a progress update was approved."
       },
       "ProjectPage": {
         "required": [
@@ -38924,6 +43188,43 @@
           }
         },
         "description": "One page of projects (R-29)."
+      },
+      "ProjectProgressMethod": {
+        "enum": [
+          "SCHEDULE",
+          "STAGES",
+          null
+        ]
+      },
+      "ProjectRegistrationEditRequest": {
+        "required": [
+          "registration",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "registration": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectRequest"
+              }
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "The whole registration, as a draft's edit sends it, and why it changes after review (review round 7, item 4). Both are required."
       },
       "ProjectRequest": {
         "required": [
@@ -39090,6 +43391,13 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "proposedProjectManagerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
         "description": "MOD-001 Create Project and the edit of a DRAFT or RETURNED project: the whole registration (R-5). There is no\n`formalProjectId`: AHDA issues it on approval (ADR-013). The strategy classification, priority, funding source, legacy reference and\nfollow-up owner are optional (the 2 Nov 2026 review, R3-3)."
@@ -39227,6 +43535,295 @@
           }
         },
         "description": "A project stage in a PROJECT_STAGE version: active stages carry the weights, which total 100."
+      },
+      "ProjectStageFigure": {
+        "required": [
+          "stageCode",
+          "name",
+          "weightPercent",
+          "applies",
+          "plannedPercent",
+          "percentComplete"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "applies": {
+            "type": "boolean"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "percentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One stage of a stage-method figure: its weight, whether it applies, its planned % today and its % complete."
+      },
+      "ProjectStagePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStagePlanStage"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectStagePlan": {
+        "required": [
+          "projectId",
+          "revisionNo",
+          "requiresChangeAuthorization",
+          "acceptsStartingPercent",
+          "stageVersionId",
+          "stageVersionNo",
+          "stages"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requiresChangeAuthorization": {
+            "type": "boolean"
+          },
+          "acceptsStartingPercent": {
+            "type": "boolean"
+          },
+          "stageVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "stageVersionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStagePlanStage"
+            }
+          }
+        },
+        "description": "A project's stage plan. int ProjectStagePlan.RevisionNo is 0 until the plan is first saved. bool ProjectStagePlan.RequiresChangeAuthorization: a change now claims an\napproved schedule change request's STAGE_PLAN_CHANGE authorisation. bool ProjectStagePlan.AcceptsStartingPercent: the project was already under way when it\nentered the platform, so each stage may carry how far it had come. int? ProjectStagePlan.StageVersionNo is the PROJECT_STAGE version in force; null when\nnone is published, and then the project has no stages to plan."
+      },
+      "ProjectStagePlanEntryRequest": {
+        "required": [
+          "stageCode",
+          "applies"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "applies": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "plannedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startingPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One stage of the plan: its PROJECT_STAGE code, whether it applies, and while it does its planned dates and, optionally, its starting %."
+      },
+      "ProjectStagePlanRequest": {
+        "required": [
+          "stages"
+        ],
+        "type": "object",
+        "properties": {
+          "stages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProjectStagePlanEntryRequest"
+            }
+          },
+          "changeAuthorizationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A project's whole stage plan (review round 7, item 1): every stage of the version in force. Once the registration is approved,\n`changeAuthorizationId` names the STAGE_PLAN_CHANGE authorisation an approved schedule change issued, and `reason` says why."
+      },
+      "ProjectStagePlanStage": {
+        "required": [
+          "stageCode",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "applies",
+          "plannedStartDate",
+          "plannedEndDate",
+          "startingPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "applies": {
+            "type": "boolean"
+          },
+          "plannedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startingPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One stage of a project's stage plan as read (review round 7, item 1): the stage as the PROJECT_STAGE version in force names and weighs it,\nand the project's plan for it. A stage the project has no row for yet is pre-filled: it applies, with no dates."
       },
       "ProjectStageRequest": {
         "required": [
@@ -40157,6 +44754,42 @@
         },
         "description": "One page of a project's published snapshots, latest first (R-29)."
       },
+      "QuickActionsDetail": {
+        "required": [
+          "actions"
+        ],
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The person's quick actions in the welcome banner, in order (review round 8, point 08); null when they keep their role's set."
+      },
+      "QuickActionsRequest": {
+        "required": [
+          "actions"
+        ],
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A person's quick actions (review round 8, point 08): at most six action codes in order, or null to go back to their role's set."
+      },
       "ReadinessCheckCode": {
         "enum": [
           "DECISIONS_SETTLED",
@@ -40382,6 +45015,35 @@
           "INCOMPLETE"
         ],
         "description": "WF-10 §6.3's roll-up statuses."
+      },
+      "RecordUse": {
+        "required": [
+          "record",
+          "field",
+          "required",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "record": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Rows that reference a record about to be deleted: string RecordUse.Record is the referencing table (`project.project`, or `project.project.closed`\nfor closed projects, which take no change), string RecordUse.Field its column, bool RecordUse.Required whether those rows need a value there."
       },
       "ReportAllowlistEntryPage": {
         "required": [
@@ -45135,7 +49797,9 @@
       "SignInOptionsDetail": {
         "required": [
           "singleSignOnAvailable",
-          "passwordResetAvailable"
+          "passwordResetAvailable",
+          "passkeySignInAvailable",
+          "smsSignInAvailable"
         ],
         "type": "object",
         "properties": {
@@ -45144,9 +49808,15 @@
           },
           "passwordResetAvailable": {
             "type": "boolean"
+          },
+          "passkeySignInAvailable": {
+            "type": "boolean"
+          },
+          "smsSignInAvailable": {
+            "type": "boolean"
           }
         },
-        "description": "The sign-in methods this environment offers. Password sign-in is not listed: the sign-in page always offers it."
+        "description": "The sign-in methods this environment offers. Password sign-in is not listed: the sign-in page always offers it. A passkey\nalso needs a device that has one; the page asks the browser for that."
       },
       "SingleSignOnIntegrationStatus": {
         "required": [
@@ -45197,6 +49867,69 @@
           }
         },
         "description": "The OIDC client settings. Authority, client id and callback URL are Public in the Environment and Secrets sheet; the client secret is reduced to whether it is set."
+      },
+      "SmsCodeChallengeCreateRequest": {
+        "required": [
+          "nationalId",
+          "mobileNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobileNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The first time on a device: the National ID and the mobile number on the person's profile, for the code to go to it."
+      },
+      "SmsSessionCreateRequest": {
+        "required": [
+          "challengeId",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Signs in with the code the SMS carried, for the challenge it was sent under."
+      },
+      "SmsSignInChallenge": {
+        "required": [
+          "challengeId",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A code sent by SMS for signing in: the challenge to answer it with."
       },
       "SourceApplicationCreateRequest": {
         "required": [
@@ -46751,6 +51484,12 @@
             ],
             "format": "date"
           },
+          "nationalIdMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "temporaryPassword": {
             "type": [
               "null",
@@ -46795,6 +51534,18 @@
           }
         },
         "description": "The code the user received on their mobile number, for the challenge it was sent under (ADR-004)."
+      },
+      "UserNationalIdRequest": {
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A user's National ID (starts with 1) or Iqama number (starts with 2), ten digits with a valid check digit; null removes it."
       },
       "UserPage": {
         "required": [
@@ -46850,12 +51601,168 @@
         },
         "description": "A temporary password the administrator typed; left out, the platform generates one."
       },
+      "UserPermissionEntry": {
+        "required": [
+          "permissionCode",
+          "name",
+          "permissionGroup",
+          "isPrivileged",
+          "fromRoles",
+          "overrideEffect",
+          "overrideScope",
+          "overrideReason",
+          "isHeld"
+        ],
+        "type": "object",
+        "properties": {
+          "permissionCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "permissionGroup": {
+            "type": "string"
+          },
+          "isPrivileged": {
+            "type": "boolean"
+          },
+          "fromRoles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserRoleGrant"
+            }
+          },
+          "overrideEffect": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PermissionOverrideEffect"
+              }
+            ]
+          },
+          "overrideScope": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataScope"
+              }
+            ]
+          },
+          "overrideReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "isHeld": {
+            "type": "boolean"
+          }
+        },
+        "description": "One permission of the catalogue for one user: what their roles give, what was adjusted, and whether they hold it now."
+      },
+      "UserPermissionOverrideClearRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Puts a permission back to what the user's roles give. `reason` is required."
+      },
+      "UserPermissionOverrideRequest": {
+        "required": [
+          "effect",
+          "dataScope",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "effect": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataScope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Grants a permission at `dataScope`, or removes it (`GRANT`, `REMOVE`), for one user. `reason` is required."
+      },
+      "UserPermissions": {
+        "required": [
+          "userId",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserPermissionEntry"
+            }
+          }
+        }
+      },
+      "UserRoleGrant": {
+        "required": [
+          "roleCode",
+          "dataScope"
+        ],
+        "type": "object",
+        "properties": {
+          "roleCode": {
+            "type": "string"
+          },
+          "dataScope": {
+            "$ref": "#/components/schemas/DataScope"
+          }
+        },
+        "description": "A permission as one of the user's roles gives it."
+      },
       "UserStatus": {
         "enum": [
           "ACTIVE",
-          "DISABLED"
+          "DISABLED",
+          "DELETED"
         ],
-        "description": "TASK-031: activate and disable; disabling never rewrites historical attribution."
+        "description": "TASK-031: activate and disable; disabling never rewrites historical attribution. Deleted (client review, item 5) has the same\neffect on access and also takes the user out of administration; the row stays, so history keeps naming them, and it has no way back."
       },
       "UserSummary": {
         "required": [
@@ -47286,13 +52193,13 @@
       "name": "GlobalSearch"
     },
     {
+      "name": "Project"
+    },
+    {
       "name": "Milestone"
     },
     {
       "name": "Notifications"
-    },
-    {
-      "name": "Project"
     },
     {
       "name": "Progress"

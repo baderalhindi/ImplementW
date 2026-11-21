@@ -57,7 +57,7 @@ internal sealed class ChangeRequestApprovalOutcomeHandler(
                 MaterialityEvaluation evaluation = (await repository.ListLatestEvaluationsAsync([request.Id], cancellationToken).ConfigureAwait(false))
                                                    .SingleOrDefault(e => e.RevisionNo == request.RevisionNo)
                                                    ?? throw new InvalidOperationException($"Change request {request.Id} was approved without an evaluation of revision {request.RevisionNo}.");
-                foreach (ChangeAuthorization authorization in Issue(request, evaluation, outcome, now))
+                foreach (ChangeAuthorization authorization in Issue(request, evaluation, outcome, now, project.StagePlanRevisionNo))
                 {
                     repository.Add(authorization);
                     audit.Stage(ChangeRequestAudit.Authorization(ChangeRequestAuditEvents.ChangeAuthorizationIssued, outcome.Data.DecidedByUserId, project, request, authorization));
@@ -72,9 +72,12 @@ internal sealed class ChangeRequestApprovalOutcomeHandler(
 
     /// <summary>
     /// One authorisation per governed commitment the approved revision changes, pinned to the version its evaluation was against. A
-    /// scope or governance-profile change issues none: no module applies one yet (change-request.md F-4).
+    /// scope or governance-profile change issues none: no module applies one yet (change-request.md F-4). A schedule change also authorises
+    /// a change of the project's stage plan at its current revision, when it has one (review round 7, item 1): moving a stage's dates is a
+    /// schedule change, whether or not the project has a baseline.
     /// </summary>
-    internal static IEnumerable<ChangeAuthorization> Issue(ChangeRequestEntity request, MaterialityEvaluation evaluation, ApprovalOutcomeRecorded outcome, DateTimeOffset now)
+    internal static IEnumerable<ChangeAuthorization> Issue(
+        ChangeRequestEntity request, MaterialityEvaluation evaluation, ApprovalOutcomeRecorded outcome, DateTimeOffset now, int stagePlanRevisionNo)
     {
         if (request.ScheduleImpactDays is not null && evaluation is { ProjectBaselineId: { } baselineId, ProjectBaselineVersionNo: { } baselineVersion })
         {
@@ -85,6 +88,12 @@ internal sealed class ChangeRequestApprovalOutcomeHandler(
         {
             yield return New(
                 request, outcome, now, ChangeAuthorizationScope.CommitmentChange, ChangeTargets.FinancialKpiModule, ChangeTargets.FinancialCommitment, commitmentId, commitmentVersion);
+        }
+
+        if (request.ScheduleImpactDays is not null && stagePlanRevisionNo > 0)
+        {
+            yield return New(
+                request, outcome, now, ChangeAuthorizationScope.StagePlanChange, ChangeTargets.ProjectModule, ChangeTargets.ProjectStagePlan, request.ProjectId, stagePlanRevisionNo);
         }
     }
 

@@ -360,8 +360,9 @@ describe('acceptance criterion 2: every widget states its semantic state and its
       const term = within(region).getByText(en(`dashboards.measures.${measure}`));
       return present(term.parentElement?.querySelector('dd'), `figure ${measure}`);
     };
+    // Review round 8, point 11: a widget's riyals read compact, the full figure on hover.
     expect(figure('APPROVED_BUDGET').textContent).toBe(
-      en('dashboards.units.sar', { amount: '1,250,000.00' }),
+      en('common.money.million', { amount: '1.3' }),
     );
     expect(
       figure('ACTUAL_EXPENDITURE_TO_DATE')
@@ -527,13 +528,10 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
       await screen.findByRole('heading', { level: 1, name: en(`dashboards.landing.${role}`) }),
     ).toBeTruthy();
     const dsh = `DSH-00${role.slice(2)}`;
-    expect(
-      screen.getByText(
-        en('dashboards.home.rendering', {
-          dashboard: catalogueFor([role]).find((entry) => entry.isDefaultLanding)?.name.en ?? '',
-        }),
-      ),
-    ).toBeTruthy();
+    // Review round 8, point 10: the role's own line under the title (the administrator keeps the dashboard's description).
+    if (role !== 'R01') {
+      expect(screen.getByText(en(`dashboards.roleLines.${role}`))).toBeTruthy();
+    }
     // The review, M-4: no specification code is shown to the person.
     expect(screen.queryByText(new RegExp(dsh))).toBeNull();
     await waitFor(() => {
@@ -557,6 +555,26 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
     expect(api.requestsTo('GET', /^\/dashboards\/.+$/)).toHaveLength(0);
   });
 
+  test('R08 selects all of its projects for Export selected', async () => {
+    const second = projectSummary({
+      id: '4d4d4d4d-0000-4000-8000-000000000105',
+      title: { text: 'Harbour dredging', language: 'EN' },
+    });
+    const api = withDashboards(mockApi(), { catalogue: catalogueFor(['R08'], true) });
+    api.on('GET', /^\/projects$/, { body: page([projectSummary(), second]) });
+    renderApp({ path: '/dashboards', session: entitySession() });
+
+    await userEvent.click(
+      await screen.findByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 2 }))).toBeTruthy();
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', {
+        name: en('common.table.selectRow', { name: 'Harbour dredging' }),
+      }).checked,
+    ).toBe(true);
+  });
+
   test("an entity's person sees the Project Dashboard in SCR-040 read only, in their entity's scope", async () => {
     overviewAs(entitySession(), {
       catalogue: catalogueFor(['R08'], true),
@@ -571,9 +589,6 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
         })}`,
       ),
     ).toBeTruthy();
-    expect(
-      within(section).queryByRole('button', { name: en('dashboards.personalize.open') }),
-    ).toBeNull();
   });
 
   test('with several roles the person lands as their first role; the Governance Dashboard is not offered beside the Portfolio one', async () => {
@@ -671,98 +686,9 @@ describe('the department filter narrows the population and never widens it', () 
   });
 });
 
-describe('ADR-019: the Portfolio Dashboard alone is personalised, by the roles that hold it', () => {
+describe('ADR-019: personal choices made through the API still shape the governed widgets', () => {
   const optional = (code: string, title: string, overrides: Partial<DashboardWidgetResult> = {}) =>
     widget({ code, title: { en: title, ar: title }, isOptionalVisibility: true, ...overrides });
-
-  const portfolio = () =>
-    dashboardView('PORTFOLIO', {
-      widgets: [
-        widget({
-          code: 'PROJECTS_BY_LIFECYCLE',
-          title: { en: 'Projects by lifecycle state', ar: 'x' },
-        }),
-        optional('CURRENT_HEALTH', 'Current health', { layoutRow: 2, layoutColumn: 1 }),
-        optional('SCHEDULE_HEALTH', 'Schedule health', { layoutRow: 2, layoutColumn: 5 }),
-        optional('KPI_CONDITION', 'KPI condition', {
-          layoutRow: 3,
-          layoutColumn: 1,
-          isHidden: true,
-        }),
-      ],
-    });
-
-  test('R02 hides and reorders optional widgets; the governed ones are never offered', async () => {
-    const api = homeAs(sessionFor(['R02']), { views: { PORTFOLIO: portfolio() } });
-    api.on('POST', /^\/dashboards\/PORTFOLIO\/personalize$/, (request) => ({
-      body: {
-        code: 'PORTFOLIO',
-        dashboardDefinitionId: 'x',
-        widgets: (request.body as { widgets: unknown[] }).widgets,
-      },
-    }));
-
-    expect(await widgetRegion('Current health')).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'KPI condition' })).toBeNull();
-
-    await userEvent.click(screen.getByRole('button', { name: en('dashboards.personalize.open') }));
-    const dialog = await screen.findByRole('dialog', { name: en('dashboards.personalize.title') });
-    const boxes = within(dialog).getAllByRole('checkbox');
-    expect(boxes.map((box) => box.parentElement?.textContent)).toEqual([
-      'Current health',
-      'Schedule health',
-      'KPI condition',
-    ]);
-    expect(within(dialog).queryByText('Projects by lifecycle state')).toBeNull();
-
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Current health' }));
-    await userEvent.click(
-      within(dialog).getByRole('button', {
-        name: `${en('dashboards.personalize.moveUp')} Schedule health`,
-      }),
-    );
-    await userEvent.click(
-      within(dialog).getByRole('button', { name: en('dashboards.personalize.save') }),
-    );
-
-    await waitFor(() => {
-      expect(api.requestsTo('POST', /personalize$/)).toHaveLength(1);
-    });
-    const [saved] = api.requestsTo('POST', /personalize$/);
-    expect(saved?.body).toEqual({
-      widgets: [
-        { widgetCode: 'SCHEDULE_HEALTH', isHidden: false, sortOrder: 1 },
-        { widgetCode: 'CURRENT_HEALTH', isHidden: true, sortOrder: 2 },
-        { widgetCode: 'KPI_CONDITION', isHidden: true, sortOrder: 3 },
-      ],
-    });
-    expect(saved?.headers.get('Idempotency-Key')).not.toBeNull();
-    expect(await screen.findByText(en('dashboards.personalize.saved'))).toBeTruthy();
-  });
-
-  test('restoring the standard layout resets it', async () => {
-    const api = homeAs(sessionFor(['R07']), { views: { PORTFOLIO: portfolio() } });
-    api.on('POST', /^\/dashboards\/PORTFOLIO\/reset-personalization$/, {
-      body: { code: 'PORTFOLIO', dashboardDefinitionId: 'x', widgets: [] },
-    });
-
-    await userEvent.click(
-      await screen.findByRole('button', { name: en('dashboards.personalize.open') }),
-    );
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.click(
-      within(dialog).getByRole('button', { name: en('dashboards.personalize.reset') }),
-    );
-
-    expect(await screen.findByText(en('dashboards.personalize.wasReset'))).toBeTruthy();
-    expect(api.requestsTo('POST', /reset-personalization$/)).toHaveLength(1);
-  });
-
-  test('a Viewer is not offered it', async () => {
-    homeAs(sessionFor(['R06']), { views: { PORTFOLIO: portfolio() } });
-    expect(await widgetRegion('Current health')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: en('dashboards.personalize.open') })).toBeNull();
-  });
 
   test('the personal order and hidden widgets are applied on the dashboard', async () => {
     homeAs(sessionFor(['R02']), {
@@ -781,7 +707,9 @@ describe('ADR-019: the Portfolio Dashboard alone is personalised, by the roles t
 
     await widgetRegion('Current health');
     expect(
-      [...document.querySelectorAll('.widget')].map((region) => region.getAttribute('data-widget')),
+      [...document.querySelectorAll('.widget[data-widget]')].map((region) =>
+        region.getAttribute('data-widget'),
+      ),
     ).toEqual(['SCHEDULE_HEALTH', 'CURRENT_HEALTH']);
   });
 });
@@ -829,7 +757,7 @@ describe('a dashboard over no project (the 5 Nov 2026 review §5)', () => {
 });
 
 describe('a created role on the dashboards', () => {
-  test('its landing is named after the dashboard, and Customize layout follows LAYOUT_PERSONALIZE', async () => {
+  test('its landing is named after the dashboard', async () => {
     withDashboards(mockApi(), {
       catalogue: [catalogueEntry('PORTFOLIO', { isDefaultLanding: true })],
     }).on('GET', SHELL_PERMISSIONS, {
@@ -839,9 +767,6 @@ describe('a created role on the dashboards', () => {
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Portfolio Dashboard' }),
-    ).toBeTruthy();
-    expect(
-      await screen.findByRole('button', { name: en('dashboards.personalize.open') }),
     ).toBeTruthy();
   });
 });

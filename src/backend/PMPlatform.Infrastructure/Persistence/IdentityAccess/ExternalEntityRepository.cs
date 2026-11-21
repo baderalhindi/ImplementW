@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using Microsoft.EntityFrameworkCore;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
@@ -82,6 +83,11 @@ internal sealed class ExternalEntityRepository(PMPlatformDbContext context) : IE
         .AnyAsync(cancellationToken);
 
     public void Add(ExternalEntity entity) => context.Set<ExternalEntity>().Add(entity);
+
+    public Task<IReadOnlyList<RecordUse>> ListUsesAsync(Guid entityId, CancellationToken cancellationToken) =>
+        ForeignKeyUses.ListAsync(context, "identity_access.external_entity", entityId, cancellationToken);
+
+    public void Remove(ExternalEntity entity) => context.Set<ExternalEntity>().Remove(entity);
 
     public async Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         ids.Count == 0

@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
@@ -8,6 +9,14 @@ namespace PMPlatform.Tests.Unit.Application.IdentityAccess;
 internal sealed class FakeExternalEntityRepository : FakeStore<ExternalEntity>, IExternalEntityRepository
 {
     public HashSet<Guid> EntityTypes { get; } = [];
+
+    /// <summary>What references each entity, as the database's foreign keys would report it; none unless a test says.</summary>
+    public Dictionary<Guid, IReadOnlyList<RecordUse>> Uses { get; } = [];
+
+    public Task<IReadOnlyList<RecordUse>> ListUsesAsync(Guid entityId, CancellationToken cancellationToken) =>
+        Task.FromResult(Uses.GetValueOrDefault(entityId) ?? []);
+
+    public void Remove(ExternalEntity entity) => Rows.Remove(entity.Id);
 
     public Task<ExternalEntityPage> ListAsync(ExternalEntityQuery query, CancellationToken cancellationToken) =>
         Task.FromResult(PageOf(

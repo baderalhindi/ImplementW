@@ -12,17 +12,21 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 import { progressApi } from '../api/progressApi.ts';
 import { type ProgressSubmissionDetail } from '../api/types.ts';
 import { FigureDetails, type IntakeDate } from '../components/Figures.tsx';
+import { StageEntries } from '../components/StageEntries.tsx';
 import { PERCENT_FIELD_MESSAGES, isStaleSubmission, progressProblemMessage } from '../problems.ts';
 import {
   checkProgressUpdate,
   differsFrom,
   type FigureSource,
   hasErrors,
+  liveFigures,
   NARRATIVE_FIELD,
   OVERRIDE_PERCENT_FIELD,
   OVERRIDE_REASON_FIELD,
   type ProgressUpdateCodes,
   type ProgressUpdateValues,
+  stageField,
+  type StageEntryValues,
   toRequest,
   valuesOf,
 } from '../progressUpdate.ts';
@@ -39,6 +43,16 @@ const SOURCE_NOTES: Record<ProgressSubmissionDetail['actualSource'], Translation
   WORK_BREAKDOWN: 'progress.update.derived',
   DECLARED: 'progress.update.declared',
   NOT_AVAILABLE: 'progress.update.noFigure',
+  STAGE_WEIGHTED: 'progress.update.stageWeighted',
+};
+
+/** A stage's fields as the API names them in a refusal, `stages[i].percentComplete`, and as the form names them. */
+const STAGE_REQUEST_FIELDS: Record<string, keyof StageEntryValues> = {
+  percentComplete: 'percent',
+  actualStartDate: 'actualStartDate',
+  actualFinishDate: 'actualFinishDate',
+  note: 'note',
+  decreaseReason: 'decreaseReason',
 };
 
 interface ProgressUpdateDialogProps {
@@ -73,15 +87,34 @@ function inputOf(field: string): string {
   return field.replace(/\.(text|language)$/, '');
 }
 
-/** The API's field codes of a refusal, by input. */
-function serverCodesOf(error: unknown): ProgressUpdateCodes {
+/** The API's field codes of a refusal, by input; a stage's by its code, the request having sent the stages in `stages` order. */
+function serverCodesOf(error: unknown, stages: readonly StageEntryValues[]): ProgressUpdateCodes {
   const codes: ProgressUpdateCodes = {};
   if (error instanceof ApiError) {
     for (const issue of error.fieldIssues) {
-      codes[inputOf(issue.field)] ??= issue.code;
+      const stage = /^stages\[(\d+)\]\.(\w+)/.exec(inputOf(issue.field));
+      const entry = stage === null ? undefined : stages[Number(stage[1])];
+      const field = stage === null ? undefined : STAGE_REQUEST_FIELDS[stage[2] ?? ''];
+      const key =
+        entry !== undefined && field !== undefined
+          ? stageField(entry.stageCode, field)
+          : inputOf(issue.field);
+      codes[key] ??= issue.code;
     }
   }
   return codes;
+}
+
+/** A draft may be saved with a stage's figures still to come; only submitting needs them. */
+function blockingCodes(codes: ProgressUpdateCodes, mode: ProgressUpdateMode): ProgressUpdateCodes {
+  return mode === 'submit'
+    ? codes
+    : Object.fromEntries(
+        Object.entries(codes).map(([field, code]) => [
+          field,
+          field.startsWith('stage.') && code === 'REQUIRED' ? null : code,
+        ]),
+      );
 }
 
 function ProgressUpdateBody({
@@ -102,9 +135,12 @@ function ProgressUpdateBody({
   const [serverCodes, setServerCodes] = useState<ProgressUpdateCodes>({});
   const [focusRequest, setFocusRequest] = useState(0);
 
-  const codes = checkProgressUpdate(values);
+  const stages = submission.stages ?? [];
+  const stageBased = stages.length > 0;
+  const codes = blockingCodes(checkProgressUpdate(values, stages), mode);
   const overriding = values.figureSource === 'override';
   const noFigure = submission.actualSource === 'NOT_AVAILABLE';
+  const live = stageBased ? liveFigures(values, stages) : null;
 
   useEffect(() => {
     if (focusRequest > 0) {
@@ -162,7 +198,7 @@ function ProgressUpdateBody({
     } else if (isStaleSubmission(result.error)) {
       onStale();
     } else {
-      setServerCodes(serverCodesOf(result.error));
+      setServerCodes(serverCodesOf(result.error, values.stages));
       setFocusRequest((current) => current + 1);
     }
   };
@@ -181,8 +217,12 @@ function ProgressUpdateBody({
       <dl className="details">
         <FigureDetails
           figures={{
-            plannedPercent: submission.plannedPercent,
-            actualPercent: noFigure ? null : submission.actualPercentCalculated,
+            plannedPercent: live === null ? submission.plannedPercent : live.planned,
+            actualPercent: noFigure
+              ? null
+              : live === null
+                ? submission.actualPercentCalculated
+                : live.actual,
             isOverridden: false,
             isOpeningPosition: submission.projectIntakeId !== null,
           }}
@@ -234,6 +274,17 @@ function ProgressUpdateBody({
             error={errorOf(OVERRIDE_REASON_FIELD)}
           />
         </>
+      )}
+      {stageBased && (
+        <StageEntries
+          values={values}
+          stages={stages}
+          onChange={(next) => {
+            setValues((current) => ({ ...current, stages: next }));
+            setServerCodes({});
+          }}
+          errorOf={errorOf}
+        />
       )}
       <TextAreaField
         label={t('progress.update.narrative')}

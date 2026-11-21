@@ -112,4 +112,20 @@ public sealed class KpiAssignmentsController(IKpiAssignmentService assignments) 
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
             ? Respond(await assignments.TransitionAsync(CallerId, assignmentId, status, version, cancellationToken))
             : problem!;
+
+    /// <summary>Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.</summary>
+    [HttpDelete(Collection + "/{assignmentId:guid}")]
+    [RequirePermission(PermissionCatalogue.KpiManage)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [EndpointName("FinancialKpi_DeleteKpiAssignment")]
+    public async Task<IActionResult> Delete(Guid assignmentId, CancellationToken cancellationToken)
+    {
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationError? error = await assignments.DeleteAsync(CallerId, assignmentId, version, cancellationToken);
+        return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
+    }
 }

@@ -125,11 +125,13 @@ internal sealed class ProjectFollowUpService(
 
         List<ProjectEntity> reached = [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false))
             .Where(p => (query.DepartmentId is not { } department || p.DepartmentId == department)
-                        && (query.FollowUpOwnerUserId is not { } owner || p.FollowUpOwnerUserId == owner))];
+                        && (query.FollowUpOwnerUserId is not { } owner || p.FollowUpOwnerUserId == owner)
+                        && query.Filters.Matches(p))];
         Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(reached, cancellationToken).ConfigureAwait(false);
         List<ProjectFollowUpItem> due = [.. reached
             .Select(p => (Project: p, Indicators: indicatorsOf(p)))
-            .Where(r => r.Indicators.FollowUpReasons.Count > 0 && (query.Reason is not { } reason || r.Indicators.FollowUpReasons.Contains(reason)))
+            .Where(r => r.Indicators.FollowUpReasons.Count > 0 && (query.Reason is not { } reason || r.Indicators.FollowUpReasons.Contains(reason))
+                        && (query.MainReason is not { } main || r.Indicators.FollowUpReasons[0] == main))
             .OrderBy(r => r.Indicators.FollowUpReasons[0])
             .ThenBy(r => r.Project.NextActionDueDate ?? DateOnly.MaxValue)
             .ThenBy(r => r.Project.FormalProjectId ?? r.Project.LegacyReference, StringComparer.Ordinal)

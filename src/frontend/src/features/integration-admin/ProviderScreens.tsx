@@ -69,6 +69,7 @@ export function SsoDirectoryPage(): ReactElement {
               items={withCodes(catalogue.items, SSO_DIRECTORY_CODES)}
               caption={t('integrationAdmin.sections.runtime')}
               emptyTitle={t('integrationAdmin.overview.empty')}
+              emptyReason="setup"
             />
           </Section>
           <IdentityConfiguration>
@@ -107,6 +108,7 @@ export function EmailExchangePage(): ReactElement {
                 items={providers}
                 caption={t('integrationAdmin.sections.runtime')}
                 emptyTitle={t('integrationAdmin.overview.empty')}
+                emptyReason="setup"
               />
             </Section>
             {providers.map((provider) => (
@@ -169,6 +171,7 @@ export function NafathPage(): ReactElement {
               items={withCodes(catalogue.items, NAFATH_CODES)}
               caption={t('integrationAdmin.sections.runtime')}
               emptyTitle={t('integrationAdmin.overview.empty')}
+              emptyReason="setup"
             />
           </Section>
           <IdentityConfiguration>

@@ -9,8 +9,26 @@ public interface IUserAccessRepository
 
     public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>The user whose National ID or Iqama number has this fingerprint (client review, item 7), if any.</summary>
+    public Task<Guid?> FindByNationalIdFingerprintAsync(string fingerprint, CancellationToken cancellationToken);
+
+    /// <summary>The mobile number on the user's profile, verified or not.</summary>
+    public Task<string?> FindMobileNumberAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>Marks the number verified (ADR-004) if it is still the user's and not yet verified: a sign-in code sent to it was entered.</summary>
+    public Task RecordMobileNumberVerifiedAsync(Guid userId, string mobileNumber, CancellationToken cancellationToken);
+
+    /// <summary>The fingerprint of the National ID or Iqama number recorded for the user, if any (client review, item 7).</summary>
+    public Task<string?> FindNationalIdFingerprintAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>A local account's credential by its username; null for a directory account or no account.</summary>
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The username of the one account with this email address, compared without regard to case (20 Nov 2026: "Regular account" signs in by
+    /// username or email); null when no account, or more than one, has it.
+    /// </summary>
+    public Task<string?> FindUsernameByEmailAsync(string email, CancellationToken cancellationToken);
 
     /// <summary>The user, if their password lives in the directory.</summary>
     public Task<DirectoryAccount?> FindDirectoryAccountAsync(Guid userId, CancellationToken cancellationToken);

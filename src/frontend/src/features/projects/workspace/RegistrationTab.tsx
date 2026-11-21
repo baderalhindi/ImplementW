@@ -4,9 +4,10 @@ import { usePersonNames } from '@/features/identity-access/assignments/useUserNa
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { Detail } from '../components/Detail.tsx';
-import { formatSar, languageTag } from '../presentation.ts';
+import { languageTag } from '../presentation.ts';
 
 import { useWorkspace } from './workspaceContext.ts';
+import { sarWhole } from '@/shared/format/money.ts';
 
 /** SCR-041 Registration: every field of the registration as the API holds it, with who made and last changed it. */
 export function RegistrationTab(): ReactElement {
@@ -58,7 +59,7 @@ export function RegistrationTab(): ReactElement {
           none
         ) : (
           <span dir="ltr">
-            {t('projects.money.sar', { amount: formatSar(project.registrationBudgetSar) })}
+            {t('projects.money.sar', { amount: sarWhole(project.registrationBudgetSar) })}
           </span>
         )}
       </Detail>

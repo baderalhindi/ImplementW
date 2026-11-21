@@ -6,7 +6,7 @@ namespace PMPlatform.Domain.Project;
 /// The project master aggregate (Blueprint Sections 5 and 9; ICD-02) and the root of the core-domain graph.
 /// Delete policy: HARD_DRAFT — deletable only while DRAFT, by its owner, with an audit event.
 /// </summary>
-public sealed class Project : AuditedEntity
+public sealed class Project : AuditedEntity, IDeletable
 {
     /// <summary>
     /// The one authoritative identifier, unique, issued when AHDA approves the project. An entity may create a draft
@@ -34,6 +34,12 @@ public sealed class Project : AuditedEntity
     /// <summary>The R04 holder, employer-neutral (ADR-013); absent while DRAFT.</summary>
     public Guid? ProjectManagerUserId { get; set; }
 
+    /// <summary>
+    /// The Project Manager the registration form names (review round 7, item 2), which submitting the registration proposes. It grants nothing: the
+    /// manager of record is <see cref="ProjectManagerUserId"/>, set on submission and changed afterwards by the change of manager.
+    /// </summary>
+    public Guid? ProposedProjectManagerUserId { get; set; }
+
     /// <summary>Who last submitted the registration: the requester of its approval run, so they alone may not decide it (WF-11).</summary>
     public Guid? SubmittedByUserId { get; set; }
 
@@ -41,6 +47,14 @@ public sealed class Project : AuditedEntity
     public bool IsCanceled { get; set; }
 
     public ProjectLifecycleState LifecycleState { get; set; }
+
+    /// <summary>
+    /// Set when a holder of PROJECT_DELETE deleted the project (client review, item 4): it and every record anchored on it leave
+    /// the platform's reads, and all of it stays in the database. Only a direct database change brings it back.
+    /// </summary>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 
     /// <summary>A RETURNED request creates revision + 1 and a new approval instance (TASK-035).</summary>
     public int RevisionNo { get; set; } = 1;
@@ -139,6 +153,21 @@ public sealed class Project : AuditedEntity
 
     /// <summary>Where the declared values came from; set whenever one of them is.</summary>
     public DeclaredValueSource? DeclaredSource { get; set; }
+
+    /// <summary>
+    /// The stage plan's revision (review round 7, item 1): 0 while the project has none, raised by each change. A change once the registration is
+    /// approved claims a STAGE_PLAN_CHANGE authorisation of this revision.
+    /// </summary>
+    public int StagePlanRevisionNo { get; set; }
+
+    /// <summary>How the overall progress is calculated (review round 8, point 02); null until set, while the declared figure stands.</summary>
+    public ProjectProgressMethod? ProgressMethod { get; set; }
+
+    /// <summary>The first applicable stage below 100% in the latest published stage-based period, or as imported; null before either.</summary>
+    public string? CurrentStageCode { get; set; }
+
+    /// <summary>The % complete of <see cref="CurrentStageCode"/>, 0 to 100.</summary>
+    public decimal? CurrentStagePercent { get; set; }
 
     /// <summary>Whether the delivering entity keeps to its periodic updates, as RPMO records it.</summary>
     public bool? EntityUpdateCompliant { get; set; }

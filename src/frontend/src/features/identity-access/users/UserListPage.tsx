@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -6,22 +6,34 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
+import { RowActionGroup } from '@/shared/ui/MoreMenu.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
-import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { usersApi } from '../api/identityAccessApi.ts';
-import { type UserQuery, type UserSort, type UserStatus, type UserType } from '../api/types.ts';
+import { ConfirmDialog, type Confirmation } from '../components/ConfirmDialog.tsx';
+import { useCan } from '../permissions/permissions.ts';
+import {
+  type UserQuery,
+  type UserSort,
+  type UserStatus,
+  type UserSummary,
+  type UserType,
+} from '../api/types.ts';
 import { labelOf, type OrganizationLookups, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
 
 const PAGE_SIZE = 25;
 const USER_STATUSES: UserStatus[] = ['ACTIVE', 'DISABLED'];
 const USER_TYPES: UserType[] = ['INTERNAL', 'EXTERNAL', 'SERVICE'];
+
+/** Unless the type filter asks for them, the list shows people only: the platform's service accounts run its jobs and are not administered. */
+const PEOPLE = 'INTERNAL,EXTERNAL' as const;
 const USER_SORTS: UserSort[] = [
   'displayName:asc',
   'displayName:desc',
@@ -222,6 +234,8 @@ function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactEleme
 export function UserListPage(): ReactElement {
   const selection = useRowSelection();
   const { t, language } = useI18n();
+  const mayManage = useCan('USER_MANAGE');
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const { params, goToPage } = useListParams();
   const query = queryFrom(params);
   const { lookups } = useOrganizationLookups(language);
@@ -230,7 +244,16 @@ export function UserListPage(): ReactElement {
   const load = useCallback(
     (signal: AbortSignal) =>
       usersApi.list(
-        { q, status, userType, departmentId, externalEntityId, sort, page, pageSize: PAGE_SIZE },
+        {
+          q,
+          status,
+          userType: userType ?? PEOPLE,
+          departmentId,
+          externalEntityId,
+          sort,
+          page,
+          pageSize: PAGE_SIZE,
+        },
         signal,
       ),
     [q, status, userType, departmentId, externalEntityId, sort, page],
@@ -278,13 +301,30 @@ export function UserListPage(): ReactElement {
                 ? t('identityAccess.users.list.emptyFiltered')
                 : t('identityAccess.users.list.empty')
             }
+            reason={filtered ? 'filter' : 'setup'}
           />
         ) : (
           <>
-            <SelectionBar selection={selection}>
-              <span className="cell__aside">{t('identityAccess.users.list.noDelete')}</span>
-            </SelectionBar>
-            <TableContainer caption={t('identityAccess.users.list.caption')}>
+            <TableContainer
+              caption={t('identityAccess.users.list.caption')}
+              selection={{
+                selection,
+                exportName: 'users',
+                actions: (
+                  <>
+                    {mayManage && (
+                      <UserBulkActions
+                        users={users.data.items.filter(
+                          (user) => selection.selected.has(user.id) && user.userType !== 'SERVICE',
+                        )}
+                        onConfirm={setConfirmation}
+                        onDone={selection.clear}
+                      />
+                    )}
+                  </>
+                ),
+              }}
+            >
               <thead>
                 <tr>
                   <SelectAllHeader
@@ -298,6 +338,7 @@ export function UserListPage(): ReactElement {
                   <th scope="col">{t('identityAccess.users.fields.accountSource')}</th>
                   <th scope="col">{t('identityAccess.users.fields.organization')}</th>
                   <th scope="col">{t('identityAccess.users.fields.status')}</th>
+                  {mayManage && <th scope="col">{t('common.table.actions')}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -310,7 +351,7 @@ export function UserListPage(): ReactElement {
                     <td dir="ltr" className="cell--ltr">
                       {user.username}
                     </td>
-                    <td dir="ltr" className="cell--ltr">
+                    <td dir="ltr" className="cell--ltr cell--break">
                       {user.email}
                     </td>
                     <td>{t(`identityAccess.userType.${user.userType}`)}</td>
@@ -330,6 +371,43 @@ export function UserListPage(): ReactElement {
                         tone={user.status === 'ACTIVE' ? 'positive' : 'negative'}
                       />
                     </td>
+                    {mayManage && (
+                      <td className="cell--actions">
+                        {user.userType === 'SERVICE' ? (
+                          <span className="cell__aside">
+                            {t('identityAccess.users.list.serviceAccount')}
+                          </span>
+                        ) : (
+                          <RowActionGroup
+                            label={user.displayName}
+                            primary={
+                              <Link className="button" to={`/admin/users/${user.id}/edit`}>
+                                {t('common.actions.edit')}{' '}
+                                <span className="visually-hidden">{user.displayName}</span>
+                              </Link>
+                            }
+                            items={[
+                              {
+                                key: 'delete',
+                                label: t('identityAccess.users.delete.short'),
+                                danger: true,
+                                onSelect: () => {
+                                  setConfirmation({
+                                    title: t('identityAccess.users.delete.title'),
+                                    body: t('identityAccess.users.delete.body', {
+                                      name: user.displayName,
+                                    }),
+                                    confirmLabel: t('identityAccess.users.delete.confirm'),
+                                    destructive: true,
+                                    action: () => usersApi.remove(user.id, null),
+                                  });
+                                },
+                              },
+                            ]}
+                          />
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -342,6 +420,79 @@ export function UserListPage(): ReactElement {
             />
           </>
         ))}
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          users.reload();
+        }}
+      />
+    </>
+  );
+}
+
+/** Disable or delete the chosen users, confirmed by name. The API refuses one's own account and says why. */
+function UserBulkActions({
+  users,
+  onConfirm,
+  onDone,
+}: {
+  users: UserSummary[];
+  onConfirm: (confirmation: Confirmation) => void;
+  onDone: () => void;
+}): ReactElement | null {
+  const { t } = useI18n();
+  const active = users.filter((user) => user.status === 'ACTIVE');
+  const names = (chosen: UserSummary[]) => chosen.map((user) => user.displayName).join('، ');
+  return (
+    <>
+      {active.length > 0 && (
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            onConfirm({
+              title: t('identityAccess.users.bulk.disableTitle', { count: active.length }),
+              body: t('identityAccess.users.bulk.disableBody', { names: names(active) }),
+              confirmLabel: t('identityAccess.users.bulk.disable', { count: active.length }),
+              destructive: true,
+              action: async () => {
+                for (const user of active) {
+                  await usersApi.disable(user.id, null);
+                }
+                onDone();
+              },
+            });
+          }}
+        >
+          {t('identityAccess.users.bulk.disable', { count: active.length })}
+        </button>
+      )}
+      {users.length > 0 && (
+        <button
+          type="button"
+          className="button button--danger"
+          onClick={() => {
+            onConfirm({
+              title: t('identityAccess.users.bulk.deleteTitle', { count: users.length }),
+              body: t('identityAccess.users.bulk.deleteBody', { names: names(users) }),
+              confirmLabel: t('identityAccess.users.bulk.delete', { count: users.length }),
+              destructive: true,
+              action: async () => {
+                for (const user of users) {
+                  await usersApi.remove(user.id, null);
+                }
+                onDone();
+              },
+            });
+          }}
+        >
+          {t('identityAccess.users.bulk.delete', { count: users.length })}
+        </button>
+      )}
     </>
   );
 }

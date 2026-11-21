@@ -45,6 +45,8 @@ export interface UserDetail extends UserSummary {
   mustChangePassword: boolean;
   lockedUntil: string | null;
   accountEndsOn: string | null;
+  /** "******6789", or null when no number is recorded (client review, item 7). */
+  nationalIdMasked?: string | null;
   /** In the one response that set it, never read back: shown once and never stored. */
   temporaryPassword?: string | null;
   directorySubjectId: string | null;
@@ -61,6 +63,11 @@ export interface UserDetail extends UserSummary {
   updatedAt: string;
   updatedBy: string;
 }
+
+/** The list request: one type, or several comma-joined as the API reads a set (e.g. "INTERNAL,EXTERNAL"). */
+export type UserListRequest = Omit<UserQuery, 'userType'> & {
+  userType?: UserType | `${UserType},${UserType}` | undefined;
+};
 
 export interface UserQuery {
   status?: UserStatus | undefined;
@@ -147,6 +154,26 @@ export interface PermissionSummary {
   permissionGroup: string;
   isPrivileged: boolean;
   dataClassificationItemId: string | null;
+}
+
+export type PermissionOverrideEffect = 'GRANT' | 'REMOVE';
+
+/** One permission for one user: what their roles give, what was adjusted for them, and whether they hold it now. */
+export interface UserPermissionEntry {
+  permissionCode: string;
+  name: BilingualLabel;
+  permissionGroup: string;
+  isPrivileged: boolean;
+  fromRoles: { roleCode: string; dataScope: DataScope }[];
+  overrideEffect: PermissionOverrideEffect | null;
+  overrideScope: DataScope | null;
+  overrideReason: { text: string; language: string } | null;
+  isHeld: boolean;
+}
+
+export interface UserPermissions {
+  userId: string;
+  items: UserPermissionEntry[];
 }
 
 export interface PermissionProfileGrant {

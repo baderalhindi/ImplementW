@@ -1,6 +1,7 @@
 import { type ReactElement, useCallback } from 'react';
 import { Link, useParams } from 'react-router';
 
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -45,6 +46,8 @@ export function EditProjectPage(): ReactElement | null {
     [projectId],
   );
   const project = useApiResource(load);
+  // Review round 7, item 4: R02 edits a registration past review too.
+  const editsRegistered = useCan('PROJECT_REGISTRATION_EDIT');
 
   if (session === null) {
     return null;
@@ -65,12 +68,13 @@ export function EditProjectPage(): ReactElement | null {
   return (
     <>
       <PageHeader title={t('projects.edit.title', { title: detail.title.text })} />
-      {isEditable(detail.status) ? (
+      {isEditable(detail.status) || (editsRegistered && detail.status !== 'CLOSED') ? (
         // Keyed on the ETag: a reload after someone else's change starts the form from the new version.
         <ProjectForm
           key={project.data.etag ?? detail.id}
           user={session.user}
           existing={{ project: detail, etag: project.data.etag }}
+          registered={!isEditable(detail.status)}
         />
       ) : (
         <EmptyState

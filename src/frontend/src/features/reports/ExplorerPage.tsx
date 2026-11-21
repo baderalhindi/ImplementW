@@ -316,7 +316,7 @@ export function ExplorerPage(): ReactElement {
     return (
       <>
         <PageHeader title={title} />
-        <EmptyState title={t('reports.explorer.notForRole')} />
+        <EmptyState title={t('reports.explorer.notForRole')} reason="role" />
       </>
     );
   }

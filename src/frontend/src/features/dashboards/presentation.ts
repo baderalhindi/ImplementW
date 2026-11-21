@@ -1,8 +1,9 @@
 import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
 import { financialStatusTone, ragTone } from '@/features/financial-kpi/presentation.ts';
 import { formatPercent, healthTone } from '@/features/progress/presentation.ts';
-import { formatSar, isProjectStatus, statusTone } from '@/features/projects/presentation.ts';
+import { isProjectStatus, statusTone } from '@/features/projects/presentation.ts';
 import { type Language, type TranslationKey } from '@/shared/i18n/i18n.ts';
+import { type EmptyReason } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 import {
@@ -12,6 +13,8 @@ import {
   type WidgetFigure,
   type WidgetUnknownReason,
 } from './api/types.ts';
+import { type PortfolioFilters } from './api/dashboardsApi.ts';
+import { sarCompact } from '@/shared/format/money.ts';
 
 // How FG-01's widget values read on screen. Every value is the source's own word for its own state, labelled as the
 // source labels it (WF-01's lifecycle, WF-02's health, WF-14's conditions); the colour only repeats the word (WCAG
@@ -215,7 +218,8 @@ export function formatFigure(
     case 'DAYS':
       return t('dashboards.units.days', { value: DAYS_FORMAT.format(Number(figure.value)) });
     case 'SAR':
-      return t('dashboards.units.sar', { amount: formatSar(figure.value) });
+      // Review round 8, point 11: a widget is a card, so its amount is compact; FigureValue shows the full figure on hover.
+      return sarCompact(figure.value, t);
     default:
       return figure.value;
   }
@@ -281,4 +285,16 @@ export function hasNoData(view: DashboardView): boolean {
     view.locations.every((location) => location.projectCount === 0) &&
     view.widgets.every(isBlankWidget)
   );
+}
+
+/**
+ * Why a portfolio view is empty (review round 8, point 09): a filter that leaves nothing, a period with nothing in it, or nothing in the person's
+ * scope at all.
+ */
+export function emptyPortfolioReason(filters: PortfolioFilters): EmptyReason {
+  const { period, ...narrowing } = filters;
+  if (Object.values(narrowing).some((value) => value !== undefined && value !== '')) {
+    return 'filter';
+  }
+  return period === undefined || period === '' ? 'scope' : 'period';
 }

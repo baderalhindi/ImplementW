@@ -23,6 +23,12 @@ public interface IUserAdministrationRepository
 
     public Task<IReadOnlyList<UserName>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
+    /// <summary>The user holding this National ID fingerprint, whatever their status: a number belongs to one person.</summary>
+    public Task<Guid?> FindIdByNationalIdFingerprintAsync(string fingerprint, CancellationToken cancellationToken);
+
+    /// <summary>The sealed number of a user who is not deleted; null when there is none.</summary>
+    public Task<string?> FindNationalIdSealedAsync(Guid userId, CancellationToken cancellationToken);
+
     public void Add(User user);
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);

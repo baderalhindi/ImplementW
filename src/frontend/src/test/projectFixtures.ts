@@ -80,6 +80,19 @@ export function entityManagerSession(): Session {
 }
 
 /** An AHDA department manager (R03) over the projects' department: internal and reached. */
+/** A Viewer (R06) of the department: reads every project page, changes nothing. */
+export function viewerSession(departmentId = DEPARTMENT_ID): Session {
+  return withUser(
+    sessionFor([]),
+    {
+      id: '5e5e5e5e-0000-4000-8000-000000000106',
+      userType: 'INTERNAL',
+      displayName: 'Vera Viewer',
+    },
+    [assignment({ roleCode: 'R06', departmentId })],
+  );
+}
+
 export function reviewerSession(departmentId = DEPARTMENT_ID): Session {
   return withUser(
     sessionFor([]),

@@ -9,6 +9,7 @@ import {
   type SignInResult,
   sessionApi,
 } from './sessionApi.ts';
+import { credentialJson, isPasskeyCancelled, requestOptions } from './webAuthn.ts';
 
 export interface PendingSecondFactor {
   pending: MultiFactorPending;
@@ -42,4 +43,39 @@ export async function nextStep(
   }
   const challenge = await sessionApi.beginMultiFactor(result.mfaToken);
   return { secondFactor: { pending: result, challenge } };
+}
+
+export type SignInStep = Awaited<ReturnType<typeof nextStep>>;
+
+/** A passkey step's failure: cancelled at the device, or a key no account knows. */
+export const describePasskeyRefusal: ProblemDescriber = (error, t) =>
+  isPasskeyCancelled(error)
+    ? t('identityAccess.signIn.passwordless.passkeyCancelled')
+    : error instanceof ApiError && error.code === 'AUTHENTICATION_REQUIRED'
+      ? t('identityAccess.signIn.passwordless.refused')
+      : problemMessage(error, t);
+
+/**
+ * Signs in with the passkey this device holds (Face ID / Touch ID). With a National ID only its owner's verifies; without one,
+ * whoever the device's passkey belongs to signs in. `onlyCredentialIds` limits what the device may offer.
+ */
+export async function signInWithPasskey(
+  nationalId: string | null,
+  onlyCredentialIds: readonly string[] = [],
+): Promise<SignInStep> {
+  const { options, transaction } = await sessionApi.beginPasskeySignIn(nationalId);
+  const credential = (await navigator.credentials.get({
+    publicKey: requestOptions(
+      onlyCredentialIds.length === 0
+        ? options
+        : {
+            ...options,
+            allowCredentials: onlyCredentialIds.map((id) => ({ id, type: 'public-key' })),
+          },
+    ),
+  })) as PublicKeyCredential | null;
+  if (credential === null) {
+    throw new DOMException('Nothing was chosen.', 'NotAllowedError');
+  }
+  return nextStep(await sessionApi.signInWithPasskey(transaction, credentialJson(credential)));
 }

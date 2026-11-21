@@ -23,4 +23,7 @@ public interface IProjectTaskService
 
     /// <summary>The project's Activity Execution Progress, one row per schedule activity its tasks execute against.</summary>
     public Task<ActivityExecutionProgressPage> ListActivityProgressAsync(Guid callerId, Guid projectId, PageRequest page, CancellationToken cancellationToken);
+
+    /// <summary>Client review, item 8: hides the task, with its subtasks and dependencies, and what belongs to it, keeping all of it in the database. Null on success.</summary>
+    public Task<AdministrationError?> DeleteTaskAsync(Guid callerId, Guid taskId, uint? expectedVersion, CancellationToken cancellationToken);
 }

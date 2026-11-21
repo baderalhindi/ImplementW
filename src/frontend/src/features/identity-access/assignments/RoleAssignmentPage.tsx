@@ -100,6 +100,7 @@ export function RoleAssignmentPage(): ReactElement {
                 ? t('identityAccess.assignments.empty')
                 : t('identityAccess.assignments.emptyFiltered')
             }
+            reason={status === undefined && projectId === undefined ? 'notYet' : 'filter'}
           />
         ) : (
           <>

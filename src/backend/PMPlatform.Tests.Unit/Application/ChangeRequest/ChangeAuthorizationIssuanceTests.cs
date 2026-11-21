@@ -29,8 +29,23 @@ public sealed class ChangeAuthorizationIssuanceTests
                 (ChangeAuthorizationScope.Rebaseline, "Schedule", "ProjectBaseline", Baseline, 3, ChangeAuthorizationStatus.Issued, Run),
                 (ChangeAuthorizationScope.CommitmentChange, "FinancialKpi", "FinancialCommitment", Budget, 2, ChangeAuthorizationStatus.Issued, Run),
             ],
-            ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now)
+            ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now, 0)
                 .Select(a => (a.AuthorizationScope, a.TargetModule, a.TargetType, a.TargetId, a.TargetRevisionNo, a.Status, a.ApprovalInstanceId)));
+    }
+
+    /// <summary>Review round 7, item 1: a schedule change also authorises a change of the project's stage plan at its revision, once it has one.</summary>
+    [Fact]
+    public void AScheduleChangeAuthorizesAChangeOfTheStagePlanAtItsRevision()
+    {
+        ChangeRequestEntity request = Request(schedule: 6, cost: null);
+
+        Assert.Contains(
+            (ChangeAuthorizationScope.StagePlanChange, "Project", "ProjectStagePlan", request.ProjectId, 4),
+            ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now, 4)
+                .Select(a => (a.AuthorizationScope, a.TargetModule, a.TargetType, a.TargetId, a.TargetRevisionNo)));
+        Assert.DoesNotContain(
+            ChangeRequestApprovalOutcomeHandler.Issue(Request(schedule: null, cost: 40000m), Evaluation(request), Outcome(request), Now, 4),
+            a => a.AuthorizationScope == ChangeAuthorizationScope.StagePlanChange);
     }
 
     /// <summary>A change with neither a schedule nor a cost impact changes no commitment a module applies an authorisation to (F-4).</summary>
@@ -38,7 +53,7 @@ public sealed class ChangeAuthorizationIssuanceTests
     public void AChangeOfNoGovernedCommitmentIsIssuedNone()
     {
         ChangeRequestEntity request = Request(schedule: null, cost: null);
-        Assert.Empty(ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now));
+        Assert.Empty(ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now, 0));
     }
 
     /// <summary>The key is derived, never fresh: the same approval issued again yields the same keys; another revision, others.</summary>
@@ -46,13 +61,13 @@ public sealed class ChangeAuthorizationIssuanceTests
     public void TheIssuanceKeyIsTheRequestTheRevisionAndTheScope()
     {
         ChangeRequestEntity request = Request(schedule: 6, cost: 40000m);
-        string[] first = [.. ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now).Select(a => a.IdempotencyKey)];
-        string[] again = [.. ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now.AddMinutes(1)).Select(a => a.IdempotencyKey)];
+        string[] first = [.. ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now, 0).Select(a => a.IdempotencyKey)];
+        string[] again = [.. ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now.AddMinutes(1), 0).Select(a => a.IdempotencyKey)];
 
         Assert.Equal([$"ChangeRequest:{request.Id}:r2:REBASELINE", $"ChangeRequest:{request.Id}:r2:COMMITMENT_CHANGE"], first);
         Assert.Equal(first, again);
         request.RevisionNo = 3;
-        Assert.DoesNotContain(ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now).Select(a => a.IdempotencyKey), first.Contains);
+        Assert.DoesNotContain(ChangeRequestApprovalOutcomeHandler.Issue(request, Evaluation(request), Outcome(request), Now, 0).Select(a => a.IdempotencyKey), first.Contains);
     }
 
     private static ChangeRequestEntity Request(int? schedule, decimal? cost) => new()

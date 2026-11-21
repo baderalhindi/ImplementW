@@ -12,6 +12,9 @@ namespace PMPlatform.Tests.Integration.Identity;
 /// </summary>
 public sealed class IdentityTestHost : IAsyncLifetime
 {
+    /// <summary>The suite's PERSONAL_DATA_KEY: National ID fingerprints a test writes to the database are computed under it.</summary>
+    public const string PersonalDataKey = "identity-integration-test-personal-data-key-0123456789";
+
     /// <summary>Settings of the shared API on top of the identity ones, e.g. to park its background passes.</summary>
     public IReadOnlyDictionary<string, string?>? SharedApiSettings { get; init; }
 
@@ -52,6 +55,7 @@ public sealed class IdentityTestHost : IAsyncLifetime
 
         settings["DB_CONNECTION_STRING"] = Database.ConnectionString;
         settings.TryAdd("JWT_SIGNING_KEY", IdentityApiFactory.SigningKey);
+        settings.TryAdd("PERSONAL_DATA_KEY", PersonalDataKey);
         return new IdentityApiFactory(settings, Clock, Logs, services);
     }
 

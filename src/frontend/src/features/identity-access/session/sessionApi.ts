@@ -12,7 +12,8 @@ export interface SessionRoleAssignment {
   projectId: string | null;
 }
 
-export type AuthenticationMethod = 'DIRECTORY' | 'SINGLE_SIGN_ON' | 'LOCAL_PASSWORD';
+export type AuthenticationMethod =
+  'DIRECTORY' | 'SINGLE_SIGN_ON' | 'LOCAL_PASSWORD' | 'PASSKEY' | 'SMS_CODE';
 
 export interface SessionUser {
   id: string;
@@ -61,6 +62,22 @@ export interface SignInOptions {
   singleSignOnAvailable: boolean;
   /** False where no reset e-mail could be sent, or local accounts are off. */
   passwordResetAvailable: boolean;
+  /** Face ID / Touch ID: the environment knows its WebAuthn relying party. The device must also have a passkey. */
+  passkeySignInAvailable: boolean;
+  /** A code by SMS: an SMS gateway (or its test-mailbox stand-in) is configured. */
+  smsSignInAvailable: boolean;
+}
+
+/** The start of a passkey ceremony: options for the browser, and the sealed transaction to send back with its answer. */
+export interface PasskeyOptions {
+  options: Record<string, unknown>;
+  transaction: string;
+}
+
+/** The same whether or not the number is anyone's; a code went only if it is a verified number. */
+export interface SmsCodeChallenge {
+  challengeId: string;
+  expiresAt: string;
 }
 
 export interface SsoAuthorization {
@@ -95,6 +112,22 @@ export const sessionApi = {
     (await apiRequest<SsoAuthorization>('/sessions/sso-authorization', { anonymous: true })).data,
   completeSso: (code: string, state: string, transaction: string) =>
     post<SignInResult>('/sessions/sso', { code, state, transaction }),
+  /**
+   * Options for a passkey sign-in. With a National ID (sign-in with biometrics), only its owner's passkey verifies, and the
+   * answer is the same for any number; with null (the Face ID / Touch ID button), the device's passkey signs its owner in.
+   */
+  beginPasskeySignIn: (nationalId: string | null) =>
+    post<PasskeyOptions>('/sessions/passkey-challenge', nationalId === null ? {} : { nationalId }),
+  signInWithPasskey: (transaction: string, credential: unknown) =>
+    post<SignInResult>('/sessions/passkey', { transaction, credential }),
+  /** Sign-in with biometrics, first step: whether the National ID or Iqama number is registered to someone who may sign in. */
+  checkNationalId: (nationalId: string) =>
+    post<{ registered: boolean }>('/sessions/national-id-check', { nationalId }),
+  /** The first time on a device: a code to the mobile number, if it is the one on the National ID owner's profile. */
+  requestSmsCode: (nationalId: string, mobileNumber: string) =>
+    post<SmsCodeChallenge>('/sessions/sms-code-challenge', { nationalId, mobileNumber }),
+  signInWithSmsCode: (challengeId: string, code: string) =>
+    post<SignInResult>('/sessions/sms', { challengeId, code }),
   changePassword: (passwordChangeToken: string, newPassword: string) =>
     post<SignInResult>('/sessions/password-change', { passwordChangeToken, newPassword }),
   /** The one call here made as the signed-in person: the access token says whose password it is. */

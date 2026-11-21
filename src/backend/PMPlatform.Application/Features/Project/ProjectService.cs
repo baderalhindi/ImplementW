@@ -1,9 +1,12 @@
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.FollowUp;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Project;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
@@ -23,6 +26,11 @@ internal sealed class ProjectService(
     IEnumerable<IProjectActivationPrecondition> activationPreconditions,
     IAuthorizationEngine engine,
     ProjectIndicatorReader indicators,
+    ProjectStagePlanService stagePlans,
+    IEnumerable<IProjectManagerHandover> handovers,
+    IProjectProgressSource progress,
+    IConfigurationResolver resolver,
+    IOutbox outbox,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectService
 {
@@ -36,10 +44,41 @@ internal sealed class ProjectService(
             return new ProjectPage([], query.Page.Page, query.Page.PageSize, 0);
         }
 
+        if (query.CurrentStage == ProjectQuery.NoStage)
+        {
+            ProjectStageSet? stages = await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            query = query with { KnownStageCodes = [.. stages?.Stages.Select(s => s.Code) ?? []] };
+        }
+
+        if (query.FiltersByIndicators)
+        {
+            // On-plan and measured are calculated per project, as the dashboard calculates them: read every match, keep those, then page.
+            IReadOnlyList<ProjectEntity> matching = await repository.ListMatchingAsync(scope, query, cancellationToken).ConfigureAwait(false);
+            Func<ProjectEntity, ProjectIndicators> indicatorsOfAll = await indicators.ForAsync(matching, cancellationToken).ConfigureAwait(false);
+            List<ProjectSummary> kept = [.. matching
+                .Select(p => (Project: p, Indicators: indicatorsOfAll(p)))
+                .Where(r => MatchesIndicators(r.Indicators, query))
+                .Select(r => ProjectMapping.ToSummary(r.Project, r.Indicators))];
+            return new ProjectPage([.. kept.Skip(query.Page.Skip).Take(query.Page.PageSize)], query.Page.Page, query.Page.PageSize, kept.Count);
+        }
+
         (IReadOnlyList<ProjectEntity> items, int total) = await repository.ListAsync(scope, query, cancellationToken).ConfigureAwait(false);
         Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(items, cancellationToken).ConfigureAwait(false);
         return new ProjectPage([.. items.Select(p => ProjectMapping.ToSummary(p, indicatorsOf(p)))], query.Page.Page, query.Page.PageSize, total);
     }
+
+    /// <summary>The portfolio dashboard's rules: measured when the gap is calculated; not measured exactly when there is no on-plan label.</summary>
+    private static bool MatchesIndicators(ProjectIndicators indicators, ProjectQuery query) =>
+        (!query.Measured || indicators.GapPoints is not null)
+        && query.OnPlan switch
+        {
+            null => true,
+            ProjectOnPlanFilter.OnTrack => indicators.OnPlan == OnPlanStatus.OnTrack,
+            ProjectOnPlanFilter.Late => indicators.OnPlan == OnPlanStatus.Late,
+            ProjectOnPlanFilter.Stalled => indicators.OnPlan == OnPlanStatus.Stalled,
+            ProjectOnPlanFilter.NotMeasured => indicators.OnPlan is null,
+            _ => throw new ArgumentOutOfRangeException(nameof(query), query.OnPlan, "Unknown on-plan filter."),
+        };
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> GetAsync(Guid callerId, Guid projectId, CancellationToken cancellationToken)
     {
@@ -77,12 +116,19 @@ internal sealed class ProjectService(
             Title = draft.Title,
             LifecycleState = ProjectLifecycleState.Draft,
             RevisionNo = 1,
+            // Review round 8, point 02: a new registration is measured by its stages unless its writer chooses the schedule.
+            ProgressMethod = ProjectProgressMethod.Stages,
             CreatedAt = now,
             CreatedBy = callerId,
             UpdatedAt = now,
             UpdatedBy = callerId,
         };
         ProjectMapping.Apply(draft, project);
+        if (await ProposedManagerInvalidAsync(project, cancellationToken).ConfigureAwait(false) is { } notEligible)
+        {
+            return notEligible;
+        }
+
         repository.Add(project);
         audit.Stage(ProjectAudit.Created(callerId, project));
         // A new row with a new id: no conflict is expected, so any is a fault.
@@ -133,10 +179,22 @@ internal sealed class ProjectService(
 
         ProjectDraft before = ProjectMapping.ToDraft(project);
         ProjectMapping.Apply(draft, project);
+        if (draft.ProposedProjectManagerUserId != before.ProposedProjectManagerUserId
+            && await ProposedManagerInvalidAsync(project, cancellationToken).ConfigureAwait(false) is { } notEligible)
+        {
+            return notEligible;
+        }
+
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Changed(callerId, before, project));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>A proposed Project Manager holds R04 over the project's anchors, as the one a submission names must (review round 7, item 2).</summary>
+    private async Task<AdministrationError?> ProposedManagerInvalidAsync(ProjectEntity project, CancellationToken cancellationToken) =>
+        project.ProposedProjectManagerUserId is { } proposed && !await managers.IsEligibleAsync(proposed, project, cancellationToken).ConfigureAwait(false)
+            ? AdministrationError.Rule(ProjectErrorCodes.ManagerInvalid, new FieldIssue("proposedProjectManagerUserId", FieldIssue.NotAllowed))
+            : null;
 
     public async Task<AdministrationError?> DeleteAsync(Guid callerId, Guid projectId, uint? expectedVersion, CancellationToken cancellationToken)
     {
@@ -146,24 +204,37 @@ internal sealed class ProjectService(
             return AdministrationError.NotFound;
         }
 
-        if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectRegister, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        // Client review, item 4: any state, and everything stays in the database.
+        if (await access.HoldsAsync(callerId, PermissionCatalogue.ProjectDelete, project, cancellationToken).ConfigureAwait(false))
         {
-            return refused;
+            DateTimeOffset now = timeProvider.GetUtcNow();
+            project.DeletedAt = now;
+            project.DeletedBy = callerId;
+            project.UpdatedAt = now;
+            project.UpdatedBy = callerId;
         }
-
-        if (project.LifecycleState != ProjectLifecycleState.Draft)
+        else
         {
-            return NotEditable(project);
-        }
+            if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectRegister, project, cancellationToken).ConfigureAwait(false) is { } refused)
+            {
+                return refused;
+            }
 
-        // HARD_DRAFT (ERD §5.4): by its owner, the person who created the draft.
-        if (project.CreatedBy != callerId)
-        {
-            return AdministrationError.Forbidden;
+            if (project.LifecycleState != ProjectLifecycleState.Draft)
+            {
+                return NotEditable(project);
+            }
+
+            // HARD_DRAFT (ERD §5.4): by its owner, the person who created the draft.
+            if (project.CreatedBy != callerId)
+            {
+                return AdministrationError.Forbidden;
+            }
+
+            repository.Remove(project);
         }
 
         audit.Stage(ProjectAudit.Deleted(callerId, project));
-        repository.Remove(project);
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) switch
         {
             ProjectSaveOutcome.Saved => null,
@@ -205,6 +276,12 @@ internal sealed class ProjectService(
             return incomplete;
         }
 
+        // AHDA reviews the stage plan with the registration (review round 7, item 1).
+        if (await stagePlans.IncompleteAsync(project, cancellationToken).ConfigureAwait(false) is { } unplanned)
+        {
+            return unplanned;
+        }
+
         if (!await managers.IsEligibleAsync(submission.ProjectManagerUserId, project, cancellationToken).ConfigureAwait(false))
         {
             return AdministrationError.Rule(ProjectErrorCodes.ManagerInvalid, new FieldIssue("projectManagerUserId", FieldIssue.NotAllowed));
@@ -225,6 +302,176 @@ internal sealed class ProjectService(
         project.SubmittedByUserId = callerId;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Submitted(callerId, project, from, fromRevisionNo, fromManagerId));
+        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<ProjectDetail>>> EditRegistrationAsync(
+        Guid callerId, Guid projectId, ProjectDraft draft, NarrativeText reason, uint expectedVersion, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentNullException.ThrowIfNull(reason);
+
+        ProjectEntity? project = await repository.FindAsync(projectId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (project is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectRegistrationEdit, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (project.LifecycleState == ProjectLifecycleState.Closed)
+        {
+            return AdministrationError.TerminalState;
+        }
+
+        if (ProjectLifecycle.IsEditable(project.LifecycleState))
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.EditAsDraft);
+        }
+
+        // A commitment of the approved registration changes through a change request (WF-08), never an edit.
+        FieldIssue[] governed =
+        [
+            .. new (string Field, bool Changed)[]
+            {
+                ("registrationBudgetSar", draft.RegistrationBudgetSar != project.RegistrationBudgetSar),
+                ("plannedStartDate", draft.PlannedStartDate != project.PlannedStartDate),
+                ("plannedEndDate", draft.PlannedEndDate != project.PlannedEndDate),
+                ("governanceProfileItemId", draft.GovernanceProfileItemId != project.GovernanceProfileItemId),
+            }.Where(f => f.Changed).Select(f => new FieldIssue(f.Field, FieldIssue.NotAllowed)),
+        ];
+        if (governed.Length > 0)
+        {
+            return AdministrationError.Rule(ProjectErrorCodes.ChangeRequestRequired, governed);
+        }
+
+        if (await references.CheckAsync(draft, cancellationToken).ConfigureAwait(false) is { } invalid)
+        {
+            return invalid;
+        }
+
+        if (await LegacyReferenceTakenAsync(draft, project.Id, cancellationToken).ConfigureAwait(false) is { } taken)
+        {
+            return taken;
+        }
+
+        if ((draft.DepartmentId, draft.ExternalEntityId) != (project.DepartmentId, project.ExternalEntityId)
+            && await access.CheckAnchorsAsync(callerId, PermissionCatalogue.ProjectRegistrationEdit, project.Id, draft, ProjectAccess.OwnerOf(project), cancellationToken)
+                .ConfigureAwait(false) is { } moveRefused)
+        {
+            return moveRefused;
+        }
+
+        ProjectDraft before = ProjectMapping.ToDraft(project);
+        ProjectMapping.Apply(draft with { ProposedProjectManagerUserId = before.ProposedProjectManagerUserId }, project);
+        Touch(project, callerId);
+        audit.Stage(ProjectAudit.RegistrationEdited(callerId, before, project, reason));
+        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<ProjectDetail>>> SetProgressMethodAsync(
+        Guid callerId, Guid projectId, ProjectProgressMethod method, NarrativeText? reason, uint expectedVersion, CancellationToken cancellationToken)
+    {
+        ProjectEntity? project = await repository.FindAsync(projectId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (project is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await stagePlans.CheckWriterAsync(callerId, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (project.LifecycleState == ProjectLifecycleState.Closed)
+        {
+            return AdministrationError.TerminalState;
+        }
+
+        if (project.LifecycleState is ProjectLifecycleState.Submitted or ProjectLifecycleState.UnderReview)
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.StagePlanUnderReview);
+        }
+
+        if (project.ProgressMethod == method)
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.ProgressMethodUnchanged, new FieldIssue("progressMethod", FieldIssue.Duplicate));
+        }
+
+        // An approved update, a published one or an accepted entity update, fixes the figures the method produced: changing it now is explained.
+        bool approved = project.DeclaredSource == DeclaredValueSource.EntityUpdate
+                        || (await progress.WithApprovedUpdateAsync([project.Id], cancellationToken).ConfigureAwait(false)).Contains(project.Id);
+        if (approved && reason is null)
+        {
+            return AdministrationError.Rule(ProjectErrorCodes.ProgressMethodReasonRequired, new FieldIssue("reason", FieldIssue.Required));
+        }
+
+        ProjectProgressMethod? from = project.ProgressMethod;
+        project.ProgressMethod = method;
+        Touch(project, callerId);
+        audit.Stage(ProjectAudit.ProgressMethodChanged(callerId, project, from, reason));
+        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<ProjectDetail>>> ChangeManagerAsync(
+        Guid callerId, Guid projectId, ProjectManagerChange change, uint expectedVersion, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+
+        ProjectEntity? project = await repository.FindAsync(projectId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (project is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectManagerChange, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (project.LifecycleState == ProjectLifecycleState.Closed)
+        {
+            return AdministrationError.TerminalState;
+        }
+
+        if (!await managers.IsEligibleAsync(change.ProjectManagerUserId, project, cancellationToken).ConfigureAwait(false))
+        {
+            return AdministrationError.Rule(ProjectErrorCodes.ManagerInvalid, new FieldIssue("projectManagerUserId", FieldIssue.NotAllowed));
+        }
+
+        Guid? from = project.ProjectManagerUserId;
+        if (from == change.ProjectManagerUserId)
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.ManagerUnchanged, new FieldIssue("projectManagerUserId", FieldIssue.Duplicate));
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        Guid to = change.ProjectManagerUserId;
+        project.ProjectManagerUserId = to;
+
+        // Whoever answered the project's update requests as its manager hands that over too.
+        if (from is { } outgoing && project.EntityContactUserId == outgoing)
+        {
+            project.EntityContactUserId = to;
+        }
+
+        Dictionary<string, int> moved = new(StringComparer.Ordinal);
+        if (from is { } previous)
+        {
+            foreach (IProjectManagerHandover handover in handovers)
+            {
+                moved[handover.Records] = await handover.HandOverAsync(project.Id, previous, to, callerId, now, cancellationToken).ConfigureAwait(false);
+            }
+
+            outbox.Stage(ProjectManagerNotifications.Changed(project, callerId, previous, "OUTGOING", now));
+        }
+
+        outbox.Stage(ProjectManagerNotifications.Changed(project, callerId, to, "INCOMING", now));
+        Touch(project, callerId);
+        audit.Stage(ProjectAudit.ManagerChanged(callerId, project, from, change.Reason, moved));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
     }
 

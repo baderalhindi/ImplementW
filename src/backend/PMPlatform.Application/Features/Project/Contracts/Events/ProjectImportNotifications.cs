@@ -34,3 +34,16 @@ public sealed record ProjectImportValueResolved : EventEnvelope<NotificationInte
 
     public const string EventFamilyCode = "PROJECT_IMPORT_VALUE_RESOLVED";
 }
+
+/// <summary>
+/// <c>Project.ManagerChanged</c> (review round 7, item 2): the outgoing and the incoming Project Manager are each told the project changed hands, one
+/// intent each, addressed by <c>recipientUserId</c> among the PROJECT_MANAGER_CHANGED family's roles.
+/// </summary>
+public sealed record ProjectManagerChanged : EventEnvelope<NotificationIntentData>
+{
+    public const string Type = "Project.ManagerChanged";
+
+    public const int CurrentSchemaVersion = 1;
+
+    public const string EventFamilyCode = "PROJECT_MANAGER_CHANGED";
+}

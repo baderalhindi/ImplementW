@@ -4,7 +4,7 @@
  */
 export type MilestoneDialog =
   | { kind: 'create' } // MOD-016 Create Milestone
-  | { kind: 'edit'; milestoneId: string } // MOD-016 Edit Milestone
+  | { kind: 'edit'; milestoneId: string; fromRow?: true } // MOD-016 Edit Milestone; from a register's row it closes back to the list
   | { kind: 'achievement'; milestoneId: string } // MOD-019 Milestone Achievement
   // MOD-054 Attach, as evidence of the open revision, with the revision's ETag (the attachment changes it) and the
   // evidence types the policy makes mandatory, offered even when the EVIDENCE_TYPE catalogue cannot be read.
@@ -24,6 +24,7 @@ export function returnTo(dialog: MilestoneDialog): string | null {
     case 'achievement':
       return null;
     case 'edit':
+      return dialog.fromRow === true ? null : dialog.milestoneId;
     case 'attach':
     case 'upload':
       return dialog.milestoneId;

@@ -74,11 +74,12 @@ Table identity_access.department {
   parent_department_id uuid [ref: > identity_access.department.id, note: 'Hierarchy']
   directory_reference varchar(200) [note: 'Directory object identifier']
   is_active boolean [not null, default: true]
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 6): out of administration and pickers; records keep its name']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'AHDA organisation structure node (ADM-011/012). Directory is authoritative for membership (ADR-007). Delete policy: RETAIN.'
+  Note: 'AHDA organisation structure node (ADM-011/012). Directory is authoritative for membership (ADR-007). Delete policy: SOFT_DELETE.'
 }
 
 Table identity_access.external_entity {
@@ -123,6 +124,9 @@ Table identity_access.user {
   mfa_enrolled_at timestamptz [note: 'MFA enrolment recorded; factors held by the MFA provider (TASK-029)']
   nafath_verification_reference varchar(200) [note: 'Only the verification reference is stored (data minimisation, OQ-007)']
   nafath_verified_at timestamptz
+  national_id_sealed varchar(200) [note: 'National ID or Iqama number, AES-256-GCM under PERSONAL_DATA_KEY (client review, item 7)']
+  national_id_fingerprint varchar(64) [unique, note: 'HMAC-SHA256 of the number; unique where set; compared with what Nafath asserts (SR-53)']
+  national_id_last_digits varchar(4) [note: 'The last four digits, for the masked display']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -212,6 +216,24 @@ Table identity_access.permission_profile_grant {
     (permission_profile_version_id, permission_id) [unique]
   }
   Note: 'One permission with its data scope inside a profile version (Appendix A scopes). Delete policy: CASCADE.'
+}
+
+Table identity_access.user_permission_override {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  permission_id uuid [not null, ref: > identity_access.permission.id]
+  effect varchar(50) [not null, note: 'GRANT | REMOVE']
+  data_scope varchar(50) [note: 'Set exactly on a GRANT: ALL | DEPT | OWN | ASSIGNED | ENTITY | READ_ONLY']
+  reason text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  reason_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (user_id, permission_id) [unique]
+  }
+  Note: 'One permission granted or removed for one user on top of their roles (client review, item 5). Delete policy: HARD_WORKING. Going back to the roles deletes the row, audited.'
 }
 
 Table identity_access.access_relationship {
@@ -659,6 +681,8 @@ Table project.project {
   is_strategic boolean [note: 'RPMO strategic flag; null is not known (R4-4)']
   entity_contact_user_id uuid [ref: > identity_access.user.id, note: 'Who answers the project update requests by default (R4-2)']
   submitted_by_user_id uuid [ref: > identity_access.user.id, note: 'Who last submitted the registration: the requester of its WF-11 run (review round 5)']
+  deleted_at timestamptz [note: 'Set when a holder of PROJECT_DELETE deleted it (client review, item 4); it and its records leave every read and stay in the database']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   is_canceled boolean [not null, default: false, note: 'On a CLOSED project: it ended by being canceled (review round 5)']
   seed_source varchar(20) [note: 'DEMO marks demonstration data, which the reset command removes (R4-5)']
   description text [note: 'Narrative, stored as entered (ADR-012)']
@@ -704,11 +728,16 @@ Table project.project {
   declared_as_of date [note: 'The date the declared values hold for']
   declared_source varchar(50) [note: 'IMPORT | MANUAL | ENTITY_UPDATE | PROGRESS_UPDATE']
   entity_update_compliant boolean [note: 'Whether the entity keeps to its periodic updates, as RPMO records it']
+  proposed_project_manager_user_id uuid [ref: > identity_access.user.id, note: 'The Project Manager the registration form names; the submission proposes them, and it grants nothing (review round 7)']
+  stage_plan_revision_no integer [not null, default: 0, note: 'Stage plan revision: 0 until a plan is saved; a change after approval claims a STAGE_PLAN_CHANGE authorisation of it (review round 7)']
+  progress_method varchar(50) [note: 'SCHEDULE | STAGES: how overall progress is calculated; null until set, when the declared figure stands (review round 8)']
+  current_stage_code varchar(50) [note: 'PROJECT_STAGE code of the latest published stage-based period, or as imported (review round 7)']
+  current_stage_percent numeric(5,2) [note: '% complete of current_stage_code, 0-100']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Project master aggregate (Blueprint Sections 5, 9; ICD-02). Root of the core-domain graph. Delete policy: HARD_DRAFT.'
+  Note: 'Project master aggregate (Blueprint Sections 5, 9; ICD-02). Root of the core-domain graph. Delete policy: SOFT_DELETE.'
 }
 
 Table project.project_follow_up_note {
@@ -724,6 +753,53 @@ Table project.project_follow_up_note {
     (project_id, created_at, id)
   }
   Note: 'A dated follow-up note on a project, attributed by its creation stamp (2 Nov 2026 review, R3-3). Delete policy: APPEND_ONLY.'
+}
+
+Table project.portfolio_visual {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  sort_order smallint [not null, unique, note: 'Reading order from 1 over the whole design: a CONTAINER, then its children in their order, then the next top-level visual; CHECK >= 1']
+  parent_id uuid [ref: > project.portfolio_visual.id, note: 'The CONTAINER a child is placed in (19 Nov 2026 containers); null for a visual on the dashboard itself. ON DELETE CASCADE: a child goes with its container. A CONTAINER has none (CHECK: one level only); the service checks that the parent is a CONTAINER. A child\'s layout counts the container\'s inner grid: layout_width columns, layout_height - 1 rows. Indexed']
+  title_ar varchar(100) [not null]
+  title_en varchar(100) [not null]
+  visual_type varchar(50) [not null, note: 'CARD | BAR | COLUMN | PIE | DONUT | TABLE | GAUGE | SECTION | LINE | CONTAINER | TEXT | MAP (LINE: 18 Nov 2026 more fields; field values only. CONTAINER: 19 Nov 2026 containers; no measures, data_fields, axes, section or widget_code, group_by NONE, layout_height >= 2, CHECK. TEXT: 20 Nov 2026 text box; no measures, section or data_fields, group_by NONE, CHECK; may be a CONTAINER\'s child. MAP: 20 Nov 2026 map visual; one measure but averages and GAP_POINTS, or one field value, group_by CITY or REGION, data_fields always (its options), CHECK; several per design; may be a CONTAINER\'s child)']
+  measures text[] [not null, note: '1 to 3 of PROJECTS, IN_PROGRESS, VALUE_SAR, AVERAGE_PLANNED, AVERAGE_ACTUAL, GAP_POINTS, NEEDING_FOLLOW_UP, OVERDUE_ACTIONS, and the box sections\' ON_TRACK, LATE, STALLED, NOT_MEASURED, FOLLOW_UP_STALLED, FOLLOW_UP_SUSPENDED, FOLLOW_UP_LATE, FOLLOW_UP_ACTION_OVERDUE, FOLLOW_UP_OPEN_OBSTACLE (20 Nov 2026) (CHECK); codes, never an expression (BR-DSH-030). None for a SECTION, and none for a visual drawing data fields (data_fields not null); a MAP has exactly one, never AVERAGE_PLANNED, AVERAGE_ACTUAL or GAP_POINTS, or none and a field value (CHECK, 20 Nov 2026 map visual)']
+  section varchar(50) [unique, note: 'The dashboard section a SECTION places (PORTFOLIO_TABLE ... ENTITY_COMPLETION_TABLE, DASHBOARD_WIDGET); null otherwise; a partial unique index WHERE section IS NOT NULL AND section <> \'DASHBOARD_WIDGET\' (several DASHBOARD_WIDGET, one per widget, 19 Nov 2026 widgets)']
+  group_by varchar(50) [not null, note: 'NONE | PORTFOLIO | INITIATIVE | SECTOR | DEPARTMENT | ENTITY | STATUS | STAGE | ON_PLAN | REGION | CITY | PRIORITY']
+  layout_column numeric(4,1) [not null, note: '0 to 11 from the reading start; layout_column + layout_width <= 12 (CHECK). The four layout columns are decimals in steps of 0.1 (20 Nov 2026 decimal layout; the service refuses a second decimal place)']
+  layout_row numeric(4,1) [not null, note: '>= 0']
+  layout_width numeric(4,1) [not null, note: '1 to 12']
+  layout_height numeric(4,1) [not null, note: '1 to 24']
+  data_fields jsonb [note: '{"values":[{"field","aggregation"}],"groupField","groupDateUnit","filters":[{"field","values"}],"columns":[{"kind","key","aggregation"}],"showTotals","map":{"showList","showCounts"},"source"} in the API shape (camelCase, UPPER_SNAKE enums): registered projection field keys of the data catalogue, never a table, column or expression (BR-DSH-030); columns and showTotals only on a TABLE drawing columns (DIMENSION, FIELD or MEASURE keys from fixed lists, 20 Nov 2026 Power BI-style table, no migration); map only on a MAP, always set there, the defaults (both true) when sent none (20 Nov 2026 map visual); source "RISKS" only on a CARD, BAR, COLUMN, PIE, DONUT, LINE or TABLE counting risks, whose field keys are then RISK.<CODE> (read through the Risk module under RISK_VIEW) and project dimensions, absent for a visual of projects (20 Nov 2026 record sources, no migration); null when the visual names none and always for a SECTION (CHECK, 18 Nov 2026 data fields)']
+  axes jsonb [note: '{"category":{"show","title"},"value":{"show","title","min","max","gridlines"}} in the API shape (camelCase; title {"ar","en"} or null): how a BAR, COLUMN or LINE draws its axes; null for the defaults (both shown, no titles, automatic range, gridlines) and always for any other type (CHECK, 19 Nov 2026 axes)']
+  widget_code varchar(50) [unique, note: 'The governed widget a DASHBOARD_WIDGET section draws: its code in the dashboard view, ^[A-Za-z0-9_.-]+$; set exactly when section = DASHBOARD_WIDGET (CHECK); a partial unique index WHERE widget_code IS NOT NULL. Not a reference: the Project module does not read the Dashboards definitions, and a code the dashboard no longer has draws nothing (19 Nov 2026 widgets)']
+  hidden_columns text[] [note: 'The column codes a table section does not show (20 Nov 2026 table columns): ^[A-Z_]{1,40}$, 1 to 20, no repeats (service); only on a SECTION of PORTFOLIO_TABLE, INITIATIVE_TABLE, SECTOR_TABLE, STATUS_TABLE, CURRENT_STAGE_TABLE, TOP_FOLLOW_UP or ENTITY_COMPLETION_TABLE (CHECK); null when every column is shown. Only the shape is checked: a code the table does not have hides nothing']
+  text_box jsonb [note: '{"ar","en","size","align","bold"} in the API shape (camelCase; size SMALL | NORMAL | LARGE | HEADING, align START | CENTER | END): what a TEXT visual says, each language 1 to 2000 characters trimmed, line breaks kept (service); set exactly when visual_type = TEXT (CHECK ck_portfolio_visual_text_box, 20 Nov 2026 text box)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    parent_id
+  }
+  Note: 'One visual of the Portfolio dashboard as the Portfolio Manager designed it, the same for everyone (17 Nov 2026 dashboard designer, DASHBOARD_DESIGN, no approval). Saved and replaced as a whole, containers inserted before their children; no row means the standard design. Delete policy: HARD_WORKING. A save replaces the rows and a reset deletes them; the rows name who saved them (created_by), and no audit event is written yet.'
+}
+
+Table project.project_stage_plan {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id, note: 'ON DELETE CASCADE: the plan is part of its project']
+  stage_code varchar(50) [not null, note: 'PROJECT_STAGE code; name and weight come from the version in force']
+  applies boolean [not null]
+  planned_start_date date [note: 'Required while the stage applies, within the project planned dates']
+  planned_end_date date
+  starting_percent numeric(5,2) [note: '% complete when a project already under way entered the platform, 0-100']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, stage_code) [unique]
+  }
+  Note: 'A project stage plan, one row per stage (review round 7, item 1); reviewed with the registration, changed after approval by an approved schedule change. Delete policy: CASCADE.'
 }
 
 Table project.project_import_batch {
@@ -868,7 +944,7 @@ Table progress.progress_submission {
   revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
   status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | PUBLISHED']
   actual_percent_calculated numeric(18,4) [not null, note: 'Duration-weighted roll-up from WF-04 at submission (ADR-009); stored — D-8 register']
-  actual_source varchar(50) [not null, default: 'WORK_BREAKDOWN', note: 'WORK_BREAKDOWN | DECLARED | NOT_AVAILABLE: where the calculated figure comes from; a project with no breakdown reports its declared figure (review round 5)']
+  actual_source varchar(50) [not null, default: 'WORK_BREAKDOWN', note: 'WORK_BREAKDOWN | DECLARED | NOT_AVAILABLE | STAGE_WEIGHTED: where the calculated figure comes from; a project with no breakdown reports its declared figure (review round 5); a stage-based period its weighted stages (review round 7)']
   actual_percent_override numeric(18,4) [note: 'Project-level override; calculated value retained (ADR-009)']
   override_reason text [note: 'Narrative, stored as entered (ADR-012)']
   override_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
@@ -877,6 +953,7 @@ Table progress.progress_submission {
   narrative text [note: 'Narrative, stored as entered (ADR-012)']
   narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   project_intake_id uuid [ref: > project.project_intake.id, note: 'Set on the opening-position submission only (ADR-014)']
+  stage_configuration_version_id uuid [ref: > master_data_config.configuration_version.id, note: 'PROJECT_STAGE version a stage-based period weighs by: in force the day it was started (review round 7)']
   submitted_by_user_id uuid [ref: > identity_access.user.id]
   submitted_at timestamptz
   reviewed_by_user_id uuid [ref: > identity_access.user.id]
@@ -891,6 +968,31 @@ Table progress.progress_submission {
     (reporting_cycle_id, revision_no) [unique]
   }
   Note: 'The working progress record for a cycle: derived actual %, planned %, override and narrative (ADR-009, ADR-014). Delete policy: HARD_DRAFT.'
+}
+
+Table progress.progress_stage_entry {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  progress_submission_id uuid [not null, ref: > progress.progress_submission.id, note: 'ON DELETE CASCADE: a period stages go with it']
+  stage_code varchar(50) [not null]
+  sort_order smallint [not null]
+  weight_percent numeric(5,2) [not null, note: 'Copied from the PROJECT_STAGE version the period weighs by']
+  applies boolean [not null]
+  planned_percent numeric(18,4) [note: 'From the stage plan dates on the period date: 0 before start, 100 from end, linear between']
+  percent_complete numeric(18,4) [note: 'Entered 0-100; Execution from the schedule while a baseline is active']
+  is_from_schedule boolean [not null]
+  actual_start_date date [note: 'Required once the stage has started']
+  actual_finish_date date [note: 'Required once the stage reaches 100']
+  note varchar(200) [note: 'One line, optional']
+  decrease_reason text [note: 'Narrative, stored as entered (ADR-012); required below the last published period %']
+  decrease_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (progress_submission_id, stage_code) [unique]
+  }
+  Note: 'One stage of a period progress (review round 7, item 1): overall = sum of weight x % complete / sum of weight over the stages that apply. Delete policy: HARD_DRAFT. Deleted with its submission.'
 }
 
 Table progress.published_progress_snapshot {
@@ -1087,11 +1189,13 @@ Table schedule.project_milestone {
   forecast_date date [not null, note: 'Current Forecast']
   status varchar(50) [not null, note: 'PLANNED | ACHIEVED | CANCELLED — ACHIEVED is set by WF-03 on the WF-05 acceptance event']
   sort_order integer [not null, default: 0]
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'The single shared milestone identity (ICD-04). WF-03 owns this row: schedule representation and dates. WF-05 owns achievement evidence and the accepted actual date in MilestoneAchievement — one identity, never duplicated (TASK-050). Delete policy: RETAIN.'
+  Note: 'The single shared milestone identity (ICD-04). WF-03 owns this row: schedule representation and dates. WF-05 owns achievement evidence and the accepted actual date in MilestoneAchievement — one identity, never duplicated (TASK-050). Delete policy: SOFT_DELETE.'
 }
 
 Table schedule.baseline_milestone {
@@ -1146,11 +1250,13 @@ Table project_task.project_task {
   blocked_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   completed_at timestamptz
   reopened_count integer [not null, default: 0, note: 'Reopen requires the specific permission (TASK-048)']
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Task or Subtask (parent_task_id set) executing against a schedule activity; owner maintains actual % (ADR-009). Named ProjectTask per solution architecture §4.4b. Delete policy: RETAIN.'
+  Note: 'Task or Subtask (parent_task_id set) executing against a schedule activity; owner maintains actual % (ADR-009). Named ProjectTask per solution architecture §4.4b. Delete policy: SOFT_DELETE.'
 }
 
 Table project_task.task_dependency {
@@ -1229,11 +1335,13 @@ Table risk.risk {
   closed_at timestamptz
   closed_by_user_id uuid [ref: > identity_access.user.id]
   reopened_count integer [not null, default: 0, note: 'Reopen requires the specific permission; captured in Audit']
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Risk register entry (TASK-055). Materialisation into an issue is recorded on the ManagementConcern (originating_risk_id). Delete policy: RETAIN.'
+  Note: 'Risk register entry (TASK-055). Materialisation into an issue is recorded on the ManagementConcern (originating_risk_id). Delete policy: SOFT_DELETE.'
 }
 
 Table risk.risk_assessment_version {
@@ -1335,11 +1443,13 @@ Table management_concern.management_concern {
   resolution_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   resolved_at timestamptz
   closed_at timestamptz
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Issue or Challenge (TASK-057). Severity is computed server-side and distinct from user-set Priority. Delete policy: RETAIN.'
+  Note: 'Issue or Challenge (TASK-057). Severity is computed server-side and distinct from user-set Priority. Delete policy: SOFT_DELETE.'
 }
 
 Table management_concern.concern_impact {
@@ -1403,11 +1513,13 @@ Table change_request.change_request {
   requested_governance_profile_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'For GOVERNANCE_PROFILE changes (TASK-105)']
   implemented_at timestamptz
   closed_at timestamptz
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Formal change request lifecycle (TASK-060) with materiality band routing (TASK-106). Delete policy: HARD_DRAFT.'
+  Note: 'Formal change request lifecycle (TASK-060) with materiality band routing (TASK-106). Delete policy: SOFT_DELETE.'
 }
 
 Table change_request.materiality_evaluation {
@@ -1433,7 +1545,7 @@ Table change_request.change_authorization {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   change_request_id uuid [not null, ref: > change_request.change_request.id]
   approval_instance_id uuid [not null, ref: > approval.approval_instance.id, note: 'Approval that produced it']
-  authorization_scope varchar(50) [not null, note: 'REBASELINE | COMMITMENT_CHANGE | PROFILE_CHANGE | SCOPE_CHANGE']
+  authorization_scope varchar(50) [not null, note: 'REBASELINE | COMMITMENT_CHANGE | PROFILE_CHANGE | SCOPE_CHANGE | STAGE_PLAN_CHANGE']
   target_module varchar(50) [not null, note: 'Schedule | FinancialKpi | Project']
   target_type varchar(100) [not null]
   target_id uuid [not null, note: 'Identifier only (M-4)']
@@ -1640,11 +1752,13 @@ Table document_management.document {
   project_id uuid [ref: > project.project.id, note: 'Null for the general library (SCR-120)']
   owner_user_id uuid [not null, ref: > identity_access.user.id]
   status varchar(50) [not null, note: 'ACTIVE | ARCHIVED']
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Logical document (Blueprint Section 13). Files are versions; the row is never deleted. Delete policy: RETAIN.'
+  Note: 'Logical document (Blueprint Section 13). Files are versions; the row is never deleted. Delete policy: SOFT_DELETE.'
 }
 
 Table document_management.document_version {
@@ -1931,6 +2045,8 @@ Table financial_kpi.kpi_assignment {
   measurement_frequency_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
   status varchar(50) [not null, note: 'ACTIVE | SUSPENDED | RETIRED']
   assigned_at timestamptz [not null]
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -1938,7 +2054,7 @@ Table financial_kpi.kpi_assignment {
   indexes {
     (project_id, kpi_definition_id) [unique]
   }
-  Note: 'A KPI assigned to a project (TASK-052). Delete policy: RETAIN.'
+  Note: 'A KPI assigned to a project (TASK-052). Delete policy: SOFT_DELETE.'
 }
 
 Table financial_kpi.kpi_target_version {
@@ -2555,10 +2671,10 @@ Table audit_activity.audit_event {
   subject_type varchar(100)
   subject_id uuid [note: 'Identifier only']
   scope_project_id uuid [note: 'Scope anchor for audit authorisation. No foreign key: the append-only trail outlives a removed project (R4-5)']
-  scope_external_entity_id uuid [ref: > identity_access.external_entity.id]
+  scope_external_entity_id uuid [note: 'No foreign key: the append-only trail outlives a deleted entity (2026-11-14)']
   correlation_id uuid [not null]
   outcome varchar(50) [not null, note: 'SUCCESS | DENIED | FAILED']
-  data_classification_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Audit access is authorised by category/scope/sensitivity']
+  data_classification_item_id uuid [note: 'Audit access is authorised by category/scope/sensitivity. No foreign key: the trail outlives a deleted master data value (2026-11-14)']
   previous_event_hash char(64) [note: 'Hash chain']
   event_hash char(64) [not null]
   attribute_digest char(64) [note: 'SHA-256 over the event\'s attributes, covered by event_hash (TASK-073); null for events stored before it']
@@ -2846,4 +2962,74 @@ Table identity_access.user_password_history {
   updated_by uuid [not null, note: 'Audit column (D-2)']
 
   Note: 'The hashes a local account has used (R4-6). Delete policy: RETAIN.'
+}
+
+Table identity_access.user_passkey {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  credential_id bytea [unique, not null, note: 'The authenticator credential id (WebAuthn)']
+  public_key bytea [not null, note: 'COSE public key; the private key never leaves the device']
+  signature_counter bigint [not null]
+  name varchar(100) [not null, note: 'The device name the person gave']
+  last_used_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'A passkey (Face ID, Touch ID, device unlock) a person registered for passwordless sign-in (13 Nov 2026 review). Its removal is audited. Delete policy: HARD_OWNER.'
+}
+
+Table identity_access.banner_image {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(64) [unique, not null, note: 'Stable name; uploading again under it replaces the image']
+  caption_ar varchar(200) [not null, note: 'The place it shows, as the banner names it']
+  caption_en varchar(200) [not null]
+  alt_ar varchar(500) [not null, note: 'What the image shows, for assistive technology']
+  alt_en varchar(500) [not null]
+  focal_x smallint [not null, note: 'Subject position, % from the left (0-100); a crop keeps it']
+  focal_y smallint [not null, note: 'Subject position, % from the top (0-100)']
+  credit varchar(200)
+  content_type varchar(50) [not null, note: 'image/webp']
+  content bytea [not null, note: 'A WebP of at most 300 KB']
+  width integer [not null]
+  height integer [not null]
+  sort_order integer [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'An image the Home welcome banner can show (review round 8, point 07). Added or replaced by a master data administrator. Delete policy: RETAIN.'
+}
+
+Table identity_access.user_banner_preference {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [unique, not null, ref: > identity_access.user.id]
+  style varchar(50) [not null, note: 'DEFAULT | IMAGE | ROTATE']
+  image_ids uuid[] [not null, note: 'The images chosen, in the order they show']
+  quick_actions text[] [null, note: 'The banner quick actions chosen, in order, at most six (point 08); null: the role set']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'The Home banner choice of one person (review round 8, points 07 and 08): the green banner, one image, or images that take turns, and the quick actions. No row: the green banner and the role set. Delete policy: HARD_OWNER.'
+}
+
+Table identity_access.sms_code {
+  id uuid [pk, not null, note: 'Primary key (D-1); the challenge id']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  purpose varchar(50) [not null, note: 'SIGN_IN | MOBILE_VERIFICATION']
+  mobile_number varchar(20) [not null, note: 'E.164 (ADR-004): the number the code was sent to']
+  code_hash varchar(64) [not null, note: 'SHA-256 of the challenge id and code; the code itself is not kept']
+  expires_at timestamptz [not null]
+  failed_attempts integer [not null]
+  consumed_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'One-time codes sent by SMS for sign-in and mobile verification (13 Nov 2026 review). Delete policy: RETAIN.'
 }

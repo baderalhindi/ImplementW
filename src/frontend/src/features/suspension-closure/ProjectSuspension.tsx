@@ -5,7 +5,9 @@ import { type SessionUser } from '@/features/identity-access/session/sessionApi.
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { SuspensionRegisterView } from './components/SuspensionRegisterView.tsx';
 import { newSuspensionRequestPath, suspensionRequestPath } from './paths.ts';
@@ -27,6 +29,7 @@ export function ProjectSuspension({
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
   const suspension = useProjectSuspension(project.id);
+  const selection = useRowSelection();
 
   if (suspension.data === undefined) {
     if (suspension.loading) {
@@ -106,40 +109,46 @@ export function ProjectSuspension({
       {periods.length === 0 ? (
         <p className="form__note">{t('suspensionClosure.suspension.noPeriods')}</p>
       ) : (
-        <TableContainer caption={t('suspensionClosure.suspension.periodsCaption')}>
+        <TableContainer
+          caption={t('suspensionClosure.suspension.periodsCaption')}
+          selection={{ selection, exportName: 'suspension-periods' }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader ids={periods.map((period) => period.id)} selection={selection} />
               <th scope="col">{t('suspensionClosure.suspension.period.started')}</th>
               <th scope="col">{t('suspensionClosure.suspension.period.ended')}</th>
               <th scope="col">{t('suspensionClosure.suspension.period.endReason')}</th>
             </tr>
           </thead>
           <tbody>
-            {periods.map((period) => (
-              <tr key={period.id}>
-                <td>
-                  <Link to={suspensionRequestPath(period.suspensionRequestId)}>
-                    {formatDateTime(period.startedAt)}
-                  </Link>
-                </td>
-                <td>
-                  {period.endedAt === null
-                    ? t('suspensionClosure.suspension.period.ongoing')
-                    : formatDateTime(period.endedAt)}
-                </td>
-                <td>
-                  {period.endReason === null ? (
-                    t('suspensionClosure.notStated')
-                  ) : period.resumptionRequestId === null ? (
-                    t(`suspensionClosure.suspension.endReason.${period.endReason}`)
-                  ) : (
-                    <Link to={suspensionRequestPath(period.resumptionRequestId)}>
-                      {t(`suspensionClosure.suspension.endReason.${period.endReason}`)}
-                    </Link>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {periods.map((period) => {
+              const started = formatDateTime(period.startedAt);
+              return (
+                <tr key={period.id}>
+                  <SelectRowCell id={period.id} name={started} selection={selection} />
+                  <td>
+                    <Link to={suspensionRequestPath(period.suspensionRequestId)}>{started}</Link>
+                  </td>
+                  <td>
+                    {period.endedAt === null
+                      ? t('suspensionClosure.suspension.period.ongoing')
+                      : formatDateTime(period.endedAt)}
+                  </td>
+                  <td>
+                    {period.endReason === null ? (
+                      t('suspensionClosure.notStated')
+                    ) : period.resumptionRequestId === null ? (
+                      t(`suspensionClosure.suspension.endReason.${period.endReason}`)
+                    ) : (
+                      <Link to={suspensionRequestPath(period.resumptionRequestId)}>
+                        {t(`suspensionClosure.suspension.endReason.${period.endReason}`)}
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </TableContainer>
       )}

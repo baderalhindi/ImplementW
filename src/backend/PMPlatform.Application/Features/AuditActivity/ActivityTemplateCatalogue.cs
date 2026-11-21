@@ -67,6 +67,10 @@ public static class ActivityTemplateCatalogue
         ["Project.FollowUpChanged"] = new("Project follow-up updated", "تم تحديث متابعة المشروع"),
         ["Project.FollowUpNoteAdded"] = new("Follow-up note added", "تمت إضافة ملاحظة متابعة"),
         ["Project.ProjectUpdatedByImport"] = new("Project updated by an import batch", "تم تحديث المشروع بدفعة استيراد"),
+        ["Project.StagePlanChanged"] = new("Project stage plan updated", "تم تحديث خطة مراحل المشروع"),
+        ["Project.ManagerChanged"] = new("Project Manager changed", "تم تغيير مدير المشروع"),
+        ["Project.ProgressMethodChanged"] = new("Progress method changed", "تم تغيير طريقة احتساب الإنجاز"),
+        ["Project.RegistrationEdited"] = new("Approved project registration edited", "تم تعديل بيانات تسجيل مشروع معتمد"),
 
         // WF-02 Progress update
         ["Progress.ReportingCycleCreated"] = new("Reporting period created", "تم إنشاء فترة التقرير"),

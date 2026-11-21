@@ -159,4 +159,17 @@ internal sealed class RiskService(
         (IReadOnlyList<RiskAcceptance> items, int total) = await repository.PageAcceptancesAsync(riskId, page, cancellationToken).ConfigureAwait(false);
         return new RiskAcceptancePage([.. items.Select(RiskViews.ToDetail)], page.Page, page.PageSize, total);
     }
+
+    public async Task<AdministrationError?> DeleteRiskAsync(Guid callerId, Guid riskId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        LoadedRisk loaded = await gate.LoadRiskAsync(callerId, PermissionCatalogue.RiskManage, riskId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (loaded.Error is { } refused)
+        {
+            return refused;
+        }
+
+        await using IRiskWork work = await repository.BeginAsync(cancellationToken).ConfigureAwait(false);
+        audit.Stage(RecordDeletion.Stamp(loaded.Risk!, "Risk", callerId, loaded.Project!.Id, timeProvider.GetUtcNow()));
+        return await gate.SaveAsync(work, cancellationToken).ConfigureAwait(false) ? null : AdministrationError.PreconditionFailed;
+    }
 }

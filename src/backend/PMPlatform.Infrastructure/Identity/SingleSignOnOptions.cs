@@ -19,6 +19,15 @@ internal sealed class SingleSignOnOptions
     /// <summary>No group or role scope is requested: platform roles are not taken from the identity provider (ADR-007).</summary>
     public IReadOnlyList<string> Scopes { get; set; } = ["openid"];
 
+    /// <summary>Asked for on top of <see cref="Scopes"/>, whatever an environment configures: the e-mail check needs them (client review, item 7).</summary>
+    public static IReadOnlyList<string> EmailScopes { get; } = ["profile", "email"];
+
+    /// <summary>
+    /// The ID token claims that carry the account e-mail, the first present wins (client review, item 7). Entra ID sends <c>email</c> with the
+    /// email scope when the account has one, and <c>preferred_username</c>, normally the sign-in address, with the profile scope.
+    /// </summary>
+    public IReadOnlyList<string> EmailClaims { get; set; } = ["email", "preferred_username"];
+
     /// <summary>Discovery and keys only over HTTPS. Cleared only by the tests' in-process identity provider.</summary>
     public bool RequireHttpsMetadata { get; set; } = true;
 

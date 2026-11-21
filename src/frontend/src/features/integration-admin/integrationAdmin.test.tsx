@@ -32,7 +32,7 @@ import {
   openFilters,
   renderApp,
 } from '@/test/renderApp.tsx';
-import { findMainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
+import { adminMenuTargets, findMainMenu, menuLink } from '@/test/shell.ts';
 
 // TASK-076, the FG-05 Integration Administration UI over TASK-075's API. Acceptance criteria: (1) the Test Integration
 // Connection action never displays or logs the underlying secret value in the UI or the browser console; (2) ADM-047
@@ -470,7 +470,8 @@ describe('access', () => {
   test('the sidebar offers the integrations group to R01 only', async () => {
     open('/admin/integrations-overview');
     await findMainMenu();
-    expect(openMenuTargets('common.menu.administration')).toEqual(
+    // Review round 8, point 15: an admin page carries Administration's side menu; its Integrations heading holds these screens.
+    expect(await adminMenuTargets()).toEqual(
       expect.arrayContaining(integrationAdminNavigation.map((item) => item.to)),
     );
     cleanup();
@@ -675,6 +676,54 @@ describe('ADM-047 alerts', () => {
     );
   });
 
+  test('select all on the alerts, then Acknowledge sends one command per chosen open alert after naming them', async () => {
+    const [openAlert, acknowledged] = seededAlerts();
+    const secondOpen = {
+      ...present(openAlert, 'open alert'),
+      id: '7e000000-0000-4000-8000-0000000000a9',
+      alertType: 'QUEUE_BACKLOG' as const,
+    };
+    const api = open('/admin/integration-monitoring', {
+      alerts: [present(openAlert, 'open alert'), secondOpen, present(acknowledged, 'alert')],
+    });
+    const user = userEvent.setup();
+
+    const row = await waitFor(() =>
+      present(document.querySelector(`tr[data-alert="${OPEN_ALERT_ID}"]`), 'open alert'),
+    );
+    const table = present(row.closest('table'), 'alerts table');
+    await user.click(within(table).getByRole('checkbox', { name: en('common.table.selectAll') }));
+    const bar = present(
+      screen.getByText(en('common.table.selected', { count: 3 })).closest('.selection-bar'),
+      'selection bar',
+    ) as HTMLElement;
+    await user.click(
+      within(bar).getByRole('button', { name: en('integrationAdmin.actions.acknowledge') }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain(en('integrationAdmin.alertType.DEAD_LETTER'));
+    expect(dialog.textContent).toContain(en('integrationAdmin.alertType.QUEUE_BACKLOG'));
+    expect(dialog.textContent).not.toContain(
+      en('integrationAdmin.alertType.RECONCILIATION_MISMATCH'),
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: en('integrationAdmin.actions.acknowledge') }),
+    );
+
+    await screen.findByText(en('integrationAdmin.alerts.acknowledged'));
+    expect(
+      api
+        .requestsTo('POST', /\/acknowledge$/)
+        .map((request) => request.path)
+        .sort(),
+    ).toEqual(
+      [
+        `/operational-alerts/${OPEN_ALERT_ID}/acknowledge`,
+        `/operational-alerts/${secondOpen.id}/acknowledge`,
+      ].sort(),
+    );
+  });
+
   test('resolving needs a note: none is refused in the form, one is sent with its language', async () => {
     const api = open('/admin/integration-monitoring');
     const user = userEvent.setup();
@@ -709,7 +758,7 @@ describe('ADM-047 alerts', () => {
 
     await screen.findByText(en('integrationAdmin.alerts.resolved'));
     expect(api.requestsTo('POST', /\/resolve$/)[0]?.body).toEqual({
-      note: { text: 'Directory corrected by IT', language: 'EN' },
+      note: { text: 'Directory corrected by IT', language: 'en' },
     });
   });
 });

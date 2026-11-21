@@ -22,6 +22,8 @@ import {
 export type ConcernCommand = 'start' | 'review' | 'close';
 
 export const concernsApi = {
+  /** Client review, item 8: it and what belongs to it leave the lists; 204, also when already gone. */
+  remove: (id: string) => apiRequest<undefined>(`/management-concerns/${id}`, { method: 'DELETE' }),
   /** A project's concerns of one type, most recently changed first (the API's fixed order). */
   concerns: (projectId: string, concernType: ConcernType | null, signal?: AbortSignal) =>
     readAllPages<ConcernDetail>(

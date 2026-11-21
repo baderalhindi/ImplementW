@@ -30,6 +30,12 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: an administrator may not disable themselves or change their own assignments.</summary>
     public const string SelfAdministration = "IDENTITY_ACCESS_SELF_ADMINISTRATION";
 
+    /// <summary>409: users, sub-departments, open projects or assignments still depend on the department; each is a field issue IN_USE.</summary>
+    public const string DepartmentInUse = "IDENTITY_ACCESS_DEPARTMENT_IN_USE";
+
+    /// <summary>422: a permission is granted through a role the user holds, and they hold none.</summary>
+    public const string UserHasNoRole = "IDENTITY_ACCESS_USER_HAS_NO_ROLE";
+
     public const string LocalAccountsDisabled = "IDENTITY_ACCESS_LOCAL_ACCOUNTS_DISABLED";
 
     public const string NotLocalAccount = "IDENTITY_ACCESS_NOT_LOCAL_ACCOUNT";
@@ -60,6 +66,21 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: the verification code was not accepted for the user's current number (ADR-004).</summary>
     public const string MobileVerificationFailed = "IDENTITY_ACCESS_MOBILE_VERIFICATION_FAILED";
 
+    /// <summary>422: adding a passkey needs a sign-in within the last few minutes (13 Nov 2026 review): sign in again, then add it.</summary>
+    public const string RecentSignInRequired = "IDENTITY_ACCESS_RECENT_SIGN_IN_REQUIRED";
+
+    /// <summary>422: the device's answer did not verify: wrong origin, expired or altered ceremony, no user verification, or a key already registered.</summary>
+    public const string PasskeyRejected = "IDENTITY_ACCESS_PASSKEY_REJECTED";
+
+    /// <summary>422: sign-in with biometrics: no person who may sign in has this National ID or Iqama number (field <c>nationalId</c>).</summary>
+    public const string NationalIdNotRegistered = "IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED";
+
+    /// <summary>422: sign-in with biometrics: the mobile number given is not the one on the person's profile (field <c>mobileNumber</c>).</summary>
+    public const string MobileNumberMismatch = "IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH";
+
+    /// <summary>422: the number already has a code on its way: a new one can be sent once the resend wait is over.</summary>
+    public const string SmsCodeRecentlySent = "IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT";
+
     /// <summary>
     /// 422: a profile version's grants break a rule — a permission outside the catalogue, a permission twice, or one the profile's base
     /// role may never hold (GrantPolicy); <c>errors[]</c> names each grant and the rule (TASK-110).
@@ -80,4 +101,10 @@ public static class IdentityAccessErrorCodes
 
     /// <summary>422: assignments move only to the newest PUBLISHED version of their own profile (TASK-110).</summary>
     public const string MigrationTargetInvalid = "IDENTITY_ACCESS_MIGRATION_TARGET_INVALID";
+
+    /// <summary>422: a banner image style needs images that exist; one image takes exactly one (review round 8, point 07).</summary>
+    public const string BannerImagesInvalid = "IDENTITY_ACCESS_BANNER_IMAGES_INVALID";
+
+    /// <summary>Review round 8, point 08: more than six quick actions, one named twice, or a code that is not an action's.</summary>
+    public const string QuickActionsInvalid = "IDENTITY_ACCESS_QUICK_ACTIONS_INVALID";
 }

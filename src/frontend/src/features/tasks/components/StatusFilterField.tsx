@@ -5,8 +5,7 @@ import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 
 import { TASK_STATUSES } from '../presentation.ts';
 import { type StatusFilter } from '../taskRules.ts';
-
-const DEFAULT_FILTER: StatusFilter = 'open';
+import { DEFAULT_STATUS_FILTER, statusFilterOf } from '../useTaskStatusFilter.ts';
 
 /** Open work by default; any one state, or every task. */
 export function StatusFilterField({
@@ -33,16 +32,12 @@ export function StatusFilterField({
           ],
         },
       ]}
-      values={{ status: value === DEFAULT_FILTER ? undefined : value }}
+      values={{ status: value === DEFAULT_STATUS_FILTER ? undefined : value }}
       onChange={(_name, chosen) => {
-        onChange(
-          chosen === 'all'
-            ? 'all'
-            : (TASK_STATUSES.find((status) => status === chosen) ?? DEFAULT_FILTER),
-        );
+        onChange(statusFilterOf(chosen));
       }}
       onClearAll={() => {
-        onChange(DEFAULT_FILTER);
+        onChange(DEFAULT_STATUS_FILTER);
       }}
     />
   );

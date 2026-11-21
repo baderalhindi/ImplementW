@@ -69,6 +69,9 @@ public interface IRiskRepository
     /// <summary>The risks of the projects that are not CLOSED, for FG-01's exposure (edge 29, TASK-069). Not tracked.</summary>
     public Task<IReadOnlyList<RiskEntity>> ListOpenRisksAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
 
+    /// <summary>Every risk of the projects, CLOSED ones included, for the dashboard designer's risk visuals (the 20 Nov 2026 record sources). Not tracked.</summary>
+    public Task<IReadOnlyList<RiskEntity>> ListRisksAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked row, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(RiskEntity risk);
 

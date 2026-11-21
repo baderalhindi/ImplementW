@@ -190,6 +190,7 @@ internal static class ProjectAudit
             AuditAttribute.Change(ProjectAuditAttributes.FundingSource, before?.FundingSource, after.FundingSource),
             AuditAttribute.Change(ProjectAuditAttributes.LegacyReference, before?.LegacyReference, after.LegacyReference),
             AuditAttribute.Change(ProjectAuditAttributes.FollowUpOwnerUserId, before?.FollowUpOwnerUserId, after.FollowUpOwnerUserId),
+            AuditAttribute.Change(ProjectAuditAttributes.ProposedProjectManagerUserId, before?.ProposedProjectManagerUserId, after.ProposedProjectManagerUserId),
         }.OfType<AuditAttribute>();
 
     /// <summary>R3-3: the follow-up fields that changed. The obstacle and next action are free text and are not copied.</summary>
@@ -198,6 +199,47 @@ internal static class ProjectAudit
 
     public static AuditEntry FollowUpNoteAdded(Guid actorId, ProjectEntity project, ProjectFollowUpNote note) =>
         Entry(AuditEventClass.DataChange, ProjectAuditEvents.FollowUpNoteAdded, actorId, project, [AuditAttribute.Of(ProjectAuditAttributes.FollowUpNoteId, note.Id)]);
+
+    /// <summary>Review round 7, item 4: each registration field that changed, old and new, and the reason (withheld text).</summary>
+    public static AuditEntry RegistrationEdited(Guid actorId, ProjectDraft before, ProjectEntity project, NarrativeText reason) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.RegistrationEdited, actorId, project,
+        [
+            .. Changes(before, project),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason.Text)!,
+        ]);
+
+    /// <summary>Review round 7, item 2: the manager before and after, the reason (withheld text), and the open records that changed hands, by kind.</summary>
+    public static AuditEntry ManagerChanged(Guid actorId, ProjectEntity project, Guid? fromManagerId, NarrativeText reason, IReadOnlyDictionary<string, int> moved) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.ManagerChanged, actorId, project, new[]
+        {
+            AuditAttribute.Change(ProjectAuditAttributes.ProjectManagerUserId, fromManagerId, project.ProjectManagerUserId),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason.Text),
+        }
+        .Concat(moved.OrderBy(m => m.Key, StringComparer.Ordinal).Select(m => AuditAttribute.Of($"moved_{m.Key}", m.Value)))
+        .OfType<AuditAttribute>());
+
+    /// <summary>Review round 8, point 02: how overall progress is calculated, from and to, and why when an approved update made a reason necessary.</summary>
+    public static AuditEntry ProgressMethodChanged(Guid actorId, ProjectEntity project, ProjectProgressMethod? from, NarrativeText? reason) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.ProgressMethodChanged, actorId, project, new[]
+        {
+            AuditAttribute.Change(ProjectAuditAttributes.ProgressMethod, from, project.ProgressMethod),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason?.Text),
+        }
+        .OfType<AuditAttribute>());
+
+    /// <summary>Review round 7, item 1: each stage whose plan changed, the plan's revision, and the authorisation and reason of a change after approval.</summary>
+    public static AuditEntry StagePlanChanged(
+        Guid actorId, ProjectEntity project, int fromRevisionNo, IReadOnlyDictionary<string, string?> before, IReadOnlyDictionary<string, string?> after,
+        Guid? changeAuthorizationId, NarrativeText? reason) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.StagePlanChanged, actorId, project, new[]
+        {
+            AuditAttribute.Change(ProjectAuditAttributes.StagePlanRevisionNo, fromRevisionNo, project.StagePlanRevisionNo),
+            changeAuthorizationId is null ? null : AuditAttribute.Of(ProjectAuditAttributes.ChangeAuthorizationId, changeAuthorizationId),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason?.Text),
+        }
+        .Concat(after.Keys.Union(before.Keys).Order(StringComparer.Ordinal)
+            .Select(code => AuditAttribute.Change(ProjectAuditAttributes.StagePlanOf(code), before.GetValueOrDefault(code), after.GetValueOrDefault(code))))
+        .OfType<AuditAttribute>());
 
     /// <summary>R3-4: what an approved import batch changed on an existing project, its classification and its follow-up.</summary>
     public static AuditEntry UpdatedByImport(Guid actorId, ProjectDraft before, ProjectFollowUpDetail followUpBefore, ProjectEntity project, Guid batchId) =>

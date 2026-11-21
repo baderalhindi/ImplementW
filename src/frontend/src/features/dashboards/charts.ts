@@ -6,12 +6,22 @@ import { type DashboardWidgetType } from './api/types.ts';
 // colour-vision deficiency (the dataviz method): the status fills keep a source's own RAG meaning; the categorical
 // fills only tell values apart. Neither is ever chosen by a value's rank.
 
-/** One drawn value: its key, its count, its words and its fill. */
+/** One drawn value: its key, its count, its words and its fill; `href` opens the records it counts (review round 8, point 01). */
 export interface ChartBucket {
   key: string;
   count: number;
+  /** What the donut's centre shows for it when hovered, in place of its count, such as an entity's rate. */
+  value?: string | undefined;
   text: string;
   color: string;
+  href?: string | undefined;
+  /** The tooltip of a linked value, such as "View projects (8)". */
+  hint?: string | undefined;
+}
+
+/** Whether any value links: then a chart's marks are its links, not a picture hidden from assistive technology. */
+export function anyLinked(buckets: ChartBucket[]): boolean {
+  return buckets.some((bucket) => bucket.href !== undefined);
 }
 
 export type ChartForm = 'donut' | 'columns' | 'bars';

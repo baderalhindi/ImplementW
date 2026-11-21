@@ -8,6 +8,7 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Api.Controllers;
@@ -29,8 +30,9 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
     /// SCR-025: only projects the caller may see. Filters: <c>status</c> (a set), <c>departmentId</c>, <c>externalEntityId</c>,
     /// <c>projectManagerUserId</c> (SCR-026 My Projects), <c>q</c> (title, Formal Project ID or legacy reference), and the filter bar's
     /// <c>classificationItemId</c>, <c>strategicPortfolioItemId</c>, <c>strategicInitiativeItemId</c>, <c>priorityItemId</c>,
-    /// <c>regionItemId</c>, <c>cityItemId</c> and <c>period</c>, a year the planned period touches (the 2 Nov 2026 review). Most recently changed
-    /// first.
+    /// <c>regionItemId</c>, <c>cityItemId</c> and <c>period</c>, a year the planned period touches (the 2 Nov 2026 review). Review round 8, point 01,
+    /// adds what the portfolio dashboard counts by: <c>registered</c> (past registration), <c>stage</c> (a current stage's code, or <c>NONE</c>),
+    /// <c>onPlan</c> (ON_TRACK, LATE, STALLED or NOT_MEASURED), <c>measured</c>, and the sort <c>value:desc</c>. Most recently changed first.
     /// </summary>
     [HttpGet]
     [RequirePermission(PermissionCatalogue.ProjectView)]
@@ -42,10 +44,16 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
         [FromQuery] Guid? classificationItemId = null, [FromQuery] Guid? strategicPortfolioItemId = null, [FromQuery] Guid? strategicInitiativeItemId = null,
         [FromQuery] Guid? priorityItemId = null, [FromQuery] Guid? regionItemId = null, [FromQuery] Guid? cityItemId = null,
         [FromQuery] int? period = null,
-        [FromQuery] string? sort = null)
+        [FromQuery] string? sort = null,
+        [FromQuery] bool registered = false, [FromQuery] string? stage = null, [FromQuery] string? onPlan = null, [FromQuery] bool measured = false)
     {
         List<FieldError> errors = [];
         RequestValidation.Optional(q, "q", QueryTextLength, errors);
+        if (stage is not null)
+        {
+            RequestValidation.Code(stage, "stage", errors);
+        }
+
         if (period is < 1900 or > 2200)
         {
             errors.Add(new FieldError("period", FieldError.OutOfRange));
@@ -63,6 +71,10 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
             CityItemId = cityItemId,
             PeriodYear = period,
             Sort = QueryParameters.ProjectSortOf(sort, errors),
+            Registered = registered,
+            CurrentStage = stage,
+            OnPlan = QueryParameters.OneEnum<ProjectOnPlanFilter>(onPlan, "onPlan", errors),
+            Measured = measured,
         };
         return errors.Count > 0 ? ValidationFailed(errors) : Ok(await projects.ListAsync(CallerId, query, cancellationToken));
     }
@@ -121,8 +133,8 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
     }
 
     /// <summary>
-    /// HARD_DRAFT: a DRAFT, by the person who created it. R-40: a project that is not there — deleted already, or never the
-    /// caller's to see — is 204 as well.
+    /// A holder of PROJECT_DELETE deletes a project in any state, keeping its data (client review, item 4). Otherwise HARD_DRAFT: a DRAFT,
+    /// by the person who created it. R-40: a project that is not there — deleted already, or never the caller's to see — is 204 as well.
     /// </summary>
     [HttpDelete("{projectId:guid}")]
     [RequirePermission(PermissionCatalogue.ProjectRegister)]
@@ -201,5 +213,56 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
         return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
             : request.Validate(out ProjectFollowUpChanges? changes) is { Count: > 0 } errors ? ValidationFailed(errors)
             : Respond(await followUps.UpdateAsync(CallerId, projectId, changes!, version!.Value, cancellationToken));
+    }
+
+    /// <summary>
+    /// Review round 8, point 02: sets how the project's overall progress is calculated, <c>SCHEDULE</c> or <c>STAGES</c>, by whoever may set its stage
+    /// plan. Once a progress update is approved a reason is required (<c>PROJECT_PROGRESS_METHOD_REASON_REQUIRED</c>). Requires <c>If-Match</c> (R-21).
+    /// </summary>
+    [HttpPost("{projectId:guid}/set-progress-method")]
+    [AllowAnyAuthenticatedUser]
+    [SensitiveWrite]
+    [ProducesResponseType<ProjectDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_SetProgressMethod")]
+    public async Task<IActionResult> SetProgressMethod(Guid projectId, ProgressMethodRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out ProjectProgressMethod? method, out NarrativeText? reason) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await projects.SetProgressMethodAsync(CallerId, projectId, method!.Value, reason, version!.Value, cancellationToken));
+    }
+
+    /// <summary>
+    /// Review round 7, item 2: assigns or changes the Project Manager, at any state but CLOSED, with a reason. The new manager must hold R04 over the
+    /// project; its open tasks and update requests pass to them and both managers are told. Requires <c>If-Match</c> (R-21).
+    /// </summary>
+    [HttpPost("{projectId:guid}/change-manager")]
+    [RequirePermission(PermissionCatalogue.ProjectManagerChange)]
+    [SensitiveWrite]
+    [ProducesResponseType<ProjectDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_ChangeProjectManager")]
+    public async Task<IActionResult> ChangeManager(Guid projectId, ProjectManagerChangeRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out ProjectManagerChange? change) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await projects.ChangeManagerAsync(CallerId, projectId, change!, version!.Value, cancellationToken));
+    }
+
+    /// <summary>
+    /// Review round 7, item 4: edits the registration of a project past its first submission, at any state but CLOSED, with a reason. The budget, the
+    /// planned dates and the governance profile must stay as they are: they change through a change request. Requires <c>If-Match</c> (R-21).
+    /// </summary>
+    [HttpPost("{projectId:guid}/edit-registration")]
+    [RequirePermission(PermissionCatalogue.ProjectRegistrationEdit)]
+    [SensitiveWrite]
+    [ProducesResponseType<ProjectDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_EditProjectRegistration")]
+    public async Task<IActionResult> EditRegistration(Guid projectId, ProjectRegistrationEditRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out ProjectDraft? draft, out NarrativeText? reason) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await projects.EditRegistrationAsync(CallerId, projectId, draft!, reason!, version!.Value, cancellationToken));
     }
 }

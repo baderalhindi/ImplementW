@@ -2,7 +2,11 @@ import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { AUDIT_TRAIL_PATH } from '@/features/audit-activity/access.ts';
+import {
+  AUDIT_TRAIL_PATH,
+  INTEGRATION_AUDIT_PATH,
+  SYSTEM_EVENT_LOGS_PATH,
+} from '@/features/audit-activity/access.ts';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import {
@@ -34,7 +38,8 @@ import {
   openFilters,
   renderApp,
 } from '@/test/renderApp.tsx';
-import { findMainMenu, menuLink, openMenuNames } from '@/test/shell.ts';
+import { adminMenuTargets, findMainMenu, menuLink } from '@/test/shell.ts';
+import { offeredTabs } from '@/test/workspaceTabs.ts';
 
 // TASK-074, the FG-06 Audit & Activity UI over TASK-073's API. Acceptance criteria: (1) SCR-057 Activity and SCR-058
 // Audit are visually and navigationally distinct, never one tab; (2) SCR-058 is reachable only with the explicit audit
@@ -44,7 +49,6 @@ import { findMainMenu, menuLink, openMenuNames } from '@/test/shell.ts';
 const en = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
 
 /** Text with the bidi isolates translate() adds around parameters removed. */
-const plain = (text: string | null | undefined) => (text ?? '').replace(/[⁨⁩]/g, '');
 
 function present<T>(value: T | null | undefined, what: string): T {
   if (value === null || value === undefined) {
@@ -100,7 +104,8 @@ afterEach(() => {
 
 describe('acceptance criterion 1: Activity and Audit are two distinct tabs', () => {
   test('the workspace offers them as separate tabs with their own labels and addresses', async () => {
-    open(workspace(), reviewer(), { access: AUDIT_REVIEWER_ACCESS });
+    // Under the Records heading (review round 8, point 04): its tabs show once one of them is open.
+    open(workspace('activity-history'), reviewer(), { access: AUDIT_REVIEWER_ACCESS });
 
     await waitFor(async () => {
       expect((await tabLinks()).map((link) => link.textContent)).toContain(
@@ -167,7 +172,7 @@ describe('acceptance criterion 2: SCR-058 needs the explicit audit permission, n
 
     await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
     await auditAccessLanded(api);
-    const names = (await tabLinks()).map((link) => link.textContent);
+    const names = await offeredTabs(userEvent.setup());
     expect(names).not.toContain(en('projects.workspace.tabs.audit'));
     expect(names).not.toContain(en('projects.workspace.tabs.activity'));
   });
@@ -448,22 +453,35 @@ describe('the sidebar', () => {
   test('lists the audit screens the permissions open, and none for a project manager', async () => {
     open(AUDIT_TRAIL_PATH, r01(), { access: SYSTEM_ADMINISTRATOR_ACCESS });
     await findMainMenu();
-    await waitFor(() => {
-      expect(openMenuNames('common.menu.administration').map(plain)).toEqual(
-        expect.arrayContaining([
-          en('auditActivity.nav.auditTrail'),
-          en('auditActivity.nav.systemEvents'),
-        ]),
-      );
-    });
-    expect(openMenuNames('common.menu.administration').map(plain)).not.toContain(
-      en('auditActivity.nav.integrationAudit'),
-    );
+    // Review round 8, point 15: Administration's side menu, its Audit and logs heading.
+    const targets = await adminMenuTargets();
+    expect(targets).toEqual(expect.arrayContaining([AUDIT_TRAIL_PATH, SYSTEM_EVENT_LOGS_PATH]));
+    expect(targets).not.toContain(INTEGRATION_AUDIT_PATH);
     cleanup();
 
     const api = open(workspace(), reviewer(), { access: PROJECT_MANAGER_ACCESS });
     await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
     await auditAccessLanded(api);
     expect(menuLink('common.menu.administration')).toBeNull();
+  });
+});
+
+describe('selection', () => {
+  test('SCR-058: select all chooses every event shown and counts them', async () => {
+    open(workspace('audit-history'), reviewer(), { access: AUDIT_REVIEWER_ACCESS });
+    const user = userEvent.setup();
+
+    const table = await screen.findByRole('table', {
+      name: en('auditActivity.projectAudit.caption'),
+    });
+    const events = within(table).getAllByRole('row').length - 1;
+    await user.click(within(table).getByRole('checkbox', { name: en('common.table.selectAll') }));
+
+    expect(screen.getByText(en('common.table.selected', { count: events }))).toBeTruthy();
+    expect(
+      within(table)
+        .getAllByRole('checkbox')
+        .every((checkbox) => (checkbox as HTMLInputElement).checked),
+    ).toBe(true);
   });
 });

@@ -25,12 +25,14 @@ internal sealed class ProjectMonthlyTarget(IProjectMonthlyUpdates projects) : IE
         ArgumentNullException.ThrowIfNull(command);
         IReadOnlyDictionary<string, string> values = command.Values;
         ProjectMonthlyUpdateValues update = new(
-            ContributionValues.NumberOf(values[ContributionSchemas.ActualProgressPercent]),
+            values.TryGetValue(ContributionSchemas.ActualProgressPercent, out string? overall) ? ContributionValues.NumberOf(overall) : null,
             values.TryGetValue(ContributionSchemas.ActualSpendPercent, out string? spend) ? ContributionValues.NumberOf(spend) : null,
             Narrative(command, ContributionSchemas.CurrentObstacle),
             Narrative(command, ContributionSchemas.NextAction),
             values.TryGetValue(ContributionSchemas.NextActionDueDate, out string? due) ? DateOnly.ParseExact(due, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : null,
-            Narrative(command, ContributionSchemas.Note));
+            Narrative(command, ContributionSchemas.Note),
+            values.GetValueOrDefault(ContributionSchemas.CurrentStageCode),
+            values.TryGetValue(ContributionSchemas.CurrentStagePercent, out string? stage) ? ContributionValues.NumberOf(stage) : null);
         return await projects.StageAsync(command.TargetId, update, command.ActorId, cancellationToken).ConfigureAwait(false)
             ? SourceApplicationResult.Applied
             : SourceApplicationResult.Failed(ExternalParticipationErrorCodes.SourceRecordTerminal, terminal: true);

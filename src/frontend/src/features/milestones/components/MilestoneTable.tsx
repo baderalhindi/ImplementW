@@ -1,10 +1,13 @@
 import { type ReactElement } from 'react';
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { Link } from 'react-router';
 
 import { varianceLabel } from '@/features/schedule/presentation.ts';
 import { OverdueFlag } from '@/features/tasks/components/TaskBadges.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { achievementState, type MilestoneEntry, overdueDays } from '../milestoneRules.ts';
 
@@ -19,6 +22,8 @@ interface MilestoneTableProps {
   showProject: boolean;
   categoryLabel: (id: string) => string;
   onOpen: (entry: MilestoneEntry) => void;
+  /** Client review, item 8: the row's Edit and Delete, for a role that may manage it. */
+  actions?: RowActionsColumn<MilestoneEntry> | undefined;
 }
 
 /**
@@ -27,6 +32,7 @@ interface MilestoneTableProps {
  * (acceptance criterion 2), and an overdue milestone carries the warning icon and words as well as a thick edge.
  */
 export function MilestoneTable({
+  actions,
   caption,
   entries,
   today,
@@ -35,89 +41,113 @@ export function MilestoneTable({
   onOpen,
 }: MilestoneTableProps): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
+  const ids = entries.map(({ milestone }) => milestone.id);
   return (
-    <TableContainer caption={caption}>
-      <thead>
-        <tr>
-          <th scope="col">{t('milestones.table.milestone')}</th>
-          {showProject && <th scope="col">{t('milestones.table.project')}</th>}
-          <th scope="col">{t('milestones.table.category')}</th>
-          <th scope="col">{t('milestones.table.forecast')}</th>
-          <th scope="col">{t('milestones.table.status')}</th>
-          <th scope="col">{t('milestones.table.achievement')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map((entry) => {
-          const { milestone, project, revisions } = entry;
-          const state = revisions === null ? null : achievementState(revisions);
-          const overdue = overdueDays(milestone, today);
-          const rowClass =
-            state?.kind === 'returned'
-              ? 'row--returned'
-              : overdue !== null
-                ? 'row--overdue'
-                : milestone.status === 'CANCELLED'
-                  ? 'row--muted'
-                  : undefined;
-          return (
-            <tr key={milestone.id} className={rowClass}>
-              <td>
-                <button
-                  type="button"
-                  className="button button--link task__title"
-                  dir="auto"
-                  onClick={() => {
-                    onOpen(entry);
-                  }}
-                >
-                  {milestone.title.text}
-                </button>
-                {overdue !== null && <OverdueFlag days={overdue} />}
-                {state?.kind === 'returned' && <ReturnedReasonLine revision={state.revision} />}
-              </td>
-              {showProject && (
+    <>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'milestones',
+          actions: actions?.bulk(entries, selection, ({ milestone }) => milestone.id),
+        }}
+      >
+        <thead>
+          <tr>
+            <SelectAllHeader ids={ids} selection={selection} />
+            <th scope="col">{t('milestones.table.milestone')}</th>
+            {showProject && <th scope="col">{t('milestones.table.project')}</th>}
+            <th scope="col">{t('milestones.table.category')}</th>
+            <th scope="col">{t('milestones.table.forecast')}</th>
+            <th scope="col">{t('milestones.table.status')}</th>
+            <th scope="col">{t('milestones.table.achievement')}</th>
+            {actions !== undefined && <th scope="col">{t('common.table.actions')}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => {
+            const { milestone, project, revisions } = entry;
+            const state = revisions === null ? null : achievementState(revisions);
+            const overdue = overdueDays(milestone, today);
+            const rowClass =
+              state?.kind === 'returned'
+                ? 'row--returned'
+                : overdue !== null
+                  ? 'row--overdue'
+                  : milestone.status === 'CANCELLED'
+                    ? 'row--muted'
+                    : undefined;
+            return (
+              <tr key={milestone.id} className={rowClass}>
+                <SelectRowCell
+                  id={milestone.id}
+                  name={milestone.title.text}
+                  selection={selection}
+                />
                 <td>
-                  <Link to={`/projects/${project.id}/milestones`} dir="auto">
-                    {project.title.text}
-                  </Link>
+                  <button
+                    type="button"
+                    className="button button--link task__title"
+                    dir="auto"
+                    onClick={() => {
+                      onOpen(entry);
+                    }}
+                  >
+                    {milestone.title.text}
+                  </button>
+                  {overdue !== null && <OverdueFlag days={overdue} />}
+                  {state?.kind === 'returned' && <ReturnedReasonLine revision={state.revision} />}
                 </td>
-              )}
-              <td>{categoryLabel(milestone.milestoneCategoryItemId)}</td>
-              <td>
-                <span dir="ltr">{milestone.forecastDate}</span>
-                <span className="cell__aside">
-                  {milestone.baselinePlannedDate === null
-                    ? t('milestones.table.notBaselined')
-                    : t('milestones.table.baseline', {
-                        date: milestone.baselinePlannedDate,
-                        variance: varianceLabel(milestone.forecastVarianceDays, t),
-                      })}
-                </span>
-              </td>
-              <td>
-                <MilestoneStatusBadge status={milestone.status} />
-              </td>
-              <td>
-                {state === null ? (
-                  <span className="figure figure--none">{t('milestones.table.claimsHidden')}</span>
-                ) : (
-                  <>
-                    <AchievementBadge state={state} />
-                    {state.kind === 'accepted' && (
-                      <span className="cell__aside">
-                        {t('milestones.table.achievedOn', {
-                          date: state.revision.acceptedActualAchievementDate ?? '',
-                        })}
-                      </span>
-                    )}
-                  </>
+                {showProject && (
+                  <td>
+                    <Link to={`/projects/${project.id}/milestones`} dir="auto">
+                      {project.title.text}
+                    </Link>
+                  </td>
                 )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </TableContainer>
+                <td>{categoryLabel(milestone.milestoneCategoryItemId)}</td>
+                <td>
+                  <span dir="ltr">{milestone.forecastDate}</span>
+                  <span className="cell__aside">
+                    {milestone.baselinePlannedDate === null
+                      ? t('milestones.table.notBaselined')
+                      : t('milestones.table.baseline', {
+                          date: milestone.baselinePlannedDate,
+                          variance: varianceLabel(milestone.forecastVarianceDays, t),
+                        })}
+                  </span>
+                </td>
+                <td>
+                  <MilestoneStatusBadge status={milestone.status} />
+                </td>
+                <td>
+                  {state === null ? (
+                    <span className="figure figure--none">
+                      {t('milestones.table.claimsHidden')}
+                    </span>
+                  ) : (
+                    <>
+                      <AchievementBadge state={state} />
+                      {state.kind === 'accepted' && (
+                        <span className="cell__aside">
+                          {t('milestones.table.achievedOn', {
+                            date: state.revision.acceptedActualAchievementDate ?? '',
+                          })}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </td>
+                {actions !== undefined && (
+                  <td className="cell--actions">{actions.render(entry)}</td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableContainer>
+      {actions?.dialog}
+    </>
   );
 }

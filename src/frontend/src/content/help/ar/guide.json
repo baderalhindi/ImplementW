@@ -6,10 +6,10 @@
       {
         "heading": "تسجيل الدخول",
         "paragraphs": [
-          "سجّل الدخول باسم المستخدم وكلمة المرور المعتمدين لدى الهيئة؛ ويظهر نموذج الدخول في التبويبين كليهما، ومنهما تبويب [[identityAccess.signIn.tabs.directory]]. أما طرق الدخول الأخرى فتحمل علامة [[identityAccess.signIn.comingSoon]] ولا يمكن استخدامها حاليًا.",
+          "سجّل الدخول باسم المستخدم أو البريد الإلكتروني وكلمة المرور المعتمدين لدى الهيئة من تبويب [[identityAccess.signIn.tabs.directory]]؛ أما تبويب [[identityAccess.signIn.tabs.microsoft]] فلتسجيل الدخول بحساب مايكروسوفت فقط. وبعد إضافة بصمة الوجه أو الإصبع من [[identityAccess.signInMethods.menu]] في قائمة الحساب، يظهر تحته زر يُدخلك بضغطة واحدة في ذلك المتصفح. ويمكنك أيضًا استخدام [[identityAccess.signIn.passwordless.submit]]: أدخل رقم الهوية أو الإقامة، ثم تحقق ببصمة الوجه أو الإصبع (مفتاح مرور أضفته للجهاز من [[identityAccess.signInMethods.menu]] في قائمة الحساب) أو برمز يصلك برسالة نصية إلى رقم الجوال الذي وثّقته هناك. أما الطرق التي تحمل علامة [[identityAccess.signIn.comingSoon]] فلا يمكن استخدامها حاليًا.",
           "لا يمكن إعادة تعيين كلمة المرور من خلال المنصة؛ فإن نسيتها فاتبع الرابط أو جهة التواصل الظاهرة أسفل حقل كلمة المرور."
         ],
-        "note": "إذا أُسند إليك دور مدير النظام، أو دور آخر تشترط له الهيئة التحقق الثنائي، فستطلب منك المنصة رمز التحقق من تطبيق المصادقة في كل مرة تسجّل فيها الدخول، وتعرض لك في المرة الأولى مفتاحًا لإضافته إلى التطبيق. وتطلب بعض الإجراءات الإدارية رمزًا جديدًا عند تنفيذها."
+        "note": "إذا كان حسابك يتطلب رمز تحقق فستطلبه منك المنصة من تطبيق المصادقة في كل مرة تسجّل فيها الدخول، وتعرض لك في المرة الأولى مفتاحًا لإضافته إلى التطبيق."
       },
       {
         "heading": "اختيار اللغة",
@@ -74,7 +74,7 @@
       {
         "heading": "ترتيب اللوحة على النحو الذي يناسبك",
         "paragraphs": [
-          "يستطيع أصحاب أدوار مدير المحفظة ومدير القطاع و«تنفيذي» اختيار [[dashboards.personalize.open]] لإخفاء العناصر الاختيارية أو إظهارها أو إعادة ترتيبها، ثم اختيار [[dashboards.personalize.save]]. ويعيد خيار [[dashboards.personalize.reset]] الترتيب الأصلي، أما العناصر الثابتة فتبقى دائمًا."
+          "يصمم مدير المحفظة لوحة المحفظة للجميع من [[common.menu.dashboardsReports]] ← [[dashboards.designer.nav]]: أضف بطاقة أو مخططًا أو جدولًا أو مؤشرًا، واسحبه إلى مكانه، وغيّر حجمه من زاويته، واختر قيمه وتجميعه، ثم اختر [[dashboards.designer.save]]. ويعيد خيار [[dashboards.designer.reset]] التصميم القياسي."
         ],
         "note": "تغيير الترتيب لا يغيّر الأرقام، ويحتفظ كل مستخدم بترتيبه الخاص."
       },
@@ -100,7 +100,7 @@
       {
         "heading": "إدارة الصلاحيات والهيكل التنظيمي",
         "paragraphs": [
-          "تضم قائمة [[common.menu.administration]] الشاشات التالية: [[identityAccess.nav.users]]، و[[identityAccess.nav.roles]]، و[[identityAccess.nav.permissionMatrix]]، و[[identityAccess.nav.roleAssignments]]، و[[identityAccess.nav.organization]]، و[[identityAccess.nav.departments]]، و[[identityAccess.nav.entities]].",
+          "تضم قائمة [[common.menu.administration]] الشاشات التالية: [[identityAccess.nav.users]]، و[[identityAccess.nav.roles]]، و[[identityAccess.nav.permissionMatrix]]، و[[identityAccess.nav.roleAssignments]]، و[[identityAccess.nav.departments]]، و[[identityAccess.nav.entities]].",
           "ما يحق للدور فعله هو ملف صلاحياته. لتغييره افتح [[identityAccess.nav.permissionMatrix]] واختر الملف وافتح أحد إصداراته: ابدأ إصداراً جديداً أو انسخه إلى ملف جديد، وحدد نطاق كل صلاحية ثم احفظ. يشارك في ذلك ثلاثة أشخاص: تُعد أنت التغيير، ويتحقق منه مسؤول آخر، وينشره ثالث، ولا يجوز لأي منهم أن يحمل الملف. ويحتفظ المستخدمون بالإصدار المسند إليهم حتى تنقلهم إلى الإصدار الجديد."
         ],
         "steps": [

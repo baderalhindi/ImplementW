@@ -1,26 +1,41 @@
-import { type ReactElement, type SyntheticEvent, useId, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import {
+  type ReactElement,
+  type SyntheticEvent,
+  useCallback,
+  useId,
+  useRef,
+  useState,
+} from 'react';
+import { useNavigate } from 'react-router';
 
-import { useFocusFirstError, useSaveAction } from '@/features/identity-access/forms.ts';
+import { checkText, useFocusFirstError, useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
+import { focusFirstInvalid } from '@/shared/forms/focusFirstInvalid.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import {
   RadioGroupField,
-  InfoTip,
   SelectField,
   TextAreaField,
   AmountField,
   TextField,
 } from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
+import { CancelLink } from '@/shared/ui/CancelLink.tsx';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
 
 import { isInternal, ownEntityId } from '../access.ts';
 import { projectsApi } from '../api/projectsApi.ts';
-import { FUNDING_SOURCES, type ParticipationMode, type ProjectDetail } from '../api/types.ts';
+import {
+  FUNDING_SOURCES,
+  type ParticipationMode,
+  PROGRESS_METHODS,
+  type ProgressMethod,
+  type ProjectDetail,
+} from '../api/types.ts';
 import { LocationFields } from '../components/LocationFields.tsx';
 import { profileMandatoryFields } from '../governance.ts';
 import { projectProblemMessage } from '../problems.ts';
@@ -39,6 +54,17 @@ import {
   valuesOf,
 } from '../registration.ts';
 import { type ProjectLookups, useProjectLookups } from '../useProjectLookups.ts';
+import {
+  checkStagePlan,
+  hasStagePlanErrors,
+  rowsOf,
+  stagePlanChanged,
+  type StagePlanRow,
+  toEntries,
+} from '../stagePlan/stagePlan.ts';
+import { stagePlanApi, type StagePlanStage } from '../stagePlan/stagePlanApi.ts';
+import { StagePlanFields } from '../stagePlan/StagePlanFields.tsx';
+import { useApiResource } from '@/shared/api/useApiResource.ts';
 
 const PARTICIPATION_MODES: ParticipationMode[] = ['AHDA_MANAGED', 'ENTITY_MANAGED'];
 
@@ -47,7 +73,13 @@ function serverError(
   fieldErrors: Partial<Record<string, string>>,
   field: RegistrationField,
 ): string | undefined {
-  return fieldErrors[field] ?? fieldErrors[`${field}.text`];
+  // An approved registration's edit nests the registration under `registration` (review round 7, item 4).
+  return (
+    fieldErrors[field] ??
+    fieldErrors[`${field}.text`] ??
+    fieldErrors[`registration.${field}`] ??
+    fieldErrors[`registration.${field}.text`]
+  );
 }
 
 /** An external user registers for their own entity (ADR-013), so a new form starts with it. */
@@ -86,6 +118,11 @@ interface ProjectFormProps {
   user: SessionUser;
   /** Absent on SCR-033 Create; the project and its ETag on SCR-034 Edit. */
   existing?: { project: ProjectDetail; etag: string | null };
+  /**
+   * Review round 7, item 4: the registration of a project past review, edited by R02 with a reason. Its budget, planned dates and governance profile
+   * are shown but change only through a change request; the manager and the stage plan have their own actions.
+   */
+  registered?: boolean;
 }
 
 /**
@@ -94,7 +131,11 @@ interface ProjectFormProps {
  * themselves and its refusals land on the same inputs. What submission adds — the budget, the planned dates and the
  * governance profile's mandatory fields (ADR-015) — is marked here and enforced by MOD-002.
  */
-export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement {
+export function ProjectForm({
+  user,
+  existing,
+  registered = false,
+}: ProjectFormProps): ReactElement {
   const { t, language } = useI18n();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
@@ -106,6 +147,33 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
     existing === undefined ? initialValues(user) : valuesOf(existing.project),
   );
 
+  // Review round 7, item 1: the stage plan, pre-filled from the stages in force, saved with the registration.
+  const projectId = existing?.project.id;
+  const loadPlan = useCallback(
+    async (
+      signal: AbortSignal,
+    ): Promise<{ stages: StagePlanStage[]; acceptsStartingPercent: boolean }> =>
+      projectId === undefined
+        ? { stages: await stagePlanApi.stages(signal), acceptsStartingPercent: false }
+        : (await stagePlanApi.get(projectId, signal)).data,
+    [projectId],
+  );
+  const plan = useApiResource(loadPlan);
+  // The rows as edited; until the first edit, the plan as read.
+  const [editedRows, setStageRows] = useState<StagePlanRow[] | null>(null);
+  const stageRows = editedRows ?? (plan.data === undefined ? null : rowsOf(plan.data.stages));
+  const acceptsStartingPercent = plan.data?.acceptsStartingPercent ?? false;
+  // Review round 8, point 02: the registration chooses how progress is calculated; stages unless the schedule is chosen.
+  const initialMethod = existing?.project.indicators?.progress?.method ?? 'STAGES';
+  const [method, setMethod] = useState<ProgressMethod>(initialMethod);
+  const byStages = method === 'STAGES';
+  const stageCodes = checkStagePlan(stageRows ?? [], {
+    projectStart: values.plannedStartDate,
+    projectEnd: values.plannedEndDate,
+    requireDates: false,
+    acceptsStartingPercent,
+  });
+
   const internal = isInternal(user);
   const entityFixed = !internal && ownEntityId(user) !== null;
   const required = draftRequiredFields(values);
@@ -115,7 +183,17 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
   ];
   const codes = checkRegistration(values, required);
   const missing = missingFields(values, required);
-  const ready = !hasErrors(codes);
+  const [reason, setReason] = useState('');
+  // Review round 8, point 16: Save stays offered; pressing it with fields to complete marks each and moves to the first.
+  const [attempted, setAttempted] = useState(false);
+  const reasonCode = registered
+    ? checkText(reason, { required: true, maxLength: TEXT_LENGTH })
+    : null;
+  const ready =
+    !hasErrors(codes) &&
+    (registered || !byStages || !hasStagePlanErrors(stageCodes)) &&
+    reasonCode === null;
+  const viaChangeRequest = registered ? t('projects.form.viaChangeRequest') : undefined;
 
   const set = (field: RegistrationField, value: string) => {
     // An initiative belongs to one portfolio: another portfolio drops the initiative chosen under the last one.
@@ -131,11 +209,11 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
     set(field, value);
   };
 
-  // A value of the wrong shape is flagged as it is typed. An empty required field is not: the save button stays
-  // disabled and the note beside it lists what is still needed. The API's refusals land on the field they name.
+  // A value of the wrong shape is flagged as it is typed. An empty required field is flagged once Save is pressed (review round 8, point 16),
+  // and the note under the button lists what is still needed. The API's refusals land on the field they name.
   const errorOf = (field: RegistrationField): string | undefined => {
     const code = codes[field];
-    return code !== null && code !== undefined && code !== 'REQUIRED'
+    return code !== null && code !== undefined && (code !== 'REQUIRED' || attempted)
       ? fieldMessage(code, t)
       : serverError(save.fieldErrors, field);
   };
@@ -145,23 +223,77 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
     if (!ready) {
+      setAttempted(true);
+      focusFirstInvalid(event.currentTarget);
       return;
     }
     const request = toRequest(values, language, existing?.project);
+    if (registered && existing !== undefined) {
+      const edited = await save.run(() =>
+        projectsApi.editRegistration(
+          existing.project.id,
+          request,
+          narrativeRequest(reason, language),
+          existing.etag,
+        ),
+      );
+      if (edited.ok) {
+        void navigate(`/projects/${existing.project.id}`, { state: { notice: 'updated' } });
+      }
+      return;
+    }
     const result = await save.run(() =>
       existing === undefined
         ? projectsApi.create(request)
         : projectsApi.update(existing.project.id, request, existing.etag),
     );
-    if (result.ok) {
-      void navigate(`/projects/${result.value.data.id}`, {
-        state: { notice: existing === undefined ? 'created' : 'updated' },
-      });
+    if (!result.ok) {
+      return;
     }
+    const saved = result.value;
+    let notice = existing === undefined ? 'created' : 'updated';
+    let etag = saved.etag;
+    // A new registration is on the stage method already, and saving its stage plan sets it on one that has none: only a choice the person changed
+    // is sent, before the plan, which only the stage method needs.
+    if (method !== initialMethod) {
+      try {
+        etag = (await projectsApi.setProgressMethod(saved.data.id, method, null, etag)).etag;
+      } catch {
+        notice = 'progressMethodNotSaved';
+      }
+    }
+    if (
+      byStages &&
+      stageRows !== null &&
+      stageRows.length > 0 &&
+      (existing === undefined ||
+        stagePlanChanged(stageRows, plan.data?.stages ?? [], acceptsStartingPercent))
+    ) {
+      // The registration is saved; a plan the API refuses is said so on the project, where it is set again.
+      try {
+        await stagePlanApi.update(
+          saved.data.id,
+          {
+            stages: toEntries(stageRows, acceptsStartingPercent),
+            changeAuthorizationId: null,
+            reason: null,
+          },
+          etag,
+        );
+      } catch {
+        notice = 'stagePlanNotSaved';
+      }
+    }
+    void navigate(`/projects/${saved.data.id}`, { state: { notice } });
   };
 
   return (
-    <form ref={formRef} className="form" noValidate onSubmit={(event) => void submit(event)}>
+    <form
+      ref={formRef}
+      className="form form--wide"
+      noValidate
+      onSubmit={(event) => void submit(event)}
+    >
       <UnreadableLookups lookups={lookups} />
       <FormAlert message={save.formError} />
 
@@ -185,96 +317,99 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           hint={needed('description')}
           error={errorOf('description')}
         />
-        <SelectField
-          label={t('projects.fields.classification')}
-          name="classificationItemId"
-          required
-          value={values.classificationItemId}
-          placeholder={lookups.loading ? t('common.states.loading') : t('common.form.choose')}
-          options={lookups.options('PROJECT_CLASSIFICATION')}
-          hint={
-            !lookups.loading &&
-            lookups.catalogueError === null &&
-            lookups.options('PROJECT_CLASSIFICATION').length === 0
-              ? t('projects.form.nonePublished')
-              : undefined
-          }
-          onChange={setter('classificationItemId')}
-          error={errorOf('classificationItemId')}
-        />
-        <InfoTip
-          label={t('projects.form.governanceProfileInfoLabel')}
-          text={t('projects.form.governanceProfileInfo')}
-        />
-        <SelectField
-          label={t('projects.fields.governanceProfile')}
-          name="governanceProfileItemId"
-          required
-          value={values.governanceProfileItemId}
-          placeholder={lookups.loading ? t('common.states.loading') : t('common.form.choose')}
-          options={lookups.options('GOVERNANCE_PROFILE')}
-          hint={t('projects.form.governanceProfileHint')}
-          onChange={setter('governanceProfileItemId')}
-          error={errorOf('governanceProfileItemId')}
-        />
+        <div className="form__pair">
+          <SelectField
+            label={t('projects.fields.classification')}
+            name="classificationItemId"
+            required
+            value={values.classificationItemId}
+            placeholder={lookups.loading ? t('common.states.loading') : t('common.form.choose')}
+            options={lookups.options('PROJECT_CLASSIFICATION')}
+            hint={
+              !lookups.loading &&
+              lookups.catalogueError === null &&
+              lookups.options('PROJECT_CLASSIFICATION').length === 0
+                ? t('projects.form.nonePublished')
+                : undefined
+            }
+            onChange={setter('classificationItemId')}
+            error={errorOf('classificationItemId')}
+          />
+          <SelectField
+            label={t('projects.fields.governanceProfile')}
+            name="governanceProfileItemId"
+            required
+            disabled={registered}
+            value={values.governanceProfileItemId}
+            placeholder={lookups.loading ? t('common.states.loading') : t('common.form.choose')}
+            options={lookups.options('GOVERNANCE_PROFILE')}
+            hint={viaChangeRequest ?? t('projects.form.governanceProfileHint')}
+            onChange={setter('governanceProfileItemId')}
+            error={errorOf('governanceProfileItemId')}
+          />
+        </div>
       </fieldset>
 
       {internal && (
         <fieldset className="form__section">
           <legend>{t('projects.form.sections.strategy')}</legend>
-          <SelectField
-            label={t('projects.fields.strategicPortfolio')}
-            name="strategicPortfolioItemId"
-            value={values.strategicPortfolioItemId}
-            placeholder={t('common.values.none')}
-            options={lookups.options('STRATEGIC_PORTFOLIO')}
-            hint={t('projects.form.portfolioHint')}
-            onChange={setter('strategicPortfolioItemId')}
-            error={errorOf('strategicPortfolioItemId')}
-          />
-          <SelectField
-            label={t('projects.fields.strategicInitiative')}
-            name="strategicInitiativeItemId"
-            value={values.strategicInitiativeItemId}
-            placeholder={
-              values.strategicPortfolioItemId === ''
-                ? t('projects.form.choosePortfolioFirst')
-                : t('common.values.none')
-            }
-            options={
-              values.strategicPortfolioItemId === ''
-                ? []
-                : lookups
-                    .options('STRATEGIC_INITIATIVE', values.strategicPortfolioItemId)
-                    .filter(
-                      (option) =>
-                        lookups.parentOf(option.value) === values.strategicPortfolioItemId,
-                    )
-            }
-            onChange={setter('strategicInitiativeItemId')}
-            error={errorOf('strategicInitiativeItemId')}
-          />
-          <SelectField
-            label={t('projects.fields.priority')}
-            name="priorityItemId"
-            value={values.priorityItemId}
-            placeholder={t('common.values.none')}
-            options={lookups.options('PRIORITY')}
-            onChange={setter('priorityItemId')}
-            error={errorOf('priorityItemId')}
-          />
-          <SelectField
-            label={t('projects.fields.fundingSource')}
-            name="fundingSource"
-            value={values.fundingSource}
-            placeholder={t('common.values.none')}
-            options={FUNDING_SOURCES.map((source) => ({
-              value: source,
-              label: t(`projects.fundingSource.${source}`),
-            }))}
-            onChange={setter('fundingSource')}
-            error={errorOf('fundingSource')}
-          />
+          <div className="form__pair">
+            <SelectField
+              label={t('projects.fields.strategicPortfolio')}
+              name="strategicPortfolioItemId"
+              value={values.strategicPortfolioItemId}
+              placeholder={t('common.values.none')}
+              options={lookups.options('STRATEGIC_PORTFOLIO')}
+              hint={t('projects.form.portfolioHint')}
+              onChange={setter('strategicPortfolioItemId')}
+              error={errorOf('strategicPortfolioItemId')}
+            />
+            <SelectField
+              label={t('projects.fields.strategicInitiative')}
+              name="strategicInitiativeItemId"
+              value={values.strategicInitiativeItemId}
+              placeholder={
+                values.strategicPortfolioItemId === ''
+                  ? t('projects.form.choosePortfolioFirst')
+                  : t('common.values.none')
+              }
+              options={
+                values.strategicPortfolioItemId === ''
+                  ? []
+                  : lookups
+                      .options('STRATEGIC_INITIATIVE', values.strategicPortfolioItemId)
+                      .filter(
+                        (option) =>
+                          lookups.parentOf(option.value) === values.strategicPortfolioItemId,
+                      )
+              }
+              onChange={setter('strategicInitiativeItemId')}
+              error={errorOf('strategicInitiativeItemId')}
+            />
+          </div>
+          <div className="form__pair">
+            <SelectField
+              label={t('projects.fields.priority')}
+              name="priorityItemId"
+              value={values.priorityItemId}
+              placeholder={t('common.values.none')}
+              options={lookups.options('PRIORITY')}
+              onChange={setter('priorityItemId')}
+              error={errorOf('priorityItemId')}
+            />
+            <SelectField
+              label={t('projects.fields.fundingSource')}
+              name="fundingSource"
+              value={values.fundingSource}
+              placeholder={t('common.values.none')}
+              options={FUNDING_SOURCES.map((source) => ({
+                value: source,
+                label: t(`projects.fundingSource.${source}`),
+              }))}
+              onChange={setter('fundingSource')}
+              error={errorOf('fundingSource')}
+            />
+          </div>
           <TextField
             label={t('projects.fields.legacyReference')}
             name="legacyReference"
@@ -284,7 +419,10 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
             onChange={setter('legacyReference')}
             error={errorOf('legacyReference')}
           />
-          <FollowUpOwnerField
+          <PersonField
+            label={t('projects.fields.followUpOwner')}
+            hint={t('projects.form.followUpOwnerHint')}
+            userType="INTERNAL"
             value={values.followUpOwnerUserId}
             onChange={setter('followUpOwnerUserId')}
             error={errorOf('followUpOwnerUserId')}
@@ -307,35 +445,46 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           onChange={setter('participationMode')}
           error={errorOf('participationMode')}
         />
-        <SelectField
-          label={t('projects.fields.department')}
-          name="departmentId"
-          required
-          value={values.departmentId}
-          placeholder={lookups.loading ? t('common.states.loading') : t('common.form.choose')}
-          options={lookups.departmentOptions}
-          hint={t('projects.form.departmentHint')}
-          onChange={setter('departmentId')}
-          error={errorOf('departmentId')}
-        />
-        {entityFixed ? (
-          <p className="form__readonly">
-            <span className="field__label">{t('projects.fields.externalEntity')}</span>
-            {lookups.organizationError === null
-              ? lookups.entityName(values.externalEntityId)
-              : t('projects.form.ownEntity')}
-          </p>
-        ) : (
+        <div className="form__pair">
           <SelectField
-            label={t('projects.fields.externalEntity')}
-            name="externalEntityId"
-            required={values.participationMode === 'ENTITY_MANAGED'}
-            value={values.externalEntityId}
-            placeholder={t('common.values.none')}
-            options={lookups.entityOptions}
-            hint={needed('externalEntityId')}
-            onChange={setter('externalEntityId')}
-            error={errorOf('externalEntityId')}
+            label={t('projects.fields.department')}
+            name="departmentId"
+            required
+            value={values.departmentId}
+            placeholder={lookups.loading ? t('common.states.loading') : t('common.form.choose')}
+            options={lookups.departmentOptions}
+            hint={t('projects.form.departmentHint')}
+            onChange={setter('departmentId')}
+            error={errorOf('departmentId')}
+          />
+          {entityFixed ? (
+            <p className="form__readonly">
+              <span className="field__label">{t('projects.fields.externalEntity')}</span>
+              {lookups.organizationError === null
+                ? lookups.entityName(values.externalEntityId)
+                : t('projects.form.ownEntity')}
+            </p>
+          ) : (
+            <SelectField
+              label={t('projects.fields.externalEntity')}
+              name="externalEntityId"
+              required={values.participationMode === 'ENTITY_MANAGED'}
+              value={values.externalEntityId}
+              placeholder={t('common.values.none')}
+              options={lookups.entityOptions}
+              hint={needed('externalEntityId')}
+              onChange={setter('externalEntityId')}
+              error={errorOf('externalEntityId')}
+            />
+          )}
+        </div>
+        {!registered && (
+          <PersonField
+            label={t('projects.fields.projectManager')}
+            hint={t('projects.form.projectManagerHint')}
+            value={values.proposedProjectManagerUserId}
+            onChange={setter('proposedProjectManagerUserId')}
+            error={errorOf('proposedProjectManagerUserId')}
           />
         )}
       </fieldset>
@@ -345,32 +494,71 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
         <AmountField
           label={t('projects.fields.registrationBudget')}
           name="registrationBudgetSar"
+          disabled={registered}
           value={values.registrationBudgetSar}
-          hint={`${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`}
+          hint={
+            viaChangeRequest ??
+            `${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`
+          }
           onChange={setter('registrationBudgetSar')}
           error={errorOf('registrationBudgetSar')}
         />
-        <TextField
-          label={t('projects.fields.plannedStartDate')}
-          name="plannedStartDate"
-          type="date"
-          dir="ltr"
-          value={values.plannedStartDate}
-          hint={t('projects.form.neededToSubmit')}
-          onChange={setter('plannedStartDate')}
-          error={errorOf('plannedStartDate')}
-        />
-        <TextField
-          label={t('projects.fields.plannedEndDate')}
-          name="plannedEndDate"
-          type="date"
-          dir="ltr"
-          value={values.plannedEndDate}
-          hint={t('projects.form.neededToSubmit')}
-          onChange={setter('plannedEndDate')}
-          error={errorOf('plannedEndDate')}
-        />
+        <div className="form__pair">
+          <TextField
+            label={t('projects.fields.plannedStartDate')}
+            name="plannedStartDate"
+            type="date"
+            dir="ltr"
+            disabled={registered}
+            value={values.plannedStartDate}
+            hint={viaChangeRequest ?? t('projects.form.neededToSubmit')}
+            onChange={setter('plannedStartDate')}
+            error={errorOf('plannedStartDate')}
+          />
+          <TextField
+            label={t('projects.fields.plannedEndDate')}
+            name="plannedEndDate"
+            type="date"
+            dir="ltr"
+            disabled={registered}
+            value={values.plannedEndDate}
+            hint={viaChangeRequest ?? t('projects.form.neededToSubmit')}
+            onChange={setter('plannedEndDate')}
+            error={errorOf('plannedEndDate')}
+          />
+        </div>
       </fieldset>
+
+      {!registered && stageRows !== null && stageRows.length > 0 && (
+        <fieldset className="form__section">
+          <legend>{t('projects.form.sections.stagePlan')}</legend>
+          <RadioGroupField
+            label={t('projects.progressMethod.label')}
+            name="progressMethod"
+            required
+            value={method}
+            onChange={(value) => {
+              setMethod(value === 'SCHEDULE' ? 'SCHEDULE' : 'STAGES');
+            }}
+            options={PROGRESS_METHODS.map((value) => ({
+              value,
+              label: t(`projects.progressMethod.methods.${value}`),
+            }))}
+            hint={t(`projects.progressMethod.explain.${method}`)}
+          />
+          {byStages && (
+            <>
+              <p className="form__note">{t('projects.stagePlan.intro')}</p>
+              <StagePlanFields
+                rows={stageRows}
+                onChange={setStageRows}
+                codes={stageCodes}
+                acceptsStartingPercent={acceptsStartingPercent}
+              />
+            </>
+          )}
+        </fieldset>
+      )}
 
       <fieldset className="form__section">
         <legend>{t('projects.form.sections.location')}</legend>
@@ -383,11 +571,31 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
         />
       </fieldset>
 
+      {registered && (
+        <TextAreaField
+          label={t('projects.form.editReason')}
+          name="reason"
+          required
+          rows={3}
+          maxLength={TEXT_LENGTH}
+          value={reason}
+          onChange={setReason}
+          hint={t('projects.form.editReasonHint')}
+          error={
+            save.fieldErrors['reason.text'] ??
+            (attempted && reasonCode !== null ? fieldMessage(reasonCode, t) : undefined)
+          }
+        />
+      )}
+
       <div className="form__actions">
         <button
           type="submit"
           className="button button--primary"
-          disabled={!ready || save.saving}
+          // Lists this person cannot read leave nothing to complete, so Save is not offered (F-1).
+          disabled={
+            save.saving || lookups.catalogueError !== null || lookups.organizationError !== null
+          }
           aria-describedby={ready ? undefined : missingId}
         >
           {save.saving
@@ -396,12 +604,9 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
               ? t('projects.create.submit')
               : t('common.actions.save')}
         </button>
-        <Link
-          className="button"
-          to={existing === undefined ? '/projects' : `/projects/${existing.project.id}`}
-        >
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink
+          fallback={existing === undefined ? '/projects' : `/projects/${existing.project.id}`}
+        />
       </div>
       {!ready && (
         <p id={missingId} className="form__note">
@@ -416,12 +621,21 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
   );
 }
 
-/** The RPMO staff member who follows the project up: an active internal user, found by name, or none. */
-function FollowUpOwnerField({
+/**
+ * A person the registration names, found by name, or none: the RPMO staff member who follows the project up (an internal user), or the Project
+ * Manager the submission will propose (review round 7, item 2), whom the API checks holds R04 over the project.
+ */
+function PersonField({
+  label,
+  hint,
+  userType,
   value,
   onChange,
   error,
 }: {
+  label: string;
+  hint: string;
+  userType?: 'INTERNAL';
   value: string;
   onChange: (value: string) => void;
   error: string | undefined;
@@ -432,7 +646,7 @@ function FollowUpOwnerField({
   if (value !== '' && !changing) {
     return (
       <p className="form__readonly">
-        <span className="field__label">{t('projects.fields.followUpOwner')}</span>
+        <span className="field__label">{label}</span>
         {personName(value)}{' '}
         <button
           type="button"
@@ -457,10 +671,10 @@ function FollowUpOwnerField({
   }
   return (
     <UserPicker
-      label={t('projects.fields.followUpOwner')}
+      label={label}
       value={null}
-      userType="INTERNAL"
-      hint={t('projects.form.followUpOwnerHint')}
+      {...(userType === undefined ? {} : { userType })}
+      hint={hint}
       error={error}
       onChange={(user) => {
         onChange(user?.id ?? '');

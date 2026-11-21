@@ -23,6 +23,7 @@ import {
   toFinancialRequest,
   toMoney,
   trendPoints,
+  financialValuesOf,
 } from './financialKpiRules.ts';
 
 // The WF-14 rules the screens apply (TASK-053): a figure is shown only when MEASURED, a withheld one as restricted;
@@ -129,6 +130,16 @@ describe('the current period and the trend', () => {
 });
 
 describe('MOD-023 and MOD-024 send no figure for an Unknown status', () => {
+  test('a draft opens on its figures without ".00"', () => {
+    const update = financialUpdate({
+      actualExpenditureToDateSar: '400000.00',
+      forecastAtCompletionSar: '950000.50',
+    });
+    const values = financialValuesOf(update, '2026-08-15');
+    expect(values.actual).toBe('400000');
+    expect(values.forecast).toBe('950000.50');
+  });
+
   const values = (overrides: Partial<FinancialUpdateValues> = {}): FinancialUpdateValues => ({
     valueStatus: 'MEASURED',
     actual: '1250000',

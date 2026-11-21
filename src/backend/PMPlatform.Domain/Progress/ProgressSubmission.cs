@@ -39,6 +39,12 @@ public sealed class ProgressSubmission : AuditedEntity
 
     public NarrativeText? Narrative { get; set; }
 
+    /// <summary>
+    /// The PROJECT_STAGE version the period weighs its stages by: the one in force the day the period was started, kept by its later revisions (review round
+    /// 7, item 1). Null for a period that is not stage-based.
+    /// </summary>
+    public Guid? StageConfigurationVersionId { get; set; }
+
     /// <summary>Set on the opening-position submission only (ADR-014).</summary>
     public Guid? ProjectIntakeId { get; set; }
 

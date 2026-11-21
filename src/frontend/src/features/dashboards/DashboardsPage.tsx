@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router';
 
 import {
+  CompletionPeriodProvider,
   EntityCompletionPanel,
   OwnEntityCompletionCard,
 } from '@/features/external-participation/EntityCompletion.tsx';
@@ -16,7 +17,13 @@ import { type DashboardCatalogueEntry } from './api/types.ts';
 import { type PortfolioFilters } from './api/dashboardsApi.ts';
 import { type FilterName } from './components/PortfolioFilterBar.tsx';
 import { HostedDashboard } from './HostedDashboard.tsx';
-import { hostedEntries, landingRole, ROLE_LANDINGS, selectedEntry } from './landing.ts';
+import {
+  EXECUTIVE_ROLE,
+  hostedEntries,
+  landingRole,
+  ROLE_LANDINGS,
+  selectedEntry,
+} from './landing.ts';
 import { DASHBOARDS_PATH } from './paths.ts';
 import { dashboardProblemMessage } from './problems.ts';
 import { ProjectLanding } from './ProjectLanding.tsx';
@@ -127,6 +134,7 @@ export function DashboardsPage(): ReactElement {
 
   const role = landingRole(session.user);
   const rendering = entry.isDefaultLanding && role !== null ? ROLE_LANDINGS[role] : undefined;
+  const executive = role === EXECUTIVE_ROLE && rendering !== undefined;
   const others = hostedEntries(entries);
   // A link with filters shows those; one without shows the filters this person last used here.
   const rememberedKey = storageKey(session.user.id, entry.code);
@@ -171,9 +179,12 @@ export function DashboardsPage(): ReactElement {
       <PageHeader
         title={rendering === undefined ? entry.name[language] : t(rendering.name)}
         description={
-          rendering === undefined
-            ? entry.description?.[language]
-            : t('dashboards.home.rendering', { dashboard: entry.name[language] })
+          // Review round 8, point 10: the landing names the role's line; the Portfolio Dashboard opened from its menu has its own.
+          rendering?.dashboardLine != null
+            ? t(rendering.dashboardLine)
+            : entry.code === 'PORTFOLIO'
+              ? t('dashboards.portfolioLine')
+              : entry.description?.[language]
         }
       />
       {others.length > 1 && <DashboardSwitch entries={others} current={entry} />}
@@ -182,16 +193,22 @@ export function DashboardsPage(): ReactElement {
         <ProjectLanding />
       ) : (
         <>
-          {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (
-            <EntityCompletionPanel />
-          )}
-          <HostedDashboard
-            key={entry.code}
-            entry={entry}
-            filters={filters}
-            onFilterChange={setFilter}
-            onClearFilters={clearFilters}
-          />
+          {/* Round 7, item 5: the completion donut near the top and the table below cover one period, the table's. */}
+          <CompletionPeriodProvider>
+            <HostedDashboard
+              key={entry.code}
+              entry={entry}
+              filters={filters}
+              onFilterChange={setFilter}
+              onClearFilters={clearFilters}
+              executive={executive}
+            />
+            {/* The 13 Nov 2026 review: the dashboard's cards come first; this table joins its tables below them. */}
+            {/* Everyone else's table is a section of the Portfolio Manager's design (18 Nov 2026); the Executive's layout keeps it here. */}
+            {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && executive && (
+              <EntityCompletionPanel />
+            )}
+          </CompletionPeriodProvider>
         </>
       )}
     </>

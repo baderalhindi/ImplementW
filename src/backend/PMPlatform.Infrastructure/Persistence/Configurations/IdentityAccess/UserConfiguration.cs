@@ -10,6 +10,10 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.ToTable("user", "identity_access");
+        builder.Property(e => e.NationalIdSealed).HasMaxLength(200);
+        builder.Property(e => e.NationalIdFingerprint).HasMaxLength(64);
+        builder.Property(e => e.NationalIdLastDigits).HasMaxLength(NationalIdNumber.VisibleDigits);
+        builder.HasIndex(e => e.NationalIdFingerprint).IsUnique().HasFilter("national_id_fingerprint IS NOT NULL");
         builder.HasRowVersion();
         builder.Property(e => e.DirectorySubjectId).HasMaxLength(200);
         builder.HasIndex(e => e.DirectorySubjectId).IsUnique();

@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback, useState } from 'react';
+import { type ReactElement, type ReactNode, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
@@ -13,35 +13,24 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
-import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { isInternal } from '../access.ts';
 import { projectsApi } from '../api/projectsApi.ts';
 import { type ProjectSummary } from '../api/types.ts';
+import { Percent } from '@/features/dashboards/insights/figures.tsx';
+
 import { GapValue, ImportedLabel, OnPlanBadge } from '../components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { isForbidden, projectProblemMessage } from '../problems.ts';
 import { type ProjectLookups, useProjectLookups } from '../useProjectLookups.ts';
-import { CreateProjectLink, ImportProjectsLink } from './ProjectActions.tsx';
 import { ProjectFilters } from './ProjectFilters.tsx';
-import { useProjectFilterValues } from './projectFilterValues.ts';
+import { ITEM_FILTERS, useProjectFilterValues } from './projectFilterValues.ts';
 
 /** The filters each list offers; `q` and `status` everywhere, the rest of the filter bar on the Register only. */
-const FILTERS = [
-  'q',
-  'status',
-  'departmentId',
-  'externalEntityId',
-  'classificationItemId',
-  'strategicPortfolioItemId',
-  'strategicInitiativeItemId',
-  'priorityItemId',
-  'regionItemId',
-  'cityItemId',
-  'period',
-] as const;
+const FILTERS = ['q', 'status', 'departmentId', 'externalEntityId', ...ITEM_FILTERS] as const;
 
 interface ProjectListProps {
   user: SessionUser;
@@ -66,6 +55,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
   const sort = params.get('sort') ?? undefined;
   const selection = useRowSelection();
   const mayEdit = useCan('PROJECT_REGISTER');
+  const mayDeleteAny = useCan('PROJECT_DELETE');
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
   const load = useCallback(
@@ -93,10 +83,11 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
     (projects.data?.items ?? []).map((project) => project.projectManagerUserId),
   );
   const filtered = FILTERS.some((name) => (params.get(name) ?? '') !== '');
-  // A submitted project is withdrawn or closed, never deleted: only a DRAFT is offered, and the API checks it is the caller's.
-  const drafts = (projects.data?.items ?? []).filter(
-    (project) => project.status === 'DRAFT' && selection.selected.has(project.id),
+  // A holder of PROJECT_DELETE deletes in any state (client review, item 4). Otherwise only a DRAFT is offered, and the API checks it is the caller's.
+  const deletable = (projects.data?.items ?? []).filter(
+    (project) => selection.selected.has(project.id) && (mayDeleteAny || project.status === 'DRAFT'),
   );
+  const bulkText = mayDeleteAny ? 'projects.bulk.any' : 'projects.bulk';
 
   return (
     <>
@@ -133,42 +124,45 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
           <ProjectListEmpty filtered={filtered} forbidden={false} mine={mine} basePath={basePath} />
         ) : (
           <>
-            <SelectionBar selection={selection}>
-              {mayEdit && drafts.length > 0 && (
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => {
-                    setConfirmation({
-                      title: t('projects.bulk.deleteTitle', { count: drafts.length }),
-                      body: t('projects.bulk.deleteBody', {
-                        names: drafts.map((draft) => draft.title.text).join('، '),
-                      }),
-                      confirmLabel: t('projects.bulk.delete', { count: drafts.length }),
-                      destructive: true,
-                      action: async () => {
-                        for (const draft of drafts) {
-                          await projectsApi.remove(draft.id, null);
-                        }
-                        selection.clear();
-                      },
-                    });
-                  }}
-                >
-                  {t('projects.bulk.delete', { count: drafts.length })}
-                </button>
-              )}
-              {drafts.length !== selection.selected.size && (
-                <span className="cell__aside">{t('projects.bulk.onlyDrafts')}</span>
-              )}
-            </SelectionBar>
             <ProjectTable
+              bulkActions={
+                <>
+                  {(mayEdit || mayDeleteAny) && deletable.length > 0 && (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => {
+                        setConfirmation({
+                          title: t(`${bulkText}.deleteTitle`, { count: deletable.length }),
+                          body: t(`${bulkText}.deleteBody`, {
+                            names: deletable.map((project) => project.title.text).join('، '),
+                          }),
+                          confirmLabel: t(`${bulkText}.delete`, { count: deletable.length }),
+                          destructive: true,
+                          action: async () => {
+                            for (const project of deletable) {
+                              await projectsApi.remove(project.id, null);
+                            }
+                            selection.clear();
+                          },
+                        });
+                      }}
+                    >
+                      {t(`${bulkText}.delete`, { count: deletable.length })}
+                    </button>
+                  )}
+                  {!mayDeleteAny && deletable.length !== selection.selected.size && (
+                    <span className="cell__aside">{t('projects.bulk.onlyDrafts')}</span>
+                  )}
+                </>
+              }
               selection={selection}
               mayEdit={mayEdit}
               caption={mine ? t('projects.mine.title') : t('projects.register.title')}
               projects={projects.data.items}
               lookups={lookups}
               managerName={managerName}
+              showPercentages={itemFilters.measured === 'true'}
             />
             <Pagination
               page={projects.data.page}
@@ -210,9 +204,10 @@ function ProjectListEmpty({
 }): ReactElement {
   const { t } = useI18n();
   const mayAdd = useCan('PROJECT_REGISTER', 'PROJECT_IMPORT', 'PROJECT_IMPORT_APPROVE');
+  const canRegister = useCan('PROJECT_REGISTER');
   if (filtered) {
     return (
-      <EmptyState title={t('projects.list.emptyFiltered')}>
+      <EmptyState title={t('projects.list.emptyFiltered')} reason="filter">
         <Link to={basePath}>{t('common.filters.clear')}</Link>
       </EmptyState>
     );
@@ -233,15 +228,16 @@ function ProjectListEmpty({
     );
   }
   return (
-    <EmptyState title={t('projects.register.empty')}>
-      {mayAdd ? (
-        <div className="form__actions">
-          <ImportProjectsLink />
-          <CreateProjectLink />
-        </div>
-      ) : (
-        <p>{t('projects.register.emptyForRoleDescription')}</p>
-      )}
+    <EmptyState
+      title={t('projects.register.empty')}
+      // Review round 8, point 09: where the person can act, the empty list offers the first step.
+      action={
+        canRegister ? { label: t('projects.register.createFirst'), to: '/projects/new' } : undefined
+      }
+    >
+      {/* Review round 8, point 09: the reason first (the list follows the person's assignments), then, for whoever can add, how to. */}
+      <p>{t('projects.register.emptyForRoleDescription')}</p>
+      {mayAdd && <p>{t('projects.register.emptyHint')}</p>}
     </EmptyState>
   );
 }
@@ -249,21 +245,30 @@ function ProjectListEmpty({
 function ProjectTable({
   selection,
   mayEdit,
+  bulkActions,
   caption,
   projects,
   lookups,
   managerName,
+  showPercentages,
 }: {
   caption: string;
   projects: ProjectSummary[];
   lookups: ProjectLookups;
   managerName: (id: string | null) => string;
+  /** The planned and actual percentages beside the gap: the register opened from the dashboard's averages (review round 8, point 01). */
+  showPercentages: boolean;
   selection: RowSelection;
   mayEdit: boolean;
+  /** The register's commands for the chosen projects, beside Export selected. */
+  bulkActions: ReactNode;
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
   return (
-    <TableContainer caption={caption}>
+    <TableContainer
+      caption={caption}
+      selection={{ selection, exportName: 'projects', actions: bulkActions }}
+    >
       <thead>
         <tr>
           <SelectAllHeader ids={projects.map((project) => project.id)} selection={selection} />
@@ -271,6 +276,12 @@ function ProjectTable({
           <th scope="col">{t('projects.fields.formalProjectId')}</th>
           <th scope="col">{t('projects.fields.status')}</th>
           <th scope="col">{t('projects.followUpList.onPlan')}</th>
+          {showPercentages && (
+            <>
+              <th scope="col">{t('projects.followUp.declaredPlanned')}</th>
+              <th scope="col">{t('projects.followUp.declaredActual')}</th>
+            </>
+          )}
           <th scope="col">{t('projects.followUpList.gap')}</th>
           <th scope="col">{t('projects.fields.department')}</th>
           <th scope="col">{t('projects.fields.participation')}</th>
@@ -313,6 +324,16 @@ function ProjectTable({
             <td>
               <OnPlanBadge status={project.indicators?.onPlan} />
             </td>
+            {showPercentages && (
+              <>
+                <td>
+                  <Percent value={project.indicators?.progress?.plannedPercent ?? null} />
+                </td>
+                <td>
+                  <Percent value={project.indicators?.progress?.actualPercent ?? null} />
+                </td>
+              </>
+            )}
             <td>
               <GapValue points={project.indicators?.gapPoints} />
             </td>

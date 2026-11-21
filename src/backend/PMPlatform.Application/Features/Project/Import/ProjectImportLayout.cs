@@ -1,4 +1,5 @@
 using PMPlatform.Application.Common.DataImport;
+using PMPlatform.Application.Common.Validation;
 
 namespace PMPlatform.Application.Features.Project.Import;
 
@@ -11,8 +12,11 @@ public static class ProjectImportLayout
 {
     public const string DataSheet = "بيانات المشاريع";
 
-    /// <summary>The template the platform hands out today. An uploaded template stamped with an older version is flagged.</summary>
-    public const int TemplateVersion = 1;
+    /// <summary>
+    /// The template the platform hands out today. An uploaded template stamped with an older version is flagged. Version 2 adds the current stage and
+    /// its % complete (review round 7, item 1).
+    /// </summary>
+    public const int TemplateVersion = 2;
 
     /// <summary>The key row's cell that carries the stamp, in a hidden column: <c>template_version=1</c>.</summary>
     public const string VersionKeyPrefix = "template_version=";
@@ -55,6 +59,8 @@ public static class ProjectImportLayout
     public const string ActionDue = "action_due";
     public const string EntityCommits = "entity_commits";
     public const string Notes = "notes";
+    public const string CurrentStage = "current_stage";
+    public const string CurrentStagePercent = "current_stage_percent";
 
     /// <summary>RPMO's own columns the platform does not store: each is skipped with an info note, and kept in the workbook attached to the batch.</summary>
     public static IReadOnlySet<string> Ignored { get; } = new HashSet<string>(StringComparer.Ordinal)
@@ -66,8 +72,8 @@ public static class ProjectImportLayout
     public static IReadOnlyList<(ImportColumn Column, string HeaderAr)> Columns { get; } =
     [
         (Text(LegacyRef, true, 100), "رقم المشروع (المرجع السابق)"),
-        (Text(NameAr, true, 2000), "اسم المشروع (عربي)"),
-        (Text(NameEn, false, 2000), "اسم المشروع (إنجليزي)"),
+        (Text(NameAr, true, 2000) with { Script = TextScript.Arabic }, "اسم المشروع (عربي)"),
+        (Text(NameEn, false, 2000) with { Script = TextScript.English }, "اسم المشروع (إنجليزي)"),
         (Text(Entity, true), "الجهة المالكة/المنفذة"),
         (Text(Department, true), "الإدارة"),
         (Text(Sector, true), "القطاع"),
@@ -90,6 +96,8 @@ public static class ProjectImportLayout
         (Number(ActualProgress), "نسبة الإنجاز الفعلية"),
         (Number(PlannedSpend), "نسبة الصرف المخططة"),
         (Number(ActualSpend), "نسبة الصرف الفعلية"),
+        (Text(CurrentStage, false), "المرحلة الحالية"),
+        (Number(CurrentStagePercent), "نسبة إنجاز المرحلة الحالية"),
         (Text(Obstacle, false, 2000), "المعوق الحالي"),
         (Text(NextAction, false, 2000), "الإجراء التالي"),
         (Text(ActionOwner, false), "مسؤول الإجراء"),

@@ -78,7 +78,9 @@ export function ChangePasswordPage(): ReactElement | null {
     return null;
   }
   const method = session.user.authenticationMethod;
-  const changesHere = method === 'LOCAL_PASSWORD' || method === 'DIRECTORY';
+  // Only a Microsoft account's password is Microsoft's. A person signed in by passkey or SMS code may still hold a local or
+  // directory password; the API answers NOT_LOCAL_ACCOUNT if they do not.
+  const changesHere = method !== 'SINGLE_SIGN_ON';
   const descriptionKey =
     method === 'DIRECTORY'
       ? 'identityAccess.passwordSelfService.changeDescriptionDirectory'

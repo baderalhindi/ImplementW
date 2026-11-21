@@ -172,6 +172,9 @@ describe('a forgotten password', () => {
     });
     const user = userEvent.setup();
     const { router } = renderApp({ path: '/sign-in' });
+    await user.click(
+      await screen.findByRole('tab', { name: en('identityAccess.signIn.tabs.directory') }),
+    );
 
     await user.click(
       await screen.findByRole('link', { name: en('identityAccess.signIn.forgotPassword') }),
@@ -183,6 +186,9 @@ describe('a forgotten password', () => {
   test('otherwise the sign-in page says to contact the service desk', async () => {
     mockApi();
     renderApp({ path: '/sign-in' });
+    await userEvent.click(
+      await screen.findByRole('tab', { name: en('identityAccess.signIn.tabs.directory') }),
+    );
 
     expect(await screen.findByText(en('identityAccess.signIn.forgotPasswordContact'))).toBeTruthy();
     expect(

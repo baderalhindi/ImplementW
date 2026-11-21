@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 
 import { isTranslationKey, type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
+import { NoteList } from '@/shared/ui/NoteList.tsx';
 import { ValueStateFlag } from '@/shared/ui/ValueState.tsx';
 
 import {
@@ -76,7 +77,7 @@ export function ProjectionOrigin({ widget }: { widget: DashboardWidgetResult }):
   const { t, formatDateTime } = useI18n();
   const { asOf } = widget.projection;
   return (
-    <p className="widget__origin">
+    <NoteList as="p" className="widget__origin">
       <span className="widget__source" data-projection-version={widget.projectionVersion}>
         {t('dashboards.source', { source: sourceName(widget.sourceDomain, t) })}
       </span>
@@ -85,7 +86,7 @@ export function ProjectionOrigin({ widget }: { widget: DashboardWidgetResult }):
           ? t('dashboards.asOf.none')
           : t('dashboards.asOf.at', { date: formatDateTime(asOf) })}
       </span>
-    </p>
+    </NoteList>
   );
 }
 

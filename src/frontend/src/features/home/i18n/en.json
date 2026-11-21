@@ -1,6 +1,6 @@
 {
   "title": "Welcome, {name}",
-  "description": "Start something new, see where the portfolio stands, and pick up what is waiting for you.",
+  "description": "Follow what awaits you, and open what you need from the menu.",
   "menus": {
     "title": "Browse the platform"
   },
@@ -74,14 +74,87 @@
     "title": "Projects you manage",
     "nextActionDue": "Next action due",
     "requestsWaiting": "Update requests waiting",
-    "all": "See all {count}"
+    "all": "See all {count}",
+    "needsAction": "Needs action",
+    "attentionUnknown": "Not available",
+    "updateDue": "Update due {date}",
+    "overdueTasks": "{count} overdue tasks",
+    "overdueMilestones": "{count} overdue milestones",
+    "nothingDue": "Nothing this month",
+    "chipsLabel": "Filter the projects",
+    "chips": {
+      "needsAction": "Needs action this month",
+      "lateOrStalled": "Late / stalled",
+      "noStagePlan": "No stage plan"
+    },
+    "searchLabel": "Search your projects",
+    "searchPlaceholder": "Search by project name or number",
+    "attentionUnavailable": "What needs action on each project could not be read, so \"Needs action this month\" does not work now. Reload the page later.",
+    "showing": "Showing {shown} of {total}",
+    "noMatch": "No project matches the filters or the search.",
+    "requestsWaitingHint": "The update requests waiting on you for this project"
   },
   "entity": {
     "title": "Your entity's projects",
     "none": "None",
-    "noProjects": "No project yet.",
+    "noProjects": "Your entity has no projects yet. The projects registered to your entity show here; if you expect to see some, contact AHDA’s project management office.",
     "lastUpdate": "Last update submitted",
     "nextDue": "Next one due",
     "openWindow": "Open the monthly update: {projects}"
+  },
+  "banner": {
+    "customize": "Welcome appearance",
+    "style": "Banner style",
+    "styles": {
+      "DEFAULT": "Default colour",
+      "IMAGE": "One image",
+      "ROTATE": "Image slideshow"
+    },
+    "pickOne": "Choose the image to show.",
+    "pickMany": "Choose the images to show. They take turns every 10 minutes.",
+    "selectAll": "Select all",
+    "clearAll": "Clear all",
+    "needOne": "Choose at least one image. Until you do, the banner keeps its current images.",
+    "notSaved": "Your choice could not be saved. Try again."
+  },
+  "quickActions": {
+    "customize": "Customize quick actions",
+    "chosen": "Your actions, in order",
+    "count": "{count} of {max}",
+    "noneChosen": "No actions chosen. Pick from the list below.",
+    "full": "You have chosen six actions, the most allowed. Remove one to add another.",
+    "groups": {
+      "create": "Create and submit"
+    },
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "remove": "Remove {name}",
+    "restore": "Restore default",
+    "notSaved": "Your choice could not be saved. Try again.",
+    "project": "Project",
+    "chooseProject": "Choose the project",
+    "projectRequired": "Choose the project.",
+    "openProject": "Continue",
+    "noProjects": "There are no active projects you can do this on.",
+    "projectsUnavailable": "The projects could not be shown. Try again.",
+    "actions": {
+      "createProject": "Create project",
+      "importProjects": "Import projects",
+      "raiseChangeRequest": "Change request",
+      "registerRisk": "Register a risk",
+      "raiseIssue": "Raise an issue",
+      "submitProgress": "Submit a progress update",
+      "submitFinancials": "Financial update"
+    }
+  },
+  "roleLines": {
+    "R01": "Keep the platform ready and its integrations running well, and manage users, permissions and reference data with confidence.",
+    "R02": "Stay on top of the portfolio’s performance, take the decisions awaiting your approval, and send update requests to the entities.",
+    "R03": "Follow your department’s projects, review the updates and requests that reach you, and take the decisions that move the work forward.",
+    "R04": "Lead your projects to completion, follow their progress, update their monthly achievements, and complete the tasks and requests due from you.",
+    "R05": "Stay on top of the entities’ responses on the projects assigned to you, and follow up late responses so the work keeps moving.",
+    "R06": "Stay informed about your department’s projects, and review their published data and figures for a clear picture of their performance.",
+    "R07": "See the full picture of the portfolio’s performance, and focus on the main risks and the decisions that need your attention.",
+    "R08": "Contribute to your entity’s projects, respond to AHDA’s update requests, and stay informed about your projects."
   }
 }

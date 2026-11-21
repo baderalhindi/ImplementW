@@ -1,6 +1,8 @@
+using PMPlatform.Application.Common.Deletion;
 using Microsoft.Extensions.Logging;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Governance;
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Events;
@@ -17,6 +19,7 @@ namespace PMPlatform.Application.Features.MasterDataConfig;
 /// </summary>
 internal sealed partial class MasterDataAdministrationService(
     IMasterDataRepository masterData,
+    ProfileApprovalPolicy approval,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<MasterDataAdministrationService> logger) : IMasterDataAdministrationService
@@ -162,7 +165,7 @@ internal sealed partial class MasterDataAdministrationService(
         MasterDataItem? item = await masterData.FindItemForUpdateAsync(itemId, expectedVersion, cancellationToken).ConfigureAwait(false);
         return item is null
             ? (AdministrationResult<Versioned<MasterDataItemDetail>>)AdministrationError.NotFound
-            : GovernedRefusal.Of(GovernedLifecycle.Validate(item, actorId, timeProvider.GetUtcNow())) is { } refused
+            : GovernedRefusal.Of(GovernedLifecycle.Validate(item, actorId, timeProvider.GetUtcNow(), approval.RequiredAdministrators)) is { } refused
             ? refused
             : await SaveItemAsync(actorId, item, "validated", MasterDataConfigAuditEvents.ItemValidated,
                 [AuditAttribute.Change("lifecycle_state", GovernedLifecycleState.Draft, item.LifecycleState)], cancellationToken).ConfigureAwait(false);
@@ -178,7 +181,7 @@ internal sealed partial class MasterDataAdministrationService(
             return AdministrationError.NotFound;
         }
 
-        if (GovernedRefusal.Of(GovernedLifecycle.CheckPublish(item, actorId)) is { } refused)
+        if (GovernedRefusal.Of(GovernedLifecycle.CheckPublish(item, actorId, approval.RequiredAdministrators)) is { } refused)
         {
             return refused;
         }
@@ -190,7 +193,7 @@ internal sealed partial class MasterDataAdministrationService(
             return AdministrationError.Rule(MasterDataConfigErrorCodes.ReferenceInvalid, new FieldIssue("parentItemId", FieldIssue.Inactive));
         }
 
-        GovernedLifecycle.Publish(item, actorId, timeProvider.GetUtcNow());
+        GovernedLifecycle.Publish(item, actorId, timeProvider.GetUtcNow(), approval.RequiredAdministrators);
         return await SaveItemAsync(actorId, item, "published", MasterDataConfigAuditEvents.ItemPublished,
             [AuditAttribute.Change("lifecycle_state", GovernedLifecycleState.Validated, item.LifecycleState)], cancellationToken).ConfigureAwait(false);
     }
@@ -216,6 +219,61 @@ internal sealed partial class MasterDataAdministrationService(
             : await SaveItemAsync(actorId, item, "retired", MasterDataConfigAuditEvents.ItemRetired,
                 [AuditAttribute.Change("lifecycle_state", before, item.LifecycleState)], cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task<AdministrationResult<DeletionOutcome>> RemoveItemAsync(
+        Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        MasterDataItem? item = await masterData.FindItemForUpdateAsync(itemId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (item is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (item.IsSystem)
+        {
+            return AdministrationError.Rule(MasterDataConfigErrorCodes.SystemRow);
+        }
+
+        IReadOnlyList<RecordUse> uses = await masterData.ListUsesAsync(item.Id, cancellationToken).ConfigureAwait(false);
+        List<RecordUse> blocking = [.. uses.Where(u => !Clearable(u))];
+        if (blocking.Count > 0)
+        {
+            return new DeletionOutcome(false, 0, blocking);
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        await using IMasterDataWork work = await masterData.BeginAsync(cancellationToken).ConfigureAwait(false);
+        int cleared = await masterData.ClearUsesAsync(item.Id, uses, actorId, now, cancellationToken).ConfigureAwait(false);
+        audit.Stage(ConfigurationAudit.Entry(MasterDataConfigAuditEvents.ItemDeleted, actorId, nameof(MasterDataItem), item.Id,
+        [
+            AuditAttribute.Of("code", item.Code),
+            AuditAttribute.Of("lifecycle_state", item.LifecycleState),
+            AuditAttribute.Of("cleared_count", cleared),
+            .. uses.Select(u => AuditAttribute.Of($"cleared_{u.Record.Replace('.', '_')}_{u.Field}", u.Count)),
+        ]));
+        masterData.RemoveItem(item);
+        if ((await masterData.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
+        {
+            return saveError;
+        }
+
+        await work.CommitAsync(cancellationToken).ConfigureAwait(false);
+        LogChanged(logger, actorId, "deleted", nameof(MasterDataItem), item.Id);
+        return new DeletionOutcome(true, cleared, []);
+    }
+
+    /// <summary>
+    /// The references a deletion clears: those a record holds optionally on the platform's working records — a project's region, city, priority,
+    /// strategic portfolio and initiative, a task's priority, a child item's parent. A required reference, a closed project, a published
+    /// configuration's content and the audit trail keep the item, as none of them may change.
+    /// </summary>
+    private static bool Clearable(RecordUse use) =>
+        !use.Required && ClearableRecords.Contains(use.Record);
+
+    private static readonly HashSet<string> ClearableRecords = new(StringComparer.Ordinal)
+    {
+        "project.project", "project_task.project_task", "master_data_config.master_data_item",
+    };
 
     /// <summary>Whether <paramref name="parentId"/> is <paramref name="itemId"/> or one of its descendants, or its ancestry already loops.</summary>
     internal static bool IsOwnAncestor(Guid? itemId, Guid? parentId, IReadOnlyDictionary<Guid, Guid?> parents)

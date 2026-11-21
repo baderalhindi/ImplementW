@@ -144,4 +144,25 @@ describe('SCR-124 Version History', () => {
     );
     expect(api.requestsTo('GET', /\/versions$/)).toHaveLength(2);
   });
+
+  test('select all, then Rescan on the selection bar queues only the chosen versions whose scan failed', async () => {
+    const api = openHistory();
+    api.on('POST', /\/rescan$/, { body: version({ id: 'v3', scanState: 'SCAN_PENDING' }) });
+    const user = userEvent.setup();
+    await versionRows();
+
+    await user.click(screen.getByRole('checkbox', { name: en('common.table.selectAll') }));
+    const count = screen.getByText(en('common.table.selected', { count: VERSIONS.length }));
+    const bar = count.closest<HTMLElement>('.selection-bar');
+    if (bar === null) {
+      throw new Error('No selection bar.');
+    }
+    await user.click(within(bar).getByRole('button', { name: en('documents.rescan.action') }));
+
+    expect(await screen.findByText(en('documents.done.rescanQueued'))).toBeTruthy();
+    expect(api.requestsTo('POST', /\/rescan$/).map((request) => request.path)).toEqual([
+      `/documents/${DOCUMENT_ID}/versions/v3/rescan`,
+    ]);
+    expect(screen.queryByText(en('common.table.selected', { count: VERSIONS.length }))).toBeNull();
+  });
 });

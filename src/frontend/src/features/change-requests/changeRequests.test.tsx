@@ -550,7 +550,7 @@ describe('SCR-105 Change Requests', () => {
 
     const table = await screen.findByRole('table', { name: en('changeRequests.list.caption') });
     const rows = within(table).getAllByRole('row').slice(1);
-    expect(rows.map((row) => within(row).getAllByRole('cell')[1]?.textContent)).toEqual([
+    expect(rows.map((row) => within(row).getAllByRole('cell')[2]?.textContent)).toEqual([
       'Harbour bridge repair',
       'Coastal road upgrade',
     ]);
@@ -566,5 +566,22 @@ describe('SCR-105 Change Requests', () => {
     ).toBe('en');
     expect(within(bearing).getByText('Harbour bridge repair').getAttribute('lang')).toBe('en');
     expect(api.requestsTo('GET', /^\/change-requests$/)).toHaveLength(2);
+  });
+});
+
+describe('SCR-105 selection', () => {
+  test('select all chooses every request listed and counts them', async () => {
+    open('/change-requests');
+    const user = userEvent.setup();
+
+    const table = await screen.findByRole('table', { name: en('changeRequests.list.caption') });
+    await user.click(within(table).getByRole('checkbox', { name: en('common.table.selectAll') }));
+
+    expect(screen.getByText(en('common.table.selected', { count: 2 }))).toBeTruthy();
+    expect(
+      within(table).getByRole('checkbox', {
+        name: en('common.table.selectRow', { name: 'Replace the bearing pads' }),
+      }),
+    ).toHaveProperty('checked', true);
   });
 });

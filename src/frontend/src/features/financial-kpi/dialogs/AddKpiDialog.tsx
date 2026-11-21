@@ -4,6 +4,7 @@ import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { isPublished, readCatalogueItems } from '@/shared/api/masterData.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { focusFirstInvalid } from '@/shared/forms/focusFirstInvalid.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { AmountField, SelectField } from '@/shared/ui/FormFields.tsx';
@@ -84,6 +85,7 @@ function AddKpiBody({
     event.preventDefault();
     setAttempted(true);
     if (definitionId === '' || frequencyId === '' || target === '' || target === '-') {
+      focusFirstInvalid(event.currentTarget);
       return;
     }
     const result = await save.run(async () => {

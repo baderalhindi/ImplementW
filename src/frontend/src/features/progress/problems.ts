@@ -11,6 +11,8 @@ const PROGRESS_PROBLEMS: Record<string, TranslationKey> = {
   PROGRESS_NOTHING_TO_REPORT: 'progress.problems.nothingToReport',
   PROGRESS_SUBMISSION_EXISTS: 'progress.problems.submissionExists',
   PROGRESS_NOT_EDITABLE: 'progress.problems.notEditable',
+  PROGRESS_STAGE_PLAN_REQUIRED: 'progress.problems.stagePlanRequired',
+  PROGRESS_STAGE_ENTRY_INVALID: 'progress.problems.stageEntryInvalid',
   CONFIGURATION_MISSING: 'progress.problems.configurationMissing',
   INVALID_TRANSITION: 'progress.problems.invalidTransition',
   PERMISSION_DENIED: 'progress.problems.permissionDenied',

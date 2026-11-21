@@ -8,6 +8,10 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { RowActionGroup } from '@/shared/ui/MoreMenu.tsx';
+import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
@@ -33,6 +37,7 @@ import {
   useSaveAction,
   UUID_PATTERN,
 } from '../forms.ts';
+import { usesText } from '../deletion.ts';
 import { labelOf } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
 
@@ -41,8 +46,8 @@ const STATUSES: ExternalEntityStatus[] = ['ACTIVE', 'SUSPENDED', 'RETIRED'];
 
 /** The commands each status allows; RETIRED is terminal (record §3). */
 const TRANSITIONS: Record<ExternalEntityStatus, ExternalEntityTransition[]> = {
-  ACTIVE: ['suspend', 'retire'],
-  SUSPENDED: ['activate', 'retire'],
+  ACTIVE: ['suspend'],
+  SUSPENDED: ['activate'],
   RETIRED: [],
 };
 
@@ -57,6 +62,8 @@ export function ExternalEntityListPage(): ReactElement {
   const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const selection = useRowSelection();
 
   const q = params.get('q') ?? undefined;
   const status = STATUSES.find((s) => s === params.get('status'));
@@ -84,6 +91,57 @@ export function ExternalEntityListPage(): ReactElement {
     });
   };
 
+  /** Deletes an entity (the client wants no "retire"): erased when nothing uses it; otherwise the person is told what does. */
+  const remove = (entity: ExternalEntitySummary) => {
+    const name = labelOf(entity.name, language);
+    setNotice(null);
+    setConfirmation({
+      title: t('identityAccess.entities.delete.title'),
+      body: t('identityAccess.entities.delete.body', { name }),
+      confirmLabel: t('identityAccess.entities.delete.action'),
+      destructive: true,
+      action: async () => {
+        const { data } = await externalEntitiesApi.remove(entity.id);
+        setNotice(
+          data.deleted
+            ? { tone: 'success', message: t('identityAccess.entities.delete.done', { name }) }
+            : {
+                tone: 'warning',
+                message: t('identityAccess.entities.delete.blocked', {
+                  name,
+                  uses: usesText(data.blockedBy, t),
+                }),
+              },
+        );
+      },
+    });
+  };
+
+  /** The same command on every chosen entity on this page that allows it. */
+  const confirmMany = (transition: ExternalEntityTransition) => {
+    const chosen = (entities.data?.items ?? []).filter(
+      (entity) =>
+        selection.selected.has(entity.id) && TRANSITIONS[entity.status].includes(transition),
+    );
+    setConfirmation({
+      title: t(`identityAccess.entities.transitions.${transition}.title`),
+      body: chosen.map((entity) => labelOf(entity.name, language)).join('، '),
+      confirmLabel: t(`identityAccess.entities.transitions.${transition}.action`),
+      destructive: transition !== 'activate',
+      action: async () => {
+        for (const entity of chosen) {
+          await externalEntitiesApi.transition(entity.id, transition);
+        }
+        selection.clear();
+      },
+    });
+  };
+  const chosenAllow = (transition: ExternalEntityTransition) =>
+    (entities.data?.items ?? []).some(
+      (entity) =>
+        selection.selected.has(entity.id) && TRANSITIONS[entity.status].includes(transition),
+    );
+
   return (
     <>
       <PageHeader
@@ -108,6 +166,7 @@ export function ExternalEntityListPage(): ReactElement {
           </>
         }
       />
+      <PageNotice notice={notice} />
 
       <FilterBar
         onClearAll={() => {
@@ -189,12 +248,39 @@ export function ExternalEntityListPage(): ReactElement {
                 ? t('identityAccess.entities.empty')
                 : t('identityAccess.entities.emptyFiltered')
             }
+            reason={q === undefined && status === undefined ? 'setup' : 'filter'}
           />
         ) : (
           <>
-            <TableContainer caption={t('identityAccess.entities.title')}>
+            <TableContainer
+              caption={t('identityAccess.entities.title')}
+              selection={{
+                selection,
+                exportName: 'external-entities',
+                actions: (
+                  <>
+                    {(['activate', 'suspend'] as const).filter(chosenAllow).map((transition) => (
+                      <button
+                        key={transition}
+                        type="button"
+                        className="button"
+                        onClick={() => {
+                          confirmMany(transition);
+                        }}
+                      >
+                        {t(`identityAccess.entities.transitions.${transition}.action`)}
+                      </button>
+                    ))}
+                  </>
+                ),
+              }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={entities.data.items.map((entity) => entity.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('identityAccess.entities.code')}</th>
                   <th scope="col">{t('identityAccess.entities.name')}</th>
                   <th scope="col">{t('identityAccess.entities.sponsor')}</th>
@@ -209,6 +295,7 @@ export function ExternalEntityListPage(): ReactElement {
                   const name = labelOf(entity.name, language);
                   return (
                     <tr key={entity.id}>
+                      <SelectRowCell id={entity.id} name={name} selection={selection} />
                       <td dir="ltr" className="cell--ltr">
                         {entity.code}
                       </td>
@@ -225,31 +312,40 @@ export function ExternalEntityListPage(): ReactElement {
                         />
                       </td>
                       <td className="cell--actions">
-                        {entity.status !== 'RETIRED' && (
-                          <button
-                            type="button"
-                            className="button"
-                            onClick={() => {
-                              setEditing({ mode: 'edit', entityId: entity.id });
-                            }}
-                          >
-                            {t('common.actions.edit')}{' '}
-                            <span className="visually-hidden">{name}</span>
-                          </button>
-                        )}
-                        {TRANSITIONS[entity.status].map((transition) => (
-                          <button
-                            key={transition}
-                            type="button"
-                            className={transition === 'retire' ? 'button button--danger' : 'button'}
-                            onClick={() => {
-                              confirm(entity, transition);
-                            }}
-                          >
-                            {t(`identityAccess.entities.transitions.${transition}.action`)}{' '}
-                            <span className="visually-hidden">{name}</span>
-                          </button>
-                        ))}
+                        <RowActionGroup
+                          label={name}
+                          primary={
+                            entity.status === 'RETIRED' ? undefined : (
+                              <button
+                                type="button"
+                                className="button"
+                                onClick={() => {
+                                  setEditing({ mode: 'edit', entityId: entity.id });
+                                }}
+                              >
+                                {t('common.actions.edit')}{' '}
+                                <span className="visually-hidden">{name}</span>
+                              </button>
+                            )
+                          }
+                          items={[
+                            ...TRANSITIONS[entity.status].map((transition) => ({
+                              key: transition,
+                              label: t(`identityAccess.entities.transitions.${transition}.action`),
+                              onSelect: () => {
+                                confirm(entity, transition);
+                              },
+                            })),
+                            {
+                              key: 'delete',
+                              label: t('identityAccess.entities.delete.action'),
+                              danger: true,
+                              onSelect: () => {
+                                remove(entity);
+                              },
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   );
@@ -388,8 +484,8 @@ function ExternalEntityFields({
         current === null
           ? checkText(code, { required: true, maxLength: CODE_LENGTH, pattern: CODE_PATTERN })
           : null,
-      'name.ar': checkText(nameAr, { required: true }),
-      'name.en': checkText(nameEn, { required: true }),
+      'name.ar': checkText(nameAr, { required: true, script: 'ar' }),
+      'name.en': checkText(nameEn, { required: true, script: 'en' }),
       entityTypeItemId: checkText(entityTypeItemId, { required: true, pattern: UUID_PATTERN }),
     });
     if (!valid) {

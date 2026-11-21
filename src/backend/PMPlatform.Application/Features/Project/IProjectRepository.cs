@@ -20,6 +20,9 @@ public interface IProjectRepository
     /// <summary>The projects <paramref name="scope"/> reaches that match the query, most recently changed first, one page, with the total. Not tracked.</summary>
     public Task<(IReadOnlyList<ProjectEntity> Items, int TotalCount)> ListAsync(RecordScope scope, ProjectQuery query, CancellationToken cancellationToken);
 
+    /// <summary>Every project <paramref name="scope"/> reaches that matches <paramref name="query"/>'s stored filters, unpaged, in its order. Not tracked.</summary>
+    public Task<IReadOnlyList<ProjectEntity>> ListMatchingAsync(RecordScope scope, ProjectQuery query, CancellationToken cancellationToken);
+
     /// <summary>Every project <paramref name="scope"/> reaches, unpaged, in id order. Not tracked.</summary>
     public Task<IReadOnlyList<ProjectEntity>> ListReachedAsync(RecordScope scope, CancellationToken cancellationToken);
 
@@ -54,6 +57,14 @@ public interface IProjectRepository
 
     /// <summary>Stages the removal of these projects' follow-up notes, with the projects a rolled-back import batch removes (R3-4).</summary>
     public Task RemoveFollowUpNotesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
+    /// <summary>Review round 7, item 1: a project's stage plan, one row per stage. Tracked: the plan's change updates these rows.</summary>
+    public Task<IReadOnlyList<ProjectStagePlanEntry>> ListStagePlanAsync(Guid projectId, CancellationToken cancellationToken);
+
+    /// <summary>Not tracked: the stage plans of these projects, by project.</summary>
+    public Task<ILookup<Guid, ProjectStagePlanEntry>> ReadStagePlansAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
+    public void Add(ProjectStagePlanEntry entry);
 
     public void Remove(ProjectEntity project);
 

@@ -172,3 +172,39 @@ describe('MOD-043 Delegate', () => {
     });
   });
 });
+
+describe('SCR-114 selection', () => {
+  test('select all on the given list, then one Revoke for every chosen delegation still active', async () => {
+    const revoked = {
+      ...given,
+      id: '4a4a4a4a-0000-4000-8000-000000000e03',
+      status: 'REVOKED' as const,
+    };
+    const api = openDelegations({ given: [given, revoked], received: [received] });
+    api.on('POST', /\/revoke$/, { body: { ...given, status: 'REVOKED' } });
+    const user = userEvent.setup();
+
+    const givenTable = await screen.findByRole('table', {
+      name: en('approvals.delegations.givenCaption'),
+    });
+    await user.click(
+      within(givenTable).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    const bar = screen
+      .getByText(en('common.table.selected', { count: 2 }))
+      .closest('.selection-bar');
+    if (!(bar instanceof HTMLElement)) {
+      throw new Error('No selection bar.');
+    }
+    await user.click(within(bar).getByRole('button', { name: en('approvals.revoke.action') }));
+    const dialog = screen.getByRole('dialog', { name: en('approvals.revoke.title') });
+    await user.click(within(dialog).getByRole('button', { name: en('approvals.revoke.confirm') }));
+
+    await waitFor(() => {
+      expect(api.requestsTo('POST', /\/revoke$/)).toHaveLength(1);
+    });
+    expect(api.requestsTo('POST', /\/revoke$/)[0]?.path).toBe(
+      `/approval-delegations/${given.id}/revoke`,
+    );
+  });
+});

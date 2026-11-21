@@ -17,5 +17,11 @@ public interface IDepartmentAdministrationService
 
     public Task<AdministrationResult<Versioned<DepartmentDetail>>> ActivateAsync(Guid actorId, Guid departmentId, uint? expectedVersion, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Client review, item 6: the department leaves administration and every picker; records keep its name. Refused (409
+    /// IDENTITY_ACCESS_DEPARTMENT_IN_USE, a field per kind) while users, sub-departments, open projects or assignments still depend on it. Null on success.
+    /// </summary>
+    public Task<AdministrationError?> DeleteAsync(Guid actorId, Guid departmentId, uint? expectedVersion, CancellationToken cancellationToken);
+
     public Task<AdministrationResult<Versioned<DepartmentDetail>>> DeactivateAsync(Guid actorId, Guid departmentId, uint? expectedVersion, CancellationToken cancellationToken);
 }

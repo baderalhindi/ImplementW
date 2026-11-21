@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
@@ -12,12 +12,21 @@ import {
 } from '@/test/identityAccessFixtures.ts';
 import { mockApi, page } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { adminMenuTargets } from '@/test/shell.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 
-// Acceptance criteria 1 and 3: every ADM-002–013 screen is reachable for R01 and renders in both English (LTR)
+// Acceptance criteria 1 and 3: every ADM-002–013 screen (ADM-011 dropped in the 10 Nov 2026 client review) is reachable for R01 and renders in both English (LTR)
 // and Arabic (RTL), with no axe-core violation in either.
 
 const R01 = sessionFor(['R01']);
+
+function first<T>(items: readonly T[]): T {
+  const [item] = items;
+  if (item === undefined) {
+    throw new Error('Nothing found.');
+  }
+  return item;
+}
 
 const SCREENS = [
   { id: 'ADM-002', path: '/admin/users', title: 'identityAccess.users.list.title' },
@@ -41,7 +50,6 @@ const SCREENS = [
     title: 'identityAccess.permissionMatrix.title',
   },
   { id: 'ADM-010', path: '/admin/role-assignments', title: 'identityAccess.assignments.title' },
-  { id: 'ADM-011', path: '/admin/organization', title: 'identityAccess.organization.title' },
   {
     id: 'ADM-012',
     path: '/admin/organization/departments',
@@ -96,16 +104,66 @@ describe('empty states for zero-result lists', () => {
   });
 });
 
-test('the organization structure nests a department under its parent', async () => {
+test('the old Organization structure address opens Departments, which names each parent', async () => {
   withIdentityAccessData(mockApi());
   renderApp({ path: '/admin/organization', session: R01 });
 
-  const child = await screen.findByText(/Quality Assurance/);
-  const parentItem = screen.getByText(/Project Management Office/).closest('li');
-  expect(parentItem?.contains(child)).toBe(true);
-  expect(screen.getByText(/Contractor A/)).toBeTruthy();
+  expect(
+    await screen.findByRole('heading', {
+      level: 1,
+      name: translate('en', 'identityAccess.departments.title'),
+    }),
+  ).toBeTruthy();
+  const childRow = (await screen.findByText('Quality Assurance', { selector: 'td' })).closest('tr');
+  expect(childRow?.textContent).toContain('Project Management Office');
+  expect(await adminMenuTargets()).toContain('/admin/organization/departments');
   expect(departments).toHaveLength(2);
   expect(entities).toHaveLength(1);
+});
+
+test('external entities: select all, then one command for every chosen entity that allows it', async () => {
+  const api = withIdentityAccessData(mockApi());
+  const second = {
+    ...first(entities),
+    id: '00000000-0000-4000-8000-0000000000e2',
+    code: 'CONTRACTOR-B',
+    name: { ar: 'ب', en: 'Contractor B' },
+    status: 'SUSPENDED' as const,
+  };
+  api.on('GET', /^\/external-entities$/, { body: page([...entities, second]) });
+  api.on('POST', /^\/external-entities\/[^/]+\/suspend$/, { body: first(entities) });
+  renderApp({ path: '/admin/organization/entities', session: R01 });
+  const user = userEvent.setup();
+
+  await user.click(
+    await screen.findByRole('checkbox', { name: translate('en', 'common.table.selectAll') }),
+  );
+  expect(screen.getByText(translate('en', 'common.table.selected', { count: 2 }))).toBeTruthy();
+  const bar = screen
+    .getByText(translate('en', 'common.table.selected', { count: 2 }))
+    .closest('.selection-bar');
+  if (!(bar instanceof HTMLElement)) {
+    throw new Error('No selection bar.');
+  }
+  await user.click(
+    within(bar).getByRole('button', {
+      name: translate('en', 'identityAccess.entities.transitions.suspend.action'),
+    }),
+  );
+  const dialog = screen.getByRole('dialog');
+  expect(dialog.textContent).toContain('Contractor A');
+  expect(dialog.textContent).not.toContain('Contractor B');
+  await user.click(
+    within(dialog).getByRole('button', {
+      name: translate('en', 'identityAccess.entities.transitions.suspend.action'),
+    }),
+  );
+  await waitFor(() => {
+    expect(api.requestsTo('POST', /\/suspend$/)).toHaveLength(1);
+  });
+  expect(api.requestsTo('POST', /\/suspend$/)[0]?.path).toBe(
+    `/external-entities/${first(entities).id}/suspend`,
+  );
 });
 
 test('the permission matrix shows the scope each profile grants', async () => {

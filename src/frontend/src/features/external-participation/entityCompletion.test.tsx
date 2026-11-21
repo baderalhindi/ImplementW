@@ -70,13 +70,14 @@ describe('every entity for AHDA (review round 5, item 10)', () => {
     );
     renderApp({ path: '/dashboards?dashboard=PORTFOLIO', session: sessionFor(['R02']) });
 
-    const row = (await screen.findByText('50%')).closest('tr');
+    // The completion donut shows the same rate; the table's is in a row.
+    const row = (await screen.findAllByText('50%')).map((cell) => cell.closest('tr')).find(Boolean);
     expect(row).toBeTruthy();
     expect(
       within(row as HTMLElement)
         .getByRole('link')
         .getAttribute('href'),
     ).toBe(`/external-requests/monitor?externalEntityId=${ENTITY}`);
-    expect(screen.getByText(/62\.5%/)).toBeTruthy();
+    expect(screen.getAllByText(/62\.5%/).length).toBeGreaterThan(0);
   });
 });

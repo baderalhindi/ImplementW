@@ -1,5 +1,10 @@
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
-import { AUDIT_TRAIL_PATH, auditNavigation } from '@/features/audit-activity/access.ts';
+import {
+  AUDIT_TRAIL_PATH,
+  auditNavigation,
+  INTEGRATION_AUDIT_PATH,
+  SYSTEM_EVENT_LOGS_PATH,
+} from '@/features/audit-activity/access.ts';
 import { type AuditAccessView } from '@/features/audit-activity/api/types.ts';
 import { changeRequestNavigation } from '@/features/change-requests/routes.tsx';
 import { documentNavigation } from '@/features/documents/routes.tsx';
@@ -12,7 +17,8 @@ import {
 } from '@/features/external-participation/paths.ts';
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
 import { type DashboardCatalogueEntry } from '@/features/dashboards/api/types.ts';
-import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
+import { EXECUTIVE_ROLE, landingRole } from '@/features/dashboards/landing.ts';
+import { DASHBOARDS_PATH, PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
 import { dashboardNavigation } from '@/features/dashboards/routes.tsx';
 import { dataImportNavigation } from '@/features/data-import/routes.tsx';
 import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -21,7 +27,17 @@ import {
   type NavigationItem,
 } from '@/features/identity-access/routes.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
+import {
+  API_CATALOGUE_PATH,
+  EMAIL_EXCHANGE_PATH,
+  INTEGRATION_LOGS_PATH,
+  INTEGRATION_MONITORING_PATH,
+  integrationAdminNavigation,
+  INTEGRATIONS_OVERVIEW_PATH,
+  INTERNAL_SYSTEMS_PATH,
+  NAFATH_PATH,
+  SSO_DIRECTORY_PATH,
+} from '@/features/integration-admin/catalogue.ts';
 import { issuesChallengesNavigation } from '@/features/issues-challenges/routes.tsx';
 import { milestoneNavigation } from '@/features/milestones/routes.tsx';
 import { notificationNavigation } from '@/features/notifications/routes.tsx';
@@ -52,9 +68,17 @@ export type MenuId =
   | 'administration'
   | 'help';
 
+/** A heading of a menu's screens and the screens under it. */
+export interface MenuGroup {
+  label: TranslationKey;
+  items: NavigationItem[];
+}
+
 export interface Menu {
   id: MenuId;
   label: TranslationKey;
+  /** The screens under headings, when the menu has too many for one row (Administration). */
+  groups?: MenuGroup[];
   /** Where the menu itself leads: its first screen. */
   to: string;
   /** The path prefixes whose screens belong to the menu, so a record's page keeps its menu open. */
@@ -79,10 +103,18 @@ export function isCurrent(to: string, pathname: string, search: string): boolean
  * audience is its roles (ADR-006), not a permission, and only the API knows a created role's: whoever its catalogue offers
  * the Portfolio Dashboard (dashboards.md D-2).
  */
-function portfolioNavigation(dashboards: readonly DashboardCatalogueEntry[]): NavigationItem[] {
+function portfolioNavigation(
+  dashboards: readonly DashboardCatalogueEntry[],
+  executive: boolean,
+): NavigationItem[] {
   return dashboards.some((entry) => entry.code === 'PORTFOLIO')
     ? [
-        { to: PORTFOLIO_DASHBOARD_PATH, label: 'common.menu.portfolioDashboard', end: true },
+        {
+          to: PORTFOLIO_DASHBOARD_PATH,
+          // Review round 8, point 14: the Executive's one dashboard goes by its name, "اللوحة التنفيذية".
+          label: executive ? 'dashboards.landing.R07' : 'common.menu.portfolioDashboard',
+          end: true,
+        },
         {
           to: '/reports/portfolio',
           label: 'common.menu.portfolioReports',
@@ -95,6 +127,54 @@ function portfolioNavigation(dashboards: readonly DashboardCatalogueEntry[]): Na
 
 /** The audit categories that are platform evidence (FG-06 §7.2): their holders read the audit trail under Administration. */
 const ADMINISTRATIVE_AUDIT: readonly string[] = ['ADMINISTRATION', 'SECURITY', 'INTEGRATION'];
+
+/**
+ * Administration's screens under the five headings of review round 8, point 15, shown as a side menu on every admin page. A screen not named here
+ * goes under the last heading.
+ */
+const ADMINISTRATION_GROUPS: { label: TranslationKey; paths: readonly string[] }[] = [
+  {
+    label: 'common.menu.adminGroups.usersRoles',
+    paths: ['/admin/users', '/admin/roles', '/admin/permission-matrix', '/admin/role-assignments'],
+  },
+  {
+    label: 'common.menu.adminGroups.organization',
+    paths: ['/admin/organization/departments', '/admin/organization/entities'],
+  },
+  {
+    label: 'common.menu.adminGroups.data',
+    paths: ['/admin/master-data', '/admin/project-stages', '/admin/data-migration'],
+  },
+  {
+    label: 'common.menu.adminGroups.integrations',
+    paths: [
+      INTEGRATIONS_OVERVIEW_PATH,
+      INTEGRATION_MONITORING_PATH,
+      INTEGRATION_LOGS_PATH,
+      SSO_DIRECTORY_PATH,
+      EMAIL_EXCHANGE_PATH,
+      NAFATH_PATH,
+      INTERNAL_SYSTEMS_PATH,
+      API_CATALOGUE_PATH,
+    ],
+  },
+  {
+    label: 'common.menu.adminGroups.auditLogs',
+    paths: [AUDIT_TRAIL_PATH, INTEGRATION_AUDIT_PATH, SYSTEM_EVENT_LOGS_PATH],
+  },
+];
+
+/** The offered screens under their headings, a heading with none left out; a screen no heading names joins the last heading. */
+function groupedAdministration(items: NavigationItem[]): MenuGroup[] {
+  const named = new Set(ADMINISTRATION_GROUPS.flatMap((group) => group.paths));
+  const last = ADMINISTRATION_GROUPS.length - 1;
+  return ADMINISTRATION_GROUPS.map((group, index) => ({
+    label: group.label,
+    items: items.filter(
+      (item) => group.paths.includes(item.to) || (index === last && !named.has(item.to)),
+    ),
+  })).filter((group) => group.items.length > 0);
+}
 
 /** The screens under /admin's guard, each offered on its own permission: holding any of them is what makes an administrator. */
 export const administrationNavigation: readonly NavigationItem[] = [
@@ -125,6 +205,8 @@ export function menusFor(
   dashboards: readonly DashboardCatalogueEntry[],
 ): Menu[] {
   const auditItems = auditNavigation(audit);
+  const portfolio = dashboards.some((entry) => entry.code === 'PORTFOLIO');
+  const executive = landingRole(user) === EXECUTIVE_ROLE && portfolio;
   const administrative =
     audit?.categories.some((category) => ADMINISTRATIVE_AUDIT.includes(category)) ?? false;
   const businessAudit = administrative
@@ -140,7 +222,7 @@ export function menusFor(
       'portfolio',
       'common.menu.portfolio',
       ['/kpis', '/reports/portfolio'],
-      portfolioNavigation(dashboards),
+      portfolioNavigation(dashboards, executive),
     ),
     menu(
       'projects',
@@ -186,14 +268,27 @@ export function menusFor(
       'dashboardsReports',
       'common.menu.dashboardsReports',
       ['/dashboards', '/reports'],
-      [...(user.userType === 'EXTERNAL' ? [] : dashboardNavigation), ...reportNavigation(user)],
+      // Review round 8, point 14: the Executive's dashboard is the Portfolio menu's, not a second one here. The user, 18 Nov 2026: neither is
+      // anyone else's — whoever has the Portfolio menu opens the Portfolio Dashboard there, so Dashboards is offered here only to those without it
+      // (their dashboard is Governance's); Design dashboard stays.
+      [
+        ...(user.userType === 'EXTERNAL' || executive
+          ? []
+          : dashboardNavigation.filter((item) => !(portfolio && item.to === DASHBOARDS_PATH))),
+        ...reportNavigation(user),
+      ],
     ),
     menu('notifications', 'common.menu.notifications', ['/notifications'], notificationNavigation),
     menu('administration', 'common.menu.administration', ['/admin'], administration),
     menu('help', 'common.menu.help', ['/help'], helpNavigation),
   ].map((candidate) => {
     const items = candidate.items.filter((item) => permissions.can(...(item.permissions ?? [])));
-    return { ...candidate, to: items[0]?.to ?? candidate.to, items };
+    return {
+      ...candidate,
+      to: items[0]?.to ?? candidate.to,
+      items,
+      ...(candidate.id === 'administration' ? { groups: groupedAdministration(items) } : {}),
+    };
   });
   return menus.filter((candidate) => candidate.id === 'home' || candidate.items.length > 0);
 }

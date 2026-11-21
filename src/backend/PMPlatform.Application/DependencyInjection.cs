@@ -20,6 +20,7 @@ using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.IdentityAccess.Personalization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.IntegrationMonitoring;
@@ -107,7 +108,15 @@ public static class DependencyInjection
         // TASK-031: FG-03 administration, ADM-002–013. The repositories and the mobile verifier are Infrastructure's.
         services.AddScoped<AdministrationAccess>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
+        services.AddScoped<IUserPermissionOverrideService, UserPermissionOverrideService>();
         services.AddScoped<IMobileNumberVerificationService, MobileNumberVerificationService>();
+
+        // 13 Nov 2026 review: SMS codes (sign-in and ADR-004 verification) and passkeys. Their stores, the SMS gateway and the
+        // WebAuthn relying party are Infrastructure's.
+        services.AddScoped<SmsOneTimeCodes>();
+        services.AddScoped<IMobileNumberVerifier, SmsCodeMobileNumberVerifier>();
+        services.AddScoped<IPasskeyService, PasskeyService>();
+        services.AddScoped<IBannerService, BannerService>();
         services.AddScoped<IUserContactDirectory, UserContactDirectory>();
         services.AddScoped<AccessRelationshipService>();
         services.AddScoped<IAccessRelationshipService>(provider => provider.GetRequiredService<AccessRelationshipService>());
@@ -187,8 +196,16 @@ public static class DependencyInjection
         // from RPMO's workbook, approved by a second person (R3-4).
         services.AddScoped<OnPlanPolicy>();
         services.AddScoped<ProjectIndicatorReader>();
+        services.AddScoped<ProjectOverallProgressReader>();
         services.TryAddScoped<IProjectUpdateComplianceSource, NoUpdateComplianceSource>();
         services.AddScoped<IProjectFollowUpService, ProjectFollowUpService>();
+        services.AddScoped<IManagedProjectAttentionService, ManagedProjectAttentionService>();
+        services.AddScoped<ProjectStagePlanService>();
+        services.AddScoped<IProjectStagePlanService>(provider => provider.GetRequiredService<ProjectStagePlanService>());
+        services.AddScoped<IProjectStagePlans>(provider => provider.GetRequiredService<ProjectStagePlanService>());
+        services.AddScoped<IStagePlanChangeAuthorization, StagePlanChangeAuthorization>();
+        services.AddScoped<IProjectManagerHandover, ProjectTaskManagerHandover>();
+        services.AddScoped<IProjectManagerHandover, UpdateRequestManagerHandover>();
         services.AddScoped<ProjectImportService>();
         services.AddScoped<IProjectImportService>(sp => sp.GetRequiredService<ProjectImportService>());
         services.AddScoped<IProjectImportValidationRunner>(sp => sp.GetRequiredService<ProjectImportService>());
@@ -210,6 +227,8 @@ public static class DependencyInjection
         services.TryAddScoped<IProgressInputs, ProgressInputsReader>();
         services.AddScoped<ReportingPeriods>();
         services.AddScoped<IReportingPeriodSource, ReportingPeriodSource>();
+        services.AddScoped<ProgressStages>();
+        services.AddScoped<IProjectProgressSource, ProjectProgressSource>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ProgressOpeningPosition>();
         services.AddScoped<IProjectIntakeHandler, ProgressIntakeHandler>();
@@ -267,6 +286,7 @@ public static class DependencyInjection
         services.AddScoped<IMilestoneAchievementService, MilestoneAchievementService>();
         services.AddScoped<IApprovalOutcomeHandler, MilestoneAchievementOutcomeHandler>();
         services.AddScoped<IMilestoneCloseoutReader, MilestoneCloseoutReader>();
+        services.AddScoped<IMilestoneClaimsInProgress, MilestoneClaimsInProgress>();
 
         // TASK-052: WF-14's two subdomains. Financial Progress — source modes, Approved Budget versions (WF-11, edge 26; documents,
         // edge 38), periodic updates aligned to WF-02's periods (edge 13) and their published snapshots; KPI Performance — assignments,
@@ -312,6 +332,8 @@ public static class DependencyInjection
         services.AddScoped<INotificationConditionSource, RiskConditionSource>();
         services.AddScoped<IRiskCloseoutReader, RiskCloseoutReader>();
         services.AddScoped<IRiskExposureReader, RiskExposureReader>();
+        // The 20 Nov 2026 record sources: the dashboard designer's risk visuals read the register under RISK_VIEW (edge 3; Project declares the reader).
+        services.AddScoped<IPortfolioRiskReader, PortfolioRiskReader>();
 
         // TASK-057: WF-07's issues and challenges — severity computed from impacts on the shared scale and pinned, escalations published
         // to WF-15 once each, resolutions validated through WF-11 (edges 24, 28), and the issue side of edge 15. The repository is
@@ -387,7 +409,9 @@ public static class DependencyInjection
         services.AddScoped<IExternalContributionTarget, TaskProgressTarget>();
         services.AddScoped<IExternalContributionTarget, ProjectMonthlyTarget>();
         services.AddScoped<IProjectMonthlyUpdates, ProjectMonthlyUpdates>();
+        services.AddScoped<PortfolioProjectRows>();
         services.AddScoped<IPortfolioInsightsService, PortfolioInsightsService>();
+        services.AddScoped<IPortfolioDesignService, PortfolioDesignService>();
         services.AddScoped<UpdateRequestBatchService>();
         services.AddScoped<IUpdateRequestBatchService>(provider => provider.GetRequiredService<UpdateRequestBatchService>());
         services.AddScoped<IMyUpdateRequests, MyUpdateRequests>();
@@ -404,6 +428,7 @@ public static class DependencyInjection
         // projection, read only through its owning module's contracts (ADR-003 §8.2 edges 29 and 47) and authorised on that module's own
         // view permission. The repository is Infrastructure's.
         services.AddScoped<IDashboardProjectionSource, ProjectLifecycleSource>();
+        services.AddScoped<IDashboardProjectionSource, ProjectProfileSource>();
         services.AddScoped<IDashboardProjectionSource, ProjectHealthSource>();
         services.AddScoped<IDashboardProjectionSource, PublishedProgressSource>();
         services.AddScoped<IDashboardProjectionSource, PublishedProgressHistorySource>();
@@ -426,6 +451,9 @@ public static class DependencyInjection
         services.AddScoped<IDashboardProjectionSource, ChangePositionSource>();
         services.AddScoped<IDashboardProjectionSource, OpenSuspensionRequestsSource>();
         services.AddScoped<IProjectionRowReader, ProjectionRowReader>();
+
+        // The Portfolio designer's data catalogue (18 Nov 2026): Project declares the reader and Dashboards implements it over the report rows (edge 47).
+        services.AddScoped<IPortfolioFieldReader, PortfolioFieldReader>();
 
         // TASK-071: FG-02's governed reports. Rows come from FG-01's register only (edge 30); the explorer's surface is the REPORT_RULES
         // allowlist; every PDF, XLSX and CSV is a job, generated by IReportMaintenance and authorised again at download. The repository and

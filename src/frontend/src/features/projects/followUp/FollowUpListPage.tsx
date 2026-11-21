@@ -7,14 +7,17 @@ import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { followUpApi } from '../api/followUpApi.ts';
 import { FOLLOW_UP_REASONS, type FollowUpReason } from '../api/types.ts';
 import { GapValue, OnPlanBadge } from '../components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { projectProblemMessage } from '../problems.ts';
+import { useCarriedFilters } from '../register/carriedFilters.ts';
 import { useProjectLookups } from '../useProjectLookups.ts';
 
 function isReason(value: string | null): value is FollowUpReason {
@@ -32,13 +35,39 @@ export function FollowUpListPage(): ReactElement {
   const lookups = useProjectLookups();
   const reasonParam = params.get('reason');
   const reason = isReason(reasonParam) ? reasonParam : undefined;
+  const mainReasonParam = params.get('mainReason');
+  const mainReason = isReason(mainReasonParam) ? mainReasonParam : undefined;
   const departmentId = params.get('departmentId') ?? undefined;
+  const carried = useCarriedFilters();
   const load = useCallback(
     (signal: AbortSignal) =>
-      followUpApi.list({ reason, departmentId, page, pageSize: PAGE_SIZE }, signal),
-    [reason, departmentId, page],
+      followUpApi.list(
+        { reason, mainReason, departmentId, ...carried.values, page, pageSize: PAGE_SIZE },
+        signal,
+      ),
+    // carried.key stands for carried.values, rebuilt on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reason, mainReason, departmentId, carried.key, page],
   );
+  const chips = [
+    ...(mainReason === undefined
+      ? []
+      : [
+          {
+            name: 'mainReason',
+            text: t('common.filters.inline', {
+              label: t('projects.followUpList.mainReason'),
+              value: t(`projects.followUpReason.${mainReason}`),
+            }),
+            onRemove: () => {
+              setFilter('mainReason', '');
+            },
+          },
+        ]),
+    ...carried.chips,
+  ];
   const items = useApiResource(load);
+  const selection = useRowSelection();
 
   return (
     <>
@@ -69,11 +98,17 @@ export function FollowUpListPage(): ReactElement {
             : []),
         ]}
         values={{ reason, departmentId }}
+        chips={chips}
         onChange={(name, value) => {
           setFilter(name, value ?? '');
         }}
         onClearAll={() => {
-          setFilters({ reason: '', departmentId: '' });
+          setFilters({
+            reason: '',
+            mainReason: '',
+            departmentId: '',
+            ...carried.cleared,
+          });
         }}
       />
       {items.loading && <LoadingState />}
@@ -86,12 +121,30 @@ export function FollowUpListPage(): ReactElement {
       )}
       {items.data !== undefined &&
         (items.data.items.length === 0 ? (
-          <EmptyState title={t('projects.followUpList.empty')} />
+          <EmptyState
+            title={t('projects.followUpList.empty')}
+            reason={
+              reason !== undefined || departmentId !== undefined || chips.length > 0
+                ? 'filter'
+                : undefined
+            }
+          >
+            {reason === undefined && departmentId === undefined && chips.length === 0 && (
+              <p>{t('projects.followUpList.emptyHint')}</p>
+            )}
+          </EmptyState>
         ) : (
           <>
-            <TableContainer caption={t('projects.followUpList.caption')}>
+            <TableContainer
+              caption={t('projects.followUpList.caption')}
+              selection={{ selection, exportName: 'follow-up-list' }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={items.data.items.map((item) => item.projectId)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('projects.followUpList.project')}</th>
                   <th scope="col">{t('projects.followUpList.reason')}</th>
                   <th scope="col">{t('projects.followUpList.onPlan')}</th>
@@ -105,6 +158,11 @@ export function FollowUpListPage(): ReactElement {
               <tbody>
                 {items.data.items.map((item) => (
                   <tr key={item.projectId}>
+                    <SelectRowCell
+                      id={item.projectId}
+                      name={item.title.text}
+                      selection={selection}
+                    />
                     <td>
                       <Link to={`/projects/${item.projectId}`} dir="auto">
                         {item.title.text}

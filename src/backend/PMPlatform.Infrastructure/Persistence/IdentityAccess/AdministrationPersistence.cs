@@ -59,6 +59,9 @@ internal static class AdministrationPersistence
     public const string LikeEscape = @"\";
 
     /// <summary>An ILIKE pattern matching <paramref name="text"/> anywhere, with its wildcards taken literally under <see cref="LikeEscape"/>.</summary>
-    public static string ContainsPattern(string text) =>
-        $"%{text.Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal)}%";
+    public static string ContainsPattern(string text) => $"%{ExactPattern(text)}%";
+
+    /// <summary>An ILIKE pattern matching exactly <paramref name="text"/>, ignoring case, with its wildcards taken literally under <see cref="LikeEscape"/>.</summary>
+    public static string ExactPattern(string text) =>
+        text.Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal);
 }

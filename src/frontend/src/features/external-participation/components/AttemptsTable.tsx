@@ -3,6 +3,8 @@ import { type ReactElement } from 'react';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type SourceApplicationDetail } from '../api/types.ts';
 import { useFailureText } from '../labels.ts';
@@ -25,10 +27,12 @@ export function AttemptsTable({
   const personName = usePersonNames(
     attempts.flatMap((attempt) => [attempt.attemptedByUserId, attempt.revalidatedByUserId]),
   );
+  const selection = useRowSelection();
   return (
-    <TableContainer caption={caption}>
+    <TableContainer caption={caption} selection={{ selection, exportName: 'apply-attempts' }}>
       <thead>
         <tr>
+          <SelectAllHeader ids={attempts.map((attempt) => attempt.id)} selection={selection} />
           <th scope="col">{t('externalParticipation.attempt.number')}</th>
           <th scope="col">{t('externalParticipation.attempt.status')}</th>
           <th scope="col">{t('externalParticipation.attempt.expected')}</th>
@@ -42,6 +46,11 @@ export function AttemptsTable({
       <tbody>
         {attempts.map((attempt) => (
           <tr key={attempt.id} data-attempt={attempt.attemptNo}>
+            <SelectRowCell
+              id={attempt.id}
+              name={`${t('externalParticipation.attempt.number')} ${String(attempt.attemptNo)}`}
+              selection={selection}
+            />
             <td dir="ltr">{attempt.attemptNo}</td>
             <td>
               <AttemptStatusBadge status={attempt.status} />

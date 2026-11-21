@@ -4,7 +4,7 @@ import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination } from '@/shared/ui/Layout.tsx';
-import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { type EmptyReason, EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { integrationAdminApi } from '../api/integrationAdminApi.ts';
 import { type InvocationQuery } from '../api/types.ts';
@@ -17,6 +17,8 @@ interface InvocationListProps {
   query: InvocationQuery;
   caption: string;
   emptyTitle: string;
+  /** Why the list is empty (review round 8, point 09). */
+  emptyReason: EmptyReason;
   page: number;
   onPageChange: (page: number) => void;
   /** Read again this often, in milliseconds (ADM-047, TASK-092). */
@@ -28,6 +30,7 @@ export function InvocationList({
   query,
   caption,
   emptyTitle,
+  emptyReason,
   page,
   onPageChange,
   refreshEvery,
@@ -61,7 +64,7 @@ export function InvocationList({
     );
   }
   if (invocations.data.items.length === 0) {
-    return <EmptyState title={emptyTitle} />;
+    return <EmptyState title={emptyTitle} reason={emptyReason} />;
   }
   return (
     <>

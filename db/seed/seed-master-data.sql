@@ -159,6 +159,7 @@ FROM (VALUES
     ('IDENTITY_INTEGRATION_MANAGE', 'إدارة تكامل الهوية', 'Manage identity integration', 'IDENTITY_ACCESS', true),
     ('USER_VIEW',                   'عرض المستخدمين',     'View users',                  'IDENTITY_ACCESS', false),
     ('USER_MANAGE',                 'إدارة المستخدمين',    'Manage users',                'IDENTITY_ACCESS', true),
+    ('USER_NATIONAL_ID_VIEW',       'عرض رقم الهوية الوطنية أو الإقامة', 'View National ID or Iqama numbers', 'IDENTITY_ACCESS', true),
     ('ROLE_VIEW',                   'عرض الأدوار والصلاحيات', 'View roles and permissions', 'IDENTITY_ACCESS', false),
     ('ROLE_MANAGE',                 'إدارة الأدوار',       'Manage roles',                'IDENTITY_ACCESS', true),
     ('ROLE_ASSIGN',                 'إسناد الأدوار',       'Assign roles',                'IDENTITY_ACCESS', true),
@@ -191,7 +192,10 @@ FROM (VALUES
     ('PROJECT_ACTIVATE',            'تفعيل المشاريع',      'Activate projects',           'PROJECT',         false),
     ('PROJECT_IMPORT',              'استيراد المشاريع',    'Import projects',             'PROJECT',         false),
     ('PROJECT_IMPORT_APPROVE',      'اعتماد دفعات استيراد المشاريع', 'Approve project import batches', 'PROJECT', false),
+    ('PROJECT_DELETE',              'حذف المشاريع',        'Delete projects',             'PROJECT',         false),
     ('PROJECT_FOLLOW_UP',           'متابعة المشاريع',     'Follow up projects',          'PROJECT',         false),
+    ('PROJECT_MANAGER_CHANGE',      'تعيين مدير المشروع أو تغييره', 'Assign or change the Project Manager', 'PROJECT', false),
+    ('PROJECT_REGISTRATION_EDIT',   'تعديل بيانات تسجيل المشاريع المعتمدة', 'Edit the registration of approved projects', 'PROJECT', false),
     ('PROGRESS_VIEW',               'عرض تقدم المشاريع',    'View project progress',       'PROGRESS',        false),
     ('PROGRESS_SUBMIT',             'رفع تقدم المشاريع',    'Submit project progress',     'PROGRESS',        false),
     ('PROGRESS_REVIEW',             'مراجعة تقدم المشاريع ونشره', 'Review and publish project progress', 'PROGRESS', false),
@@ -234,6 +238,7 @@ FROM (VALUES
     ('PORTFOLIO_BREAKDOWN_VIEW',    'عرض التفصيل حسب المبادرة والقطاع', 'View initiative and sector breakdowns', 'PROJECT', false),
     ('PORTFOLIO_STATUS_VIEW',       'عرض مراحل المشاريع ومؤشر الخطة', 'View project stages and on-plan indicator', 'PROJECT', false),
     ('PORTFOLIO_FOLLOW_UP_VIEW',    'عرض أسباب المتابعة وأهم المشاريع', 'View follow-up reasons and top projects', 'PROJECT', false),
+    ('DASHBOARD_DESIGN',            'تصميم لوحة المحفظة',   'Design the portfolio dashboard', 'DASHBOARDS',  false),
     ('EXTERNAL_CONTRIBUTION_REVIEW', 'مراجعة مساهمات الجهات الخارجية', 'Review external contributions', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_CONTRIBUTION_APPLY', 'تطبيق المساهمات المقبولة', 'Apply accepted contributions', 'EXTERNAL_PARTICIPATION', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
@@ -268,6 +273,7 @@ CREATE TEMPORARY TABLE shipped_grant (role_code text NOT NULL, permission_code t
 INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R01', 'IDENTITY_INTEGRATION_MANAGE',   'ALL'),
     ('R01', 'USER_VIEW',                     'ALL'),
+    ('R01', 'USER_NATIONAL_ID_VIEW',         'ALL'),
     ('R01', 'USER_MANAGE',                   'ALL'),
     ('R01', 'ROLE_VIEW',                     'ALL'),
     ('R01', 'ROLE_MANAGE',                   'ALL'),
@@ -293,6 +299,7 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R02', 'MASTER_DATA_VIEW',              'ALL'),
     ('R02', 'CONFIGURATION_VIEW',            'ALL'),
     ('R02', 'LAYOUT_PERSONALIZE',            'OWN'),
+    ('R02', 'DASHBOARD_DESIGN',              'ALL'),
     ('R02', 'REPORT_COMPOSE',                'OWN'),
     ('R02', 'APPROVAL_VIEW',                 'ALL'),
     ('R02', 'APPROVAL_DECIDE',               'ALL'),
@@ -304,6 +311,9 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R02', 'PROJECT_IMPORT',                'ALL'),
     ('R02', 'PROJECT_FOLLOW_UP',             'ALL'),
     ('R02', 'PROJECT_IMPORT_APPROVE',        'ALL'),
+    ('R02', 'PROJECT_DELETE',                'ALL'),
+    ('R02', 'PROJECT_MANAGER_CHANGE',        'ALL'),
+    ('R02', 'PROJECT_REGISTRATION_EDIT',     'ALL'),
     ('R02', 'PROGRESS_VIEW',                 'ALL'),
     ('R02', 'PROGRESS_REVIEW',               'ALL'),
     ('R02', 'SCHEDULE_VIEW',                 'ALL'),
@@ -359,6 +369,7 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R03', 'PROJECT_ACTIVATE',              'DEPT'),
     ('R03', 'PROJECT_IMPORT',                'DEPT'),
     ('R03', 'PROJECT_FOLLOW_UP',             'DEPT'),
+    ('R03', 'PROJECT_MANAGER_CHANGE',        'DEPT'),
     ('R03', 'PROGRESS_VIEW',                 'DEPT'),
     ('R03', 'PROGRESS_REVIEW',               'DEPT'),
     ('R03', 'SCHEDULE_VIEW',                 'DEPT'),
@@ -679,6 +690,40 @@ BEGIN
     INSERT INTO master_data_config.participation_contribution_rule (id, configuration_version_id, participation_mode, contribution_type_item_id, is_enabled, created_at, created_by, updated_at, updated_by)
     SELECT md5(version::text || m.mode || item::text)::uuid, version, m.mode, item, true, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
     FROM (VALUES ('AHDA_MANAGED'), ('ENTITY_MANAGED')) AS m (mode);
+
+    UPDATE master_data_config.configuration_version
+    SET lifecycle_state = 'PUBLISHED', published_by_user_id = '00000000-0000-4000-8000-0000000000ff', published_at = now(), effective_from = now()
+    WHERE id = version;
+END $$;
+
+-- The project stages of review round 7 (item 1): the six AHDA agreed, with their standard weights, as a PUBLISHED version, once, when the family has
+-- no published version yet. Stage-weighted progress resolves the version in force on the day a period is recorded; AHDA changes weights by publishing
+-- a later version, which never recalculates a published period.
+DO $$
+DECLARE
+    family uuid := (SELECT id FROM master_data_config.configuration_family WHERE code = 'PROJECT_STAGE');
+    version uuid := md5('configuration_version:PROJECT_STAGE:standard')::uuid;
+BEGIN
+    IF EXISTS (SELECT 1 FROM master_data_config.configuration_version WHERE id = version)
+       OR EXISTS (SELECT 1 FROM master_data_config.configuration_version WHERE configuration_family_id = family AND lifecycle_state = 'PUBLISHED') THEN
+        RETURN;
+    END IF;
+
+    INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, change_summary_lang, change_summary, lifecycle_state, created_at, created_by, updated_at, updated_by)
+    SELECT version, family, 1 + count(*), 'en', 'Six project stages with their standard weights (seed, review round 7).', 'DRAFT', now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM master_data_config.configuration_version WHERE configuration_family_id = family;
+
+    INSERT INTO master_data_config.project_stage_definition (id, configuration_version_id, code, sort_order, weight_percent, is_active, name_ar, name_en, created_at, created_by, updated_at, updated_by)
+    SELECT md5(version::text || s.code)::uuid, version, s.code, s.sort_order, s.weight_percent, true, s.name_ar, s.name_en,
+           now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM (VALUES
+        ('BUSINESS_CASE', 1::smallint,  5.00, 'دراسة الجدوى وحالة العمل',      'Business case'),
+        ('DESIGN',        2::smallint, 15.00, 'التصميم',                        'Design'),
+        ('TENDERING',     3::smallint, 10.00, 'الطرح والترسية',                 'Tendering and award'),
+        ('EXECUTION',     4::smallint, 55.00, 'التنفيذ',                        'Execution'),
+        ('TESTING',       5::smallint, 10.00, 'الاختبار والتشغيل التجريبي',     'Testing and commissioning'),
+        ('HANDOVER',      6::smallint,  5.00, 'التسليم والإغلاق',               'Handover and closure')
+    ) AS s (code, sort_order, weight_percent, name_ar, name_en);
 
     UPDATE master_data_config.configuration_version
     SET lifecycle_state = 'PUBLISHED', published_by_user_id = '00000000-0000-4000-8000-0000000000ff', published_at = now(), effective_from = now()

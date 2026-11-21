@@ -51,6 +51,18 @@ describe('SCR-150 All Notifications', () => {
     expect(describeViolations(await accessibilityViolations())).toBe('');
   });
 
+  test('a notification is chosen by its own checkbox, named by its headline', async () => {
+    withInbox(mockApi());
+    renderApp({ path: '/notifications', session: notificationSession() });
+
+    await userEvent.click(
+      await screen.findByRole('checkbox', {
+        name: en('common.table.selectRow', { name: 'Approval task assigned' }),
+      }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 1 }))).toBeTruthy();
+  });
+
   test('read state and family filters are sent to the API and kept in the URL', async () => {
     const api = withInbox(mockApi());
     const { router } = renderApp({ path: '/notifications', session: notificationSession() });

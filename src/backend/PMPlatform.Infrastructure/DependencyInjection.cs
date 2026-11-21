@@ -20,6 +20,7 @@ using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.IdentityAccess.Personalization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.IntegrationMonitoring;
 using PMPlatform.Application.Features.FinancialKpi;
@@ -31,9 +32,12 @@ using PMPlatform.Application.Features.Notifications;
 using PMPlatform.Application.Features.Progress;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Import;
+using PMPlatform.Application.Features.Project.Insights;
 using PMPlatform.Application.Features.ProjectTask;
+using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Application.Features.Risk;
 using PMPlatform.Application.Features.Schedule;
+using PMPlatform.Application.Features.Schedule.Contracts;
 using PMPlatform.Application.Features.Suspension;
 using PMPlatform.Application.Features.Closure;
 using PMPlatform.Infrastructure.Approval;
@@ -115,16 +119,21 @@ public static class DependencyInjection
         services.AddIdentityIntegration(configuration);
         services.AddScoped<IUserAccessRepository, UserAccessRepository>();
 
+        // 13 Nov 2026 review: passkeys and SMS codes.
+        services.AddScoped<IPasskeyRepository, PasskeyRepository>();
+        services.AddScoped<IBannerRepository, BannerRepository>();
+        services.AddScoped<ISmsCodeRepository, SmsCodeRepository>();
+
         // TASK-030: the grants and classifications the authorization engine evaluates.
         services.AddScoped<IAuthorizationRepository, AuthorizationRepository>();
 
-        // TASK-031: FG-03 administration. The mobile verifier is a placeholder until the SMS provider (TASK-103) replaces it.
+        // TASK-031: FG-03 administration. The mobile verifier is the Application's, over the platform's SMS codes.
         services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        services.AddScoped<IUserPermissionOverrideRepository, UserPermissionOverrideRepository>();
         services.AddScoped<IAccessRelationshipRepository, AccessRelationshipRepository>();
         services.AddScoped<IRoleAdministrationRepository, RoleAdministrationRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IExternalEntityRepository, ExternalEntityRepository>();
-        services.TryAddSingleton<IMobileNumberVerifier, UnconfiguredMobileNumberVerifier>();
 
         // TASK-034: FG-04 master data and configuration.
         services.AddScoped<IMasterDataRepository, MasterDataRepository>();
@@ -145,6 +154,7 @@ public static class DependencyInjection
 
         // TASK-041: WF-01's project schema.
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IPortfolioVisualRepository, PortfolioVisualRepository>();
         services.AddScoped<IProjectImportRepository, ProjectImportRepository>();
         services.AddSingleton<IProjectImportWorkbook, XlsxProjectImportWorkbook>();
         services.AddOptions<ProjectImportValidationOptions>()
@@ -158,6 +168,8 @@ public static class DependencyInjection
 
         // TASK-046: WF-03's schedule schema.
         services.AddScoped<IScheduleRepository, ScheduleRepository>();
+        services.AddScoped<IOverdueTaskCounter, OverdueTaskCounter>();
+        services.AddScoped<IOverdueMilestoneCounter, OverdueMilestoneCounter>();
 
         // TASK-048: WF-04's project_task schema.
         services.AddScoped<IProjectTaskRepository, ProjectTaskRepository>();
@@ -292,7 +304,16 @@ public static class DependencyInjection
                 $"{SmtpOptions.HostKey} is set, but {SmtpOptions.PortKey}, {SmtpOptions.Section}:FromAddress, or the {ApplicationSecrets.ExchangeSmtpUser}/{ApplicationSecrets.ExchangeSmtpPassword} pair is not usable.")
             .ValidateOnStart();
         services.TryAddSingleton<IEmailSender, SmtpEmailSender>();
-        services.TryAddSingleton<ISmsGateway, UnconfiguredSmsGateway>();
+        // No SMS provider exists yet (OQ-012). A development or demonstration environment may route SMS to a test mailbox.
+        services.AddOptions<SmsStandInOptions>().Bind(configuration.GetSection(SmsStandInOptions.Section));
+        if (configuration.GetSection(SmsStandInOptions.Section).GetValue<bool>(nameof(SmsStandInOptions.Enabled)))
+        {
+            services.TryAddSingleton<ISmsGateway, MailboxSmsGateway>();
+        }
+        else
+        {
+            services.TryAddSingleton<ISmsGateway, UnconfiguredSmsGateway>();
+        }
 
         services.AddOptions<NotificationWorkerOptions>()
             .Bind(configuration.GetSection(NotificationWorkerOptions.Section))

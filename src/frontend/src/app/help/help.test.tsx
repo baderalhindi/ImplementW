@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { cleanup, screen, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 
 import { helpContent, LANDING_ARTICLE, ROLE_CODES } from '@/content/help/help.ts';
@@ -67,22 +67,25 @@ describe('SCR-011 User Guide', () => {
     renderApp({ path: '/help/guide', session: externalSession() });
 
     await screen.findByRole('region', { name: en('common.help.guide.forYou') });
-    expect(screen.queryByRole('region', { name: en('common.help.guide.others') })).toBeNull();
     expect(
       screen.queryByRole('link', { name: helpContent.en.guide['decide-an-approval']?.title ?? '' }),
     ).toBeNull();
   });
 
-  test('an internal user can also read the other roles’ articles', async () => {
+  test('the guide speaks to its reader only: another role’s article is neither listed nor opened (13 Nov 2026 review)', async () => {
     mockApi();
     renderApp({ path: '/help/guide', session: sessionFor(['R06']) });
 
-    const others = await screen.findByRole('region', { name: en('common.help.guide.others') });
+    await screen.findByRole('region', { name: en('common.help.guide.forYou') });
+    expect(screen.getAllByRole('region')).toHaveLength(1);
     expect(
-      within(others).getByRole('link', {
-        name: helpContent.en.guide['administrator-home']?.title ?? '',
-      }),
-    ).toBeTruthy();
+      screen.queryByRole('link', { name: helpContent.en.guide['administrator-home']?.title ?? '' }),
+    ).toBeNull();
+    cleanup();
+
+    mockApi();
+    renderApp({ path: '/help/guide/administrator-home', session: sessionFor(['R06']) });
+    expect(await screen.findByRole('heading', { name: en('common.notFound.title') })).toBeTruthy();
   });
 
   test('a topic is not offered to someone who cannot do it (review round 5, item 17)', async () => {
@@ -126,20 +129,38 @@ describe('SCR-011 User Guide', () => {
 });
 
 describe('SCR-012/SCR-126 FAQ and SCR-125 Knowledge Base', () => {
-  test.each<Language>(['en', 'ar'])('the FAQ lists every question, in %s', async (language) => {
-    mockApi();
-    renderApp({ path: '/help/faq', language, session: sessionFor(['R02']) });
+  test.each<Language>(['en', 'ar'])(
+    'the FAQ lists every question to a Project Manager, in %s',
+    async (language) => {
+      mockApi();
+      renderApp({ path: '/help/faq', language, session: sessionFor(['R04']) });
 
-    await screen.findByRole('heading', {
-      level: 1,
-      name: translate(language, 'common.help.faq.title'),
-    });
-    const questions = Object.values(helpContent[language].faq).flatMap((group) =>
-      Object.keys(group.entries),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: translate(language, 'common.help.faq.title'),
+      });
+      const questions = Object.values(helpContent[language].faq).flatMap((group) =>
+        Object.keys(group.entries),
+      );
+      expect(document.querySelectorAll('details.help-faq')).toHaveLength(questions.length);
+      expect(screen.getByRole('main').textContent).not.toContain('[[');
+      await expectAccessible();
+    },
+  );
+
+  test('a question only a progress reporter would ask is left out for someone who does not report it', async () => {
+    mockApi();
+    renderApp({ path: '/help/faq', session: sessionFor(['R02']) });
+
+    await screen.findByRole('heading', { level: 1, name: en('common.help.faq.title') });
+    const all = Object.values(helpContent.en.faq).flatMap((group) => Object.keys(group.entries));
+    expect(document.querySelectorAll('details.help-faq')).toHaveLength(all.length - 1);
+    expect(document.body.textContent).not.toContain(
+      helpContent.en.faq.work?.entries['no-progress-button']?.question.replace(
+        /\[\[.*?\]\]/g,
+        '',
+      ) ?? '',
     );
-    expect(document.querySelectorAll('details.help-faq')).toHaveLength(questions.length);
-    expect(screen.getByRole('main').textContent).not.toContain('[[');
-    await expectAccessible();
   });
 
   test.each<Language>(['en', 'ar'])(

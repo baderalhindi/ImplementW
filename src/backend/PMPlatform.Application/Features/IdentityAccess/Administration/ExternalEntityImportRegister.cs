@@ -4,6 +4,7 @@ using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
+using PMPlatform.Application.Common.Validation;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 
@@ -35,8 +36,8 @@ internal sealed class ExternalEntityImportRegister(
     public IReadOnlyList<ImportColumn> Columns { get; } =
     [
         new(CodeColumn, ImportValueKind.Code, Required: true, "The entity's code, unique.", "رمز الجهة، فريد."),
-        new(NameArColumn, ImportValueKind.Text, Required: true, "The name in Arabic.", "الاسم بالعربية."),
-        new(NameEnColumn, ImportValueKind.Text, Required: true, "The name in English.", "الاسم بالإنجليزية."),
+        new(NameArColumn, ImportValueKind.Text, Required: true, "The name in Arabic.", "الاسم بالعربية.") { Script = TextScript.Arabic },
+        new(NameEnColumn, ImportValueKind.Text, Required: true, "The name in English.", "الاسم بالإنجليزية.") { Script = TextScript.English },
         new(EntityTypeColumn, ImportValueKind.Code, Required: true, "The entity type's code.", "رمز نوع الجهة."),
         new(SponsorColumn, ImportValueKind.Text, Required: false, "The username of the AHDA sponsor: an active internal user.", "اسم مستخدم الراعي في الهيئة: مستخدم داخلي نشط.") { MaxLength = 100 },
         ImportColumn.ChoiceOf(StatusColumn, required: false, "The entity's status in the legacy system. Empty means ACTIVE.", "حالة الجهة في النظام السابق. الفارغ يعني ACTIVE.",

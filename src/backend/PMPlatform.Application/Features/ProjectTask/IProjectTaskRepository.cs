@@ -56,6 +56,9 @@ public interface IProjectTaskRepository
 
     public uint RowVersionOf(TaskDependency dependency);
 
+    /// <summary>Tracked: the project's tasks not completed or cancelled that <paramref name="assigneeUserId"/> owns (review round 7, item 2).</summary>
+    public Task<IReadOnlyList<ProjectTaskEntity>> ListOpenTasksOfAsync(Guid projectId, Guid assigneeUserId, CancellationToken cancellationToken);
+
     public void Add(ProjectTaskEntity task);
 
     public void Add(TaskDependency dependency);

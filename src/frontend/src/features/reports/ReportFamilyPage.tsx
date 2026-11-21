@@ -33,10 +33,15 @@ export function ReportFamilyPage(): ReactElement {
   const entries = (catalogue.data ?? []).filter((entry) => entry.audienceFamily === family);
   return (
     <>
-      <PageHeader title={t(FAMILIES[family].label)} description={t(FAMILIES[family].description)} />
-      <p className="report-header__meta">
-        <Link to="/reports">{t('reports.nav.center')}</Link>
-      </p>
+      <PageHeader
+        title={t(FAMILIES[family].label)}
+        description={t(FAMILIES[family].description)}
+        actions={
+          <Link className="button" to="/reports">
+            {t('reports.nav.center')}
+          </Link>
+        }
+      />
       {catalogue.loading ? (
         <LoadingState />
       ) : catalogue.error !== null ? (
@@ -46,7 +51,7 @@ export function ReportFamilyPage(): ReactElement {
           onRetry={catalogue.reload}
         />
       ) : entries.length === 0 ? (
-        <EmptyState title={t('reports.family.none')} />
+        <EmptyState title={t('reports.family.none')} reason="role" />
       ) : (
         <ReportList entries={entries} />
       )}

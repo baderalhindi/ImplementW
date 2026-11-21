@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
@@ -17,6 +18,11 @@ public interface IExternalEntityRepository
     public Task<bool> IsEntityTypeAsync(Guid itemId, CancellationToken cancellationToken);
 
     public void Add(ExternalEntity entity);
+
+    /// <summary>Every row that references the entity, through every foreign key to it.</summary>
+    public Task<IReadOnlyList<RecordUse>> ListUsesAsync(Guid entityId, CancellationToken cancellationToken);
+
+    public void Remove(ExternalEntity entity);
 
     /// <summary>The names of the entitys named, by id; an id that names nothing is left out.</summary>
     public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);

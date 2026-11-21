@@ -23,6 +23,7 @@ import { RequireSession } from '@/features/identity-access/session/RequireSessio
 import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
 import { SsoCallbackPage } from '@/features/identity-access/session/SsoCallbackPage.tsx';
 import { ChangePasswordPage } from '@/features/identity-access/session/ChangePasswordPage.tsx';
+import { SignInMethodsPage } from '@/features/identity-access/session/SignInMethodsPage.tsx';
 import {
   ForgotPasswordPage,
   PasswordUpdatedPage,
@@ -76,6 +77,14 @@ export const appRoutes: RouteObject[] = [
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'password-updated', element: <PasswordUpdatedPage /> },
+      {
+        path: 'account/sign-in-methods',
+        element: (
+          <RequireSession>
+            <SignInMethodsPage />
+          </RequireSession>
+        ),
+      },
       {
         path: 'account/password',
         element: (

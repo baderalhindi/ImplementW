@@ -122,6 +122,12 @@ internal sealed class ExternalParticipationRepository(PMPlatformDbContext contex
                         && (r.Status == ExternalUpdateRequestStatus.Issued || r.Status == ExternalUpdateRequestStatus.InProgress))
             .OrderBy(r => r.DueDate).ThenBy(r => r.Id).ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<ExternalUpdateRequest>> ListOpenRequestsOfAsync(Guid projectId, Guid responsibleUserId, CancellationToken cancellationToken) =>
+        await context.Set<ExternalUpdateRequest>()
+            .Where(r => r.ProjectId == projectId && r.ResponsibleUserId == responsibleUserId
+                        && (r.Status == ExternalUpdateRequestStatus.Draft || r.Status == ExternalUpdateRequestStatus.Issued || r.Status == ExternalUpdateRequestStatus.InProgress))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task<IReadOnlyList<ExternalUpdateRequest>> ListRemindableMonthlyUpdatesAsync(DateOnly today, DateOnly dueBy, int limit, CancellationToken cancellationToken) =>
         await context.Set<ExternalUpdateRequest>()
             .Where(r => r.UpdateRequestBatchId != null && r.DueDate <= dueBy && (r.LastRemindedOn == null || r.LastRemindedOn < today)

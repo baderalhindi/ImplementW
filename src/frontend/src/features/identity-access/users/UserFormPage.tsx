@@ -6,10 +6,12 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { CheckboxField, RadioGroupField, SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { CancelLink } from '@/shared/ui/CancelLink.tsx';
 
 import { usersApi } from '../api/identityAccessApi.ts';
 import { type AccountSource, type LanguageCode, type UserDetail } from '../api/types.ts';
 import {
+  checkNationalId,
   checkPassword,
   checkText,
   E164_PATTERN,
@@ -39,6 +41,8 @@ interface UserFormValues {
   passwordMode: PasswordMode;
   temporaryPassword: string;
   mustChangePassword: boolean;
+  /** Edit only: a new National ID or Iqama number; blank keeps the recorded one. */
+  nationalId: string;
 }
 
 const EMPTY_VALUES: UserFormValues = {
@@ -55,6 +59,7 @@ const EMPTY_VALUES: UserFormValues = {
   passwordMode: 'GENERATED',
   temporaryPassword: '',
   mustChangePassword: true,
+  nationalId: '',
 };
 
 function valuesOf(user: UserDetail): UserFormValues {
@@ -72,6 +77,7 @@ function valuesOf(user: UserDetail): UserFormValues {
     passwordMode: 'GENERATED',
     temporaryPassword: '',
     mustChangePassword: user.mustChangePassword,
+    nationalId: '',
   };
 }
 
@@ -97,6 +103,8 @@ function UserForm({ existing }: UserFormProps): ReactElement {
   const { lookups } = useOrganizationLookups(language);
   useFocusFirstError(formRef, save.fieldErrors);
   const [created, setCreated] = useState<UserDetail | null>(null);
+  // The National ID and the profile are two writes; each moves the ETag, so a retry after a partial save sends the newest.
+  const etagRef = useRef(existing?.etag ?? null);
 
   const creating = existing === undefined;
   const internal = values.userType === 'INTERNAL';
@@ -121,6 +129,7 @@ function UserForm({ existing }: UserFormProps): ReactElement {
         : null,
       jobTitle: internal ? null : checkText(values.jobTitle, {}),
       externalEntityId: creating && !internal && values.externalEntityId === '' ? 'REQUIRED' : null,
+      nationalId: values.nationalId.trim() === '' ? null : checkNationalId(values.nationalId),
     });
     if (!valid) {
       return;
@@ -135,22 +144,35 @@ function UserForm({ existing }: UserFormProps): ReactElement {
       // An internal user's job title is the directory's: an edit resends what the API returned, a creation none.
       jobTitle: internal ? (existing?.user.jobTitle ?? null) : optionalText(values.jobTitle),
     };
-    const result = await save.run(() =>
-      existing === undefined
-        ? usersApi.create({
-            ...common,
-            userType: values.userType,
-            externalEntityId: internal ? null : values.externalEntityId,
-            accountSource: values.accountSource,
-            ...(local
-              ? {
-                  temporaryPassword: typedPassword ? values.temporaryPassword : null,
-                  mustChangePassword: values.mustChangePassword,
-                }
-              : {}),
-          })
-        : usersApi.update(existing.user.id, common, existing.etag),
-    );
+    const result = await save.run(async () => {
+      if (existing === undefined) {
+        return usersApi.create({
+          ...common,
+          userType: values.userType,
+          externalEntityId: internal ? null : values.externalEntityId,
+          accountSource: values.accountSource,
+          ...(local
+            ? {
+                temporaryPassword: typedPassword ? values.temporaryPassword : null,
+                mustChangePassword: values.mustChangePassword,
+              }
+            : {}),
+        });
+      }
+      const nationalId = values.nationalId.trim();
+      if (nationalId !== '') {
+        const recorded = await usersApi.setNationalId(
+          existing.user.id,
+          nationalId,
+          etagRef.current,
+        );
+        etagRef.current = recorded.etag;
+        setValues((current) => ({ ...current, nationalId: '' }));
+      }
+      const updated = await usersApi.update(existing.user.id, common, etagRef.current);
+      etagRef.current = updated.etag;
+      return updated;
+    });
     if (result.ok && result.value.data.temporaryPassword != null) {
       // Never through the router's state, which the browser keeps in its session history.
       setCreated(result.value.data);
@@ -296,6 +318,24 @@ function UserForm({ existing }: UserFormProps): ReactElement {
         hint={t('identityAccess.users.form.mobileNumberHint')}
         error={save.fieldErrors.mobileNumber}
       />
+      {!creating && (
+        <TextField
+          label={t('identityAccess.users.nationalId.field')}
+          name="nationalId"
+          dir="ltr"
+          inputMode="numeric"
+          value={values.nationalId}
+          onChange={set('nationalId')}
+          autoComplete="off"
+          hint={t(
+            existing.user.nationalIdMasked == null
+              ? 'identityAccess.users.form.nationalIdHintNone'
+              : 'identityAccess.users.form.nationalIdHintRecorded',
+            { current: existing.user.nationalIdMasked ?? '' },
+          )}
+          error={save.fieldErrors.nationalId}
+        />
+      )}
       {local ? (
         creating && (
           <>
@@ -374,9 +414,7 @@ function UserForm({ existing }: UserFormProps): ReactElement {
         <button type="submit" className="button button--primary" disabled={save.saving}>
           {save.saving ? t('common.states.saving') : t('common.actions.save')}
         </button>
-        <Link className="button" to={cancelTo}>
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink fallback={cancelTo} />
       </div>
     </form>
   );

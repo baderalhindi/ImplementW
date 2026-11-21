@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PMPlatform.Domain.AuditActivity;
 using PMPlatform.Domain.IdentityAccess;
-using PMPlatform.Domain.MasterDataConfig;
 
 namespace PMPlatform.Infrastructure.Persistence.Configurations.AuditActivity;
 
@@ -27,8 +26,9 @@ internal sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEv
 
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.ActorUserId).OnDelete(DeleteBehavior.Restrict);
         // No foreign key to the project (R4-5): the trail is append-only and outlives a project removed by the demo reset or an import rollback.
-        builder.HasOne<ExternalEntity>().WithMany().HasForeignKey(e => e.ScopeExternalEntityId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.DataClassificationItemId).OnDelete(DeleteBehavior.Restrict);
+        // Nor to the external entity or the data classification (2026-11-14): the administration deletes them, and the trail keeps their ids.
+        builder.HasIndex(e => e.ScopeExternalEntityId);
+        builder.HasIndex(e => e.DataClassificationItemId);
 
         // indexing-strategy.md I-49 (SCR-058), I-50 and I-51 (ADM-050), built with the table; I-55, the head of the hash chain.
         builder.HasIndex(e => new { e.ScopeProjectId, e.OccurredAt, e.Id });

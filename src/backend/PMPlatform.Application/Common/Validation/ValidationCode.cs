@@ -18,4 +18,10 @@ public static class ValidationCode
 
     /// <summary>Text holding a character no field accepts (<see cref="TextInput"/>).</summary>
     public const string InvalidCharacter = "INVALID_CHARACTER";
+
+    /// <summary>An Arabic name or text with no Arabic letter (13 Nov 2026 review).</summary>
+    public const string NotArabic = "NOT_ARABIC";
+
+    /// <summary>An English name or text with no English letter, or with an Arabic one (13 Nov 2026 review).</summary>
+    public const string NotEnglish = "NOT_ENGLISH";
 }

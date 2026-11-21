@@ -67,7 +67,7 @@ public sealed class ProjectTestHost : IAsyncLifetime
         SELECT gen_random_uuid(), g.version_id::uuid, p.id, g.scope, now(), '{Seed}', now(), '{Seed}'
         FROM (VALUES ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_REVIEW', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_ACTIVATE', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'APPROVAL_DECIDE', 'ALL'),
-                     ('{IdentityDatabase.ProfileVersionId(2)}', 'APPROVAL_VIEW', 'ALL'),
+                     ('{IdentityDatabase.ProfileVersionId(2)}', 'APPROVAL_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'RISK_VIEW', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_FOLLOW_UP', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_IMPORT', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_IMPORT_APPROVE', 'ALL'), ('{IdentityDatabase.ProfileVersionId(3)}', 'PROJECT_IMPORT', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'SUSPENSION_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'SUSPENSION_ACTIVATE', 'ALL'),

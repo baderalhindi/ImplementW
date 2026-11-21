@@ -75,6 +75,7 @@ function AuditTrail({ access }: { access: AuditAccessView }): ReactElement {
         query={toAuditQuery(values, { categories: values.category === '' ? [] : categories })}
         caption={title}
         emptyTitle={t('auditActivity.trail.empty')}
+        emptyReason="filter"
         detailPath={(event) => auditEventPath(event.id)}
       />
     </>
@@ -137,6 +138,7 @@ function IntegrationAudit(): ReactElement {
         query={toAuditQuery(values, { categories: INTEGRATION_ONLY })}
         caption={title}
         emptyTitle={t('auditActivity.integration.empty')}
+        emptyReason="filter"
         detailPath={(event) => auditEventPath(event.id)}
       />
     </>

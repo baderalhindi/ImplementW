@@ -35,6 +35,31 @@ public interface IAuthenticationService
 
     public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken);
 
+    /// <summary>Whether this environment knows its WebAuthn relying party, so the sign-in page can offer Face ID / Touch ID.</summary>
+    public bool IsPasskeySignInAvailable { get; }
+
+    /// <summary>
+    /// The options for a passkey sign-in, or null where passkeys are not configured. With <paramref name="nationalId"/>,
+    /// only its owner's passkey will verify, and the answer is the same whether or not anyone has that number; without
+    /// one, the passkey the device offers signs its own owner in.
+    /// </summary>
+    public Task<PasskeyCeremony?> BeginPasskeySignInAsync(string? nationalId, CancellationToken cancellationToken);
+
+    /// <summary>Signs in with the passkey the device answered with. A passkey passes the second factor too (13 Nov 2026 review).</summary>
+    public Task<AuthenticationResult> SignInWithPasskeyAsync(string transaction, string credentialJson, CancellationToken cancellationToken);
+
+    /// <summary>Whether an SMS gateway is configured and National IDs can be read, so the sign-in page can offer a code by SMS.</summary>
+    public bool IsSmsSignInAvailable { get; }
+
+    /// <summary>Whether this National ID or Iqama number belongs to a person who may sign in (the client's decision: answered plainly).</summary>
+    public Task<bool> IsNationalIdRegisteredAsync(string nationalId, CancellationToken cancellationToken);
+
+    /// <summary>Sends a sign-in code to <paramref name="mobileNumber"/> if it is the number on the profile of the National ID's owner.</summary>
+    public Task<SmsSignInCodeRequest> RequestSmsSignInCodeAsync(string nationalId, string mobileNumber, CancellationToken cancellationToken);
+
+    /// <summary>Signs in with an SMS code. It is a first factor: a person who requires MFA continues to their second factor.</summary>
+    public Task<AuthenticationResult> SignInWithSmsCodeAsync(Guid challengeId, string code, CancellationToken cancellationToken);
+
     /// <summary>Completes an SSO sign-in with the authorization code and state the identity provider redirected with.</summary>
     public Task<AuthenticationResult> CompleteSsoSignInAsync(string code, string state, string transaction, CancellationToken cancellationToken);
 

@@ -19,6 +19,8 @@ import {
 // milestone (TASK-050 F-15). The PUTs require If-Match (428 without); the other commands honour it when sent.
 
 export const milestonesApi = {
+  /** Client review, item 8: it and what belongs to it leave the lists; 204, also when already gone. */
+  remove: (id: string) => apiRequest<undefined>(`/project-milestones/${id}`, { method: 'DELETE' }),
   /** A project's milestones, earliest forecast first, cancelled ones included. */
   milestones: (projectId: string, signal?: AbortSignal) =>
     readAllPages<ProjectMilestoneDetail>('/project-milestones', { projectId }, signal),

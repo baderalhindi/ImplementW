@@ -15,6 +15,12 @@ PTBC-031's resolution (ADR-007, ADR-013 note of 19 Sep 2026) fixes the use: Nafa
 
 ## 2. Decision
 
+> **Changed by the client on 8 Nov 2026 (client review, item 7; `client-review-changes.md` §6).** AHDA asked for the National ID or Iqama number on
+> every user profile, entered by an administrator, so Nafath can be bound to the account (SR-53). The number is now stored, sealed with
+> AES-256-GCM under `PERSONAL_DATA_KEY`, with a keyed fingerprint and the last four digits. Nafath's assertion is read from the
+> `NationalIdClaim` claim (`sub` until AHDA IT confirms it), fingerprinted, compared with the user's, and dropped. MD-2, MD-3 and MD-7
+> below describe the platform before that change; MD-1, MD-4, MD-5 and MD-6 still hold.
+
 | # | Data | Decision | Where it is enforced |
 | --- | --- | --- | --- |
 | MD-1 | **What is requested** | The OpenID Connect scope `openid` and nothing else. No `profile`, national-id, nationality, date-of-birth or other attribute scope. | `NafathOptions.Scopes`; the test asserts `scope=openid` on the authorization URL |
@@ -58,3 +64,4 @@ Moving to B or C changes MD-1 to MD-3 here, the ERD row F-086, a migration, and 
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-10-09 | Initial record: Option A built and checked; options B and C laid out for OQ-007 | Identity (TASK-068) |
+| 2026-11-08 | The client asked for the National ID on the profile and for Nafath to be bound to it: the number is stored sealed, and a verification of anyone else is refused (§2 note) | Client review, item 7 |

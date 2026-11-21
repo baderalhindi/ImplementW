@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PMPlatform.Application.Common.Deletion;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
@@ -143,6 +144,30 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public void AddItem(MasterDataItem item) => context.Set<MasterDataItem>().Add(item);
+
+    private const string ItemTable = "master_data_config.master_data_item";
+
+    public Task<IReadOnlyList<RecordUse>> ListUsesAsync(Guid itemId, CancellationToken cancellationToken) =>
+        ForeignKeyUses.ListAsync(context, ItemTable, itemId, cancellationToken);
+
+    public Task<int> ClearUsesAsync(Guid itemId, IReadOnlyList<RecordUse> uses, Guid actorId, DateTimeOffset now, CancellationToken cancellationToken) =>
+        ForeignKeyUses.ClearAsync(context, ItemTable, itemId, uses, actorId, now, cancellationToken);
+
+    public void RemoveItem(MasterDataItem item) => context.Set<MasterDataItem>().Remove(item);
+
+    public async Task<IMasterDataWork> BeginAsync(CancellationToken cancellationToken) =>
+        context.Database.CurrentTransaction is null
+            ? new MasterDataWork(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))
+            : new MasterDataWork(null);
+
+    private sealed class MasterDataWork(Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction) : IMasterDataWork
+    {
+        public Task CommitAsync(CancellationToken cancellationToken) => transaction?.CommitAsync(cancellationToken) ?? Task.CompletedTask;
+
+        public ValueTask DisposeAsync() => transaction?.DisposeAsync() ?? ValueTask.CompletedTask;
+    }
+
+
 
     public async Task<KpiDefinitionPage> ListKpiDefinitionsAsync(KpiDefinitionQuery query, CancellationToken cancellationToken)
     {

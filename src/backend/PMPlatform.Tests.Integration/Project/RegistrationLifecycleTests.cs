@@ -209,10 +209,23 @@ public sealed class RegistrationLifecycleTests(ProjectTestHost host)
         Assert.Equal("DRAFT", withdrawn.Status());
         Assert.Null(withdrawn["projectManagerUserId"]);
 
-        // local.r02 sees the draft but did not create it.
-        using (HttpResponseMessage notOwner = await client.DeleteProjectAsync(projectId, (await client.SignInOrFailAsync(2)).AccessToken))
+        // local.r02 sees the draft but did not create it, and without PROJECT_DELETE that is not enough.
+        string administrator = (await client.SignInOrFailAsync(1)).AccessToken;
+        object reason = new { reason = new { text = "Test of the draft rule.", language = "en" } };
+        string overrideOfR02 = $"/api/v1/users/{ProjectDriver.Person(2)}/permissions/PROJECT_DELETE";
+        using (HttpResponseMessage removed = await client.PutAsync(overrideOfR02, administrator, new { effect = "REMOVE", reason = new { text = "Test of the draft rule.", language = "en" } }, ifMatch: null))
+        {
+            Assert.Equal(HttpStatusCode.OK, removed.StatusCode);
+        }
+
+        using (HttpResponseMessage notOwner = await client.DeleteProjectAsync(projectId, sessions.Approver))
         {
             Assert.Equal(HttpStatusCode.Forbidden, notOwner.StatusCode);
+        }
+
+        using (HttpResponseMessage cleared = await client.PostAsync($"{overrideOfR02}/clear", administrator, reason))
+        {
+            Assert.Equal(HttpStatusCode.OK, cleared.StatusCode);
         }
 
         using (HttpResponseMessage deleted = await client.DeleteProjectAsync(projectId, sessions.Reviewer))
@@ -226,6 +239,43 @@ public sealed class RegistrationLifecycleTests(ProjectTestHost host)
         }
 
         Assert.Empty(await host.Database.QueryAsync($"SELECT id::text FROM project.project WHERE id = '{projectId}'"));
+        Assert.Contains("Project.ProjectDeleted", await host.AuditEventsAsync(projectId));
+    }
+
+    /// <summary>Client review, item 4: R02 deletes a project in any state. It leaves every read with its records, and all of it stays in the database.</summary>
+    [Fact]
+    public async Task APortfolioManagerDeletesAProjectInAnyStateAndItsDataStays()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        Guid projectId = await host.UnderReviewAsync(client, sessions);
+        string portfolioManager = (await client.SignInOrFailAsync(2)).AccessToken;
+        Assert.NotEmpty(await host.RunsAsync(projectId));
+        IReadOnlyList<string> runsBefore = await host.Database.QueryAsync($"SELECT id::text FROM approval.approval_instance WHERE scope_project_id = '{projectId}'");
+
+        using (HttpResponseMessage deleted = await client.DeleteProjectAsync(projectId, portfolioManager))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        }
+
+        using (HttpResponseMessage again = await client.DeleteProjectAsync(projectId, portfolioManager))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, again.StatusCode);
+        }
+
+        using (HttpResponseMessage read = await client.GetAsync($"/api/v1/projects/{projectId}", portfolioManager))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, read.StatusCode);
+        }
+
+        using (HttpResponseMessage register = await client.GetAsync("/api/v1/projects?pageSize=100", portfolioManager))
+        {
+            Assert.DoesNotContain(projectId.ToString(), await register.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        }
+
+        Assert.Empty(await host.RunsAsync(projectId));
+        Assert.Equal(["1"], await host.Database.QueryAsync($"SELECT count(*)::text FROM project.project WHERE id = '{projectId}' AND deleted_at IS NOT NULL AND deleted_by = '{ProjectDriver.Person(2)}'"));
+        Assert.Equal(runsBefore, await host.Database.QueryAsync($"SELECT id::text FROM approval.approval_instance WHERE scope_project_id = '{projectId}'"));
         Assert.Contains("Project.ProjectDeleted", await host.AuditEventsAsync(projectId));
     }
 

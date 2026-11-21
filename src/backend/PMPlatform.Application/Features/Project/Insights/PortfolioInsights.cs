@@ -1,5 +1,6 @@
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.FollowUp;
 using PMPlatform.Domain.Common;
@@ -8,10 +9,35 @@ using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Application.Features.Project.Insights;
 
-/// <summary>Narrows the projects as the one filter bar does. Filters narrow a scope; they never widen it.</summary>
+/// <summary>
+/// Narrows the projects as the one filter bar does. Filters narrow a scope; they never widen it. The Follow-up list narrows by the same rule, so a count on the dashboard
+/// opens a list of the same projects (review round 8, point 01).
+/// </summary>
 public sealed record PortfolioInsightFilters(
     Guid? DepartmentId = null, Guid? ExternalEntityId = null, Guid? ClassificationItemId = null, Guid? RegionItemId = null, Guid? CityItemId = null, ProjectLifecycleState? Status = null,
-    Guid? PriorityItemId = null, Guid? StrategicPortfolioItemId = null, Guid? StrategicInitiativeItemId = null, int? Period = null);
+    Guid? PriorityItemId = null, Guid? StrategicPortfolioItemId = null, Guid? StrategicInitiativeItemId = null, int? Period = null)
+{
+    public bool Matches(ProjectEntity project)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        return (DepartmentId is not { } department || project.DepartmentId == department)
+               && (ExternalEntityId is not { } entity || project.ExternalEntityId == entity)
+               && (ClassificationItemId is not { } sector || project.ClassificationItemId == sector)
+               && (RegionItemId is not { } region || project.RegionItemId == region)
+               && (CityItemId is not { } city || project.CityItemId == city)
+               && (Status is not { } status || project.LifecycleState == status)
+               && (PriorityItemId is not { } priority || project.PriorityItemId == priority)
+               && (StrategicPortfolioItemId is not { } portfolio || project.StrategicPortfolioItemId == portfolio)
+               && (StrategicInitiativeItemId is not { } initiative || project.StrategicInitiativeItemId == initiative)
+               && (Period is not { } year || TouchesYear(project, year));
+    }
+
+    private static bool TouchesYear(ProjectEntity p, int year)
+    {
+        (DateOnly? start, DateOnly? end) = (p.PlannedStartDate ?? p.PlannedEndDate, p.PlannedEndDate ?? p.PlannedStartDate);
+        return start is { } s && end is { } e && s.Year <= year && e.Year >= year;
+    }
+}
 
 /// <summary>RPMO's six headline cards (the 5 Nov 2026 review §3 row 1). A value is null when the caller may not see amounts; an average is null when nothing is measured.</summary>
 public sealed record PortfolioHeadline(
@@ -29,6 +55,12 @@ public sealed record PortfolioBreakdown(IReadOnlyList<PortfolioBreakdownRow> Row
 
 public sealed record PortfolioStageCount(ProjectLifecycleState Status, int Projects, decimal Percent);
 
+/// <summary>
+/// Projects by their current stage (review round 7, item 1): the first applicable stage below 100% in the latest published stage-based update, or as
+/// imported. <see cref="StageCode"/> null counts the projects with none yet. Stages run in stage order; a value is null when the caller may not see amounts.
+/// </summary>
+public sealed record PortfolioCurrentStage(string? StageCode, BilingualLabel? Name, int Projects, string? ValueSar, int ValueEntered);
+
 public sealed record PortfolioOnPlan(int OnTrack, int Late, int Stalled, int NotMeasured);
 
 /// <summary>Each project counted once, under its first reason in the Follow-up list's order.</summary>
@@ -44,7 +76,7 @@ public sealed record PortfolioTopProject(
 /// </summary>
 public sealed record PortfolioInsights(
     PortfolioHeadline? Headline, PortfolioBreakdown? ByPortfolio, PortfolioBreakdown? ByInitiative, PortfolioBreakdown? BySector, IReadOnlyList<PortfolioStageCount>? Stages, PortfolioOnPlan? OnPlan,
-    PortfolioFollowUpReasons? FollowUpReasons, IReadOnlyList<PortfolioTopProject>? TopFollowUp);
+    PortfolioFollowUpReasons? FollowUpReasons, IReadOnlyList<PortfolioTopProject>? TopFollowUp, IReadOnlyList<PortfolioCurrentStage>? ByCurrentStage = null);
 
 public enum PortfolioCardDimension
 {
@@ -70,15 +102,11 @@ public interface IPortfolioInsightsService
 }
 
 /// <inheritdoc cref="IPortfolioInsightsService"/>
-internal sealed class PortfolioInsightsService(IProjectRepository repository, IAuthorizationEngine engine, ProjectIndicatorReader indicators, OnPlanPolicy onPlanPolicy, TimeProvider timeProvider) : IPortfolioInsightsService
+internal sealed class PortfolioInsightsService(
+    PortfolioProjectRows projectRows, IAuthorizationEngine engine, OnPlanPolicy onPlanPolicy, IConfigurationResolver resolver, TimeProvider timeProvider)
+    : IPortfolioInsightsService
 {
     private const int TopCount = 10;
-
-    /// <summary>What counts on these figures: a project past registration. A draft or a request under review is not yet the register's.</summary>
-    private static readonly ProjectLifecycleState[] Registering =
-    [
-        ProjectLifecycleState.Draft, ProjectLifecycleState.Submitted, ProjectLifecycleState.UnderReview, ProjectLifecycleState.Returned,
-    ];
 
     public async Task<PortfolioInsights> GetAsync(Guid callerId, PortfolioInsightFilters filters, CancellationToken cancellationToken)
     {
@@ -86,16 +114,17 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
         bool amounts = !(await engine.GetRecordScopeAsync(callerId, PermissionCatalogue.FinancialViewSensitive, cancellationToken).ConfigureAwait(false)).IsEmpty;
         OnPlanThresholds thresholds = await onPlanPolicy.ThresholdsAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
-        async Task<IReadOnlyList<Row>?> Reach(string permission)
+        async Task<IReadOnlyList<PortfolioProjectRow>?> Reach(string permission)
         {
             RecordScope scope = await engine.GetRecordScopeAsync(callerId, permission, cancellationToken).ConfigureAwait(false);
             return scope.IsEmpty ? null : await RowsAsync(scope, filters, cancellationToken).ConfigureAwait(false);
         }
 
-        IReadOnlyList<Row>? summary = await Reach(PermissionCatalogue.PortfolioSummaryView).ConfigureAwait(false);
-        IReadOnlyList<Row>? breakdown = await Reach(PermissionCatalogue.PortfolioBreakdownView).ConfigureAwait(false);
-        IReadOnlyList<Row>? status = await Reach(PermissionCatalogue.PortfolioStatusView).ConfigureAwait(false);
-        IReadOnlyList<Row>? followUp = await Reach(PermissionCatalogue.PortfolioFollowUpView).ConfigureAwait(false);
+        IReadOnlyList<PortfolioProjectRow>? summary = await Reach(PermissionCatalogue.PortfolioSummaryView).ConfigureAwait(false);
+        IReadOnlyList<PortfolioProjectRow>? breakdown = await Reach(PermissionCatalogue.PortfolioBreakdownView).ConfigureAwait(false);
+        IReadOnlyList<PortfolioProjectRow>? status = await Reach(PermissionCatalogue.PortfolioStatusView).ConfigureAwait(false);
+        IReadOnlyList<PortfolioProjectRow>? followUp = await Reach(PermissionCatalogue.PortfolioFollowUpView).ConfigureAwait(false);
+        ProjectStageSet? stages = status is null ? null : await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new PortfolioInsights(
             summary is null ? null : Headline(summary, amounts, thresholds),
@@ -103,9 +132,7 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
             breakdown is null ? null : Breakdown([.. breakdown.Where(r => r.Project.StrategicInitiativeItemId is not null)], r => r.Project.StrategicInitiativeItemId, r => r.Project.StrategicPortfolioItemId, amounts, thresholds, sector: false),
             breakdown is null ? null : Breakdown(breakdown, r => r.Project.ClassificationItemId, _ => null, amounts, thresholds, sector: true),
             status is null ? null : Stages(status),
-            status is null ? null : new PortfolioOnPlan(
-                status.Count(r => r.Indicators.OnPlan == OnPlanStatus.OnTrack), status.Count(r => r.Indicators.OnPlan == OnPlanStatus.Late),
-                status.Count(r => r.Indicators.OnPlan == OnPlanStatus.Stalled), status.Count(r => r.Indicators.OnPlan is null)),
+            status is null ? null : OnPlanOf(status),
             followUp is null ? null : Reasons(followUp),
             followUp is null ? null : [.. followUp.Where(r => r.Indicators.FollowUpReasons.Count > 0)
                 .OrderBy(r => r.Indicators.FollowUpReasons[0])
@@ -114,7 +141,8 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
                 .Take(TopCount)
                 .Select(r => new PortfolioTopProject(
                     r.Project.Id, r.Project.FormalProjectId, r.Project.LegacyReference, r.Project.Title, r.Project.StrategicPortfolioItemId, r.Indicators.FollowUpReasons[0], r.Project.CurrentObstacle,
-                    r.Project.NextAction, r.Project.NextActionOwner, r.Project.NextActionDueDate))]);
+                    r.Project.NextAction, r.Project.NextActionOwner, r.Project.NextActionDueDate))],
+            status is null || stages is null ? null : ByCurrentStage(status, stages, amounts));
     }
 
     public async Task<AdministrationResult<PortfolioCard>> GetCardAsync(Guid callerId, PortfolioCardDimension dimension, Guid itemId, CancellationToken cancellationToken)
@@ -134,41 +162,19 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
             PortfolioCardDimension.Sector => p => p.ClassificationItemId,
             _ => throw new ArgumentOutOfRangeException(nameof(dimension), dimension, "Unknown card dimension."),
         };
-        List<Row> rows = [.. (await RowsAsync(scope, new PortfolioInsightFilters(), cancellationToken).ConfigureAwait(false)).Where(r => key(r.Project) == itemId)];
+        List<PortfolioProjectRow> rows = [.. (await RowsAsync(scope, new PortfolioInsightFilters(), cancellationToken).ConfigureAwait(false)).Where(r => key(r.Project) == itemId)];
         return new PortfolioCard(dimension, itemId, RowOf(itemId, null, rows, amounts, thresholds, sector: dimension == PortfolioCardDimension.Sector), [.. rows
             .OrderBy(r => r.Project.LegacyReference ?? r.Project.FormalProjectId, StringComparer.Ordinal)
             .Select(r => new PortfolioCardProject(
                 r.Project.Id, r.Project.FormalProjectId, r.Project.LegacyReference, r.Project.Title, r.Project.LifecycleState, r.Project.DepartmentId, r.Project.ExternalEntityId,
-                amounts ? Sar(r.Project.RegistrationBudgetSar) : null, r.Project.PlannedStartDate, r.Project.PlannedEndDate, r.Project.DeclaredPlannedPercent, r.Project.DeclaredActualPercent,
+                amounts ? Sar(r.Project.RegistrationBudgetSar) : null, r.Project.PlannedStartDate, r.Project.PlannedEndDate, r.Indicators.Progress?.PlannedPercent, r.Indicators.Progress?.ActualPercent,
                 r.Indicators.GapPoints, r.Indicators.OnPlan, r.Project.CurrentObstacle, r.Project.NextAction, r.Project.NextActionOwner, r.Project.NextActionDueDate))]);
     }
 
-    private async Task<IReadOnlyList<Row>> RowsAsync(RecordScope scope, PortfolioInsightFilters filters, CancellationToken cancellationToken)
-    {
-        List<ProjectEntity> reached = [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false)).Where(p => !Registering.Contains(p.LifecycleState) && Matches(p, filters))];
-        Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(reached, cancellationToken).ConfigureAwait(false);
-        return [.. reached.Select(p => new Row(p, indicatorsOf(p)))];
-    }
+    private Task<IReadOnlyList<PortfolioProjectRow>> RowsAsync(RecordScope scope, PortfolioInsightFilters filters, CancellationToken cancellationToken) =>
+        projectRows.ListAsync(scope, filters, cancellationToken);
 
-    private static bool Matches(ProjectEntity p, PortfolioInsightFilters f) =>
-        (f.DepartmentId is not { } department || p.DepartmentId == department)
-        && (f.ExternalEntityId is not { } entity || p.ExternalEntityId == entity)
-        && (f.ClassificationItemId is not { } sector || p.ClassificationItemId == sector)
-        && (f.RegionItemId is not { } region || p.RegionItemId == region)
-        && (f.CityItemId is not { } city || p.CityItemId == city)
-        && (f.Status is not { } status || p.LifecycleState == status)
-        && (f.PriorityItemId is not { } priority || p.PriorityItemId == priority)
-        && (f.StrategicPortfolioItemId is not { } portfolio || p.StrategicPortfolioItemId == portfolio)
-        && (f.StrategicInitiativeItemId is not { } initiative || p.StrategicInitiativeItemId == initiative)
-        && (f.Period is not { } year || TouchesYear(p, year));
-
-    private static bool TouchesYear(ProjectEntity p, int year)
-    {
-        (DateOnly? start, DateOnly? end) = (p.PlannedStartDate ?? p.PlannedEndDate, p.PlannedEndDate ?? p.PlannedStartDate);
-        return start is { } s && end is { } e && s.Year <= year && e.Year >= year;
-    }
-
-    private static PortfolioHeadline Headline(IReadOnlyList<Row> rows, bool amounts, OnPlanThresholds thresholds)
+    private static PortfolioHeadline Headline(IReadOnlyList<PortfolioProjectRow> rows, bool amounts, OnPlanThresholds thresholds)
     {
         PortfolioBreakdownRow all = RowOf(null, null, rows, amounts, thresholds, sector: false);
         return new PortfolioHeadline(
@@ -177,18 +183,20 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
     }
 
     private static PortfolioBreakdown Breakdown(
-        IReadOnlyList<Row> rows, Func<Row, Guid?> key, Func<Row, Guid?> parent, bool amounts, OnPlanThresholds thresholds, bool sector) =>
+        IReadOnlyList<PortfolioProjectRow> rows, Func<PortfolioProjectRow, Guid?> key, Func<PortfolioProjectRow, Guid?> parent, bool amounts, OnPlanThresholds thresholds, bool sector) =>
         new(
             [.. rows.GroupBy(key).Select(g => RowOf(g.Key, parent(g.First()), [.. g], amounts, thresholds, sector)).OrderByDescending(r => r.Projects).ThenBy(r => r.ItemId)],
             RowOf(null, null, rows, amounts, thresholds, sector));
 
-    private static PortfolioBreakdownRow RowOf(Guid? item, Guid? parentItem, IReadOnlyList<Row> rows, bool amounts, OnPlanThresholds thresholds, bool sector)
+    /// <summary>The figures of a group of projects: also each group of a designed visual (PortfolioDesignService).</summary>
+    internal static PortfolioBreakdownRow RowOf(Guid? item, Guid? parentItem, IReadOnlyList<PortfolioProjectRow> rows, bool amounts, OnPlanThresholds thresholds, bool sector)
     {
-        List<Row> measured = [.. rows.Where(r => r.Indicators.GapPoints is not null)];
-        decimal? planned = Average(measured.Select(r => r.Project.DeclaredPlannedPercent));
-        decimal? actual = Average(measured.Select(r => r.Project.DeclaredActualPercent));
+        List<PortfolioProjectRow> measured = [.. rows.Where(r => r.Indicators.GapPoints is not null)];
+        // Each project's one overall figure, by its method (review round 8, point 02): the figure its gap was calculated from.
+        decimal? planned = Average(measured.Select(r => r.Indicators.Progress?.PlannedPercent));
+        decimal? actual = Average(measured.Select(r => r.Indicators.Progress?.ActualPercent));
         decimal? gap = planned is { } p && actual is { } a ? decimal.Round(a - p, 2) : null;
-        List<Row> withSpend = [.. rows.Where(r => r.Project.DeclaredPlannedSpendPercent is not null && r.Project.DeclaredActualSpendPercent is not null)];
+        List<PortfolioProjectRow> withSpend = [.. rows.Where(r => r.Project.DeclaredPlannedSpendPercent is not null && r.Project.DeclaredActualSpendPercent is not null)];
         return new PortfolioBreakdownRow(
             item, parentItem, rows.Count, amounts ? Sar(rows.Sum(r => r.Project.RegistrationBudgetSar?.Amount ?? 0m)) : null, rows.Count(r => r.Project.RegistrationBudgetSar is not null), measured.Count,
             Round(planned), Round(actual), gap, LabelOf(gap, thresholds), rows.Count(r => r.Indicators.FollowUpReasons.Count > 0),
@@ -198,16 +206,36 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
             sector ? [.. rows.GroupBy(r => r.Project.StrategicPortfolioItemId).Select(g => new PortfolioSplit(g.Key, g.Count())).OrderByDescending(s => s.Projects)] : null);
     }
 
-    private static OnPlanStatus? LabelOf(decimal? gap, OnPlanThresholds thresholds) =>
+    internal static OnPlanStatus? LabelOf(decimal? gap, OnPlanThresholds thresholds) =>
         gap is not { } points ? null
         : points <= -thresholds.StalledPoints ? OnPlanStatus.Stalled
         : points <= -thresholds.LatePoints ? OnPlanStatus.Late
         : OnPlanStatus.OnTrack;
 
-    private static IReadOnlyList<PortfolioStageCount> Stages(IReadOnlyList<Row> rows) =>
+    private static IReadOnlyList<PortfolioStageCount> Stages(IReadOnlyList<PortfolioProjectRow> rows) =>
         [.. rows.GroupBy(r => r.Project.LifecycleState).OrderByDescending(g => g.Count()).Select(g => new PortfolioStageCount(g.Key, g.Count(), decimal.Round(g.Count() * 100m / rows.Count, 1)))];
 
-    private static PortfolioFollowUpReasons Reasons(IReadOnlyList<Row> rows)
+    /// <summary>Every stage of the version in force, in stage order, with none left out, then the projects with no current stage.</summary>
+    private static IReadOnlyList<PortfolioCurrentStage> ByCurrentStage(IReadOnlyList<PortfolioProjectRow> rows, ProjectStageSet stages, bool amounts)
+    {
+        PortfolioCurrentStage Of(string? code, BilingualLabel? name, List<PortfolioProjectRow> group) =>
+            new(code, name, group.Count, amounts ? Sar(group.Sum(r => r.Project.RegistrationBudgetSar?.Amount ?? 0m)) : null, group.Count(r => r.Project.RegistrationBudgetSar is not null));
+        HashSet<string> known = [.. stages.Stages.Select(s => s.Code)];
+        return
+        [
+            .. stages.Stages.Select(s => Of(s.Code, s.Name, [.. rows.Where(r => r.Project.CurrentStageCode == s.Code)])),
+            Of(null, null, [.. rows.Where(r => r.Project.CurrentStageCode is not { } code || !known.Contains(code))]),
+        ];
+    }
+
+    /// <summary>The on-plan indicator's boxes over <paramref name="rows"/>: also the designer's ON_TRACK, LATE, STALLED and NOT_MEASURED figures.</summary>
+    internal static PortfolioOnPlan OnPlanOf(IReadOnlyList<PortfolioProjectRow> rows) =>
+        new(
+            rows.Count(r => r.Indicators.OnPlan == OnPlanStatus.OnTrack), rows.Count(r => r.Indicators.OnPlan == OnPlanStatus.Late),
+            rows.Count(r => r.Indicators.OnPlan == OnPlanStatus.Stalled), rows.Count(r => r.Indicators.OnPlan is null));
+
+    /// <summary>The follow-up reasons' boxes over <paramref name="rows"/>: also the designer's FOLLOW_UP_* figures, whose total is NEEDING_FOLLOW_UP.</summary>
+    internal static PortfolioFollowUpReasons Reasons(IReadOnlyList<PortfolioProjectRow> rows)
     {
         List<FollowUpReason> first = [.. rows.Where(r => r.Indicators.FollowUpReasons.Count > 0).Select(r => r.Indicators.FollowUpReasons[0])];
         int Count(FollowUpReason reason) => first.Count(r => r == reason);
@@ -225,6 +253,21 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
     private static string Sar(Money? amount) => amount is { } money ? Sar(money.Amount) : Sar(0m);
 
     private static string Sar(decimal amount) => amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+}
 
-    private sealed record Row(ProjectEntity Project, ProjectIndicators Indicators);
+/// <summary>A project of the dashboard's population with its calculated indicators.</summary>
+internal sealed record PortfolioProjectRow(ProjectEntity Project, ProjectIndicators Indicators);
+
+/// <summary>
+/// The dashboard's population: the projects a scope reaches, past registration, narrowed by the filter bar, each with its indicators. The insights and the
+/// designed visuals count the same projects.
+/// </summary>
+internal sealed class PortfolioProjectRows(IProjectRepository repository, ProjectIndicatorReader indicators)
+{
+    public async Task<IReadOnlyList<PortfolioProjectRow>> ListAsync(RecordScope scope, PortfolioInsightFilters filters, CancellationToken cancellationToken)
+    {
+        List<ProjectEntity> reached = [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false)).Where(p => !ProjectLifecycleStates.Registering.Contains(p.LifecycleState) && filters.Matches(p))];
+        Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(reached, cancellationToken).ConfigureAwait(false);
+        return [.. reached.Select(p => new PortfolioProjectRow(p, indicatorsOf(p)))];
+    }
 }

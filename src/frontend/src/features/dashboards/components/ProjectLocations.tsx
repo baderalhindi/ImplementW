@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactElement, useState } from 'react';
+import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -10,6 +10,7 @@ import { usePlaceName } from '../usePlaceName.ts';
 
 import { LocationDetails } from './LocationDetails.tsx';
 import { LocationsMap, type MapPoint } from './LocationsMap.tsx';
+import { RegionList } from './RegionList.tsx';
 
 /**
  * Where the portfolio's projects are delivered (the 27 Oct 2026 review): each region with its project count and its cities as bars.
@@ -38,7 +39,7 @@ export function ProjectLocations({
   const { t } = useI18n();
   const placeName = usePlaceName(places);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const groups = byRegion(locations);
+  const groups = byRegion(locations, (location) => location.projectCount);
   if (groups.length === 0) {
     return null;
   }
@@ -58,91 +59,72 @@ export function ProjectLocations({
             name: placeName(location.cityItemId),
             latitude: place.latitude,
             longitude: place.longitude,
-            projectCount: location.projectCount,
+            value: location.projectCount,
+            figure: String(location.projectCount),
           },
         ];
   });
   const showMap = map !== undefined && points.length > 0;
   const unplaced =
     locations.reduce((sum, location) => sum + location.projectCount, 0) -
-    points.reduce((sum, point) => sum + point.projectCount, 0);
+    points.reduce((sum, point) => sum + point.value, 0);
   const selected = locations.find((location) => location.cityItemId === selectedCity) ?? null;
   const regionList = (
-    <ul className="locations__regions">
-      {groups.map((group) => {
+    <RegionList
+      regions={groups.map((group) => {
         const regionName =
           group.regionItemId === null
             ? t('dashboards.locations.noRegion')
             : placeName(group.regionItemId);
         const selected = group.regionItemId !== null && group.regionItemId === selectedRegion;
-        return (
-          <li key={group.regionItemId ?? 'none'} className="locations__region">
-            <div className="locations__region-header">
-              {group.regionItemId === null ||
-              (onSelectRegion === undefined && linkTo === undefined) ? (
-                <span className="locations__region-name">{regionName}</span>
-              ) : linkTo !== undefined ? (
-                <Link className="locations__region-name" to={linkTo(group.regionItemId)}>
-                  {regionName}
-                </Link>
-              ) : (
+        return {
+          key: group.regionItemId ?? 'none',
+          name:
+            group.regionItemId === null ||
+            (onSelectRegion === undefined && linkTo === undefined) ? (
+              <span className="locations__region-name">{regionName}</span>
+            ) : linkTo !== undefined ? (
+              <Link className="locations__region-name" to={linkTo(group.regionItemId)}>
+                {regionName}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="button button--link locations__region-name"
+                aria-pressed={selected}
+                onClick={() => {
+                  onSelectRegion?.(selected ? undefined : (group.regionItemId ?? undefined));
+                }}
+              >
+                {regionName}
+              </button>
+            ),
+          total: t('dashboards.locations.projects', { count: group.total }),
+          cities: group.cities.map((city) => ({
+            key: city.cityItemId ?? 'none',
+            name:
+              city.cityItemId === null ? (
+                t('dashboards.locations.noCity')
+              ) : showMap ? (
                 <button
                   type="button"
-                  className="button button--link locations__region-name"
-                  aria-pressed={selected}
+                  className="button button--link"
+                  aria-pressed={selectedCity === city.cityItemId}
                   onClick={() => {
-                    onSelectRegion?.(selected ? undefined : (group.regionItemId ?? undefined));
+                    setSelectedCity(city.cityItemId);
                   }}
                 >
-                  {regionName}
+                  {placeName(city.cityItemId)}
                 </button>
-              )}
-              <span className="locations__total">
-                {t('dashboards.locations.projects', { count: group.total })}
-              </span>
-            </div>
-            <ul className="bars">
-              {group.cities.map((city) => (
-                <li key={city.cityItemId ?? 'none'} className="bars__item">
-                  <span className="bars__label">
-                    {city.cityItemId === null ? (
-                      t('dashboards.locations.noCity')
-                    ) : showMap ? (
-                      <button
-                        type="button"
-                        className="button button--link"
-                        aria-pressed={selectedCity === city.cityItemId}
-                        onClick={() => {
-                          setSelectedCity(city.cityItemId);
-                        }}
-                      >
-                        {placeName(city.cityItemId)}
-                      </button>
-                    ) : (
-                      placeName(city.cityItemId)
-                    )}
-                  </span>
-                  <span className="bars__value" dir="ltr">
-                    {city.projectCount}
-                  </span>
-                  <span className="widget__bar-track" aria-hidden="true">
-                    <span
-                      className="widget__bar"
-                      style={
-                        {
-                          inlineSize: `${String((city.projectCount / largest) * 100)}%`,
-                          '--chart-color': 'var(--chart-category-1)',
-                        } as CSSProperties
-                      }
-                    />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </li>
-        );
+              ) : (
+                placeName(city.cityItemId)
+              ),
+            figure: String(city.projectCount),
+            share: city.projectCount / largest,
+          })),
+        };
       })}
-    </ul>
+    />
   );
 
   return (

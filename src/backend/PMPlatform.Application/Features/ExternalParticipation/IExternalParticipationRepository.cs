@@ -86,6 +86,9 @@ public interface IExternalParticipationRepository
     /// <summary>The monthly updates waiting on <paramref name="responsibleUserId"/>: issued or in progress, soonest due first.</summary>
     public Task<IReadOnlyList<ExternalUpdateRequest>> ListOpenMonthlyUpdatesAsync(Guid responsibleUserId, CancellationToken cancellationToken);
 
+    /// <summary>Tracked: the project's update requests still open that <paramref name="responsibleUserId"/> answers (review round 7, item 2).</summary>
+    public Task<IReadOnlyList<ExternalUpdateRequest>> ListOpenRequestsOfAsync(Guid projectId, Guid responsibleUserId, CancellationToken cancellationToken);
+
     /// <summary>Open monthly updates due by <paramref name="dueBy"/> and not reminded today, tracked.</summary>
     public Task<IReadOnlyList<ExternalUpdateRequest>> ListRemindableMonthlyUpdatesAsync(DateOnly today, DateOnly dueBy, int limit, CancellationToken cancellationToken);
 

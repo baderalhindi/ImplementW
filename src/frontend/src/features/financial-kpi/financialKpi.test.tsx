@@ -133,7 +133,7 @@ describe('criterion 1 on SCR-049: an Unknown financial figure says so, never 0 a
       expect(status.className).toBe('badge badge--neutral');
       expectNoGreen(region);
       // The budget is the one figure known, with its own provenance; nothing Unknown reads as 0.
-      expect(within(region).getByText(sar('1,000,000.00'))).toBeTruthy();
+      expect(within(region).getByText(sar('1,000,000'))).toBeTruthy();
       expect(region.textContent).not.toContain(sar('0.00'));
     }
     expect(within(live).getByText(en('financialKpi.financials.live.unpublished'))).toBeTruthy();
@@ -435,8 +435,8 @@ describe('SCR-071 Financial Progress', () => {
 
     const budgets = screen.getByRole('region', { name: en('financialKpi.history.budgetsCaption') });
     expect(within(budgets).getAllByRole('row')).toHaveLength(2);
-    expect(within(budgets).getByText(sar('1,000,000.00'))).toBeTruthy();
-    expect(within(budgets).queryByText(sar('5.00'))).toBeNull();
+    expect(within(budgets).getByText(sar('1,000,000'))).toBeTruthy();
+    expect(within(budgets).queryByText(sar('5'))).toBeNull();
   });
 });
 
@@ -463,11 +463,11 @@ describe('criterion 1 and the workbook check on SCR-050: no measurement this per
       'badge badge--neutral',
     );
     expectNoGreen(kpi);
-    // The "This period" cell holds no figure at all.
-    expect(cells[2]?.querySelector('[data-value-state="MEASURED"]')).toBeNull();
-    expectNoZero(nth(cells, 2));
+    // The "This period" cell holds no figure at all (the first cell is the row's checkbox).
+    expect(cells[3]?.querySelector('[data-value-state="MEASURED"]')).toBeNull();
+    expectNoZero(nth(cells, 3));
     // The last published value is two months ago's, which was itself Unknown: said so, not 0.
-    expect(within(nth(cells, 5)).getByText(en('financialKpi.value.MISSING'))).toBeTruthy();
+    expect(within(nth(cells, 6)).getByText(en('financialKpi.value.MISSING'))).toBeTruthy();
     // The target in force is version 2.
     expect(
       within(kpi).getByText(en('financialKpi.kpis.targetVersion', { version: 2, target: '80' })),
@@ -711,7 +711,8 @@ describe('criterion 2 on SCR-073: a target change never back-edits older points'
       name: en('financialKpi.trend.valuesCaption'),
     });
     const rows = within(values).getAllByRole('row').slice(1);
-    expect(rows.map((row) => within(row).getAllByRole('cell')[2]?.textContent)).toEqual([
+    // The first cell is the row's checkbox.
+    expect(rows.map((row) => within(row).getAllByRole('cell')[3]?.textContent)).toEqual([
       en('financialKpi.kpis.targetVersion', { version: 2, target: '80' }),
       en('financialKpi.kpis.targetVersion', { version: 1, target: '95' }),
       en('financialKpi.kpis.targetVersion', { version: 1, target: '95' }),
@@ -722,6 +723,25 @@ describe('criterion 2 on SCR-073: a target change never back-edits older points'
     const targets = screen.getByRole('region', { name: en('financialKpi.trend.targetsCaption') });
     expect(within(targets).getByText(en('financialKpi.versionStatus.SUPERSEDED'))).toBeTruthy();
     expect(within(targets).getByText('95')).toBeTruthy();
+  });
+
+  test('select all values, and the bar says how many are chosen', async () => {
+    open(TREND, entitySession());
+    const values = await screen.findByRole('region', {
+      name: en('financialKpi.trend.valuesCaption'),
+    });
+    await userEvent.click(
+      within(values).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    const bar = screen
+      .getByText(en('common.table.selected', { count: 3 }))
+      .closest<HTMLElement>('.selection-bar');
+    if (bar === null) {
+      throw new Error('No selection bar.');
+    }
+    expect(
+      within(bar).getByRole('button', { name: en('common.table.exportSelected') }),
+    ).toBeTruthy();
   });
 
   test('SCR-073 has no accessibility violations', async () => {
@@ -903,12 +923,12 @@ describe('the official and live financial views stay apart', () => {
       ),
     );
     const official = await screen.findByRole('region', { name: /Official financial position/ });
-    expect(within(official).getByText(sar('400,000.00'))).toBeTruthy();
+    expect(within(official).getByText(sar('400,000'))).toBeTruthy();
     expect(within(official).getByText(en('financialKpi.financialStatus.GREEN')).className).toBe(
       'badge badge--positive',
     );
     const live = screen.getByRole('region', { name: /Current financial position/ });
-    expect(within(live).queryByText(sar('400,000.00'))).toBeNull();
+    expect(within(live).queryByText(sar('400,000'))).toBeNull();
     expectNoGreen(live);
   });
 });

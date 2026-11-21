@@ -38,7 +38,8 @@ export type ParticipationAudience = 'INTERNAL' | 'EXTERNAL';
 export type ContributionApplicationMode =
   'REFERENCE_ONLY' | 'UPDATE_ALLOWED_SOURCE_FIELDS' | 'APPLY_ON_ACCEPT';
 
-export type ContributionFieldType = 'NARRATIVE' | 'NUMBER' | 'DATE';
+/** CODE: a business code, such as a project stage (review round 7, item 1). */
+export type ContributionFieldType = 'NARRATIVE' | 'NUMBER' | 'DATE' | 'CODE';
 
 /** One field of the request's typed schema: the form to render (`responseFields`). */
 export interface ContributionFieldDefinition {

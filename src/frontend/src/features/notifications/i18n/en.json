@@ -10,9 +10,10 @@
   "bell": {
     "unread": "{count} unread",
     "label": "Notifications",
-    "title": "Recent notifications",
+    "title": "Unread notifications",
     "all": "See all notifications",
-    "unavailable": "Your notifications cannot be shown now. Open them from the menu to try again."
+    "unavailable": "Your notifications cannot be shown now. Open them from the menu to try again.",
+    "noneUnread": "You have no unread notifications."
   },
   "all": {
     "title": "All notifications",

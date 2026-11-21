@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(30, built["paths"]!.AsObject().Count);
+        Assert.Equal(42, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -119,6 +119,46 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         Assert.Single((await responses.CheckAsync("GET", "/api/v1/project-follow-up-notes", notes))!["items"]!.AsArray());
         using HttpResponseMessage followUps = await client.GetAsync("/api/v1/project-follow-ups", sessions.Approver);
         Assert.Contains((await responses.CheckAsync("GET", "/api/v1/project-follow-ups", followUps))!["items"]!.AsArray(), i => i!["projectId"]!.GetValue<string>() == projectId.ToString());
+
+        // Review round 7, item 1: the stage plan of the active project, which has none, set once. The stages are in force only for this step: with
+        // them every registration in this suite would need a plan.
+        await StageFixture.PublishAsync(host.Database);
+        try
+        {
+            using HttpResponseMessage stages = await client.GetAsync("/api/v1/project-stages", sessions.Approver);
+            Assert.Equal(6, (await responses.CheckAsync("GET", "/api/v1/project-stages", stages))!["items"]!.AsArray().Count);
+            using HttpResponseMessage plan = await client.GetAsync($"/api/v1/project-stage-plans/{projectId}", sessions.Entity);
+            await responses.CheckAsync("GET", "/api/v1/project-stage-plans/{projectId}", plan);
+            DateOnly start = DateOnly.Parse((await host.RowAsync(projectId))["planned_start_date"]!.GetValue<string>(), System.Globalization.CultureInfo.InvariantCulture);
+            using HttpResponseMessage planned = await client.PutAsync(
+                $"/api/v1/project-stage-plans/{projectId}", sessions.Entity, StageFixture.Plan(start), AdministrationApi.ETagOf(plan));
+            Assert.Equal(1, (await responses.CheckAsync("PUT", "/api/v1/project-stage-plans/{projectId}", planned))!["revisionNo"]!.GetValue<int>());
+        }
+        finally
+        {
+            await StageFixture.WithdrawAsync(host.Database);
+        }
+
+        // Review round 7, item 4: local.r02 saves the approved registration as it stands, with a reason.
+        using HttpResponseMessage beforeEdit = await client.GetAsync(path, sessions.Approver);
+        using HttpResponseMessage registrationEdited = await client.PostAsync($"{path}/edit-registration", sessions.Approver, new
+        {
+            registration = host.Registration(change: r => r["latitude"] = 24.7136),
+            reason = new { text = "تصحيح العنوان", language = "ar" },
+        }, AdministrationApi.ETagOf(beforeEdit));
+        await responses.CheckAsync("POST", $"{item}/edit-registration", registrationEdited);
+
+        // Review round 7, item 2: local.r02 hands the project from local.r08 to local.r05, an internal Project Manager.
+        using HttpResponseMessage beforeChange = await client.GetAsync(path, sessions.Approver);
+        using HttpResponseMessage managerChanged = await client.PostAsync($"{path}/change-manager", sessions.Approver,
+            new { projectManagerUserId = ProjectDriver.Person(5), reason = new { text = "تغيير مدير المشروع", language = "ar" } }, AdministrationApi.ETagOf(beforeChange));
+        Assert.Equal(ProjectDriver.Person(5).ToString(), (await responses.CheckAsync("POST", $"{item}/change-manager", managerChanged))!["projectManagerUserId"]!.GetValue<string>());
+
+        // Review round 8, point 02: local.r02 moves the project from its stage method to its schedule; no update was approved, so no reason is needed.
+        using HttpResponseMessage beforeMethod = await client.GetAsync(path, sessions.Approver);
+        using HttpResponseMessage methodSet = await client.PostAsync($"{path}/set-progress-method", sessions.Approver,
+            new { progressMethod = "SCHEDULE" }, AdministrationApi.ETagOf(beforeMethod));
+        Assert.Equal("SCHEDULE", (await responses.CheckAsync("POST", $"{item}/set-progress-method", methodSet))!["indicators"]!["progress"]!["method"]!.GetValue<string>());
 
         // R3-4: a batch from RPMO's workbook, validated, submitted by local.r03, approved and rolled back by local.r02; a second one returned.
         const string batches = "/api/v1/project-import-batches";
@@ -191,6 +231,35 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         await responses.CheckAsync("GET", "/api/v1/portfolio-insights", insights);
         using HttpResponseMessage card = await client.GetAsync($"/api/v1/portfolio-insights/cards?dimension=PORTFOLIO&itemId={Guid.NewGuid()}", manager);
         await responses.CheckAsync("GET", "/api/v1/portfolio-insights/cards", card);
+
+        // The 17 Nov 2026 designer: the design read, its data catalogue, a preview, a save and a reset, as local.r02 (DASHBOARD_DESIGN) calls them.
+        const string design = "/api/v1/portfolio-insights/design";
+        object visuals = new
+        {
+            visuals = new[]
+            {
+                new
+                {
+                    title = new { ar = "المشاريع", en = "Projects" }, visualType = "CARD", measures = new[] { "PROJECTS" }, groupBy = "NONE",
+                    layoutColumn = 0, layoutRow = 0, layoutWidth = 3, layoutHeight = 2,
+                },
+            },
+        };
+        using HttpResponseMessage standardDesign = await client.GetAsync(design, manager);
+        await responses.CheckAsync("GET", design, standardDesign);
+        using HttpResponseMessage designFields = await client.GetAsync($"{design}/fields", manager);
+        await responses.CheckAsync("GET", $"{design}/fields", designFields);
+        using HttpResponseMessage designPreview = await client.PostAsync($"{design}/preview", manager, visuals);
+        await responses.CheckAsync("POST", $"{design}/preview", designPreview);
+        using HttpResponseMessage designSaved = await client.PutAsync(design, manager, visuals, ifMatch: null);
+        await responses.CheckAsync("PUT", design, designSaved);
+        using HttpResponseMessage designReset = await client.PostAsync($"{design}/reset", manager);
+        Assert.Equal(HttpStatusCode.NoContent, designReset.StatusCode);
+        await responses.CheckAsync("POST", $"{design}/reset", designReset);
+
+        // Review round 8, point 13: what waits on the projects the caller manages.
+        using HttpResponseMessage attention = await client.GetAsync("/api/v1/users/current/managed-project-attention", manager);
+        await responses.CheckAsync("GET", "/api/v1/users/current/managed-project-attention", attention);
 
         Assert.Equal(document.Operations(Tag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);

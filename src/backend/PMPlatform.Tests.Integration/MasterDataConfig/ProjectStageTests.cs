@@ -13,6 +13,11 @@ public sealed class ProjectStageTests(MasterDataConfigTestHost host)
     private static object Stage(string code, string en, int order, decimal weight, bool active = true) =>
         new { code, name = new { ar = en + " ع", en }, sortOrder = order, weightPercent = weight, isActive = active };
 
+    private static readonly string[] SeededStages = ["BUSINESS_CASE", "DESIGN", "TENDERING", "EXECUTION", "TESTING", "HANDOVER"];
+
+    /// <summary>The six stages the seed publishes (review round 7), deactivated: a published stage is kept in every later version, never removed.</summary>
+    private static object[] Kept(params object[] stages) => [.. stages, .. SeededStages.Select((code, i) => Stage(code, code, 11 + i, 0, active: false))];
+
     [Fact]
     public async Task WeightsMustTotal100AndAPublishedStageIsNeverRemovedAndPastDatesKeepTheirWeights()
     {
@@ -20,7 +25,7 @@ public sealed class ProjectStageTests(MasterDataConfigTestHost host)
         Crew crew = await client.SignInCrewAsync();
 
         (Guid badId, string badTag) = await client.CreateVersionAsync(crew, Family);
-        using (HttpResponseMessage put = await client.PutAsync($"{ConfigurationApi.Versions}/{badId}", crew.Author, ConfigurationApi.Update(new { projectStages = new[] { Stage("A", "Plan", 1, 60) } }), badTag))
+        using (HttpResponseMessage put = await client.PutAsync($"{ConfigurationApi.Versions}/{badId}", crew.Author, ConfigurationApi.Update(new { projectStages = Kept(Stage("A", "Plan", 1, 60)) }), badTag))
         {
             Assert.Equal(HttpStatusCode.OK, put.StatusCode);
         }
@@ -36,11 +41,11 @@ public sealed class ProjectStageTests(MasterDataConfigTestHost host)
         }
 
         (Guid first, string firstTag) = await client.CreateVersionAsync(crew, Family);
-        await client.WriteAndPublishAsync(crew, first, firstTag, new { projectStages = new[] { Stage("A", "Plan", 1, 40), Stage("B", "Build", 2, 60) } });
+        await client.WriteAndPublishAsync(crew, first, firstTag, new { projectStages = Kept(Stage("A", "Plan", 1, 40), Stage("B", "Build", 2, 60)) });
         DateTimeOffset before = host.Clock.GetUtcNow();
 
         (Guid removing, string removingTag) = await client.CreateVersionAsync(crew, Family);
-        using (HttpResponseMessage put = await client.PutAsync($"{ConfigurationApi.Versions}/{removing}", crew.Author, ConfigurationApi.Update(new { projectStages = new[] { Stage("A", "Plan", 1, 100) } }), removingTag))
+        using (HttpResponseMessage put = await client.PutAsync($"{ConfigurationApi.Versions}/{removing}", crew.Author, ConfigurationApi.Update(new { projectStages = Kept(Stage("A", "Plan", 1, 100)) }), removingTag))
         {
             Assert.Equal(HttpStatusCode.OK, put.StatusCode);
         }
@@ -56,7 +61,7 @@ public sealed class ProjectStageTests(MasterDataConfigTestHost host)
 
         host.Clock.Advance(TimeSpan.FromMinutes(1));
         (Guid second, string secondTag) = await client.CreateVersionAsync(crew, Family, first);
-        await client.WriteAndPublishAsync(crew, second, secondTag, new { projectStages = new[] { Stage("A", "Planning", 1, 100), Stage("B", "Build", 2, 0, active: false) } });
+        await client.WriteAndPublishAsync(crew, second, secondTag, new { projectStages = Kept(Stage("A", "Planning", 1, 100), Stage("B", "Build", 2, 0, active: false)) });
 
         JsonArray now = await StagesAsync(client, crew, null);
         Assert.Equal((100m, "Planning"), (now[0]!["weightPercent"]!.GetValue<decimal>(), now[0]!["name"]!["en"]!.GetValue<string>()));

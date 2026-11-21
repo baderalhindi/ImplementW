@@ -1,13 +1,16 @@
 import { type ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar, type FilterBarField } from '@/shared/ui/FilterBar.tsx';
 import { TextField } from '@/shared/ui/FormFields.tsx';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
 
 import { PROJECT_STATUSES } from '../presentation.ts';
+import { stagePlanApi } from '../stagePlan/stagePlanApi.ts';
 import { type ProjectCatalogueCode, type ProjectLookups } from '../useProjectLookups.ts';
+import { NO_STAGE, NOT_MEASURED } from './projectFilterValues.ts';
 
 interface ProjectFiltersProps {
   q: string;
@@ -36,9 +39,10 @@ export function ProjectFilters({
   onSearch,
   onFilter,
 }: ProjectFiltersProps): ReactElement {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const navigate = useNavigate();
   const [text, setText] = useSearchText(q, onSearch);
+  const stages = useApiResource(stagePlanApi.stages);
 
   // A department or entity filter needs their names; without them it is not offered (F-1).
   const organizationReadable = lookups.organizationError === null;
@@ -124,6 +128,44 @@ export function ProjectFilters({
           all: t('dashboards.filter.all.period'),
           options: PERIOD_OPTIONS,
         },
+        // What a dashboard count opens the register with (review round 8, point 01): each shows as a chip that removes it.
+        {
+          name: 'registered',
+          more: true,
+          label: t('projects.filters.registered'),
+          all: t('projects.filters.allRegistered'),
+          options: [{ value: 'true', label: t('projects.filters.registeredOnly') }],
+        },
+        {
+          name: 'stage',
+          more: true,
+          label: t('projects.filters.stage'),
+          all: t('projects.filters.allStages'),
+          options: [
+            ...(stages.data ?? []).map((stage) => ({
+              value: stage.stageCode,
+              label: stage.name[language],
+            })),
+            { value: NO_STAGE, label: t('dashboards.insights.noCurrentStage') },
+          ],
+        },
+        {
+          name: 'onPlan',
+          more: true,
+          label: t('projects.filters.onPlan'),
+          all: t('projects.filters.allOnPlan'),
+          options: [
+            ...ON_PLAN_STATUSES.map((value) => ({ value, label: t(`projects.onPlan.${value}`) })),
+            { value: NOT_MEASURED, label: t('dashboards.insights.notMeasured') },
+          ],
+        },
+        {
+          name: 'measured',
+          more: true,
+          label: t('projects.filters.measured'),
+          all: t('projects.filters.allMeasured'),
+          options: [{ value: 'true', label: t('projects.filters.measuredOnly') }],
+        },
       ]
     : [
         {
@@ -165,6 +207,7 @@ export function ProjectFilters({
               { value: 'title:desc', label: t('projects.sort.TitleDescending') },
               { value: 'formalProjectId:asc', label: t('projects.sort.FormalIdAscending') },
               { value: 'formalProjectId:desc', label: t('projects.sort.FormalIdDescending') },
+              { value: 'value:desc', label: t('projects.sort.ValueDescending') },
             ],
           },
         ]}
@@ -184,6 +227,8 @@ export function ProjectFilters({
     </>
   );
 }
+
+const ON_PLAN_STATUSES = ['ON_TRACK', 'LATE', 'STALLED'] as const;
 
 /** The register cannot count projects per year, so it offers the ten years either side of this one. */
 const PERIOD_OPTIONS = Array.from({ length: 21 }, (_, i) =>

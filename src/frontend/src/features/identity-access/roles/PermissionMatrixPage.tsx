@@ -166,7 +166,7 @@ export function PermissionMatrixPage(): ReactElement {
       />
 
       {permissions.length === 0 || columns.length === 0 ? (
-        <EmptyState title={t('identityAccess.permissionMatrix.empty')} />
+        <EmptyState title={t('identityAccess.permissionMatrix.empty')} reason="setup" />
       ) : (
         <TableContainer caption={t('identityAccess.permissionMatrix.caption')}>
           <thead>

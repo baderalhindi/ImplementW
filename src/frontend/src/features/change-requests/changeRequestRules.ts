@@ -1,6 +1,7 @@
 import { checkText } from '@/features/identity-access/forms.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { moneyString, TEXT_LENGTH } from '@/features/projects/registration.ts';
+import { withoutZeroFraction } from '@/shared/forms/amountInput.ts';
 import { type FieldCodes } from '@/shared/forms/useFieldErrors.ts';
 import { type Language } from '@/shared/i18n/i18n.ts';
 
@@ -75,7 +76,7 @@ export function changeRequestFormValuesOf(request: ChangeRequestDetail): ChangeR
     changeType: request.changeType,
     title: request.title.text,
     justification: request.justification.text,
-    costImpactSar: request.costImpactSar ?? '',
+    costImpactSar: withoutZeroFraction(request.costImpactSar ?? ''),
     scheduleImpactDays:
       request.scheduleImpactDays === null ? '' : String(request.scheduleImpactDays),
     scopeImpact: request.scopeImpact?.text ?? '',

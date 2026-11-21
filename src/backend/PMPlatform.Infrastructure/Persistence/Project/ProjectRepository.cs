@@ -32,6 +32,20 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
 
     public async Task<(IReadOnlyList<ProjectEntity> Items, int TotalCount)> ListAsync(RecordScope scope, ProjectQuery query, CancellationToken cancellationToken)
     {
+        IQueryable<ProjectEntity> rows = Matching(scope, query);
+        int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);
+        List<ProjectEntity> items = await Ordered(rows, query.Sort)
+            .Skip(query.Page.Skip).Take(query.Page.PageSize)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return (items, total);
+    }
+
+    public async Task<IReadOnlyList<ProjectEntity>> ListMatchingAsync(RecordScope scope, ProjectQuery query, CancellationToken cancellationToken) =>
+        await Ordered(Matching(scope, query), query.Sort).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    private IQueryable<ProjectEntity> Matching(RecordScope scope, ProjectQuery query)
+    {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(query);
 
@@ -92,6 +106,20 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
                                    && (p.PlannedEndDate ?? p.PlannedStartDate) >= first);
         }
 
+        if (query.Registered)
+        {
+            List<Domain.Project.ProjectLifecycleState> registering = [.. Domain.Project.ProjectLifecycleStates.Registering];
+            rows = rows.Where(p => !registering.Contains(p.LifecycleState));
+        }
+
+        if (query.CurrentStage is { } stage)
+        {
+            List<string> known = [.. query.KnownStageCodes];
+            rows = stage == ProjectQuery.NoStage
+                ? rows.Where(p => p.CurrentStageCode == null || !known.Contains(p.CurrentStageCode))
+                : rows.Where(p => p.CurrentStageCode == stage);
+        }
+
         if (query.ProjectManagerUserId is { } projectManagerUserId)
         {
             rows = rows.Where(p => p.ProjectManagerUserId == projectManagerUserId);
@@ -104,8 +132,12 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
                 || EF.Functions.ILike(p.LegacyReference!, pattern, AdministrationPersistence.LikeEscape));
         }
 
-        int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);
-        IOrderedQueryable<ProjectEntity> ordered = query.Sort switch
+        return rows;
+    }
+
+    private static IQueryable<ProjectEntity> Ordered(IQueryable<ProjectEntity> rows, ProjectSort sort)
+    {
+        IOrderedQueryable<ProjectEntity> ordered = sort switch
         {
             ProjectSort.UpdatedAscending => rows.OrderBy(p => p.UpdatedAt),
             ProjectSort.TitleAscending => rows.OrderBy(p => p.Title.Text),
@@ -113,13 +145,11 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
             ProjectSort.FormalIdAscending => rows.OrderBy(p => p.FormalProjectId),
             ProjectSort.FormalIdDescending => rows.OrderByDescending(p => p.FormalProjectId),
             ProjectSort.UpdatedDescending => rows.OrderByDescending(p => p.UpdatedAt),
-            _ => throw new ArgumentOutOfRangeException(nameof(query), query.Sort, "Unknown sort."),
+            // PostgreSQL puts nulls first in a descending order: a project with no value goes last.
+            ProjectSort.ValueDescending => rows.OrderBy(p => p.RegistrationBudgetSar == null).ThenByDescending(p => p.RegistrationBudgetSar),
+            _ => throw new ArgumentOutOfRangeException(nameof(sort), sort, "Unknown sort."),
         };
-        List<ProjectEntity> items = await ordered.ThenByDescending(p => p.Id)
-            .Skip(query.Page.Skip).Take(query.Page.PageSize)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-        return (items, total);
+        return ordered.ThenByDescending(p => p.Id);
     }
 
     public async Task<IReadOnlyList<ProjectEntity>> ListReachedAsync(RecordScope scope, CancellationToken cancellationToken)
@@ -172,6 +202,17 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
 
     public async Task RemoveFollowUpNotesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
         context.RemoveRange(await context.Set<ProjectFollowUpNote>().Where(n => projectIds.Contains(n.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false));
+
+    public async Task<IReadOnlyList<ProjectStagePlanEntry>> ListStagePlanAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await context.Set<ProjectStagePlanEntry>().Where(e => e.ProjectId == projectId).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<ILookup<Guid, ProjectStagePlanEntry>> ReadStagePlansAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        projectIds.Count == 0
+            ? Array.Empty<ProjectStagePlanEntry>().ToLookup(e => e.ProjectId)
+            : (await context.Set<ProjectStagePlanEntry>().AsNoTracking().Where(e => projectIds.Contains(e.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false))
+                .ToLookup(e => e.ProjectId);
+
+    public void Add(ProjectStagePlanEntry entry) => context.Add(entry);
 
     public void Remove(ProjectEntity project) => context.Remove(project);
 

@@ -10,8 +10,16 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { TextAreaField } from '@/shared/ui/FormFields.tsx';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
-import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import {
+  type EmptyReason,
+  EmptyState,
+  ErrorState,
+  FormAlert,
+  LoadingState,
+} from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { integrationAdminApi } from '../api/integrationAdminApi.ts';
 import { type OperationalAlertQuery, type OperationalAlertView } from '../api/types.ts';
@@ -31,6 +39,8 @@ interface AlertListProps {
   query: OperationalAlertQuery;
   caption: string;
   emptyTitle: string;
+  /** Why the list is empty (review round 8, point 09). */
+  emptyReason: EmptyReason;
   /** Read again this often, in milliseconds (ADM-047, TASK-092). */
   refreshEvery?: number;
 }
@@ -45,11 +55,13 @@ export function AlertList({
   query,
   caption,
   emptyTitle,
+  emptyReason,
   refreshEvery,
 }: AlertListProps): ReactElement {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
-  const [acknowledging, setAcknowledging] = useState<OperationalAlertView | null>(null);
+  /** The alerts an Acknowledge confirmation is open for: one row's, or the chosen ones'. */
+  const [acknowledging, setAcknowledging] = useState<OperationalAlertView[] | null>(null);
   const [closing, setClosing] = useState<Closing>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const key = JSON.stringify(query);
@@ -64,6 +76,12 @@ export function AlertList({
   );
   const alerts = useApiResource(load, { keepWhileReloading: true });
   useRefresh(alerts.reload, refreshEvery);
+  const selection = useRowSelection();
+  const nameOf = (alert: OperationalAlertView) =>
+    `${t(`integrationAdmin.alertType.${alert.alertType}`)} — ${alert.integrationCode}`;
+  const chosenOpen = (alerts.data?.items ?? []).filter(
+    (alert) => selection.selected.has(alert.id) && alert.status === 'OPEN',
+  );
 
   const done = (message: string) => {
     setAcknowledging(null);
@@ -85,13 +103,36 @@ export function AlertList({
         />
       );
   } else if (alerts.data.items.length === 0) {
-    content = <EmptyState title={emptyTitle} />;
+    content = <EmptyState title={emptyTitle} reason={emptyReason} />;
   } else {
     content = (
       <>
-        <TableContainer caption={caption}>
+        <TableContainer
+          caption={caption}
+          selection={{
+            selection,
+            exportName: 'integration-alerts',
+            actions:
+              chosenOpen.length > 0 ? (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setNotice(null);
+                    setAcknowledging(chosenOpen);
+                  }}
+                >
+                  {t('integrationAdmin.actions.acknowledge')}
+                </button>
+              ) : undefined,
+          }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={alerts.data.items.map((alert) => alert.id)}
+                selection={selection}
+              />
               <th scope="col">{t('integrationAdmin.fields.raisedAt')}</th>
               <th scope="col">{t('integrationAdmin.fields.integration')}</th>
               <th scope="col">{t('integrationAdmin.fields.alertType')}</th>
@@ -104,6 +145,7 @@ export function AlertList({
           <tbody>
             {alerts.data.items.map((alert) => (
               <tr key={alert.id} data-alert={alert.id} data-alert-status={alert.status}>
+                <SelectRowCell id={alert.id} name={nameOf(alert)} selection={selection} />
                 <td>
                   <Moment value={alert.raisedAt} />
                 </td>
@@ -144,12 +186,12 @@ export function AlertList({
                     </span>
                   )}
                 </td>
-                <td className="cell--actions cell--actions-wrap">
+                <td className="cell--actions">
                   <AlertActions
                     alert={alert}
                     onAcknowledge={() => {
                       setNotice(null);
-                      setAcknowledging(alert);
+                      setAcknowledging([alert]);
                     }}
                     onClose={(outcome) => {
                       setNotice(null);
@@ -181,10 +223,20 @@ export function AlertList({
             ? null
             : {
                 title: t('integrationAdmin.alerts.acknowledgeTitle'),
-                body: t('integrationAdmin.alerts.acknowledgeBody'),
+                body:
+                  acknowledging.length === 1
+                    ? t('integrationAdmin.alerts.acknowledgeBody')
+                    : `${acknowledging.map(nameOf).join('، ')} — ${t('integrationAdmin.alerts.acknowledgeBody')}`,
                 confirmLabel: t('integrationAdmin.actions.acknowledge'),
                 destructive: false,
-                action: () => integrationAdminApi.acknowledgeAlert(acknowledging.id),
+                action: async () => {
+                  for (const alert of acknowledging) {
+                    await integrationAdminApi.acknowledgeAlert(alert.id);
+                  }
+                  if (acknowledging.length > 1) {
+                    selection.clear();
+                  }
+                },
                 describeProblem: integrationProblemMessage,
               }
         }
@@ -231,7 +283,7 @@ function AlertActions({
     <span className="visually-hidden">{t(`integrationAdmin.alertType.${alert.alertType}`)}</span>
   );
   return (
-    <span className="actions-group">
+    <span className="row-actions">
       {alert.status === 'OPEN' && (
         <button type="button" className="button" onClick={onAcknowledge}>
           {t('integrationAdmin.actions.acknowledge')} {subject}
@@ -304,7 +356,7 @@ function CloseAlertForm({
     const result = await save.run(() =>
       integrationAdminApi.closeAlert(alert.id, outcome, {
         text: note.trim(),
-        language: language === 'ar' ? 'AR' : 'EN',
+        language,
       }),
     );
     if (result.ok) {

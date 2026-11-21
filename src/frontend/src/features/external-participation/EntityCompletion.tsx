@@ -1,36 +1,37 @@
-import { type ReactElement, useCallback, useState } from 'react';
-import { Link } from 'react-router';
+import { type ReactElement, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router';
 
+import {
+  type HiddenColumns,
+  NO_HIDDEN_COLUMNS,
+} from '@/features/dashboards/design/sectionColumns.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { apiRequest } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { SelectField } from '@/shared/ui/FormFields.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
+import {
+  bandOf,
+  COMPLETION_BAND_PARAM,
+  CompletionPeriodContext,
+  ENTITY_COMPLETION_ANCHOR,
+  isCompletionBand,
+  type EntityCompletionPage,
+  type Period,
+  PERIODS,
+  percent,
+  useCompletionPeriod,
+} from './entityCompletion.ts';
 import { PARTICIPATION_MONITOR_PATH } from './paths.ts';
 import { participationProblemMessage } from './problems.ts';
 import { useEntityNames } from './useExternalParticipationData.ts';
 
 // Items 9 and 10 of review round 5: one definition, so an entity and AHDA read the same number. The API does the counting.
-
-const PERIODS = ['ThisMonth', 'LastThreeMonths', 'ThisYear'] as const;
-type Period = (typeof PERIODS)[number];
-
-interface EntityCompletionRow {
-  externalEntityId: string;
-  issued: number;
-  submitted: number;
-  accepted: number;
-  overdue: number;
-  completionPercent: number;
-}
-
-interface EntityCompletionPage {
-  items: EntityCompletionRow[];
-  averagePercent: number | null;
-}
 
 interface OwnEntityCompletion {
   issued: number;
@@ -63,9 +64,13 @@ function PeriodField({
   );
 }
 
-/** Whole points when it is a whole number, else the two places the API keeps. */
-function percent(value: number): string {
-  return `${String(Number(value.toFixed(2)))}%`;
+export function CompletionPeriodProvider({ children }: { children: ReactNode }): ReactElement {
+  const [period, setPeriod] = useState<Period>('ThisMonth');
+  return (
+    <CompletionPeriodContext.Provider value={{ period, setPeriod }}>
+      {children}
+    </CompletionPeriodContext.Provider>
+  );
 }
 
 /** The entity's dashboard: its rate in one chart with the all-entity average as a marked line, and no other entity. */
@@ -104,7 +109,7 @@ export function OwnEntityCompletionCard(): ReactElement {
           />
         )
       ) : own === null ? (
-        <EmptyState title={t('externalParticipation.completion.ownEmpty')} />
+        <EmptyState title={t('externalParticipation.completion.ownEmpty')} reason="period" />
       ) : (
         <>
           <p className="completion__figure">
@@ -146,15 +151,24 @@ export function OwnEntityCompletionCard(): ReactElement {
   );
 }
 
-/** AHDA's dashboard: every entity it may see, lowest rate first, each opening the participation monitor filtered to it. */
-export function EntityCompletionPanel(): ReactElement | null {
-  return useCan('EXTERNAL_REQUEST_VIEW') ? <EntityCompletionTable /> : null;
+/**
+ * AHDA's dashboard: every entity it may see, lowest rate first, each opening the participation monitor filtered to it. The donut's bands and its
+ * "see more" open it here (review round 8, point 03): a band in the address shows that band's entities only, with a way back to all of them.
+ */
+export function EntityCompletionPanel({
+  hidden = NO_HIDDEN_COLUMNS,
+}: {
+  /** The columns a dashboard design leaves out (dashboards/design/sectionColumns.ts). */
+  hidden?: HiddenColumns;
+}): ReactElement | null {
+  return useCan('EXTERNAL_REQUEST_VIEW') ? <EntityCompletionTable hidden={hidden} /> : null;
 }
 
-function EntityCompletionTable(): ReactElement {
+function EntityCompletionTable({ hidden }: { hidden: HiddenColumns }): ReactElement {
   const { t } = useI18n();
+  const shown = (code: string) => !hidden.has(code);
   const entityName = useEntityNames();
-  const [period, setPeriod] = useState<Period>('ThisMonth');
+  const { period, setPeriod } = useCompletionPeriod();
   const load = useCallback(
     async (signal: AbortSignal) =>
       (
@@ -166,8 +180,33 @@ function EntityCompletionTable(): ReactElement {
     [period],
   );
   const rates = useApiResource(load);
+  const selection = useRowSelection();
+  const location = useLocation();
+  const section = useRef<HTMLElement>(null);
+  const bandParam = new URLSearchParams(location.search).get(COMPLETION_BAND_PARAM);
+  const band = isCompletionBand(bandParam) ? bandParam : null;
+  const rows = (rates.data?.items ?? []).filter(
+    (row) => band === null || bandOf(row.completionPercent) === band,
+  );
+  const allEntities = (() => {
+    const query = new URLSearchParams(location.search);
+    query.delete(COMPLETION_BAND_PARAM);
+    return `${location.pathname}?${query.toString()}#${ENTITY_COMPLETION_ANCHOR}`;
+  })();
+  const loaded = rates.data !== undefined;
+  // A link to the table names its anchor: the dashboard above it is long, so the page moves to the table once it has rows to show.
+  useEffect(() => {
+    if (loaded && location.hash === `#${ENTITY_COMPLETION_ANCHOR}`) {
+      section.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [loaded, location.hash, location.search]);
   return (
-    <section className="completion" aria-label={t('externalParticipation.completion.title')}>
+    <section
+      ref={section}
+      id={ENTITY_COMPLETION_ANCHOR}
+      className="completion"
+      aria-label={t('externalParticipation.completion.title')}
+    >
       <div className="section__header">
         <h2>{t('externalParticipation.completion.title')}</h2>
         <PeriodField value={period} onChange={setPeriod} />
@@ -183,9 +222,18 @@ function EntityCompletionTable(): ReactElement {
           />
         )
       ) : rates.data.items.length === 0 ? (
-        <EmptyState title={t('externalParticipation.completion.empty')} />
+        <EmptyState title={t('externalParticipation.completion.empty')} reason="period" />
       ) : (
         <>
+          {band !== null && (
+            <p className="notice" role="status">
+              {t('externalParticipation.completion.bandFilter', {
+                band: t(`dashboards.insights.completionBands.${band}`),
+                count: rows.length,
+              })}{' '}
+              <Link to={allEntities}>{t('externalParticipation.completion.showAll')}</Link>
+            </p>
+          )}
           {rates.data.averagePercent !== null && (
             <p className="completion__legend">
               {t('externalParticipation.completion.average', {
@@ -193,20 +241,42 @@ function EntityCompletionTable(): ReactElement {
               })}
             </p>
           )}
-          <TableContainer caption={t('externalParticipation.completion.title')}>
+          <TableContainer
+            caption={t('externalParticipation.completion.title')}
+            selection={{ selection, exportName: 'entity-completion' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={rows.map((row) => row.externalEntityId)}
+                  selection={selection}
+                />
                 <th scope="col">{t('externalParticipation.table.entity')}</th>
-                <th scope="col">{t('externalParticipation.completion.issued')}</th>
-                <th scope="col">{t('externalParticipation.completion.submitted')}</th>
-                <th scope="col">{t('externalParticipation.completion.accepted')}</th>
-                <th scope="col">{t('externalParticipation.completion.overdue')}</th>
-                <th scope="col">{t('externalParticipation.completion.percent')}</th>
+                {shown('ISSUED') && (
+                  <th scope="col">{t('externalParticipation.completion.issued')}</th>
+                )}
+                {shown('SUBMITTED') && (
+                  <th scope="col">{t('externalParticipation.completion.submitted')}</th>
+                )}
+                {shown('ACCEPTED') && (
+                  <th scope="col">{t('externalParticipation.completion.accepted')}</th>
+                )}
+                {shown('OVERDUE') && (
+                  <th scope="col">{t('externalParticipation.completion.overdue')}</th>
+                )}
+                {shown('PERCENT') && (
+                  <th scope="col">{t('externalParticipation.completion.percent')}</th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {rates.data.items.map((row) => (
+              {rows.map((row) => (
                 <tr key={row.externalEntityId}>
+                  <SelectRowCell
+                    id={row.externalEntityId}
+                    name={entityName(row.externalEntityId)}
+                    selection={selection}
+                  />
                   <td>
                     <Link
                       to={`${PARTICIPATION_MONITOR_PATH}?externalEntityId=${row.externalEntityId}`}
@@ -214,11 +284,11 @@ function EntityCompletionTable(): ReactElement {
                       {entityName(row.externalEntityId)}
                     </Link>
                   </td>
-                  <td dir="ltr">{row.issued}</td>
-                  <td dir="ltr">{row.submitted}</td>
-                  <td dir="ltr">{row.accepted}</td>
-                  <td dir="ltr">{row.overdue}</td>
-                  <td dir="ltr">{percent(row.completionPercent)}</td>
+                  {shown('ISSUED') && <td dir="ltr">{row.issued}</td>}
+                  {shown('SUBMITTED') && <td dir="ltr">{row.submitted}</td>}
+                  {shown('ACCEPTED') && <td dir="ltr">{row.accepted}</td>}
+                  {shown('OVERDUE') && <td dir="ltr">{row.overdue}</td>}
+                  {shown('PERCENT') && <td dir="ltr">{percent(row.completionPercent)}</td>}
                 </tr>
               ))}
             </tbody>

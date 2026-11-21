@@ -1,5 +1,5 @@
 import { type ReactElement, useCallback, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -38,7 +38,11 @@ export function DocumentDetailPage(): ReactElement {
     [documentId],
   );
   const resource = useApiResource(load);
-  const [dialog, setDialog] = useState<OpenDialog>(null);
+  const [params] = useSearchParams();
+  // The library's Edit lands here with ?edit=1: the details form opens on arrival.
+  const [dialog, setDialog] = useState<OpenDialog>(() =>
+    params.get('edit') === '1' ? 'edit' : null,
+  );
   const [notice, setNotice] = useState<Notice | null>(null);
   // A version added through MOD-052: the page reads again when the dialog closes, so the dialog can show the scan.
   const [versionAdded, setVersionAdded] = useState(false);

@@ -1,4 +1,5 @@
 using System.Globalization;
+using PMPlatform.Application.Common.Validation;
 using PMPlatform.Application.Features.ExternalParticipation.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
@@ -15,6 +16,8 @@ internal static class ContributionValues
     public const int MaxFractionDigits = 4;
 
     private const string DateFormat = "yyyy-MM-dd";
+
+    private const int MaxCodeLength = 50;
 
     /// <summary>The values in canonical form, in the order given; or the first refusal, naming every field it concerns.</summary>
     public static AdministrationResult<IReadOnlyList<ContributionFieldValue>> Normalize(ContributionSchema schema, IReadOnlyList<ContributionFieldInput> inputs)
@@ -62,6 +65,11 @@ internal static class ContributionValues
         ArgumentNullException.ThrowIfNull(schema);
         HashSet<string> present = [.. answered];
         FieldIssue[] missing = [.. schema.Fields.Where(f => f.Required && !present.Contains(f.FieldCode)).Select(f => new FieldIssue(f.FieldCode, FieldIssue.Required))];
+        if (missing.Length == 0 && schema.RequiredOneOf is { Count: > 0 } groups && !groups.Any(group => group.All(present.Contains)))
+        {
+            missing = [.. groups[0].Where(field => !present.Contains(field)).Select(field => new FieldIssue(field, FieldIssue.Required))];
+        }
+
         return missing.Length > 0 ? AdministrationError.Rule(ExternalParticipationErrorCodes.RequiredItemMissing, missing) : null;
     }
 
@@ -83,6 +91,7 @@ internal static class ContributionValues
             ContributionFieldType.Date => DateOnly.TryParseExact(input.Value, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly date)
                 ? date.ToString(DateFormat, CultureInfo.InvariantCulture)
                 : null,
+            ContributionFieldType.Code => input.Value.Trim() is { Length: <= MaxCodeLength } code && TextShape.IsCode(code) ? code : null,
             _ => throw new ArgumentOutOfRangeException(nameof(field), field.FieldType, "Unknown field type."),
         };
     }

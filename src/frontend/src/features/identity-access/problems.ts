@@ -32,6 +32,9 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_PROJECT_CLOSED: 'identityAccess.problems.projectClosed',
   IDENTITY_ACCESS_SELF_ADMINISTRATION: 'identityAccess.problems.selfAdministration',
   IDENTITY_ACCESS_SERVICE_PRINCIPAL: 'identityAccess.problems.servicePrincipal',
+  IDENTITY_ACCESS_USER_HAS_NO_ROLE: 'identityAccess.problems.userHasNoRole',
+  IDENTITY_ACCESS_DEPARTMENT_IN_USE: 'identityAccess.problems.departmentInUse',
+  RECORD_APPROVAL_PENDING: 'common.problems.approvalPending',
   IDENTITY_ACCESS_DIRECTORY_AUTHORITATIVE: 'identityAccess.problems.directoryAuthoritative',
   IDENTITY_ACCESS_INVALID_PERIOD: 'identityAccess.problems.invalidPeriod',
   IDENTITY_ACCESS_DEPARTMENT_CYCLE: 'identityAccess.problems.departmentCycle',
@@ -47,6 +50,13 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_ROLE_IN_USE: 'identityAccess.problems.roleInUse',
   IDENTITY_ACCESS_ROLE_INACTIVE: 'identityAccess.problems.roleInactive',
   IDENTITY_ACCESS_ROLE_SYSTEM: 'identityAccess.problems.roleSystem',
+  IDENTITY_ACCESS_RECENT_SIGN_IN_REQUIRED: 'identityAccess.problems.recentSignInRequired',
+  IDENTITY_ACCESS_PASSKEY_REJECTED: 'identityAccess.problems.passkeyRejected',
+  IDENTITY_ACCESS_MOBILE_NUMBER_MISSING: 'identityAccess.problems.mobileNumberMissing',
+  IDENTITY_ACCESS_MOBILE_VERIFICATION_FAILED: 'identityAccess.problems.mobileVerificationFailed',
+  IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED: 'identityAccess.problems.nationalIdNotRegistered',
+  IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH: 'identityAccess.problems.mobileNumberMismatch',
+  IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT: 'identityAccess.problems.smsCodeRecentlySent',
 };
 
 const FIELD_MESSAGES: Record<string, TranslationKey> = {
@@ -67,6 +77,10 @@ const FIELD_MESSAGES: Record<string, TranslationKey> = {
   PASSWORD_INCORRECT: 'identityAccess.fieldErrors.passwordIncorrect',
   PASSWORD_REJECTED_BY_DIRECTORY: 'identityAccess.fieldErrors.passwordRejectedByDirectory',
   PASSWORD_MISMATCH: 'identityAccess.fieldErrors.passwordMismatch',
+  NOT_ARABIC: 'common.fieldErrors.notArabic',
+  NOT_ENGLISH: 'common.fieldErrors.notEnglish',
+  NOT_REGISTERED: 'identityAccess.fieldErrors.nationalIdNotRegistered',
+  MISMATCH: 'identityAccess.fieldErrors.mobileNumberMismatch',
 };
 
 export function problemMessage(error: unknown, t: Translate): string {

@@ -178,4 +178,20 @@ public sealed class DocumentsController(IDocumentService documents, DocumentUplo
             _ => throw new InvalidOperationException("Unknown upload refusal."),
         };
     }
+
+    /// <summary>Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.</summary>
+    [HttpDelete("{documentId:guid}")]
+    [RequirePermission(PermissionCatalogue.DocumentManage)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [EndpointName("DocumentManagement_DeleteDocument")]
+    public async Task<IActionResult> Delete(Guid documentId, CancellationToken cancellationToken)
+    {
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationError? error = await documents.DeleteAsync(CallerId, documentId, version, cancellationToken);
+        return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
+    }
 }

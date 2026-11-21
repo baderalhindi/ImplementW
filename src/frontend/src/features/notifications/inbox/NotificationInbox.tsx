@@ -7,8 +7,10 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { notificationsApi } from '../api/notificationsApi.ts';
 import { type NotificationFamilyPreference, type NotificationSummary } from '../api/types.ts';
@@ -93,7 +95,7 @@ export function NotificationInbox({
           {families.loading && <LoadingState label={t('notifications.list.loading')} />}
           {families.error !== null &&
             (isConfigurationMissing(families.error) ? (
-              <EmptyState title={t(`notifications.${kind}.noFamilies`)} />
+              <EmptyState title={t(`notifications.${kind}.noFamilies`)} reason="setup" />
             ) : (
               <ErrorState
                 error={families.error}
@@ -103,7 +105,7 @@ export function NotificationInbox({
             ))}
           {families.data !== undefined &&
             (choosable.length === 0 ? (
-              <EmptyState title={t(`notifications.${kind}.noFamilies`)} />
+              <EmptyState title={t(`notifications.${kind}.noFamilies`)} reason="setup" />
             ) : (
               <NotificationList
                 caption={title}
@@ -156,6 +158,7 @@ function NotificationList({
   const { t, language, formatDateTime } = useI18n();
   const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const [openId, setOpenId] = useState<string | null>(null);
+  const selection = useRowSelection();
   const readState = READ_STATES.find((candidate) => candidate === params.get('state'));
   const requested = params.get('family');
   const family =
@@ -232,12 +235,20 @@ function NotificationList({
         (notifications.data.items.length === 0 ? (
           <EmptyState
             title={filtered ? t('notifications.list.emptyFiltered') : t('notifications.list.empty')}
+            reason={filtered ? 'filter' : 'notYet'}
           />
         ) : (
           <>
-            <TableContainer caption={caption}>
+            <TableContainer
+              caption={caption}
+              selection={{ selection, exportName: 'notifications' }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={notifications.data.items.map((notification) => notification.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('notifications.fields.status')}</th>
                   <th scope="col">{t('notifications.fields.notification')}</th>
                   <th scope="col">{t('notifications.fields.family')}</th>
@@ -251,6 +262,7 @@ function NotificationList({
                     notification={notification}
                     familyName={familyLabel(families, notification.eventFamilyCode, language)}
                     receivedAt={formatDateTime(notification.sentAt ?? notification.occurredAt)}
+                    selection={selection}
                     onOpen={() => {
                       setOpenId(notification.id);
                     }}
@@ -285,16 +297,19 @@ function NotificationRow({
   familyName,
   receivedAt,
   onOpen,
+  selection,
 }: {
   notification: NotificationSummary;
   familyName: string;
   receivedAt: string;
   onOpen: () => void;
+  selection: RowSelection;
 }): ReactElement {
   const { t } = useI18n();
   const unread = isUnread(notification);
   return (
     <tr className={unread ? 'row--unread' : undefined}>
+      <SelectRowCell id={notification.id} name={headline(notification)} selection={selection} />
       <td>
         <StatusBadge
           label={t(unread ? 'notifications.readState.unread' : 'notifications.readState.read')}

@@ -1,3 +1,5 @@
+import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
+
 // The WF-01 representations (TASK-041, project-registration.md §4) as the API serialises them: enums in
 // SNAKE_CASE_UPPER, ids as strings, dates as ISO 8601, money as R-16 decimal strings.
 
@@ -92,6 +94,45 @@ export interface ProjectIndicators {
   followUpReasons: FollowUpReason[];
   /** Whether the entity keeps to its updates: calculated from on-time answers, overridden by what RPMO recorded. */
   entityUpdates?: EntityUpdateCompliance | null;
+  /** The project's one overall figure, by its method (review round 8, point 02); the gap is calculated from it. */
+  progress?: ProjectOverallProgress | null;
+}
+
+/** Where a project's declared progress came from (R3-3). */
+export type DeclaredSource = 'IMPORT' | 'MANUAL' | 'ENTITY_UPDATE' | 'PROGRESS_UPDATE';
+
+/** How a project's overall progress is calculated (review round 8, point 02). */
+export type ProgressMethod = 'SCHEDULE' | 'STAGES';
+
+export const PROGRESS_METHODS: readonly ProgressMethod[] = ['STAGES', 'SCHEDULE'];
+
+/** Where the overall figure comes from: the method, or the declared figure while there is none. */
+export type ProgressFigureSource = 'SCHEDULE' | 'STAGES' | 'DECLARED';
+
+/** One stage of a stage-method figure: weight, whether it applies, planned % today and % complete. */
+export interface ProjectStageFigure {
+  stageCode: string;
+  name: BilingualLabel;
+  weightPercent: number;
+  applies: boolean;
+  plannedPercent: number | null;
+  percentComplete: number | null;
+}
+
+/**
+ * The project's one overall progress figure, the same on the Overview, the register, the dashboards and the cards. `needsSetup` while there is no method
+ * or the stage method has no plan; `methodChangeNeedsReason` once a progress update was approved.
+ */
+export interface ProjectOverallProgress {
+  method: ProgressMethod | null;
+  source: ProgressFigureSource | null;
+  actualPercent: number | null;
+  plannedPercent: number | null;
+  asOf: string | null;
+  currentStageCode: string | null;
+  stages: ProjectStageFigure[];
+  needsSetup: boolean;
+  methodChangeNeedsReason: boolean;
 }
 
 export interface EntityUpdateCompliance {
@@ -123,7 +164,7 @@ export interface ProjectFollowUp {
   declaredPlannedSpendPercent: number | null;
   declaredActualSpendPercent: number | null;
   declaredAsOf: string | null;
-  declaredSource: 'IMPORT' | 'MANUAL' | 'ENTITY_UPDATE' | 'PROGRESS_UPDATE' | null;
+  declaredSource: DeclaredSource | null;
   entityUpdateCompliant: boolean | null;
 }
 
@@ -190,6 +231,8 @@ export interface ProjectDetail extends ProjectSummary {
   updatedBy: string;
   fundingSource?: FundingSource | null;
   followUpOwnerUserId?: string | null;
+  /** Review round 7, item 2: the Project Manager the registration form names; the submission proposes them. */
+  proposedProjectManagerUserId?: string | null;
   followUp?: ProjectFollowUp;
 }
 
@@ -215,6 +258,7 @@ export interface ProjectRequest {
   fundingSource: FundingSource | null;
   legacyReference: string | null;
   followUpOwnerUserId: string | null;
+  proposedProjectManagerUserId: string | null;
 }
 
 export interface ProjectQuery {
@@ -235,6 +279,14 @@ export interface ProjectQuery {
   cityItemId?: string | undefined;
   /** A year the planned period touches. */
   period?: string | undefined;
+  /** Review round 8, point 01: what the portfolio dashboard counts by. `true` keeps projects past registration only. */
+  registered?: string | undefined;
+  /** A current stage's code, or NONE for the projects with no current stage. */
+  stage?: string | undefined;
+  /** ON_TRACK, LATE, STALLED or NOT_MEASURED. */
+  onPlan?: string | undefined;
+  /** `true` keeps the projects with both a planned and an actual percentage. */
+  measured?: string | undefined;
   page?: number | undefined;
   pageSize?: number | undefined;
 }

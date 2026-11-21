@@ -148,6 +148,43 @@ internal sealed partial class DepartmentAdministrationService(
             [AuditAttribute.Change("is_active", false, true)], cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<AdministrationError?> DeleteAsync(Guid actorId, Guid departmentId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        Department? department = await departments.FindForUpdateAsync(departmentId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (await CheckWritableAsync(actorId, department, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        DepartmentUses uses = await departments.CountUsesAsync(departmentId, cancellationToken).ConfigureAwait(false);
+        if (uses.Any)
+        {
+            FieldIssue?[] issues =
+            [
+                uses.Users > 0 ? new FieldIssue("users", FieldIssue.InUse) : null,
+                uses.SubDepartments > 0 ? new FieldIssue("subDepartments", FieldIssue.InUse) : null,
+                uses.OpenProjects > 0 ? new FieldIssue("projects", FieldIssue.InUse) : null,
+                uses.ActiveAssignments > 0 ? new FieldIssue("assignments", FieldIssue.InUse) : null,
+            ];
+            return AdministrationError.Conflict(IdentityAccessErrorCodes.DepartmentInUse, [.. issues.OfType<FieldIssue>()]);
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        audit.Stage(Entry(actorId, department!, IdentityAccessAuditEvents.DepartmentDeleted,
+            [AuditAttribute.Change("is_active", department!.IsActive, false), AuditAttribute.Change("deleted_at", null, now)]));
+        department.IsActive = false;
+        department.DeletedAt = now;
+        department.UpdatedAt = now;
+        department.UpdatedBy = actorId;
+        if ((await departments.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
+        {
+            return saveError;
+        }
+
+        LogDepartmentChanged(logger, actorId, "deleted", department.Id);
+        return null;
+    }
+
     /// <summary>Users, projects and assignments that name the department keep naming it; sign-in no longer resolves to it.</summary>
     public async Task<AdministrationResult<Versioned<DepartmentDetail>>> DeactivateAsync(Guid actorId, Guid departmentId, uint? expectedVersion, CancellationToken cancellationToken)
     {
@@ -197,12 +234,7 @@ internal sealed partial class DepartmentAdministrationService(
     {
         department.UpdatedAt = timeProvider.GetUtcNow();
         department.UpdatedBy = actorId;
-        audit.Stage(new AuditEntry(AuditEventClass.PrivilegedAction, eventType, AuditOutcome.Success)
-        {
-            ActorUserId = actorId,
-            Subject = new AuditSubject("IdentityAccess", nameof(Department), department.Id),
-            Attributes = [.. attributes.OfType<AuditAttribute>()],
-        });
+        audit.Stage(Entry(actorId, department, eventType, attributes));
         if ((await departments.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
         {
             return saveError;
@@ -212,6 +244,14 @@ internal sealed partial class DepartmentAdministrationService(
         return await departments.FindDetailAsync(department.Id, cancellationToken).ConfigureAwait(false)
                ?? throw new InvalidOperationException($"Department {department.Id} was saved and cannot be read back.");
     }
+
+    private static AuditEntry Entry(Guid actorId, Department department, string eventType, AuditAttribute?[] attributes) =>
+        new(AuditEventClass.PrivilegedAction, eventType, AuditOutcome.Success)
+        {
+            ActorUserId = actorId,
+            Subject = new AuditSubject("IdentityAccess", nameof(Department), department.Id),
+            Attributes = [.. attributes.OfType<AuditAttribute>()],
+        };
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Organization administration: {ActorId} {Change} department {DepartmentId}.")]
     private static partial void LogDepartmentChanged(ILogger logger, Guid actorId, string change, Guid departmentId);

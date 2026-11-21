@@ -2,7 +2,7 @@ import { type ReactElement, type SyntheticEvent, useCallback, useRef, useState }
 
 import { checkText, UUID_PATTERN, useSaveAction } from '@/features/identity-access/forms.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
-import { apiRequest } from '@/shared/api/httpClient.ts';
+import { readIssuedAuthorizations } from '@/features/change-requests/api/issuedAuthorizations.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
@@ -45,30 +45,6 @@ export function SubmitBaselineDialog(props: SubmitBaselineDialogProps): ReactEle
   );
 }
 
-/** The project's issued rebaseline authorizations, each named by the change request it came from (review round 5, item 5: no field asks for an ID). */
-async function readIssuedRebaselines(projectId: string, signal: AbortSignal) {
-  const { items } = (
-    await apiRequest<{ items: { id: string; changeRequestId: string; issuedAt: string }[] }>(
-      '/change-authorizations',
-      {
-        query: { projectId, authorizationScope: 'REBASELINE', status: 'ISSUED', pageSize: 100 },
-        signal,
-      },
-    )
-  ).data;
-  return Promise.all(
-    items.map(async (item) => ({
-      id: item.id,
-      issuedAt: item.issuedAt,
-      title: (
-        await apiRequest<{ title: { text: string } }>(`/change-requests/${item.changeRequestId}`, {
-          signal,
-        })
-      ).data.title.text,
-    })),
-  );
-}
-
 function SubmitBaselineForm({
   baseline,
   active,
@@ -85,7 +61,7 @@ function SubmitBaselineForm({
   const projectId = baseline.projectId;
   const loadAuthorizations = useCallback(
     (signal: AbortSignal) =>
-      rebaseline ? readIssuedRebaselines(projectId, signal) : Promise.resolve([]),
+      rebaseline ? readIssuedAuthorizations(projectId, 'REBASELINE', signal) : Promise.resolve([]),
     [projectId, rebaseline],
   );
   const authorizations = useApiResource(loadAuthorizations);

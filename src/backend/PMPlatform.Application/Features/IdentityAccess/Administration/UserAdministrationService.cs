@@ -20,6 +20,8 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 internal sealed partial class UserAdministrationService(
     IUserAdministrationRepository users,
     IExternalEntityRepository entities,
+    AccessRelationshipService assignments,
+    INationalIdProtector nationalIds,
     AdministrationAccess access,
     LocalAccountPolicy localAccounts,
     IAuditTrail audit,
@@ -283,6 +285,115 @@ internal sealed partial class UserAdministrationService(
                 [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, UserStatus.Active, UserStatus.Disabled)], cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public async Task<AdministrationError?> DeleteAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        User? user = await users.FindForUpdateAsync(userId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (await CheckWritableAsync(actorId, user, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        // As for disabling: an administrator who deleted themselves would lock the platform's administration out with them.
+        if (user!.Id == actorId)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.SelfAdministration);
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        UserStatus from = user.Status;
+        user.Status = UserStatus.Deleted;
+        user.DisabledAt ??= now;
+        user.UpdatedAt = now;
+        user.UpdatedBy = actorId;
+        await assignments.EndAllOfUserAsync(actorId, user.Id, AccessEndReason.UserDeleted, now, cancellationToken).ConfigureAwait(false);
+        audit.Stage(Entry(actorId, user, IdentityAccessAuditEvents.UserDeleted,
+            [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, from, UserStatus.Deleted)]));
+        if ((await users.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
+        {
+            return saveError;
+        }
+
+        LogUserChanged(logger, actorId, "deleted", user.Id);
+        return null;
+    }
+
+    public async Task<AdministrationResult<Versioned<UserDetail>>> SetNationalIdAsync(
+        Guid actorId, Guid userId, string? nationalId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        User? user = await users.FindForUpdateAsync(userId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (await CheckWritableAsync(actorId, user, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (!nationalIds.IsConfigured)
+        {
+            return AdministrationError.Unavailable;
+        }
+
+        string? fingerprint = nationalId is null ? null : nationalIds.Fingerprint(nationalId);
+        if (fingerprint == user!.NationalIdFingerprint)
+        {
+            return await DetailAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (fingerprint is not null && await users.FindIdByNationalIdFingerprintAsync(fingerprint, cancellationToken).ConfigureAwait(false) is { } holder && holder != user.Id)
+        {
+            return AdministrationError.Duplicate(NationalIdField);
+        }
+
+        AuditAttribute?[] changed =
+        [
+            AuditAttribute.WithheldChange("national_id", user.NationalIdFingerprint, fingerprint),
+            user.NafathVerifiedAt is null ? null : AuditAttribute.Change("nafath_verified", true, false),
+        ];
+        user.NationalIdSealed = nationalId is null ? null : nationalIds.Seal(nationalId);
+        user.NationalIdFingerprint = fingerprint;
+        user.NationalIdLastDigits = nationalId?[^NationalIdNumber.VisibleDigits..];
+        user.NafathVerificationReference = null;
+        user.NafathVerifiedAt = null;
+        user.UpdatedAt = timeProvider.GetUtcNow();
+        user.UpdatedBy = actorId;
+        return await SaveAsync(actorId, user, "set the national id of", IdentityAccessAuditEvents.UserNationalIdChanged, changed, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<NationalIdDetail>> RevealNationalIdAsync(Guid actorId, Guid userId, CancellationToken cancellationToken)
+    {
+        Versioned<UserDetail>? user = await users.FindDetailAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await access.CheckRecordAsync(actorId, PermissionCatalogue.UserNationalIdView, AdministrationAccess.SubjectOf(user.Value), cancellationToken)
+                .ConfigureAwait(false) is { } denied)
+        {
+            return denied;
+        }
+
+        if (!nationalIds.IsConfigured)
+        {
+            return AdministrationError.Unavailable;
+        }
+
+        string? number = await users.FindNationalIdSealedAsync(userId, cancellationToken).ConfigureAwait(false) is { } sealedValue ? nationalIds.Unseal(sealedValue) : null;
+        if (number is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        await audit.RecordAsync(new AuditEntry(AuditEventClass.PrivilegedAction, IdentityAccessAuditEvents.UserNationalIdRevealed, AuditOutcome.Success)
+        {
+            ActorUserId = actorId,
+            Subject = new AuditSubject("IdentityAccess", nameof(User), userId),
+            ScopeExternalEntityId = user.Value.ExternalEntityId,
+        }).ConfigureAwait(false);
+        LogUserChanged(logger, actorId, "revealed the national id of", userId);
+        return new NationalIdDetail(number);
+    }
+
+    private const string NationalIdField = "nationalId";
 
     /// <summary>Found, within the caller's USER_MANAGE scope, and a person: a SERVICE principal is not administered here.</summary>
     private async Task<AdministrationError?> CheckWritableAsync(Guid actorId, User? user, CancellationToken cancellationToken) =>

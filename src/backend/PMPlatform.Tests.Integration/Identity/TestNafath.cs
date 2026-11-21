@@ -59,14 +59,21 @@ internal static class TestNafath
     /// real, and local.r08 neither verified nor enrolled in MFA and last changed by the seed (a test that verifies them, or enrols
     /// them on the way, puts it back).
     /// </summary>
+    /// <summary>The fingerprint of <see cref="NationalId"/> under the suite's key: local.r08's recorded identity, which the test Nafath asserts.</summary>
+    public static string RecordedFingerprint { get; } = new PMPlatform.Infrastructure.Identity.NationalIdProtector(
+            new Microsoft.Extensions.Configuration.ConfigurationManager { ["PERSONAL_DATA_KEY"] = IdentityTestHost.PersonalDataKey })
+        .Fingerprint(NationalId);
+
     public static async Task ResetAsync(IdentityTestHost host)
     {
         Reset(host.Nafath);
         host.IdentityProvider.NextSubject = TestDirectory.Subject(1);
+        host.IdentityProvider.WithoutEmail = false;
         host.Clock.Reset();
         await host.Database.ExecuteAsync($"""
             UPDATE identity_access."user"
-            SET nafath_verification_reference = NULL, nafath_verified_at = NULL, mfa_enrolled_at = NULL, updated_by = '{IdentityDatabase.SeedPrincipalId}'
+            SET nafath_verification_reference = NULL, nafath_verified_at = NULL, mfa_enrolled_at = NULL, updated_by = '{IdentityDatabase.SeedPrincipalId}',
+                national_id_fingerprint = '{RecordedFingerprint}'
             WHERE id = '{IdentityDatabase.UserId(8)}'
             """);
     }

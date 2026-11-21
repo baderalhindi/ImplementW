@@ -14,10 +14,10 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 
 | | Count |
 | --- | --- |
-| Findings | 85 |
-| High or Critical | 40 |
+| Findings | 89 |
+| High or Critical | 43 |
 | — closed by merged PRs (`Mitigated`) | 27 |
-| — **open** | **13**: SR-10, SR-13, SR-26, SR-38, SR-41, SR-53, SR-74, SR-75, SR-78, SR-80, SR-81, SR-83, SR-85 |
+| — **open** | **16**: SR-10, SR-13, SR-26, SR-38, SR-41, SR-53, SR-74, SR-75, SR-78, SR-80, SR-81, SR-83, SR-85, SR-86, SR-87, SR-88 |
 | Risk acceptances signed by AHDA | 0 of 3 requested (`risk-acceptances.md`) |
 
 **The gate is not green.** Each open High needs one of the following:
@@ -36,6 +36,9 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 | SR-83 Password reset by e-mail | AHDA accepts the mailbox as the way back into a local account, or requires an administrator's reset instead | AHDA Cybersecurity; PMO |
 | SR-85 Directory password reset by e-mail | AHDA accepts the mailbox as enough to set a directory password and scopes the service account's reset right, or leaves `Identity:Directory:AllowPasswordReset` off | AHDA Cybersecurity; PMO |
 | SR-80 The import's authority outlives the cutover | AHDA accepts it for the cutover window, and `DATA_IMPORT` is withdrawn from R01 afterwards | AHDA Cybersecurity; PMO |
+| SR-86 An administrator changes one person's permissions without the three-person rule | A signed risk acceptance; or a second administrator's approval on each change (a fix PR) | AHDA Cybersecurity |
+| SR-87 Sign-in by SMS code | AHDA accepts SMS as a sign-in factor and selects the provider; or the sign-in page stops offering it | AHDA Cybersecurity; PMO |
+| SR-88 Passkeys | The PR that merges the 13 Nov 2026 passkeys (controls and tests on the branch) | Backend lead |
 
 **Recommended before UAT, though Medium:** SR-27. REV-IAM-002 is marked Closed in FG-03, CTL-43 asks this review to verify it, and it does not hold: an R01 can sign in as any business user (RBAC-T07). The fix is small: make `directory_subject_id` directory-authoritative once set, as the job title already is, and put `IdentityAccess_UpdateUser` on the step-up list.
 
@@ -58,7 +61,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-11 | AUTH-T14 | High | Script on the SPA's origin reads the tokens from `sessionStorage` | Frontend lead, DevOps | Mitigated | PR #87 (sink lint, `isAppPath`), PR #88 (CSP on API responses). Follow-up: the SPA's serving sends `script-src 'self'` (`endpoint-hardening.md` F-3) |
 | SR-12 | AUTH-T16 | High | Second-factor code guessing, or another person's challenge | Security Lead; AHDA Cybersecurity | Mitigated | PR #33 (1 s floor, shared limit, subject sent, explicit verdict). Follow-up: the selected provider limits attempts per user and binds the challenge to the user (`mfa-privileged-access.md` F-1, F-4) |
 | SR-13 | AUTH-T17 | High | Whoever holds an unenrolled R01's password enrols their own factor at sign-in | AHDA Cybersecurity | Open | Set `Identity:Mfa:AllowEnrolmentAtSignIn=false` in SIT, UAT and PROD and enrol R01 out of band (`mfa-privileged-access.md` F-2). Or AHDA signs RA-02 |
-| SR-14 | AUTH-T19 | High | Privileged operations outside the step-up list | AHDA Cybersecurity | Mitigated | PR #33 (step-up mechanism, seven operations). Follow-up: AHDA confirms the list; candidates are `IdentityAccess_UpdateRole`, `_CreateUser`, `_UpdateUser` (SR-27), the external-entity status operations, integration enable and disable, and the Activity rebuild |
+| SR-14 | AUTH-T19 | High | Privileged operations outside the step-up list | AHDA Cybersecurity | Mitigated | PR #33 (step-up mechanism, seven operations). Follow-up: AHDA confirms the list; candidates are `IdentityAccess_UpdateRole`, `_CreateUser`, `_UpdateUser` (SR-27), the external-entity status operations, integration enable and disable, and the Activity rebuild. 10 Nov 2026: the client review set `Identity:StepUp:MaxAge` to the 8-hour session, so the sign-in code covers the listed operations and no one is asked again; this needs AHDA Cybersecurity's acceptance, and one setting restores a shorter window |
 | SR-15 | AUTH-T26 | High | Trusting the IdP's `amr` as the second factor | AHDA IT, AHDA Cybersecurity | Mitigated | PR #33 (trusted only when configured, with a capped `auth_time`) |
 | SR-16 | AUTH-T18 | Medium | A refresh token alone enrols a new second factor through step-up, and nothing can reset an enrolment | Backend lead | Open | Step-up verifies only: refuse enrolment there. Add an audited administrator reset of `mfa_enrolled_at` |
 | SR-17 | AUTH-T10 | Medium | Login CSRF on the SSO callback | Frontend lead | Open | The `/auth/callback` route reads the transaction only from `sessionStorage` written at the redirect and clears it after one use |
@@ -97,7 +100,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-50 | DOC-T23, DOC-T25 | Low | Orphaned objects; idempotency keys not replayed | DevOps; Engineering Architect | Open | A sweeper for unreferenced objects (`document-management.md` F-9); R-37 replay (F-15) |
 | SR-51 | NAF-T03, NAF-T04, NAF-T07, NAF-T17 | Critical | Login CSRF, code theft, token confusion, transaction forgery | Backend lead | Mitigated | PR #78, PR #32 |
 | SR-52 | NAF-T09, NAF-T10, NAF-T11 | High | Fail-open outage; national id kept; client secret leaked | Backend lead | Mitigated | PR #78 |
-| SR-53 | NAF-T01 | High | Nafath verification does not bind the person to the account: a stolen password and the attacker's own Nafath account pass | AHDA Cybersecurity; FG-03 owner | Open | Capture an expected identity at onboarding (e.g. a keyed hash of the national id AHDA enters in FG-03) and compare it with `sub` (OQ-007, TBC-EXT-004). Or AHDA signs RA-03 |
+| SR-53 | NAF-T01 | High | Nafath verification does not bind the person to the account: a stolen password and the attacker's own Nafath account pass | AHDA Cybersecurity; FG-03 owner | Open | Built on `feat/task-112-client-review-changes` (client review, item 7): the administrator records the National ID and a verification of anyone else is refused. Closed when that is merged and AHDA IT confirms the Nafath claim that carries the number. Or AHDA signs RA-03 |
 | SR-54 | NAF-T08 | High | An unverified session continues after the flag is turned on | Backend lead | Mitigated | PR #78. Follow-ups: gate `BeginStepUpAsync`; a step-up refusal test |
 | SR-55 | NAF-T18 | High | A stolen verification token completes the verification with the thief's identity | Frontend lead | Mitigated | PR #78 (`no-store`, single-purpose audience, user re-read). Follow-up: design how the SPA holds the token (F-4) |
 | SR-56 | NAF-T21 | Medium | With the flag on, the SPA breaks for external users | Frontend lead | Open | A verification step in the SPA (`nafath-identity-verification.md` F-4); keep the flag off until it ships |
@@ -130,6 +133,10 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-83 | AUTH-T31 | High | A local account's forgotten password is reset by a link sent to its mailbox, so for a role with no MFA the mailbox alone admits its reader | AHDA Cybersecurity; PMO | Open | Controls built and tested; AHDA accepts it. An environment with no mail relay offers no reset, and an administrator's reset stays available |
 | SR-84 | AUTH-T33 | Medium | The platform writes a person's own password to AHDA's directory, by request, so a platform session plus the password can change it for every system on the directory | AHDA Cybersecurity; PMO | Open | Controls built; `PasswordModify` tested against OpenLDAP. AHDA agrees to the write, tests the `ActiveDirectory` protocol on its directory, and can turn it away by refusing self-change there |
 | SR-85 | AUTH-T34 | High | A mailbox alone can set a directory password, for every system on the directory, and the service account must hold a reset right for it | AHDA Cybersecurity; PMO | Open | Controls built, off by default; `PasswordModify` tested against OpenLDAP. AHDA accepts it, scopes the reset right, tests the `ActiveDirectory` write, and sets `Identity:Directory:AllowPasswordReset`; otherwise it stays off |
+| SR-86 | RBAC-T30 | High | An administrator gives one person a permission at once, without the three-person rule of a permission profile: the client's decision of 7 Nov 2026 | AHDA Cybersecurity | Open | AHDA signs a risk acceptance for it, or asks for a second administrator's approval on each change |
+| SR-87 | AUTH-T35 | High | A code by SMS signs a person in, and saves Face ID / Touch ID on the device: for a role without MFA, whoever knows their National ID and controls their registered phone number gets in without the password. At the client's request the National ID check says whether a number is registered | AHDA Cybersecurity; PMO | Open | Controls built and tested; AHDA accepts SMS as a sign-in factor, and selects the SMS provider (OQ-012), or the sign-in page stops offering it |
+| SR-88 | AUTH-T36 | High | A passkey signs its holder in with both factors, so whoever plants one in a taken-over session holds a lasting way in | Backend lead | Open | Controls built and tested on `feat/task-112-client-review-changes`; closed as Mitigated by the PR that merges it |
+| SR-89 | AUTH-T37 | Medium | The SMS test-mailbox stand-in can be turned on in any environment | DevOps/Platform Lead | Open | A platform guard that refuses `Notifications__Sms__StandIn__Enabled` in UAT and PROD, as `api_documentation` is refused |
 
 ## 3. Not threats: process and record items
 
@@ -151,5 +158,6 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | 2026-11-06 | Self-service password change and reset (AUTH-T31, AUTH-T32); SR-83. One more open High |
 | 2026-11-07 | Directory accounts change their own password from the platform (AUTH-T33); SR-84 |
 | 2026-11-07 | Directory accounts reset a forgotten password by e-mail, off by default (AUTH-T34); SR-85. One more open High |
+| 2026-11-13 | Sign-in without a password: SMS codes (AUTH-T35) and passkeys (AUTH-T36), and the SMS stand-in (AUTH-T37); SR-87 to SR-89. Two more open High |
 | 2026-11-06 | A project's registers in the import (DI-T12, DI-T13), both mitigated; no new finding |
 | 2026-11-06 | Every business role may prepare a project import batch (DI-T14), mitigated by R02's approval; no new finding |

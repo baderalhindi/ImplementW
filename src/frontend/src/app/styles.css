@@ -417,6 +417,7 @@ h3 {
 
 .rail__brand {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-block-size: 5.5rem;
@@ -441,7 +442,17 @@ h3 {
   inline-size: 2.75rem;
 }
 
-.rail--collapsed .rail__logo {
+/* The gold divider under the logo, in its own colours; the collapsed rail has only the emblem. */
+.rail__divider {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 12rem;
+  block-size: auto;
+  margin-block-start: var(--space-1);
+}
+
+.rail--collapsed .rail__logo,
+.rail--collapsed .rail__divider {
   display: none;
 }
 
@@ -594,6 +605,15 @@ h3 {
   inline-size: 2.75rem;
   padding: 0;
   background: transparent;
+}
+
+.topbar__brand {
+  display: none;
+  flex: none;
+}
+
+.topbar__logo {
+  block-size: 2.25rem;
 }
 
 /* Takes only what the breadcrumb leaves, so an opening search shrinks before the breadcrumb wraps. */
@@ -752,14 +772,60 @@ h3 {
   }
 }
 
-/* On a phone the open search takes its own row under the bar's other controls. */
+/*
+ * On a phone the bar is one row: menu and logo at the start, icons at the end. Language and Create keep their icon and
+ * drop their word (their accessible name stays), and the controls are a little smaller. The open search takes its own
+ * row under the others.
+ */
 @media (max-width: 48rem) {
   .topbar {
     flex-wrap: wrap;
+    gap: var(--space-1);
+    padding-inline: var(--space-2);
   }
 
-  .topbar .topbar__drawer {
+  .topbar__brand {
     margin-inline-end: auto;
+  }
+
+  .topbar__logo {
+    block-size: 2rem;
+  }
+
+  .topbar .topbar__control-label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .topbar .topbar__chevron {
+    display: none;
+  }
+
+  .topbar .global-search--collapsed {
+    flex-basis: 2.25rem;
+    min-inline-size: 2.25rem;
+  }
+
+  .topbar .topbar__drawer,
+  .topbar .topbar__bell,
+  .topbar .topbar__control,
+  .topbar .topbar__create,
+  .topbar .theme-switch__button {
+    inline-size: 2.25rem;
+    min-inline-size: 2.25rem;
+    block-size: 2.25rem;
+    min-block-size: 2.25rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .topbar__avatar {
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
   }
 
   .topbar__actions {
@@ -1024,6 +1090,10 @@ h3 {
     display: inline-flex;
   }
 
+  .topbar__brand {
+    display: block;
+  }
+
   .breadcrumb {
     display: none;
   }
@@ -1075,6 +1145,15 @@ h3 {
 
 .section {
   margin-block-start: var(--space-6);
+}
+
+/* A page laid out as numbered steps: each step's heading, and the section after the steps, stand clear of what precedes them. */
+.section--steps {
+  margin-block-start: var(--space-8);
+}
+
+.section--steps > * + h2 {
+  margin-block-start: var(--space-8);
 }
 
 .section__actions {
@@ -1170,29 +1249,6 @@ h3 {
   }
 }
 
-.tree {
-  list-style: none;
-  margin: 0;
-  padding-inline-start: var(--space-4);
-  border-inline-start: 2px solid var(--color-border-subtle);
-}
-
-.section > .tree {
-  padding-inline-start: 0;
-  border-inline-start: 0;
-}
-
-.tree__node {
-  margin-block: var(--space-2);
-}
-
-.tree__label {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 /* ---------------------------------------------------------------------------------------------- states */
 
 .state {
@@ -1208,6 +1264,16 @@ h3 {
   margin: 0 0 var(--space-3);
   font-weight: 600;
   color: var(--color-text);
+}
+
+/* Review round 8, point 09: the reason an empty state gives, and the step it offers where the person can act. */
+.state--empty p:not(.state__title) {
+  max-inline-size: 42rem;
+  margin: 0 auto var(--space-2);
+}
+
+.state__action {
+  margin-block-start: var(--space-3);
 }
 
 .state--loading {
@@ -1373,6 +1439,142 @@ h3 {
 
 .master-data > .form__actions {
   margin-block-start: 0;
+}
+
+/* From tablet width the list picker and the list's own buttons (Import, Add value) share the first row, the buttons
+   on the far side and level with the picker's box; everything after spans the width. */
+@media (min-width: 40rem) {
+  .master-data {
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+  }
+
+  .master-data > * {
+    grid-column: 1 / -1;
+  }
+
+  .master-data > .field {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .master-data > .form__actions {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    justify-content: flex-end;
+  }
+}
+
+/* Project stages: the stage table under its heading and Add stage, a publish card, then the versions. */
+.stage-editor {
+  max-inline-size: none;
+  gap: var(--space-6);
+}
+
+/* A grid item would otherwise grow to the stage table's width; the table scrolls inside its own box on a phone. */
+.stage-editor > * {
+  min-inline-size: 0;
+}
+
+/* Each cell's field keeps its label for screen readers; on screen the column heading already says it. */
+.stage-editor td .field__label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A version's stages, opened from the Versions table. */
+.version-stages summary {
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.version-stages__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-6);
+}
+
+.version-stages__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.version-stages__weight {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Remove, for a stage not saved yet, at the table's far edge. */
+.stage-editor .stage-editor__actions {
+  text-align: end;
+}
+
+.stage-editor__actions .button {
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+}
+
+.stage-editor h2 {
+  margin-block: 0 var(--space-3);
+}
+
+.stage-editor .stage-editor__empty {
+  padding-block: var(--space-6);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.stage-editor__total {
+  margin: var(--space-3) 0 0;
+  font-weight: 600;
+}
+
+.stage-editor__total.is-complete {
+  color: var(--color-positive);
+}
+
+.stage-editor__total.is-short {
+  color: var(--color-danger);
+}
+
+.stage-publish {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+.stage-publish h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.stage-publish .form__actions {
+  margin-block-start: 0;
+}
+
+.stage-publish__fields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .stage-publish__fields {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    align-items: start;
+  }
 }
 
 .form__readonly {
@@ -1565,12 +1767,28 @@ select.field__input {
   border-collapse: collapse;
 }
 
+/* Headings and values sit at the page's reading side: left in English, right in Arabic (the client review of
+   10 Nov 2026). The page's direction decides, not the cell's: a code cell is dir="ltr" so it reads correctly, and
+   its own start would be left even on an Arabic page. */
 .table th,
 .table td {
   padding: var(--space-3) var(--space-4);
   border-block-end: 1px solid var(--color-border-subtle);
-  text-align: start;
   vertical-align: top;
+}
+
+/* Kept at one class's weight, so a table's own column rule (a centred empty message, an end-aligned action) wins. */
+.table :where(th, td) {
+  text-align: left;
+}
+
+:where(:root[dir='rtl']) .table :where(th, td) {
+  text-align: right;
+}
+
+/* Body cells centre on the row's tallest content, so a badge or one line of text lines up with the row's buttons. */
+.table td {
+  vertical-align: middle;
 }
 
 .table thead th {
@@ -1594,12 +1812,25 @@ select.field__input {
 }
 
 .cell--ltr {
-  text-align: start;
   unicode-bidi: plaintext;
+  white-space: nowrap;
 }
 
+/* A badge with a long reason ("Ended — Role changed") wraps inside its column rather than widening it. */
+.cell--wrap-badge .badge {
+  white-space: normal;
+  border-radius: 0.75rem;
+}
+
+/* A period ("6 Nov 2026, 11:13 to no end date"): wide enough for two even lines, never squeezed to one word a line. */
+.cell--period {
+  inline-size: 12rem;
+}
+
+/* As wide as its buttons and no wider, so the columns with text keep the room. */
 .cell--actions {
   white-space: nowrap;
+  inline-size: 1%;
 }
 
 /* A cell's secondary line: a date under a name, a role under a stage. */
@@ -1632,6 +1863,42 @@ select.field__input {
 
 .cell--actions .button + .button {
   margin-inline-start: var(--space-2);
+}
+
+/* A long unbroken value, an e-mail address, breaks at any point rather than widening its column. */
+.cell--break {
+  overflow-wrap: anywhere;
+  min-inline-size: 10rem;
+}
+
+/* A row's own Edit and Delete: side by side and compact, so the column stays narrow. Still 36px high, above the 24px target size. */
+.row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+}
+
+.row-actions .button {
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
+}
+
+/* A two-word toggle (Activate / Deactivate) keeps the longer word's width, so the next button lines up row to row. */
+.toggle-label {
+  display: inline-grid;
+}
+
+.toggle-label > * {
+  grid-area: 1 / 1;
+}
+
+.toggle-label__reserve {
+  visibility: hidden;
+}
+
+.cell--actions .row-actions .button + .button {
+  margin-inline-start: 0;
 }
 
 /* Several peer actions (approve, reject, return) stack when the row is narrow instead of scrolling out of view. */
@@ -1937,6 +2204,28 @@ select.field__input {
   .sign-in__account {
     padding-inline-start: var(--space-8);
   }
+
+  /* Face ID / Touch ID sits at the foot of the account card, level with "Sign in with biometrics" beside it: the tab
+     box fills the panel's height, and the Nafath panel keeps the tab box's padding and border below its last button. */
+  .sign-in__nafath {
+    padding-block-end: calc(var(--space-4) + 1px);
+  }
+
+  .sign-in__account > .sign-in__tabs {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .sign-in__tabs > .sign-in__tabpanel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .sign-in__tabpanel > .sign-in__divider {
+    margin-block-start: auto;
+  }
 }
 
 .sign-in__panel {
@@ -2106,8 +2395,91 @@ select.field__input {
   text-align: center;
 }
 
+/* On a phone: tighter card, each tab on one line, and the Microsoft button's text across its width with "Coming soon" under it. */
+@media (max-width: 40rem) {
+  .sign-in {
+    margin-block-start: var(--space-4);
+  }
+
+  .sign-in__card {
+    gap: var(--space-6);
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .sign-in__tab {
+    gap: var(--space-1);
+    padding-inline: var(--space-1);
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .sign-in__tabpanel {
+    padding: var(--space-3);
+  }
+
+  .sign-in__provider {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: var(--space-2);
+  }
+
+  .sign-in__provider-text {
+    flex: 1 1 calc(100% - 3rem);
+  }
+
+  .sign-in__provider > .sign-in__soon {
+    margin-inline: auto;
+  }
+}
+
 .sign-in__form {
   max-inline-size: none;
+}
+
+/* Sign-in with biometrics (13 Nov 2026 review): the National ID, then the device's passkey or a code by SMS. It keeps
+   the Nafath panel's width, like the Nafath button above it. */
+.sign-in__passwordless {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-inline-size: 26rem;
+}
+
+.sign-in__sms-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sign-in-methods__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.sign-in-methods__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.sign-in-methods__item > span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sign-in-methods__meta {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
 }
 
 /*
@@ -2268,6 +2640,35 @@ select.field__input {
 
 .tabs__panel {
   padding-block-start: var(--space-4);
+}
+
+/* Review round 8, point 04: the project page's six headings on one row, then the tabs of the open heading, lighter and smaller. */
+.tabs--groups ul {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.tabs--groups a {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.tabs--sub ul {
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-block-end: 0;
+}
+
+.tabs--sub a {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+
+.tabs--sub a[aria-current='page'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
 }
 
 /* A menu's screens over the page, the same distance above its heading as the workspace's panel. */
@@ -3789,17 +4190,16 @@ select.field__input {
 }
 
 .widget__footer {
-  display: grid;
-  gap: var(--space-1);
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
   margin-block-start: auto;
   padding-block-start: var(--space-2);
 }
 
 .widget__coverage,
 .widget__origin {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
+  display: inline;
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.78rem;
@@ -3870,17 +4270,26 @@ select.field__input {
   opacity: 0.45;
 }
 
-.distribution__donut {
-  max-inline-size: 22rem;
+/*
+ * A donut's legend (20 Nov 2026, every donut in one design): as wide as what it holds, centred beside its ring; the counts and their
+ * heading at the column's end, one under the other, the digits lined up.
+ */
+.widget__distribution.distribution__donut {
+  align-self: center;
+  inline-size: auto;
+  min-inline-size: 14rem;
+  max-inline-size: 26rem;
 }
 
-.distribution__donut td,
-.distribution__donut thead th:last-child {
+.widget__distribution.distribution__donut thead th:last-child,
+.widget__distribution.distribution__donut tbody td {
+  padding-inline-start: var(--space-6);
   text-align: end;
 }
 
-.distribution__donut td {
+.widget__distribution.distribution__donut tbody td {
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The bar list: each value's words at the start and its count at the end, its bar under them. */
@@ -3973,8 +4382,8 @@ select.field__input {
 /* The donut: round-ended segments with a surface gap, its centre naming the hovered (or largest) value. */
 .donut {
   position: relative;
-  inline-size: 10.5rem;
-  block-size: 10.5rem;
+  inline-size: var(--donut-size, 10.5rem);
+  block-size: var(--donut-size, 10.5rem);
 }
 
 .donut svg {
@@ -4059,7 +4468,7 @@ select.field__input {
 }
 
 /* Columns: a light rounded track per value with the column inside it, its count on the cap and its words below. */
-.columns {
+.column-chart {
   display: flex;
   align-items: stretch;
   justify-content: space-around;
@@ -4068,7 +4477,7 @@ select.field__input {
   padding-block-start: var(--space-2);
 }
 
-.columns__item {
+.column-chart__item {
   display: grid;
   flex: 1 1 0;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -4079,11 +4488,11 @@ select.field__input {
   transition: opacity 0.15s ease;
 }
 
-.columns__item.is-dimmed {
+.column-chart__item.is-dimmed {
   opacity: 0.4;
 }
 
-.columns__track {
+.column-chart__track {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -4096,14 +4505,14 @@ select.field__input {
   background: var(--chart-track);
 }
 
-.columns__value {
+.column-chart__value {
   position: absolute;
   inset-block-start: 0.35rem;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
-.columns__bar {
+.column-chart__bar {
   display: block;
   inline-size: 100%;
   min-block-size: 0.75rem;
@@ -4118,11 +4527,11 @@ select.field__input {
   transition: filter 0.15s ease;
 }
 
-.columns__item.is-active .columns__bar {
+.column-chart__item.is-active .column-chart__bar {
   filter: brightness(1.08) saturate(1.1);
 }
 
-.columns__label {
+.column-chart__label {
   display: -webkit-box;
   overflow: hidden;
   max-inline-size: 100%;
@@ -4184,7 +4593,7 @@ select.field__input {
 @media (prefers-reduced-motion: reduce) {
   .donut__segment,
   .gauge__fill,
-  .columns__bar,
+  .column-chart__bar,
   .widget__bar,
   path.trend__line--ACTUAL_PERCENT,
   .trend__area {
@@ -4394,26 +4803,6 @@ path.trend__line--ACTUAL_PERCENT {
   }
 }
 
-.personalize__list {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding-inline-start: var(--space-6);
-}
-
-.personalize__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.personalize__moves {
-  display: inline-flex;
-  gap: var(--space-1);
-}
-
 /* --------------------------------------------------------------------------------------------- reports */
 
 /* FG-02's report shell (TASK-072): the parameter panel, the active filter summary, the Coverage/Freshness Banner, the
@@ -4499,30 +4888,144 @@ path.trend__line--ACTUAL_PERCENT {
 
 .report-list {
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* A report card: the whole card opens the report through its title link's stretched ::after. */
 .report-list__item {
-  padding: var(--space-3);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+  border-radius: 12px;
   background: var(--color-background);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
-.report-list__item p {
-  margin-block: var(--space-1) 0;
+.report-list__item:hover,
+.report-list__item:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgb(16 24 40 / 10%);
+  transform: translateY(-1px);
 }
 
-.report-list__item > a {
+.report-list__icon {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 10px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.report-list__body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.report-list__link {
+  font-size: 1.1rem;
   font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.report-list__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.report-list__item:hover .report-list__link {
+  color: var(--color-primary);
+}
+
+.report-list__link:focus-visible {
+  outline: none;
+}
+
+.report-list__item:has(.report-list__link:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.report-list__description {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
 }
 
 .report-list__meta {
-  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
+}
+
+.report-list__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: var(--color-surface);
   color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.report-list__tag--accent {
+  border-color: transparent;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.report-list__chevron {
+  align-self: center;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.report-list__item:hover .report-list__chevron {
+  color: var(--color-primary);
+  transform: translateX(3px);
+}
+
+[dir='rtl'] .report-list__chevron {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .report-list__item:hover .report-list__chevron {
+  transform: scaleX(-1) translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-list__item,
+  .report-list__chevron {
+    transition: none;
+  }
+
+  .report-list__item:hover,
+  .report-list__item:focus-within {
+    transform: none;
+  }
 }
 
 .report-job p {
@@ -5183,23 +5686,104 @@ path.trend__line--ACTUAL_PERCENT {
   gap: var(--space-2);
 }
 
-.home__actions-bar a {
+.home__actions-bar .home__actions > li > a,
+.home__actions-bar .home__actions > li > button {
   display: inline-flex;
   align-items: center;
   min-block-size: 2.5rem;
   padding: 0 var(--space-4);
   border: 1px solid rgb(255 255 255 / 45%);
   border-radius: 999px;
+  background: transparent;
   color: var(--color-rail-text);
+  font: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.home__actions-bar a:hover {
+.home__actions-bar .home__actions > li > a:hover,
+.home__actions-bar .home__actions > li > button:hover {
   background: rgb(255 255 255 / 14%);
 }
 
-.home__actions-bar a:focus-visible {
+.home__actions-bar .home__actions > li > a:focus-visible,
+.home__actions-bar .home__actions > li > button:focus-visible {
   outline-color: var(--color-sand);
+}
+
+/* Review round 8, point 08: the pencil that opens "تخصيص الإجراءات السريعة", a round button after the actions. */
+.home__actions-bar .home__actions > li > .home__actions-edit {
+  justify-content: center;
+  inline-size: 2.5rem;
+  padding: 0;
+}
+
+/* The quick-action picker: the chosen actions in order, dragged or moved with the arrows, then the catalogue in its groups. */
+.quick-picker__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.quick-picker__header h3 {
+  margin: 0;
+}
+
+.quick-picker__count {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.quick-picker__order {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quick-picker__order li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  cursor: grab;
+}
+
+.quick-picker__order li.is-dragged {
+  opacity: 0.5;
+}
+
+.quick-picker__grip {
+  color: var(--color-text-muted);
+  letter-spacing: -0.2em;
+}
+
+.quick-picker__name {
+  flex: 1;
+}
+
+.quick-picker__move {
+  min-inline-size: 2rem;
+  padding-inline: var(--space-2);
+}
+
+.quick-picker__group {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.quick-picker__group legend {
+  padding-inline: var(--space-1);
+  font-weight: 600;
 }
 
 /* The Home's map of the platform: a card per menu. Cards share each row's width, so no row ends in an empty column. */
@@ -5671,8 +6255,11 @@ path.trend__line--ACTUAL_PERCENT {
   display: none;
 }
 
+/* As wide as the choice it shows ("Owning department: Any" in full), never narrower than before nor wider than the row. */
 .filter-bar__select {
-  inline-size: 12.5rem;
+  field-sizing: content;
+  inline-size: auto;
+  min-inline-size: 12.5rem;
   max-inline-size: 100%;
   min-block-size: 2.75rem;
   padding-inline: var(--space-3);
@@ -5917,6 +6504,42 @@ tr[data-flagged='true'] {
   font-size: 0.85rem;
 }
 
+/* Review round 8, point 09: under a chart, why part of it is empty and the step to fill it. */
+.insights__empty-hint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  align-items: center;
+  margin-block-start: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--color-sand, var(--color-border));
+  background: var(--color-surface);
+  font-size: 0.875rem;
+}
+
+.insights__empty-hint p {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+/* Notes about one figure share a line, "·" between them, and wrap only when the space runs out (13 Nov 2026 review). */
+.insights__notes {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* Running text, so the notes fill the line before any of them wraps. */
+.insights__notes > * {
+  display: inline;
+}
+
+/* Review round 8, point 11: the " · " between notes is text (NoteList), so it survives copying and reading aloud. */
+.note-list__separator {
+  display: inline;
+  color: var(--color-text-muted);
+}
+
 .insights__group th {
   background: var(--chart-track);
   font-weight: 600;
@@ -5986,10 +6609,48 @@ tr[data-flagged='true'] {
   font-size: 0.85rem;
 }
 
-.grouped-columns__legend li {
+/* Review round 8, point 03, and the user's change of 16 Nov 2026: the completion donut with every entity in it beside it, then how many entities
+   each figure covers. A long legend scrolls beside the ring rather than stretching the card. */
+.completion-donut {
+  display: grid;
+  gap: var(--space-2);
+  align-items: start;
+}
+
+.distribution--donut > .grouped-columns__legend.completion-donut__legend {
+  align-self: start;
+  inline-size: min(100%, 24rem);
+  max-block-size: 16rem;
+  overflow-y: auto;
+  font-size: 0.9375rem;
+}
+
+.grouped-columns__legend.completion-donut__legend li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.completion-donut__rate {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.completion-donut__more {
+  justify-self: start;
+}
+
+.distribution--donut > .grouped-columns__legend {
+  flex-direction: column;
+  align-self: center;
+  font-size: 1rem;
+}
+
+.grouped-columns__legend li,
+.grouped-columns__legend li > a {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .grouped-columns__plot {
@@ -6040,6 +6701,14 @@ tr[data-flagged='true'] {
 
 /* --------------------------------------------------------------------------------------------- printing a card */
 
+/* Choosing rows is for the screen: a printed table has no checkbox column and no selection bar. */
+@media print {
+  .cell--select,
+  .selection-bar {
+    display: none;
+  }
+}
+
 @media print {
   .rail,
   .rail__backdrop,
@@ -6068,8 +6737,13 @@ tr[data-flagged='true'] {
 }
 
 /* Review round 5, items 9 and 10: an entity's update completion, with the all-entity average as a marked line. */
+/* Clear of the cards above, and its heading row clear of the table or empty state below. */
 .completion {
-  margin-block-end: 1.5rem;
+  margin-block: var(--space-8) var(--space-6);
+}
+
+.completion > .section__header {
+  margin-block-end: var(--space-6);
 }
 
 .completion__figure strong {
@@ -6102,31 +6776,6 @@ tr[data-flagged='true'] {
   margin-block: 0.5rem;
 }
 
-/* An info icon beside a field, with its explanation below it. */
-.info-tip {
-  display: inline-block;
-}
-
-.info-tip__button {
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
-  border: 1px solid var(--color-border, #d9dee3);
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  font-weight: 600;
-  cursor: help;
-}
-
-.info-tip__text {
-  display: block;
-  margin-block-start: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border, #d9dee3);
-  border-radius: 0.5rem;
-}
-
 /* Review round 5, item 2: row selection and what acts on it. */
 .cell--select {
   inline-size: 2.5rem;
@@ -6143,4 +6792,3160 @@ tr[data-flagged='true'] {
   border: 1px solid var(--color-border, #d9dee3);
   border-radius: 0.5rem;
   background: var(--color-primary-tint);
+}
+
+/* Review round 7, item 1: the stage plan, the Overview's stage bar and the monthly stage step. */
+.stage-plan__list,
+.stage-progress__stages,
+.stage-entries__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage-plan__stage,
+.stage-progress__stage,
+.stage-entries__stage {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.stage-progress__stage.is-current,
+.stage-entries__stage.is-current {
+  border-color: var(--color-info);
+  background: var(--color-info-surface);
+}
+
+.stage-progress__stage.is-skipped {
+  color: var(--color-text-muted);
+}
+
+.stage-plan__name,
+.stage-progress__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+}
+
+.stage-plan__weight,
+.stage-progress__weight {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.stage-plan__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-2) var(--space-3);
+  align-items: start;
+}
+
+.stage-progress {
+  margin-block: var(--space-6);
+}
+
+.stage-progress__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.stage-progress__figures {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.stage-progress__bar {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stage-progress__bar dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.stage-progress__bar dd {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.stage-progress__track {
+  display: block;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-neutral-surface);
+  overflow: hidden;
+}
+
+.stage-progress__fill {
+  display: block;
+  block-size: 100%;
+  border-radius: 999px;
+  background: var(--chart-category-2);
+}
+
+.stage-progress__bar--actual .stage-progress__fill {
+  background: var(--chart-category-1);
+}
+
+.stage-history {
+  margin-block: var(--space-3);
+}
+
+.stage-history > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Review round 8, point 01: a dashboard value that opens the records it counts. A pointer, a tint on hover and the global focus ring say so. */
+.bars__link {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: calc(-1 * var(--space-1));
+  padding: var(--space-1);
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+.column-chart__link {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* A portfolio's planned and actual columns as one link: the group's own grid, full width, so the columns keep their size. */
+.grouped-columns__link {
+  display: grid;
+  gap: var(--space-1);
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+.bars__link:hover,
+.column-chart__link:hover,
+.grouped-columns__link:hover,
+.drill-link:hover {
+  background: var(--color-primary-tint);
+  color: inherit;
+}
+
+.donut__segment.is-linked {
+  cursor: pointer;
+}
+
+/* A count in a table or a list that opens its records: the number, underlined only on hover so a table of them stays quiet. */
+.drill-link {
+  border-radius: 4px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.drill-link:hover {
+  text-decoration: underline;
+}
+
+/* A card whose whole surface opens its records; a link inside it stays its own. */
+.home__tile--linked {
+  position: relative;
+}
+
+.home__tile--linked:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.home__tile-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.home__tile-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.home__tile--linked a:not(.home__tile-link) {
+  position: relative;
+  z-index: 1;
+}
+
+.home__tile--linked:has(.home__tile-link:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.home__tile-link:focus-visible {
+  outline: none;
+}
+
+/* Review round 8, point 02: the one overall figure at the top of the Overview, then where it comes from. */
+.overall-progress__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.overall-progress__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin-block: 0 var(--space-3);
+}
+
+.overall-progress__value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* The 15 Nov 2026 request: the project Overview as a dashboard. Headline tiles, then cards side by side; facts as small tiles, not rows. */
+.overview-kpis {
+  margin-block: var(--space-3) var(--space-4);
+}
+
+.overview-kpis__tile {
+  justify-content: flex-start;
+}
+
+.overview-kpis__tile:first-child {
+  flex: 2 1 min(100%, 22rem);
+}
+
+.overview-kpis__progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.overview-kpis__progress .gauge {
+  inline-size: 5.5rem;
+  block-size: 5.5rem;
+}
+
+.overview-kpis__legend {
+  display: grid;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+}
+
+.overview-kpis__legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.overview-kpis__key--actual {
+  --chart-color: var(--series-actual);
+}
+
+.overview-kpis__key--planned {
+  --chart-color: var(--series-planned);
+}
+
+.overview-kpis__text {
+  font-size: 1.25rem;
+}
+
+.overview-board.overview-board--stacked {
+  grid-template-columns: 1fr;
+}
+
+.overview-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+  margin-block-end: var(--space-4);
+}
+
+.overview-card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.overview-card > h2,
+.overview-card .stage-progress__header h2,
+.overview-card .section__header h2 {
+  margin-block-end: var(--space-3);
+  font-size: 1.125rem;
+}
+
+.overall-progress__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: 0 var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.details--tiles {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.overview-card .notice {
+  margin-block-end: var(--space-3);
+}
+
+.details--tiles .details__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.details--tiles dt {
+  font-size: 0.8125rem;
+}
+
+/* A tile's second line (an entity, an owner, a date) under its value, not run into it. */
+.details--tiles .details__aside {
+  display: block;
+  margin-inline-start: 0;
+  font-size: 0.8125rem;
+}
+
+.details--tiles dd {
+  overflow-wrap: anywhere;
+}
+
+.overview-card .stage-progress {
+  margin: 0;
+}
+
+.overview-kpis__progress .gauge__centre {
+  font-size: 0.9375rem;
+}
+
+/* An action inside a tile reads as a link, so the tile keeps the height of its neighbours. */
+.details--tiles .button {
+  align-self: flex-start;
+  min-block-size: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.details--tiles .button:hover {
+  background: none;
+  color: var(--color-primary-hover);
+}
+
+.overview-card h3 {
+  margin-block: var(--space-4) var(--space-2);
+}
+
+/* The progress card: its header, the set-up notice and the source line, each with room around it. */
+.overview-card .stage-progress__header {
+  margin-block-end: var(--space-3);
+}
+
+.overview-card .stage-progress__header h2 {
+  margin: 0;
+}
+
+.overview-card .notice {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.overview-card .notice p {
+  margin: 0;
+}
+
+.overview-card .overall-progress__source {
+  margin-block-start: var(--space-3);
+}
+
+.value--nowrap {
+  white-space: nowrap;
+}
+
+/* Review round 8, point 06: a record's "More" menu; its destructive actions in red after a divider. */
+.more-menu .popover__menu {
+  min-inline-size: 13rem;
+}
+
+.popover__divider {
+  margin-block: var(--space-1);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.popover__option--danger,
+.popover__option--danger:hover {
+  color: var(--color-danger);
+}
+
+.popover__option--danger:hover {
+  background: var(--color-danger-surface);
+}
+
+/*
+ * Review round 8, point 07: the welcome banner on an image. The picture sits under the green banner's content; an overlay of the rail's
+ * green, darkest behind the greeting, keeps the text and the pills at 4.5:1 or better on any picture, in light and dark mode alike (the
+ * banner's text colour does not change with the theme). With the default style none of this is drawn and the banner is as it was.
+ */
+.home__hero {
+  position: relative;
+}
+
+.home__hero--image {
+  /* A little taller (20 Nov 2026, the user): more of the picture shows around the greeting. */
+  min-block-size: 18.5rem;
+  padding-block: var(--space-8, 3rem);
+  background: var(--color-rail);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The pills sit at the banner's foot, under the picture's open space (20 Nov 2026, the user: "make the buttons down"). */
+.home__hero--image > .home__actions-bar {
+  margin-block-start: auto;
+}
+
+/* The greeting and the pills above the picture; the caption, the dots and the pin are placed on it. */
+.home__hero > :not(.home__hero-media, .home__hero-caption, .banner-picker) {
+  position: relative;
+}
+
+/* The picture is clipped to the banner's rounded corners; the customise panel is not. */
+.home__hero-media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.home__hero-image {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.home__hero-image--fade {
+  animation: hero-fade 1.2s ease;
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.home__hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgb(8 38 34 / 88%) 0%,
+    rgb(8 38 34 / 78%) 72%,
+    rgb(8 38 34 / 45%) 100%
+  );
+}
+
+[dir='rtl'] .home__hero-overlay {
+  background: linear-gradient(
+    270deg,
+    rgb(8 38 34 / 88%) 0%,
+    rgb(8 38 34 / 78%) 72%,
+    rgb(8 38 34 / 45%) 100%
+  );
+}
+
+.home__hero--image .home__title,
+.home__hero--image .home__intro,
+.home__hero--image .home__date {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
+}
+
+/* The place the picture shows, small, in the banner's top corner opposite the greeting. */
+.home__hero-caption {
+  position: absolute;
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-4);
+  display: grid;
+  justify-items: end;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 6px;
+  background: rgb(8 38 34 / 70%);
+  color: #fff;
+  font-size: 0.8125rem;
+}
+
+.home__hero-place {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.home__hero-caption-icon {
+  flex: none;
+}
+
+.home__hero-credit {
+  opacity: 0.85;
+  font-size: 0.75rem;
+}
+
+/* "مظهر الترحيب": a pin in the banner's bottom corner, like the browser's own customise button, and its panel under it. */
+.banner-picker {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline-end: var(--space-3);
+}
+
+.banner-picker__toggle {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 999px;
+  background: rgb(8 38 34 / 55%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.banner-picker__toggle:hover,
+.banner-picker__toggle[aria-expanded='true'] {
+  background: rgb(8 38 34 / 85%);
+}
+
+/* It opens downwards, over the page under the banner: opened upwards it would slide under the sticky top bar. */
+.banner-picker__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: 30;
+  display: grid;
+  gap: var(--space-2);
+  inline-size: min(22rem, 85vw);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  color: var(--color-text);
+}
+
+.banner-picker__panel[hidden] {
+  display: none;
+}
+
+.banner-picker__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.banner-picker__styles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+}
+
+.banner-picker__styles button {
+  padding: var(--space-2) var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.banner-picker__styles button[aria-checked='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.banner-picker__styles button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.banner-picker__all {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.banner-picker__images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.banner-picker__image {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--color-neutral-surface);
+  cursor: pointer;
+}
+
+.banner-picker__thumb,
+.banner-picker__placeholder {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.banner-picker__image[aria-pressed='true'] {
+  border-color: var(--color-primary);
+}
+
+.banner-picker__check {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  display: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.banner-picker__image[aria-pressed='true'] .banner-picker__check {
+  display: block;
+}
+
+.banner-picker__warning {
+  color: var(--color-warning);
+}
+
+/* Review round 8, point 07: the side menu's fixed picture across its lower half, rising out of the menu's own green — solid above the middle,
+   fading in below it and still tinted enough at the foot for the collapse button to keep its contrast. The rail scrolls, but a scroll container's
+   background stays put, so the picture stays at the bottom. */
+.rail.rail--image {
+  background:
+    linear-gradient(
+      var(--color-rail) 0 45%,
+      color-mix(in srgb, var(--color-rail) 80%, transparent) 65%,
+      color-mix(in srgb, var(--color-rail) 62%, transparent) 100%
+    ),
+    var(--rail-image) center bottom / auto 55% no-repeat,
+    var(--color-rail);
+}
+
+/* Review round 8, point 13: a sortable column's header is a button that fills it; the arrow shows the order. */
+.sort-header {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.sort-header:hover {
+  text-decoration: underline;
+}
+
+.sort-header__arrow {
+  color: var(--color-text-muted);
+  font-size: 0.75em;
+}
+
+[aria-sort='ascending'] .sort-header__arrow,
+[aria-sort='descending'] .sort-header__arrow {
+  color: var(--color-primary, currentColor);
+}
+
+/* The Project Manager's projects: the chips and the search above the table, wrapping on a narrow window. */
+.managed__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: var(--space-3);
+}
+
+.managed__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip-toggle {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  min-block-size: 2.25rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.chip-toggle[aria-pressed='true'] {
+  border-color: var(--color-primary, var(--color-border));
+  background: var(--color-primary, var(--color-surface));
+  color: var(--color-on-primary, #fff);
+}
+
+.chip-toggle__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.managed__search {
+  flex: 0 1 20rem;
+}
+
+.home__actions-due a {
+  white-space: nowrap;
+}
+
+/* The project's number under its name, so the two never run together. */
+.managed__number {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* Review round 8, point 14: the Executive's dashboard — five headline figures, then the top risks beside the decisions waiting. */
+.executive__pair {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.executive__versus {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.executive__attention {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: var(--space-4);
+}
+
+.executive__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.executive__list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  align-items: baseline;
+}
+
+/* Review round 8, point 15: Administration's menu on one line above the page, each heading opening its screens below it. */
+.admin-bar {
+  margin-block-end: var(--space-6);
+  border-block-end: 1px solid var(--color-border);
+}
+
+.admin-bar__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-bar__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-block-end: 3px solid transparent;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-bar__button:hover,
+.admin-bar__button[aria-expanded='true'] {
+  color: var(--color-text);
+}
+
+.admin-bar__button--current {
+  border-block-end-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.admin-bar__chevron {
+  inline-size: 1rem;
+  block-size: 1rem;
+  transition: transform 0.15s ease;
+}
+
+.admin-bar__button[aria-expanded='true'] .admin-bar__chevron {
+  transform: rotate(180deg);
+}
+
+.admin-bar__menu {
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  min-inline-size: 15rem;
+  list-style: none;
+}
+
+.admin-bar__menu .popover__option[aria-current='page'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 600;
+}
+
+/* Review round 8, point 16: from 1280 px the registration form uses the width, two short fields (dates, codes, choices) to a row. */
+.form__pair {
+  display: contents;
+}
+
+@media (min-width: 80rem) {
+  /* Beats the sectioned form's 60rem cap, which left an empty band beside it. */
+  .form.form--wide:has(> .form__section) {
+    max-inline-size: 80rem;
+  }
+
+  .form--wide .form__pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+  }
+}
+
+/* A table row's actions on one line: the everyday action joined to a ⋯ menu holding the rest. */
+.row-action-group {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  vertical-align: middle;
+}
+
+.row-action-group > .button,
+.row-action-group .more-menu__button {
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
+}
+
+.row-action-group > .button:not(:last-child) {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.row-action-group > .button + .more-menu {
+  margin-inline-start: -1px;
+}
+
+.row-action-group > .button + .more-menu .more-menu__button {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+.more-menu__button--compact {
+  min-inline-size: 2.5rem;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/*
+ * A table wider than its box scrolls inside it; the row actions column stays pinned to the box's end edge, so Edit and ⋯ are always in
+ * view. The pinned cells take the row's background (hover included) so the scrolled columns pass under them.
+ */
+.table:has(td:last-child > .row-action-group) :is(thead th, tbody td):last-child {
+  position: sticky;
+  inset-inline-end: 0;
+  z-index: 1;
+  background: var(--color-background);
+  box-shadow: -1px 0 0 var(--color-border-subtle);
+}
+
+:where(:root[dir='rtl'])
+  .table:has(td:last-child > .row-action-group)
+  :is(thead th, tbody td):last-child {
+  box-shadow: 1px 0 0 var(--color-border-subtle);
+}
+
+.table:has(td:last-child > .row-action-group) thead th:last-child {
+  background: var(--color-surface);
+}
+
+.table:has(td:last-child > .row-action-group) tbody tr:hover > td:last-child {
+  background: var(--color-canvas);
+}
+
+/* An open menu sits above the next rows' pinned cells. */
+.table:has(td:last-child > .row-action-group)
+  tbody
+  td:last-child:has(.popover__menu:not([hidden])) {
+  z-index: 3;
+}
+
+/* A row of tabs on one line: what does not fit goes into "More" at its end (OneLineTabs). */
+.one-line-tabs {
+  position: relative;
+}
+
+.one-line-tabs > ul:first-child {
+  flex-wrap: nowrap;
+}
+
+.one-line-tabs a,
+.one-line-tabs__more {
+  white-space: nowrap;
+}
+
+.one-line-tabs__measure {
+  /* Fixed, so a row wider than the page does not make the page scroll sideways. */
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.one-line-tabs__current {
+  font-weight: 600;
+}
+
+.one-line-tabs__more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-block-end: 3px solid transparent;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.one-line-tabs__more:hover {
+  background: var(--color-neutral-surface);
+}
+
+.one-line-tabs__more--current {
+  border-block-end-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* The drop-down sits inside the .tabs nav: undo the tab row's flex row and the tabs' underline so it is a plain popover list. */
+.one-line-tabs .one-line-tabs__menu {
+  display: block;
+  padding: var(--space-1);
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  min-inline-size: 14rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.one-line-tabs .one-line-tabs__menu[hidden] {
+  display: none;
+}
+
+.one-line-tabs .one-line-tabs__menu .popover__option {
+  display: flex;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  white-space: normal;
+}
+
+.one-line-tabs .one-line-tabs__menu .popover__option[aria-current='page'] {
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* The banner's quick actions on one line: the ones that do not fit go into a "More" pill (QuickActions). */
+.home__actions-bar {
+  position: relative;
+}
+
+/* A grid item grows to its content by default; the banner keeps the page's width, so the pills that do not fit go into More. */
+.home__hero {
+  min-inline-size: 0;
+}
+
+.home__actions-bar .home__actions {
+  flex-wrap: nowrap;
+}
+
+.home__actions-bar .home__actions > li > a,
+.home__actions-bar .home__actions > li > button,
+.home__actions-bar .home__actions-more {
+  white-space: nowrap;
+}
+
+.home__actions-bar .home__actions.home__actions--measure {
+  /* Fixed, so a row wider than the page does not make the page scroll sideways. */
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.home__actions-bar .home__actions-more {
+  min-block-size: 2.5rem;
+  padding: 0 var(--space-4);
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-rail-text);
+  font-weight: 400;
+}
+
+.home__actions-bar .home__actions-more:hover {
+  background: rgb(255 255 255 / 14%);
+}
+
+/* The measuring rows (OneLineTabs, QuickActions) draw their labels from data-label, so the text is not in the page twice. */
+:is(.one-line-tabs__measure, .home__actions--measure) [data-label]::before {
+  content: attr(data-label);
+}
+
+/*
+ * The Portfolio dashboard's designed visuals (17 Nov 2026): each visual takes its place on a twelve-column grid of fixed-height rows, as the
+ * Portfolio Manager placed it; the grid mirrors itself in Arabic. Places and sizes are decimals (20 Nov 2026, a tenth of a column or row), which
+ * grid tracks cannot span, so on a wide screen each visual is positioned from its four numbers (gridPlace(): --visual-column and --visual-row
+ * from 1, --visual-width, --visual-height) on columns of (content width − 11 gaps) / 12, and the grid is as tall as its --grid-rows. Under
+ * 48rem the visuals stack in reading order at their natural height.
+ */
+.visual-grid {
+  --grid-gap: var(--space-4);
+  --grid-row: 4.5rem;
+  /* The padding around the grid's columns, and its border (the designer's canvas has both). */
+  --grid-inset: 0px;
+  --grid-frame: 0px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--grid-gap);
+}
+
+@media (min-width: 48rem) {
+  .visual-grid {
+    /* A column's width: 100cqi is the grid's content width wherever it is read, a container's children included. */
+    --grid-column: calc((100cqi - 11 * var(--grid-gap)) / 12);
+
+    container-type: inline-size;
+    position: relative;
+    block-size: calc(
+      2 * (var(--grid-inset) + var(--grid-frame)) + var(--grid-rows, 0) *
+        (var(--grid-row) + var(--grid-gap)) - var(--grid-gap)
+    );
+    /* Not laid out by tracks (every visual is positioned), but read by the designer as the size of a step (step()). */
+    grid-auto-rows: var(--grid-row);
+  }
+
+  .visual-grid > :is(.visual, .visual-container) {
+    position: absolute;
+    inset-block-start: calc(
+      var(--grid-inset) + (var(--visual-row) - 1) * (var(--grid-row) + var(--grid-gap))
+    );
+    inset-inline-start: calc(
+      var(--grid-inset) + (var(--visual-column) - 1) * (var(--grid-column) + var(--grid-gap))
+    );
+    inline-size: calc(
+      var(--visual-width) * var(--grid-column) + (var(--visual-width) - 1) * var(--grid-gap)
+    );
+    block-size: calc(
+      var(--visual-height) * var(--grid-row) + (var(--visual-height) - 1) * var(--grid-gap)
+    );
+  }
+}
+
+.visual {
+  /* The containing block of a card title's stretched link (.home__tile-link::after), so it covers its own visual only. */
+  position: relative;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.visual__body {
+  flex: 1;
+  min-block-size: 0;
+  overflow: auto;
+  /*
+   * Its own stacking layer, so what it holds (a table's positioned container) is painted inside it and its scroll bar over them (20 Nov
+   * 2026: the scroll bar showed behind the tables of By sector).
+   */
+  isolation: isolate;
+}
+
+/*
+ * Fit to box (20 Nov 2026: "free to minimize a visual or container, not fixed"): the room under a visual's title holds its body at the room's
+ * size; a body larger than its room is scaled down evenly from its top-start corner (FitToBox sets --fit-scale), so it shows whole, never cut
+ * off and never scrolled.
+ */
+.visual__fit {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.visual__fit > .visual__body {
+  flex: none;
+  block-size: 100%;
+  overflow: visible;
+  transform-origin: top left;
+}
+
+[dir='rtl'] .visual__fit > .visual__body {
+  transform-origin: top right;
+}
+
+.visual__fit > .visual__body.is-scaled {
+  transform: scale(var(--fit-scale, 1));
+}
+
+/* Too large to fit at a readable size: drawn at the least readable scale, and scrolled within its visual. */
+.visual__fit.is-scrolling {
+  overflow: auto;
+}
+
+/*
+ * A chart fills its visual: a visual made taller or wider draws a larger chart, never empty room under it (19 Nov 2026). The body is a column;
+ * the chart takes what is left after its notes and table toggle.
+ */
+.visual__body:not(.visual__body--section) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.visual__body > :is(.axis-chart, .axis-chart__frame--bar, .line-chart) {
+  flex: 1;
+  min-block-size: 0;
+}
+
+.visual-card,
+.visual-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.visual-gauge {
+  align-items: center;
+}
+
+.visual-gauge .gauge {
+  max-inline-size: 9rem;
+}
+
+.donut--pie svg {
+  max-inline-size: 10rem;
+}
+
+/* A designed pie's disc is the size of a donut's ring (20 Nov 2026: every donut and pie in one design, the governed widgets'). */
+.visual__body > .distribution--donut > .donut--pie svg {
+  max-inline-size: none;
+}
+
+/* The designer: the canvas, with one pane beside it holding the gallery over the settings; under 64rem the pane goes below the canvas. */
+.designer__status {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.designer__workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .designer__workspace {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+  }
+
+  .designer__pane {
+    position: sticky;
+    inset-block-start: calc(var(--header-block-size) + var(--space-4));
+    max-block-size: calc(100vh - var(--header-block-size) - 2 * var(--space-4));
+    overflow-y: auto;
+  }
+}
+
+.designer__pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.designer__gallery,
+.designer__settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.designer__heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.designer__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.designer__types {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The gallery: even tiles, the type's picture over its name, like a visualizations pane. */
+.designer__type {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 5rem;
+  padding: var(--space-3) var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.designer__type:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.designer__type:active {
+  transform: scale(0.97);
+}
+
+.designer__type:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer__type-icon {
+  flex: none;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  color: var(--color-primary);
+}
+
+.designer__type-name {
+  overflow-wrap: anywhere;
+}
+
+/* The gallery's note on dragging and the keyboard: set apart and small, under the tiles. */
+.designer__gallery .designer__hint:last-child {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border-subtle);
+  font-size: 0.8125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .designer__type {
+    transition: none;
+  }
+
+  .designer__type:active {
+    transform: none;
+  }
+}
+
+.designer__canvas-frame {
+  min-inline-size: 0;
+}
+
+/* The empty grid shows its columns and rows, so a visual's place reads before it is dropped. */
+.designer__canvas {
+  --grid-inset: var(--space-2);
+  --grid-frame: 1px;
+
+  min-block-size: calc(var(--grid-rows, 8) * 5.5rem);
+  padding: var(--grid-inset);
+  border: var(--grid-frame) dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-canvas);
+}
+
+@media (min-width: 48rem) {
+  .designer__canvas {
+    min-block-size: 0;
+    background-image:
+      linear-gradient(to right, var(--color-border-subtle) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-border-subtle) 1px, transparent 1px);
+    background-size:
+      calc((100% - 2 * var(--space-2) + var(--space-4)) / 12) 100%,
+      100% calc(4.5rem + var(--space-4));
+    background-position: var(--space-2) var(--space-2);
+  }
+}
+
+.designer__visual {
+  position: relative;
+  touch-action: none;
+}
+
+/* The visual being dragged rides above the others while they move out of its way. */
+.designer__visual.is-dragging {
+  z-index: 2;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+  opacity: 0.92;
+}
+
+/* Box selection (21 Nov 2026): the box dragged on empty canvas, translucent over the visuals it touches. */
+.designer__canvas {
+  position: relative;
+}
+
+.designer__marquee {
+  position: absolute;
+  z-index: 30;
+  border: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  pointer-events: none;
+}
+
+.designer__visual.is-selected {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.designer__visual-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.designer__visual-bar .widget__title {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.designer__edit {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  padding: 0;
+  cursor: pointer;
+}
+
+.designer__edit svg {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.designer__edit[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.designer__handle {
+  flex: none;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  touch-action: none;
+}
+
+.designer__handle--move {
+  inline-size: 2rem;
+  block-size: 2rem;
+  cursor: grab;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.designer__handle--move:active {
+  cursor: grabbing;
+}
+
+/* The size handle: a corner at the visual's end edge and bottom, mirrored in Arabic. */
+/* The size handle: two grip lines in the corner at the visual's end edge and bottom, mirrored in Arabic. */
+.designer__handle--resize {
+  position: absolute;
+  inset-block-end: 0.25rem;
+  inset-inline-end: 0.25rem;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: nwse-resize;
+  background: linear-gradient(
+      135deg,
+      transparent 0 52%,
+      var(--color-text-muted) 52% 60%,
+      transparent 60% 70%,
+      var(--color-text-muted) 70% 78%,
+      transparent 78%
+    )
+    no-repeat;
+  opacity: 0.7;
+}
+
+.designer__handle--resize:hover,
+.designer__handle--resize:focus-visible {
+  opacity: 1;
+}
+
+[dir='rtl'] .designer__handle--resize {
+  cursor: nesw-resize;
+  background: linear-gradient(
+      225deg,
+      transparent 0 52%,
+      var(--color-text-muted) 52% 60%,
+      transparent 60% 70%,
+      var(--color-text-muted) 70% 78%,
+      transparent 78%
+    )
+    no-repeat;
+}
+
+.designer__handle:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer__size {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+/*
+ * A dashboard section on the design's grid (18 Nov 2026): its frame carries the design's title, so the section's own heading and card border
+ * are not drawn twice; long tables scroll inside the frame.
+ */
+.visual__body--section > .insights__section > h2:first-child,
+.visual__body--section > .widget > .widget__header > .widget__title,
+.visual__body--section > .widget > .widget__title,
+.visual__body--section > .completion > .section__header > h2 {
+  display: none;
+}
+
+.visual__body--section > .insights__section,
+.visual__body--section > .widget {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The designer drags by a visual's whole bar; inside a visual nothing is clickable, so a click never leaves the designer. */
+.designer__visual-bar {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.designer__visual-bar:active {
+  cursor: grabbing;
+}
+
+.designer__visual .visual__body :is(a, button, input, select, summary, [role='button']) {
+  pointer-events: none;
+}
+
+.designer__subheading {
+  margin: var(--space-2) 0 0;
+  font-size: 0.9375rem;
+}
+
+/*
+ * The Data panel (TASK-112): the chosen values over a searchable field list, grouped by source and opened per group, as Power BI's field list
+ * reads; each chosen field carries its calculation. Filters reuse the rows. The list scrolls inside the pane, so the size fields stay in reach.
+ */
+.designer-data {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.designer-data__chosen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.designer-data__value,
+.designer-data__filter-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.25rem;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-3) var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-inline-start: 3px solid var(--color-primary);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-size: 0.875rem;
+}
+
+.designer-data__value-name {
+  flex: 1;
+  min-inline-size: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.designer-data__aggregation.field__input {
+  flex: none;
+  inline-size: 7.5rem;
+  min-block-size: 2rem;
+  padding-block: 0;
+  padding-inline: var(--space-2) 1.75rem;
+  background-position: right var(--space-2) center;
+  font-size: 0.8125rem;
+}
+
+[dir='rtl'] .designer-data__aggregation.field__input {
+  padding-inline: var(--space-2) 1.75rem;
+  background-position: left var(--space-2) center;
+}
+
+.designer-data__remove {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.designer-data__remove svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.designer-data__remove:hover:not(:disabled) {
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
+}
+
+.designer-data__remove:focus-visible,
+.designer-data__group-head:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.designer-data__remove:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.designer-data__note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-info-surface);
+  color: var(--color-info);
+  font-size: 0.8125rem;
+}
+
+.designer-data__search.field__input {
+  min-block-size: 2.25rem;
+  font-size: 0.875rem;
+}
+
+.designer-data__list {
+  max-block-size: 22rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.designer-data__group + .designer-data__group {
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.designer-data__group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.designer-data__group-head:hover {
+  background: var(--color-primary-tint);
+}
+
+/* A chevron that points to the reading end when closed and down when open. */
+.designer-data__chevron {
+  flex: none;
+  inline-size: 0.45rem;
+  block-size: 0.45rem;
+  border-block-end: 2px solid currentColor;
+  border-inline-end: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+}
+
+[dir='rtl'] .designer-data__chevron {
+  transform: rotate(45deg);
+}
+
+.designer-data__group-head[aria-expanded='true'] .designer-data__chevron {
+  transform: rotate(45deg);
+}
+
+[dir='rtl'] .designer-data__group-head[aria-expanded='true'] .designer-data__chevron {
+  transform: rotate(-45deg);
+}
+
+.designer-data__group-name {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.designer-data__count {
+  flex: none;
+  min-inline-size: 1.25rem;
+  padding: 0 var(--space-1);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.designer-data__fields {
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+}
+
+.designer-data__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2rem;
+  padding: var(--space-1) var(--space-3);
+  padding-inline-start: var(--space-6);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.designer-data__field:hover {
+  background: var(--color-primary-tint);
+}
+
+.designer-data__field:has(input:disabled) {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+
+.designer-data__field input {
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.designer-data__field-name {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.designer-data__type {
+  flex: none;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+.designer-data__filter {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.designer-data__filter .designer-data__filter-head {
+  border: 0;
+  border-block-end: 1px solid var(--color-border-subtle);
+  border-inline-start: 3px solid var(--color-primary);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.designer-data__filter-values {
+  max-block-size: 12rem;
+  overflow-y: auto;
+}
+
+.designer-data__filter-values .designer-data__field {
+  padding-inline-start: var(--space-3);
+}
+
+.designer-data__filter > .designer__hint {
+  padding: var(--space-2) var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .designer-data__chevron {
+    transition: none;
+  }
+}
+
+.designer-data__filter-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.designer-data__add {
+  align-self: flex-start;
+}
+
+/* A designed line chart (TASK-112, more fields): each series in its own colour and line style, over groups that run left to right. */
+.line-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The drawing's box takes its size from the visual, and the drawing is laid over it, so measuring the box never measures the drawing. */
+.line-chart__box {
+  position: relative;
+  flex: 1;
+  min-block-size: 12rem;
+}
+
+.line-chart__box > .line-chart__chart {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.line-chart__chart {
+  max-inline-size: none;
+  overflow: visible;
+}
+
+.line-chart__line {
+  fill: none;
+  stroke: var(--chart-color);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.line-chart__point {
+  fill: var(--chart-color);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.line-chart__point:hover {
+  r: 6px;
+}
+
+/* "over time" beside a source of published history in the Data panel. */
+.designer-data__over-time {
+  flex: none;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-info-surface);
+  color: var(--color-info);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* A date grouping and its Year/Month select, side by side. */
+.designer-data__group-by {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.designer-data__group-by > .field__input:first-child {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.designer-data__unit.field__input {
+  flex: none;
+  inline-size: 7rem;
+}
+
+.designer__type:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.designer__type:disabled:hover {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface);
+}
+
+/*
+ * A designed chart's axes (TASK-112, 19 Nov 2026, docs/architecture/dashboard-designer-axes.md). The Data panel of a bar, column or line chart is
+ * two boxes, as Power BI's wells (the category axis, then the value axis), and a Format part under the filters.
+ */
+.designer-well {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.designer-well > .designer-well__label {
+  float: inline-start;
+  inline-size: 100%;
+  margin-block-end: var(--space-1);
+  padding: 0;
+}
+
+.designer-format {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/*
+ * The column and bar charts with axes: the value axis's ticks at the start (under the bars for a bar chart), gridlines behind the marks and each
+ * shown axis's line along the plot's edge. Ticks keep the width of their longest label (--tick-chars) so the plot never moves under them.
+ */
+.axis-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.axis-chart > .axis-chart__frame {
+  flex: 1;
+  min-block-size: 0;
+}
+
+.axis-chart__frame {
+  display: grid;
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
+  font-size: 0.75rem;
+}
+
+.axis-chart__frame--column {
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-rows: minmax(10rem, 1fr) auto auto;
+  /* Room above the plot for a full column's figure and the top tick. */
+  padding-block-start: 1.25rem;
+}
+
+.axis-chart__title {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.axis-chart__frame--column > .axis-chart__title--value,
+.axis-chart__frame--bar > .axis-chart__title--category {
+  grid-column: 1;
+  align-self: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.axis-chart__frame--column > .axis-chart__title--value {
+  grid-row: 1;
+}
+
+.axis-chart__frame--column > .axis-chart__title--category {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.axis-chart__ticks {
+  position: relative;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.axis-chart__ticks--block {
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: calc(var(--tick-chars) * 1ch + 2px);
+}
+
+.axis-chart__ticks--block > .axis-chart__tick {
+  position: absolute;
+  inset-inline-end: 0;
+  line-height: 1;
+  white-space: nowrap;
+  translate: 0 50%;
+}
+
+.axis-chart__grid {
+  position: relative;
+  pointer-events: none;
+}
+
+.axis-chart__grid--block {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.axis-chart__gridline {
+  position: absolute;
+  border: 0 solid var(--color-border-subtle);
+}
+
+.axis-chart__grid--block > .axis-chart__gridline {
+  inset-inline: 0;
+  border-block-start-width: 1px;
+}
+
+.axis-chart__grid--inline > .axis-chart__gridline {
+  inset-block: 0;
+  border-inline-start-width: 1px;
+}
+
+.axis-chart__gridline.axis-chart__zero {
+  border-color: var(--color-border);
+}
+
+/* Each shown axis's line: the category axis along the groups, the value axis along the ticks. */
+.axis-chart__grid--block.has-category-line,
+.axis-chart__grid--inline.has-value-line {
+  border-block-end: 1px solid var(--color-border);
+}
+
+.axis-chart__grid--block.has-value-line,
+.axis-chart__grid--inline.has-category-line {
+  border-inline-start: 1px solid var(--color-border);
+}
+
+.axis-chart__plot {
+  display: grid;
+  grid-column: 3;
+  grid-row: 1 / 3;
+  grid-template-columns: repeat(var(--groups), minmax(0, 1fr));
+  grid-template-rows: subgrid;
+  column-gap: var(--space-2);
+}
+
+.axis-chart__group,
+.axis-chart__group > .axis-chart__link {
+  display: grid;
+  grid-row: 1 / 3;
+  grid-template-rows: subgrid;
+  min-inline-size: 0;
+}
+
+.axis-chart__link {
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+.axis-chart__link:hover {
+  background: color-mix(in srgb, var(--color-primary-tint) 60%, transparent);
+  color: inherit;
+}
+
+.axis-chart__columns {
+  display: flex;
+  gap: 2px;
+  padding-inline: 2px;
+}
+
+.axis-chart__track {
+  position: relative;
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.axis-chart__column {
+  position: absolute;
+  inset-inline: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--chart-color, var(--chart-single));
+  transform-origin: bottom;
+  animation: chart-grow-block 0.6s ease-out both;
+}
+
+.axis-chart__column.is-below {
+  border-radius: 0 0 4px 4px;
+  transform-origin: top;
+}
+
+/* A figure just above its column (or on the base when it has none), centred over it; a narrow column's figure may run over its neighbours'. */
+.axis-chart__value {
+  position: absolute;
+  inset-inline: -1rem;
+  margin-block-end: 2px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.axis-chart__category {
+  justify-self: center;
+  padding-block-start: var(--space-1);
+}
+
+/* The bar chart: [category title] [group words] [plot] [figure] per row, then the ticks and the value axis's title under the plot. */
+.axis-chart__frame--bar {
+  grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr) auto;
+  grid-template-rows: repeat(var(--bar-rows, 1), minmax(1.5rem, 1fr)) auto auto;
+  row-gap: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.axis-chart__frame--bar > .axis-chart__grid--inline {
+  grid-column: 3;
+}
+
+.axis-chart__row,
+.axis-chart__row > .axis-chart__link {
+  display: grid;
+  grid-column: 2 / 5;
+  grid-template-columns: subgrid;
+}
+
+.axis-chart__row > .axis-chart__link {
+  grid-column: 1 / -1;
+}
+
+.axis-chart__row,
+.axis-chart__row > .axis-chart__link {
+  align-items: center;
+  transition: opacity 0.15s ease;
+}
+
+.axis-chart__row.is-dimmed {
+  opacity: 0.4;
+}
+
+.axis-chart__row .bars__label {
+  grid-column: 1;
+  max-inline-size: 12rem;
+}
+
+.axis-chart__row .bars__value {
+  grid-column: 3;
+}
+
+.axis-chart__bar-track {
+  position: relative;
+  grid-column: 2;
+  /* As tall as its row (at least 1rem), so the bar inside it can size from the row in the designer and on the dashboard alike. */
+  align-self: stretch;
+  min-block-size: 1rem;
+}
+
+/* A linked row (on the dashboard) fills its row as an unlinked one does, so its bar sizes from the row too. */
+.axis-chart__row > .axis-chart__link {
+  align-self: stretch;
+}
+
+/*
+ * The bar, centred in its row: 70% of the row's height, never thinner than 0.75rem nor thicker than 2rem (20 Nov 2026: the bars were
+ * thinner on the Portfolio dashboard than in the designer, where a percentage height did not resolve the same way).
+ */
+.axis-chart__bar.widget__bar {
+  position: absolute;
+  inset-block: max(0px, min(15%, calc(50% - 0.375rem)), calc(50% - 1rem));
+  block-size: auto;
+  min-inline-size: 0;
+}
+
+[dir='rtl'] .axis-chart__bar.widget__bar {
+  transform-origin: right center;
+}
+
+.axis-chart__ticks--inline {
+  grid-column: 3;
+  block-size: 1rem;
+  font-size: 0.75rem;
+}
+
+.axis-chart__ticks--inline > .axis-chart__tick {
+  position: absolute;
+  inset-block-start: 0;
+  white-space: nowrap;
+  translate: -50% 0;
+}
+
+[dir='rtl'] .axis-chart__ticks--inline > .axis-chart__tick {
+  translate: 50% 0;
+}
+
+.axis-chart__frame--bar > .axis-chart__title--value {
+  grid-column: 3;
+}
+
+/* The line chart's axes: lines and gridlines as the column chart's, the titles in the muted text. */
+.line-chart__gridline {
+  stroke: var(--color-border-subtle);
+}
+
+.line-chart__axis line {
+  stroke: var(--color-border);
+}
+
+.line-chart__axis text {
+  fill: var(--color-text-muted);
+}
+
+.line-chart__axis .line-chart__title {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .axis-chart__column {
+    animation: none;
+  }
+}
+
+.axis-chart__missing {
+  align-self: flex-end;
+  padding-block-end: var(--space-1);
+  inline-size: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/*
+ * One governed widget per visual (TASK-112, 19 Nov 2026, docs/architecture/dashboard-designer-widgets.md): the card fills its visual, its
+ * footer at the visual's foot; the visual's frame carries the title.
+ */
+.visual__body--section > .widget--in-visual {
+  gap: var(--space-3);
+  min-block-size: 100%;
+}
+
+.widget--in-visual > .widget__header:empty,
+.widget--in-visual > .widget__notice:empty {
+  display: none;
+}
+
+/* A donut and its legend side by side need about 26rem in a visual (its padding is the visual's): narrower, the legend goes under it. */
+@container widget (max-width: 26rem) {
+  .widget--in-visual .distribution--donut {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+}
+
+/* The gallery's Widgets group: the view's widgets no visual draws, each a row with its title and "+ Add". */
+.designer__widgets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.designer__subheading {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.designer__widget-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.designer__widget-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.designer__widget-tile:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.designer__widget-tile:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer__widget-name {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.designer__widget-add {
+  flex: none;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .designer__widget-tile {
+    transition: none;
+  }
+}
+
+/*
+ * A container (19 Nov 2026): a titled card holding visuals, drawn as the dashboard's sections are (20 Nov 2026), its visuals as bordered
+ * boxes within it. On a wide screen its columns and rows are the dashboard's own: its first row is its title bar and its children take
+ * their inner places (decimals, as on the dashboard) on the rows under it, so a child lines up with the visuals beside the container; a child
+ * at an edge keeps the container's padding from its frame. On a narrow screen it stacks them.
+ */
+.visual-container {
+  --container-pad: var(--space-3);
+  --container-frame: 1px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  padding: var(--container-pad);
+  /* A card like the dashboard's sections (20 Nov 2026: "the same as the On-plan indicator"): white, its title in the text colour. */
+  border: var(--container-frame) solid var(--widget-border);
+  border-radius: var(--radius-widget);
+  background: var(--color-background);
+  box-shadow: var(--shadow-widget);
+}
+
+/* Its visuals are boxes within it, as the On-plan indicator's counts are: a light border, no shadow of their own. */
+.visual-container > .visual {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: none;
+}
+
+@media (min-width: 48rem) {
+  .visual-grid > .visual-container {
+    display: block;
+  }
+
+  /* Offsets from the container's padding box: a child's edges on the dashboard's column and row lines, kept within the padding. */
+  .visual-container > .visual {
+    --child-start: max(
+      var(--container-pad),
+      (var(--visual-column) - 1) * (var(--grid-column) + var(--grid-gap)) - var(--container-frame)
+    );
+    --child-end: min(
+      100% - var(--container-pad),
+      (var(--visual-column) - 1) * (var(--grid-column) + var(--grid-gap)) + var(--visual-width) *
+        var(--grid-column) + (var(--visual-width) - 1) * var(--grid-gap) - var(--container-frame)
+    );
+    --child-top: calc(
+      (var(--visual-row) - 1) * (var(--grid-row) + var(--grid-gap)) - var(--container-frame)
+    );
+    --child-bottom: min(
+      100% - var(--container-pad),
+      var(--child-top) + var(--visual-height) * var(--grid-row) + (var(--visual-height) - 1) *
+        var(--grid-gap)
+    );
+
+    position: absolute;
+    inset-block-start: var(--child-top);
+    inset-inline-start: var(--child-start);
+    inline-size: calc(var(--child-end) - var(--child-start));
+    block-size: calc(var(--child-bottom) - var(--child-top));
+  }
+
+  .visual-container__bar,
+  .visual-container__empty {
+    position: absolute;
+    inset-inline: var(--container-pad);
+  }
+
+  .visual-container__bar {
+    inset-block-start: var(--container-pad);
+    block-size: calc(var(--grid-row) - var(--container-pad) - var(--container-frame));
+  }
+
+  .visual-container__empty {
+    inset-block: calc(var(--grid-row) + var(--grid-gap) - var(--container-frame))
+      var(--container-pad);
+  }
+}
+
+/* The title bar fills its row (on a wide screen, the container's first grid row), its title centred over the divider. */
+.visual-container__bar {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding-block-end: var(--space-2);
+}
+
+.visual-container__title {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* An empty container in the designer says what it is for, on a dashed drop area. */
+.visual-container__empty {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.designer__container {
+  touch-action: none;
+}
+
+.designer__container.is-selected {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.designer__container.is-dragging {
+  z-index: 2;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+  opacity: 0.92;
+}
+
+/* A tile dragged from the gallery (19 Nov 2026): its name follows the pointer; the visual itself shows on the dashboard where it would drop. */
+.designer__ghost {
+  position: fixed;
+  z-index: 50;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+  pointer-events: none;
+  translate: 12px 12px;
+}
+
+/* A gallery tile is pressed and dragged, not scrolled, on a touch screen. */
+.designer__type,
+.designer__widget-tile {
+  touch-action: none;
+}
+
+/* The container a dragged visual will drop into (19 Nov 2026). */
+.designer__container.is-drop-target {
+  outline: 3px dashed var(--color-primary);
+  outline-offset: 2px;
+  background: var(--color-surface);
+}
+
+/*
+ * A table section's columns in its settings (20 Nov 2026, docs/architecture/dashboard-designer-table-columns.md): a tick per column; the
+ * sector's two tables each under their own caption.
+ */
+.designer-columns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  border: 0;
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.designer-columns__legend {
+  float: inline-start;
+  inline-size: 100%;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* The last ticked column, which may not be unticked. */
+.designer-well .field__checkbox:has(input:disabled) {
+  color: var(--color-text-muted);
+}
+
+/*
+ * A table's Columns (20 Nov 2026, docs/architecture/dashboard-designer-power-table.md): each column a row with its grip, name and actions, its
+ * calculation under them; dragged by the row, moved by its arrows. The field list's entries add a column when pressed.
+ */
+.designer-columns-well__column {
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+  padding-inline-start: var(--space-1);
+  cursor: grab;
+}
+
+.designer-columns-well__column.is-dragging {
+  opacity: 0.5;
+}
+
+.designer-columns-well__grip {
+  flex: none;
+  inline-size: 0.625rem;
+  block-size: 1rem;
+  background-image: radial-gradient(circle, var(--color-text-muted) 1px, transparent 1.5px);
+  background-size: 5px 5px;
+}
+
+.designer-columns-well__actions {
+  display: inline-flex;
+  flex: none;
+}
+
+.designer-columns-well__move:hover:not(:disabled) {
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.designer-columns-well__column .designer-data__aggregation.field__input {
+  order: 3;
+  flex: 1 1 100%;
+  inline-size: auto;
+  margin-inline-start: calc(0.625rem + var(--space-2));
+}
+
+.designer-columns-well__add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.designer-data__pick {
+  inline-size: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+
+.designer-data__pick:disabled {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+
+.designer-data__pick:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+.designer-make-editable {
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+/*
+ * A column table drawn as the sections draw theirs (.insights__section): its headings wrap and its cells tighten, so many columns of figures
+ * fit; a row's name keeps enough width not to run down the row. Its sortable headings wrap as plain ones do.
+ */
+.designed-table table {
+  font-size: 0.875rem;
+}
+
+.designed-table th,
+.designed-table td {
+  padding-inline: var(--space-2);
+}
+
+.designed-table thead th {
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+.designed-table tbody th[scope='row'],
+.designed-table tfoot th[scope='row'] {
+  min-inline-size: 10rem;
+}
+
+.designed-table .sort-header {
+  display: inline;
+  text-align: start;
+}
+
+.designed-table .sort-header__arrow {
+  margin-inline-start: var(--space-1);
+}
+
+/*
+ * A donut in a visual fills the room under the title (20 Nov 2026: a visual made larger draws a larger ring); DonutWithLegend measures that
+ * room and sizes the ring (--donut-size), the legend keeping its own room beside it.
+ */
+.visual__body > .distribution--donut {
+  flex: 1;
+  min-block-size: 0;
+  align-items: center;
+}
+
+.widget--in-visual > .widget__body {
+  flex: 1;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.widget--in-visual > .widget__body > .distribution--donut {
+  align-items: center;
+}
+
+/* A ring made larger writes its total larger too, in the same proportion (1.75rem at its usual 10.5rem). */
+.distribution--donut[style*='--donut-size'] .donut__value {
+  font-size: calc(var(--donut-size) / 6);
+}
+
+.distribution--donut[style*='--donut-size'] .donut__label {
+  font-size: calc(var(--donut-size) / 14);
+}
+
+/*
+ * A card inside a container reads as the On-plan indicator's boxes do (20 Nov 2026, dashboard-designer-box-sections.md): its title the box's
+ * label (small, muted, wrapping), its figure the box's count under it. In the designer its move handle and pencil sit over the title's end
+ * corner, shown while the pointer is on the card, it has the focus or it is selected, so a narrow card keeps its whole label.
+ */
+.visual-container > .visual[data-visual='CARD'] {
+  gap: var(--space-1);
+  padding: var(--space-3);
+}
+
+.visual-container > .visual[data-visual='CARD'] .widget__title {
+  overflow: visible;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.3;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.visual-container > .visual[data-visual='CARD'] .widget__title .home__tile-link {
+  color: inherit;
+}
+
+.visual-container > .visual[data-visual='CARD'] .home__tile-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.visual-container > .designer__visual[data-visual='CARD'] .designer__visual-bar {
+  position: relative;
+  align-items: flex-start;
+}
+
+.visual-container > .designer__visual[data-visual='CARD'] .designer__visual-bar .designer__handle {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--space-1));
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.visual-container > .designer__visual[data-visual='CARD'] .designer__handle--move {
+  inset-inline-end: calc(1.75rem + var(--space-1));
+}
+
+.visual-container > .designer__visual[data-visual='CARD'] .designer__edit {
+  inset-inline-end: 0;
+}
+
+@media (hover: hover) {
+  .visual-container
+    > .designer__visual[data-visual='CARD']:not(:hover, :focus-within, .is-selected)
+    .designer__visual-bar
+    .designer__handle {
+    opacity: 0;
+  }
+}
+
+/*
+ * A text box (TASK-112, 20 Nov 2026, docs/architecture/dashboard-designer-map-text.md): the designer's own words, in the page's language, line
+ * breaks kept, at its size, alignment (logical: start and end mirror in Arabic) and weight. Never fitted to its box: longer, it scrolls. On the
+ * dashboard it reads as text: no title bar, no card round it. In the designer it keeps its bar (its name, handle and pencil, quieter than a
+ * visual's title) and a light dashed outline, so it can be found and moved.
+ */
+.visual-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.visual-text--small {
+  font-size: 0.875rem;
+}
+
+.visual-text--large {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+.visual-text--heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.visual-text--bold {
+  font-weight: 700;
+}
+
+.visual-text--start {
+  text-align: start;
+}
+
+.visual-text--center {
+  text-align: center;
+}
+
+.visual-text--end {
+  text-align: end;
+}
+
+.visual__body--text {
+  overflow: auto;
+}
+
+.visual--text {
+  padding: var(--space-2) var(--space-1);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Inside a container, too, a text box is text: no box of its own. */
+.visual-container > .visual--text {
+  border-color: transparent;
+  background: transparent;
+}
+
+.designer__visual[data-visual='TEXT'] {
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--color-border-subtle);
+  background: transparent;
+  box-shadow: none;
+}
+
+.visual-container > .designer__visual[data-visual='TEXT'] {
+  border-style: dashed;
+  background: transparent;
+}
+
+.designer__visual[data-visual='TEXT'] .designer__visual-bar .widget__title {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.designer__visual[data-visual='TEXT'] .designer__handle--move,
+.designer__visual[data-visual='TEXT'] .designer__edit {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.designer-text__words {
+  min-block-size: 6rem;
+  resize: vertical;
+}
+
+.designer-text__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+/* The alignment's legend lines up with the other fields' labels (a legend has inline padding of its own). */
+.designer-text__align > legend {
+  padding: 0;
+}
+
+/*
+ * A text box's format (TASK-112, 20 Nov 2026, docs/architecture/dashboard-designer-text-format.md). Drawn: its own font size, style and colour
+ * (inline), its place down its box (the words' block margins in the body's column), and its frame: the card colour drawn as the visuals' cards
+ * are (their radius, no shadow), a colour, or none; a 1px border in its colour or the theme's.
+ */
+.visual-text--middle {
+  margin-block: auto;
+}
+
+.visual-text--bottom {
+  margin-block-start: auto;
+}
+
+.visual--text.visual--text-card,
+.visual--text.visual--text-fill {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-widget);
+}
+
+.visual--text.visual--text-card,
+.designer__visual[data-visual='TEXT'].visual--text-card {
+  background: var(--color-background);
+}
+
+.visual--text.visual--text-fill,
+.designer__visual[data-visual='TEXT'].visual--text-fill {
+  background: var(--text-box-fill);
+}
+
+.visual--text.visual--text-border,
+.designer__visual[data-visual='TEXT'].visual--text-border {
+  border: 1px solid var(--text-box-border, var(--color-border));
+  border-radius: var(--radius-widget);
+}
+
+.visual--text.visual--text-border:not(.visual--text-card, .visual--text-fill) {
+  padding: var(--space-3) var(--space-4);
+}
+
+.designer__visual[data-visual='TEXT']:is(
+    .visual--text-card,
+    .visual--text-fill,
+    .visual--text-border
+  ) {
+  border-radius: var(--radius-widget);
+}
+
+/* The format pane: groups framed under their legends, each a column of compact rows. */
+.designer-text {
+  gap: var(--space-3);
+}
+
+.designer-text__group {
+  gap: var(--space-3);
+}
+
+.designer-text__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.designer-text__row-label {
+  min-inline-size: 5.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.designer-text__size > .field__input {
+  inline-size: 5rem;
+  min-block-size: 2rem;
+  padding-block: 0;
+}
+
+.designer-text__size > .designer-text__size-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+/* Toggle buttons in a segmented row: the pressed one filled with the primary tint. */
+.designer-toggles {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.designer-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.designer-toggles > .designer-toggle + .designer-toggle {
+  margin-inline-start: -1px;
+}
+
+.designer-toggles > .designer-toggle:first-child {
+  border-start-start-radius: var(--radius);
+  border-end-start-radius: var(--radius);
+}
+
+.designer-toggles > .designer-toggle:last-child {
+  border-start-end-radius: var(--radius);
+  border-end-end-radius: var(--radius);
+}
+
+.designer-toggle--glyph {
+  inline-size: 2.25rem;
+  padding: 0;
+  font-size: 0.9375rem;
+}
+
+.designer-toggle:hover {
+  background: var(--color-surface);
+}
+
+.designer-toggle[aria-pressed='true'] {
+  position: relative;
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.designer-toggle:focus-visible {
+  position: relative;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.designer-toggle__icon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+/* Start and end lines mirror in Arabic, as the alignment does. */
+[dir='rtl'] .designer-toggle__icon--mirrored {
+  transform: scaleX(-1);
+}
+
+/* A colour chooser: its label and the chosen colour's name over a row of specials, swatches and Custom. */
+.designer-colour {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.designer-colour__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.designer-colour__label > .field__label {
+  margin: 0;
+}
+
+.designer-colour__chosen {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.designer-colour__row,
+.designer-colour__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.designer-colour__swatches {
+  gap: 0.3125rem;
+}
+
+.designer-colour__special {
+  border-radius: var(--radius);
+}
+
+.designer-colour__swatch {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.designer-colour__swatch[aria-pressed='true'],
+.designer-colour__custom.is-chosen {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.designer-colour__swatch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer-colour__custom {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: 2rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+/* The browser's picker covers the whole chip, unseen: the dot shows the custom colour, or a colour wheel before one is chosen. */
+.designer-colour__picker {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.designer-colour__dot {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: conic-gradient(#e0564d, #e2a12b, #3fb27f, #3b78c4, #8a5cc9, #e0564d);
+}
+
+.designer-colour__custom:has(.designer-colour__picker:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer-colour__note {
+  margin: 0;
+  color: var(--color-warning);
+}
+
+/*
+ * A map visual (TASK-112, 20 Nov 2026, docs/architecture/dashboard-designer-map-visual.md): the Projects by location map drawn from the
+ * visual's figure, laid out as the map section is (.visual__body--section). Without its list the map takes the row; a figure longer than a
+ * circle holds (an amount) widens its circle into a pill.
+ */
+.locations__map-row--wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.map-bubble--wide {
+  padding-inline: 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/*
+ * Alignment guides (20 Nov 2026, "thin red lines like in Power BI"): while a visual is moved or sized, a line across the canvas where one of
+ * its edges or its centre lines up with another visual's. --guide-at is the line in columns (x) or rows (y): an edge that starts a visual sits
+ * on its column's start, an end edge at the end of the cell before it, a centre in the middle of its gap.
+ */
+@media (min-width: 48rem) {
+  .designer__guide {
+    --guide-offset: 0px;
+
+    position: absolute;
+    z-index: 40;
+    background: #e5484d;
+    pointer-events: none;
+  }
+
+  .designer__guide--end {
+    --guide-offset: var(--grid-gap);
+  }
+
+  .designer__guide--center {
+    --guide-offset: calc(var(--grid-gap) / 2);
+  }
+
+  .designer__guide--x {
+    inset-block: 0;
+    inset-inline-start: calc(
+      var(--grid-inset) + var(--guide-at) * (var(--grid-column) + var(--grid-gap)) -
+        var(--guide-offset)
+    );
+    inline-size: 1px;
+  }
+
+  .designer__guide--y {
+    inset-inline: 0;
+    inset-block-start: calc(
+      var(--grid-inset) + var(--guide-at) * (var(--grid-row) + var(--grid-gap)) -
+        var(--guide-offset)
+    );
+    block-size: 1px;
+  }
 }

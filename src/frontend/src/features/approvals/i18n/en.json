@@ -116,6 +116,7 @@
     "action": "Withdraw",
     "title": "Withdraw request",
     "body": "Withdrawing ends the request without a decision and cancels the tasks still open. This cannot be undone.",
+    "bodyMany": "{names}: withdrawing ends each request without a decision and cancels its tasks still open. This cannot be undone.",
     "confirm": "Withdraw"
   },
   "history": {

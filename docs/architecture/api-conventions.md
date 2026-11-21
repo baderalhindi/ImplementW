@@ -123,7 +123,7 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 | `correlationId` | uuid | yes | R-41 |
 | `idempotencyKey` | uuid or null | yes | Echo of the request `Idempotency-Key`; null when the request carried none |
 | `timestamp` | date-time | yes | Server time, UTC |
-| `errors[]` | `{ field, code, message? }` | on 400/422 | `field` is the dotted path into the body, or the parameter name; `code` is a validation code (`REQUIRED`, `MAX_LENGTH`, `ENUM_VALUE`, `DATE_BEFORE_START`, `INVALID_CHARACTER`, …; the list is `ValidationCode`, TASK-077) |
+| `errors[]` | `{ field, code, message? }` | on 400/422 | `field` is the dotted path into the body, or the parameter name; `code` is a validation code (`REQUIRED`, `MAX_LENGTH`, `ENUM_VALUE`, `DATE_BEFORE_START`, `INVALID_CHARACTER`, `NOT_ARABIC`, `NOT_ENGLISH`, …; the list is `ValidationCode`, TASK-077) |
 
 **Status-code catalogue.**
 

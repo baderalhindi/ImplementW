@@ -40,7 +40,9 @@ internal static class ImportCellParser
 
         object? value = column.Kind switch
         {
-            ImportValueKind.Text => text.Length <= column.MaxLength ? text : Refuse(ValidationCode.MaxLength, out issue),
+            ImportValueKind.Text => text.Length > column.MaxLength ? Refuse(ValidationCode.MaxLength, out issue)
+                : column.Script is { } script && !TextShape.IsInScript(text, script) ? Refuse(TextShape.NotInScript(script), out issue)
+                : text,
             ImportValueKind.Code => text.Length > column.MaxLength ? Refuse(ValidationCode.MaxLength, out issue)
                 : TextShape.IsCode(text) ? text : Refuse(ValidationCode.Malformed, out issue),
             ImportValueKind.Email => text.Length > column.MaxLength ? Refuse(ValidationCode.MaxLength, out issue)

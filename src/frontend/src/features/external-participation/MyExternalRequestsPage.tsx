@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { isInternal } from '@/features/projects/access.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -25,12 +26,18 @@ export function MyExternalRequestsPage(): ReactElement | null {
   if (session === null) {
     return null;
   }
+  const internal = isInternal(session.user);
 
   return (
     <>
       <PageHeader
         title={t('externalParticipation.mine.title')}
-        description={t('externalParticipation.mine.description')}
+        // Review round 8, point 12: a Project Manager is AHDA's, not an entity's; only an entity's user reads "جهتك".
+        description={t(
+          internal
+            ? 'externalParticipation.mine.descriptionInternal'
+            : 'externalParticipation.mine.description',
+        )}
         actions={
           <Link className="button" to={MY_CONTRIBUTIONS_PATH}>
             {t('externalParticipation.nav.contributions')}
@@ -49,7 +56,13 @@ export function MyExternalRequestsPage(): ReactElement | null {
         )
       ) : requests.data.length === 0 ? (
         <EmptyState title={t('externalParticipation.mine.emptyTitle')}>
-          <p>{t('externalParticipation.mine.emptyHint')}</p>
+          <p>
+            {t(
+              internal
+                ? 'externalParticipation.mine.emptyHintInternal'
+                : 'externalParticipation.mine.emptyHint',
+            )}
+          </p>
         </EmptyState>
       ) : (
         <RequestRegisterView

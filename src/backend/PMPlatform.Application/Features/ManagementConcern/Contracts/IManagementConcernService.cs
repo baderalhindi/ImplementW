@@ -22,4 +22,7 @@ public interface IManagementConcernService
     /// <summary>Replaces the fields of a concern not yet with validation. Requires the caller's version (R-21). CONCERN_MANAGE, internal users.</summary>
     public Task<AdministrationResult<Versioned<ConcernDetail>>> UpdateAsync(
         Guid callerId, Guid concernId, ConcernChanges changes, uint expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>Client review, item 8: hides the issue or challenge, with its escalations and impacts, and what belongs to it, keeping all of it in the database. Null on success.</summary>
+    public Task<AdministrationError?> DeleteAsync(Guid callerId, Guid concernId, uint? expectedVersion, CancellationToken cancellationToken);
 }

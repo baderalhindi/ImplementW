@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -6,7 +7,9 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { ChangeRequestRegisterView } from './components/ChangeRequestRegisterView.tsx';
 import { changeRequestProblemMessage } from './problems.ts';
-import { useChangeRequestPortfolio } from './useChangeRequestData.ts';
+import { useChangeRequestPortfolio, type ChangeRequestEntry } from './useChangeRequestData.ts';
+import { editChangeRequestPath } from './paths.ts';
+import { changeRequestsApi } from './api/changeRequestsApi.ts';
 
 /**
  * SCR-105 Change Requests across the projects the person may see, each naming its project, most recently changed first.
@@ -15,6 +18,17 @@ import { useChangeRequestPortfolio } from './useChangeRequestData.ts';
 export function ChangeRequestRegisterPage(): ReactElement {
   const { t } = useI18n();
   const portfolio = useChangeRequestPortfolio();
+  const rowActions = useRowActions<ChangeRequestEntry>({
+    permission: 'CHANGE_REQUEST_RAISE',
+    name: ({ request }) => request.title.text,
+    // Only a draft or a returned request is edited; the others are decided on their page.
+    editTo: ({ request }) =>
+      request.status === 'DRAFT' || request.status === 'RETURNED'
+        ? editChangeRequestPath(request.id)
+        : null,
+    remove: ({ request }) => changeRequestsApi.remove(request.id, null),
+    onDeleted: portfolio.reload,
+  });
 
   return (
     <>
@@ -38,6 +52,7 @@ export function ChangeRequestRegisterPage(): ReactElement {
         </EmptyState>
       ) : (
         <ChangeRequestRegisterView
+          actions={rowActions}
           entries={portfolio.data}
           showProject
           caption={t('changeRequests.list.caption')}

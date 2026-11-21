@@ -3,7 +3,9 @@ import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { type IntegrationSummary } from './api/types.ts';
@@ -27,6 +29,7 @@ export function IntegrationsOverviewPage(): ReactElement {
           items={catalogue.items}
           caption={title}
           emptyTitle={t('integrationAdmin.overview.empty')}
+          emptyReason="setup"
         />
       )}
     </CataloguePage>
@@ -47,6 +50,7 @@ export function InternalSystemsPage(): ReactElement {
           items={internalSystems(catalogue.items)}
           caption={title}
           emptyTitle={t('integrationAdmin.internalSystems.empty')}
+          emptyReason="setup"
         />
       )}
     </CataloguePage>
@@ -69,15 +73,20 @@ function byDirectionThenCode(a: IntegrationSummary, b: IntegrationSummary): numb
 export function ApiCataloguePage(): ReactElement {
   const { t, language } = useI18n();
   const title = t('integrationAdmin.apiCatalogue.title');
+  const selection = useRowSelection();
   return (
     <CataloguePage title={title} description={t('integrationAdmin.apiCatalogue.description')}>
       {(catalogue) =>
         catalogue.items.length === 0 ? (
-          <EmptyState title={t('integrationAdmin.overview.empty')} />
+          <EmptyState title={t('integrationAdmin.overview.empty')} reason="setup" />
         ) : (
-          <TableContainer caption={title}>
+          <TableContainer caption={title} selection={{ selection, exportName: 'api-catalogue' }}>
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={catalogue.items.map((item) => item.id)}
+                  selection={selection}
+                />
                 <th scope="col">{t('integrationAdmin.fields.integration')}</th>
                 <th scope="col">{t('integrationAdmin.fields.direction')}</th>
                 <th scope="col">{t('integrationAdmin.fields.kind')}</th>
@@ -92,6 +101,7 @@ export function ApiCataloguePage(): ReactElement {
                 const name = labelIn(item.name, language);
                 return (
                   <tr key={item.id} data-integration={item.code}>
+                    <SelectRowCell id={item.id} name={name} selection={selection} />
                     <th scope="row">
                       {name}
                       <span className="cell__aside">

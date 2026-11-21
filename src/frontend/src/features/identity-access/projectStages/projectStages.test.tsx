@@ -115,4 +115,109 @@ describe('Project stages (review round 5, item 7)', () => {
     ).toBeTruthy();
     expect(within(table).getAllByRole('checkbox')).toHaveLength(2);
   });
+
+  test('Add stage, beside the heading, adds an empty row; a version reads its state in words', async () => {
+    open();
+    expect(await screen.findAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
+    expect(screen.getByText(en('identityAccess.masterData.states.PUBLISHED'))).toBeTruthy();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: en('identityAccess.projectStages.add') }),
+    );
+
+    const names = screen.getAllByRole('textbox', { name: /^English name/ });
+    expect(names).toHaveLength(3);
+    expect((names[2] as HTMLInputElement).value).toBe('');
+  });
+
+  test('with no stages yet, the table says how to add the first one', async () => {
+    mockApi()
+      .on('GET', /^\/configuration-families$/, { body: [{ id: 'family', code: 'PROJECT_STAGE' }] })
+      .on('GET', /^\/configuration-versions$/, { body: { items: [] } });
+    renderApp({ path: '/admin/project-stages', session: sessionFor(['R01']) });
+
+    expect(await screen.findByText(en('identityAccess.projectStages.empty'))).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole('button', { name: en('identityAccess.projectStages.add') }),
+    );
+    expect(screen.queryByText(en('identityAccess.projectStages.empty'))).toBeNull();
+  });
+
+  test('a saved stage removed is left out of the next version; the old version is not touched', async () => {
+    const api = open();
+    expect(await screen.findAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
+    const remove = screen.getAllByRole('button', {
+      name: new RegExp(`^${en('identityAccess.projectStages.remove')}`),
+    });
+    expect(remove).toHaveLength(2);
+
+    await userEvent.click(first(remove));
+    expect(screen.getAllByRole('textbox', { name: /^English name/ })).toHaveLength(1);
+    const weight = first(screen.getAllByRole('textbox', { name: /^Weight/ }));
+    await userEvent.clear(weight);
+    await userEvent.type(weight, '100');
+    await userEvent.click(
+      screen.getByRole('button', { name: en('identityAccess.projectStages.save') }),
+    );
+
+    await screen.findByText(en('identityAccess.projectStages.published'));
+    const put = api.requestsTo('PUT', /^\/configuration-versions\//)[0];
+    expect(put?.body).toMatchObject({
+      content: { projectStages: [{ code: 'B', weightPercent: 100, sortOrder: 1 }] },
+    });
+    expect(api.requestsTo('PUT', new RegExp(VERSION_ID))).toEqual([]);
+  });
+
+  test('deleting a version asks first, then removes it from the list', async () => {
+    const api = open();
+    api.on('POST', new RegExp(`^/configuration-versions/${VERSION_ID}/retire$`), { body: {} });
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: new RegExp(`^${en('identityAccess.projectStages.deleteVersion')}`),
+      }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: en('identityAccess.projectStages.deleteVersionTitle', { version: 1 }),
+    });
+    expect(dialog.textContent).toContain(en('identityAccess.projectStages.deleteVersionPublished'));
+    expect(api.requestsTo('POST', /\/retire$/)).toEqual([]);
+    // After the delete the API still lists the version, as retired; the page does not show it.
+    api.on('GET', /^\/configuration-versions$/, {
+      body: {
+        items: [
+          {
+            id: VERSION_ID,
+            versionNo: 1,
+            lifecycleState: 'RETIRED',
+            effectiveFrom: '2026-01-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+
+    await userEvent.click(
+      within(dialog).getByRole('button', {
+        name: en('identityAccess.projectStages.deleteVersion'),
+      }),
+    );
+    expect(await screen.findByText(en('identityAccess.projectStages.versionDeleted'))).toBeTruthy();
+    expect(api.requestsTo('POST', /\/retire$/)).toHaveLength(1);
+    expect(await screen.findByText(en('identityAccess.projectStages.noVersions'))).toBeTruthy();
+    expect(screen.queryByText(en('identityAccess.masterData.states.RETIRED'))).toBeNull();
+  });
+
+  test('a version shows its stages when opened, read once', async () => {
+    const api = open();
+    const toggle = await screen.findByText(en('identityAccess.projectStages.showStages'));
+    await userEvent.click(toggle);
+
+    const list = toggle.closest('details')?.querySelector('ol');
+    expect(list?.textContent).toContain('Plan');
+    expect(list?.textContent).toContain('40%');
+    expect(list?.textContent).toContain('Build');
+    // The newest version is already loaded, so opening it asks the API for nothing more.
+    expect(
+      api.requestsTo('GET', new RegExp(`^/configuration-versions/${VERSION_ID}$`)),
+    ).toHaveLength(1);
+  });
 });

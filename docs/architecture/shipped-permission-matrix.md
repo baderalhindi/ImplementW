@@ -43,6 +43,7 @@
 | `IDENTITY_INTEGRATION_MANAGE` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |
 | `USER_VIEW` | IDENTITY_ACCESS | Read | ALL | — | — | — | — | — | — | — |
 | `USER_MANAGE` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |
+| `USER_NATIONAL_ID_VIEW` | IDENTITY_ACCESS | Read | ALL | — | — | — | — | — | — | — |
 | `ROLE_VIEW` | IDENTITY_ACCESS | Read | ALL | — | — | — | — | — | — | — |
 | `ROLE_MANAGE` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |
 | `ROLE_ASSIGN` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |
@@ -63,7 +64,10 @@
 | `PROJECT_ACTIVATE` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
 | `PROJECT_IMPORT` | PROJECT | Write | — | ALL | DEPT | OWN | ASSIGNED | DEPT | ALL | ENTITY |
 | `PROJECT_IMPORT_APPROVE` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
+| `PROJECT_DELETE` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
 | `PROJECT_FOLLOW_UP` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
+| `PROJECT_MANAGER_CHANGE` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
+| `PROJECT_REGISTRATION_EDIT` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
 | `PROGRESS_VIEW` | PROGRESS | Read | — | ALL | DEPT | OWN | ASSIGNED | DEPT | ALL | ENTITY |
 | `PROGRESS_SUBMIT` | PROGRESS | Write | — | — | — | OWN | — | — | — | — |
 | `PROGRESS_REVIEW` | PROGRESS | Write | — | ALL | DEPT | — | — | — | — | — |
@@ -117,6 +121,7 @@
 | `NOTIFICATION_DELIVERY_VIEW` | NOTIFICATIONS | Read | ALL | — | — | — | — | — | — | — |
 | `NOTIFICATION_DELIVERY_MANAGE` | NOTIFICATIONS | Write | ALL | — | — | — | — | — | — | — |
 | `LAYOUT_PERSONALIZE` | DASHBOARDS | Write | — | OWN | OWN | — | — | — | OWN | — |
+| `DASHBOARD_DESIGN` | DASHBOARDS | Write | — | ALL | — | — | — | — | — | — |
 | `REPORT_COMPOSE` | REPORTS | Write | — | OWN | OWN | — | — | — | OWN | — |
 | `REPORT_EXPORT` | REPORTS | Read | — | ALL | DEPT | OWN | ASSIGNED | — | ALL | — |
 | `ACTIVITY_VIEW` | ACTIVITY | Read | — | ALL | DEPT | OWN | ASSIGNED | — | ALL | ENTITY |

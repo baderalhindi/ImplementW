@@ -9,7 +9,7 @@ import { isInternal } from '../access.ts';
 import { followUpApi } from '../api/followUpApi.ts';
 import { type ProjectDetail } from '../api/types.ts';
 import { Detail } from '../components/Detail.tsx';
-import { GapValue, ImportedLabel, OnPlanBadge } from '../components/FollowUpBadges.tsx';
+import { ImportedLabel } from '../components/FollowUpBadges.tsx';
 import { FollowUpDialog } from '../dialogs/FollowUpDialog.tsx';
 import { formatPoints } from '../presentation.ts';
 
@@ -59,7 +59,7 @@ export function FollowUpPanel(): ReactElement | null {
     access.permissions.can('PROJECT_FOLLOW_UP');
 
   return (
-    <section className="section" aria-labelledby="follow-up-heading">
+    <section className="section overview-card" aria-labelledby="follow-up-heading">
       <div className="section__header">
         <h2 id="follow-up-heading">
           {t('projects.followUp.title')} <ImportedLabel batchId={project.projectImportBatchId} />
@@ -88,34 +88,9 @@ export function FollowUpPanel(): ReactElement | null {
           ))}
         </p>
       )}
-      <dl className="details">
-        <Detail term={t('projects.followUp.onPlan')}>
-          <OnPlanBadge status={indicators?.onPlan} />
-        </Detail>
-        <Detail term={t('projects.followUp.gap')}>
-          <GapValue points={indicators?.gapPoints} />
-        </Detail>
-        <Detail term={t('projects.followUp.daysRemaining')}>
-          {indicators?.daysRemaining === null || indicators?.daysRemaining === undefined
-            ? none
-            : t('projects.followUp.daysValue', { days: indicators.daysRemaining })}
-        </Detail>
-        <Detail term={t('projects.followUp.declaredPlanned')}>
-          {percent(followUp?.declaredPlannedPercent)}
-        </Detail>
-        <Detail term={t('projects.followUp.declaredActual')}>
-          {percent(followUp?.declaredActualPercent)}
-          {followUp?.declaredAsOf !== null &&
-            followUp?.declaredAsOf !== undefined &&
-            followUp.declaredSource !== null && (
-              <span className="details__aside">
-                {t('projects.followUp.declaredFrom', {
-                  date: followUp.declaredAsOf,
-                  source: t(`projects.followUp.source.${followUp.declaredSource}`),
-                })}
-              </span>
-            )}
-        </Detail>
+      <dl className="details details--tiles">
+        {/* The on-plan label, the gap and the days remaining are the Overview's headline tiles; they are not repeated here. */}
+        {/* Review round 8, point 02: progress shows once, as the overall figure at the top; the declared values stand there while no method is set. */}
         <Detail term={t('projects.followUp.declaredPlannedSpend')}>
           {percent(followUp?.declaredPlannedSpendPercent)}
         </Detail>

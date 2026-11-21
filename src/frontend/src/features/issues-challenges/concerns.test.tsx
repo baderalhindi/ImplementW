@@ -750,6 +750,33 @@ describe('SCR-088 Escalation Detail', () => {
     expect(api.requestsTo('POST', /\/withdraw$/)).toHaveLength(1);
   });
 
+  test('select all on a concern’s escalations, then Withdraw for the chosen one its escalator may end', async () => {
+    const api = open(CULVERT_PATH);
+    api.on('POST', /\/withdraw$/, { body: escalation({ status: 'WITHDRAWN' }) });
+    const table = await screen.findByRole('region', {
+      name: en('issuesChallenges.detail.escalationsCaption'),
+    });
+    const rows = within(table).getAllByRole('row').length - 1;
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    const bar = screen
+      .getByText(en('common.table.selected', { count: rows }))
+      .closest<HTMLElement>('.selection-bar');
+    if (bar === null) {
+      throw new Error('No selection bar.');
+    }
+    await press(bar, en('issuesChallenges.withdrawEscalation.confirm'));
+    const dialog = await screen.findByRole('dialog', {
+      name: en('issuesChallenges.withdrawEscalation.title', { number: 2 }),
+    });
+    await press(dialog, en('issuesChallenges.withdrawEscalation.confirm'));
+    await screen.findByText(en('issuesChallenges.done.escalationWithdrawn'));
+    expect(api.requestsTo('POST', /\/withdraw$/).map((request) => request.path)).toEqual([
+      expect.stringContaining(`${CULVERT_OPEN_ESCALATION_ID}/withdraw`),
+    ]);
+  });
+
   test('an ended escalation shows its direction and offers nothing', async () => {
     open(
       `${ESCALATIONS_PATH}/${CULVERT_RESOLVED_ESCALATION_ID}`,

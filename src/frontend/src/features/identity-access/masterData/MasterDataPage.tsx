@@ -10,12 +10,18 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { usePersonNames } from '../assignments/useUserNames.ts';
+import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useCan } from '../permissions/permissions.ts';
-import { problemMessage } from '../problems.ts';
+import { checkScript } from '../forms.ts';
+import { type DeletionOutcome, usesText } from '../deletion.ts';
+import { fieldMessage, problemMessage } from '../problems.ts';
 
 /** A catalogue as GET /master-data-catalogues lists it (FG-04). */
 interface Catalogue {
@@ -28,7 +34,29 @@ interface Catalogue {
   parentCatalogueId: string | null;
 }
 
-type Command = 'validate' | 'publish' | 'retire';
+type Command = 'validate' | 'publish';
+
+const COMMANDS: readonly Command[] = ['validate', 'publish'];
+
+/** Whether an item's state offers the command. */
+function allows(item: MasterDataItemSummary, command: Command): boolean {
+  switch (command) {
+    case 'validate':
+      return item.lifecycleState === 'DRAFT';
+    case 'publish':
+      return item.lifecycleState === 'VALIDATED';
+  }
+}
+
+/** A command sent with the item's current ETag. */
+async function sendCommand(item: MasterDataItemSummary, command: Command): Promise<void> {
+  const current = await apiRequest<MasterDataItemSummary>(`/master-data-items/${item.id}`);
+  await apiRequest(`/master-data-items/${item.id}/${command}`, {
+    method: 'POST',
+    body: {},
+    ifMatch: current.etag,
+  });
+}
 
 const STATE_TONES: Record<string, StatusTone> = {
   DRAFT: 'neutral',
@@ -147,26 +175,87 @@ function CatalogueItems({
   const items = useApiResource(loadItems);
   const parents = useApiResource(loadParents);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<MasterDataItemSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const selection = useRowSelection();
 
   const parentName = (id: string | null) =>
     id === null
       ? t('common.values.none')
       : (parents.data?.find((p) => p.id === id)?.label[language] ?? id.slice(0, 8));
 
+  /**
+   * Deletes a value (the client wants no "retire"): it is cleared from the records that name it optionally, then erased. While a record needs it,
+   * nothing is deleted and the person is told where it is used.
+   */
+  const remove = (item: MasterDataItemSummary) => {
+    setNotice(null);
+    setConfirmation({
+      title: t('identityAccess.masterData.delete'),
+      body: t('identityAccess.masterData.deleteConfirm', { code: item.code }),
+      confirmLabel: t('identityAccess.masterData.delete'),
+      destructive: true,
+      action: async () => {
+        const current = await apiRequest<MasterDataItemSummary>(`/master-data-items/${item.id}`);
+        const { data } = await apiRequest<DeletionOutcome>(`/master-data-items/${item.id}/remove`, {
+          method: 'POST',
+          body: {},
+          ifMatch: current.etag,
+        });
+        setNotice(
+          data.deleted
+            ? {
+                tone: 'success',
+                message:
+                  data.clearedCount === 0
+                    ? t('identityAccess.masterData.deleted', { code: item.code })
+                    : t('identityAccess.masterData.deletedAndCleared', {
+                        code: item.code,
+                        count: data.clearedCount,
+                      }),
+              }
+            : {
+                tone: 'warning',
+                message: t('identityAccess.masterData.deleteBlocked', {
+                  code: item.code,
+                  uses: usesText(data.blockedBy, t),
+                }),
+              },
+        );
+      },
+    });
+  };
+
   const run = async (item: MasterDataItemSummary, command: Command) => {
     setError(null);
     try {
-      const current = await apiRequest<MasterDataItemSummary>(`/master-data-items/${item.id}`);
-      await apiRequest(`/master-data-items/${item.id}/${command}`, {
-        method: 'POST',
-        body: {},
-        ifMatch: current.etag,
-      });
+      await sendCommand(item, command);
       items.reload();
     } catch (caught) {
       setError(problemMessage(caught, t));
     }
+  };
+
+  const chosenFor = (command: Command) =>
+    (items.data ?? []).filter((item) => selection.selected.has(item.id) && allows(item, command));
+
+  /** The same command on every chosen item that allows it, confirmed by naming them. */
+  const confirmMany = (command: Command) => {
+    const chosen = chosenFor(command);
+    setConfirmation({
+      title: t(`identityAccess.masterData.${command}`),
+      body: chosen.map((item) => item.code).join('، '),
+      confirmLabel: t(`identityAccess.masterData.${command}`),
+      destructive: false,
+      action: async () => {
+        for (const item of chosen) {
+          await sendCommand(item, command);
+        }
+        selection.clear();
+      },
+    });
   };
 
   return (
@@ -190,6 +279,7 @@ function CatalogueItems({
         )}
       </div>
       <FormAlert message={error} />
+      <PageNotice notice={notice} />
       {items.loading && <LoadingState />}
       {items.error !== null && (
         <ErrorState
@@ -200,17 +290,39 @@ function CatalogueItems({
       )}
       {items.data !== undefined &&
         (items.data.length === 0 ? (
-          <EmptyState title={t('identityAccess.masterData.empty')} />
+          <EmptyState title={t('identityAccess.masterData.empty')} reason="setup" />
         ) : (
-          <TableContainer caption={catalogue.name[language]}>
+          <TableContainer
+            caption={catalogue.name[language]}
+            selection={{
+              selection,
+              exportName: `master-data-${catalogue.code.toLowerCase()}`,
+              actions: mayManage
+                ? COMMANDS.filter((command) => chosenFor(command).length > 0).map((command) => (
+                    <button
+                      key={command}
+                      type="button"
+                      className="button"
+                      onClick={() => {
+                        confirmMany(command);
+                      }}
+                    >
+                      {t(`identityAccess.masterData.${command}`)}
+                    </button>
+                  ))
+                : undefined,
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader ids={items.data.map((item) => item.id)} selection={selection} />
                 <th scope="col">{t('identityAccess.masterData.code')}</th>
                 <th scope="col">{t('identityAccess.masterData.labelAr')}</th>
                 <th scope="col">{t('identityAccess.masterData.labelEn')}</th>
                 {parentCatalogue !== undefined && (
                   <th scope="col">{parentCatalogue.name[language]}</th>
                 )}
+                <th scope="col">{t('identityAccess.masterData.sortOrder')}</th>
                 <th scope="col">{t('identityAccess.masterData.state')}</th>
                 {mayManage && <th scope="col">{t('common.table.actions')}</th>}
               </tr>
@@ -218,6 +330,7 @@ function CatalogueItems({
             <tbody>
               {items.data.map((item) => (
                 <tr key={item.id}>
+                  <SelectRowCell id={item.id} name={item.code} selection={selection} />
                   <td dir="ltr" className="cell--ltr">
                     {item.code}
                   </td>
@@ -228,6 +341,9 @@ function CatalogueItems({
                     {item.label.en}
                   </td>
                   {parentCatalogue !== undefined && <td>{parentName(item.parentItemId)}</td>}
+                  <td dir="ltr" className="cell--ltr">
+                    {item.sortOrder}
+                  </td>
                   <td>
                     <StatusBadge
                       label={t(
@@ -238,31 +354,36 @@ function CatalogueItems({
                   </td>
                   {mayManage && (
                     <td>
-                      {item.lifecycleState === 'DRAFT' && (
+                      {(item.lifecycleState === 'DRAFT' || item.lifecycleState === 'PUBLISHED') && (
                         <button
                           type="button"
                           className="button button--quiet"
-                          onClick={() => void run(item, 'validate')}
+                          onClick={() => {
+                            setEditing(item);
+                          }}
                         >
-                          {t('identityAccess.masterData.validate')}
+                          {t('common.actions.edit')}
                         </button>
                       )}
-                      {item.lifecycleState === 'VALIDATED' && (
+                      {COMMANDS.filter((command) => allows(item, command)).map((command) => (
                         <button
+                          key={command}
                           type="button"
                           className="button button--quiet"
-                          onClick={() => void run(item, 'publish')}
+                          onClick={() => void run(item, command)}
                         >
-                          {t('identityAccess.masterData.publish')}
+                          {t(`identityAccess.masterData.${command}`)}
                         </button>
-                      )}
-                      {item.lifecycleState === 'PUBLISHED' && !item.isSystem && (
+                      ))}
+                      {!item.isSystem && (
                         <button
                           type="button"
                           className="button button--quiet"
-                          onClick={() => void run(item, 'retire')}
+                          onClick={() => {
+                            remove(item);
+                          }}
                         >
-                          {t('identityAccess.masterData.retire')}
+                          {t('identityAccess.masterData.delete')}
                         </button>
                       )}
                     </td>
@@ -272,6 +393,26 @@ function CatalogueItems({
             </tbody>
           </TableContainer>
         ))}
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          items.reload();
+        }}
+      />
+      <EditItemDialog
+        item={editing}
+        onClose={() => {
+          setEditing(null);
+        }}
+        onSaved={() => {
+          setEditing(null);
+          items.reload();
+        }}
+      />
       <CreateItemDialog
         open={creating}
         catalogue={catalogue}
@@ -313,10 +454,15 @@ function CreateItemDialog({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const codeValid = CODE_PATTERN.test(code.trim());
+  // Shown as soon as something is typed: each label in its own language (13 Nov 2026 review).
+  const arIssue = ar.trim() === '' ? null : checkScript(ar.trim(), 'ar');
+  const enIssue = en.trim() === '' ? null : checkScript(en.trim(), 'en');
   const ready =
     codeValid &&
     ar.trim() !== '' &&
     en.trim() !== '' &&
+    arIssue === null &&
+    enIssue === null &&
     (sortOrder === '' || /^[0-9]{1,6}$/.test(sortOrder));
 
   const submit = async (event: SyntheticEvent) => {
@@ -376,6 +522,7 @@ function CreateItemDialog({
           dir="rtl"
           value={ar}
           onChange={setAr}
+          error={arIssue === null ? undefined : fieldMessage(arIssue, t)}
         />
         <TextField
           label={t('identityAccess.masterData.labelEn')}
@@ -384,6 +531,7 @@ function CreateItemDialog({
           dir="ltr"
           value={en}
           onChange={setEn}
+          error={enIssue === null ? undefined : fieldMessage(enIssue, t)}
         />
         {parentLabel !== undefined && (
           <SelectField
@@ -432,6 +580,7 @@ function RequestedValues(): ReactElement | null {
   const requester = usePersonNames((requests.data ?? []).map((r) => r.requestedBy));
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const selection = useRowSelection();
   if (!mayResolve || requests.data === undefined || requests.data.length === 0) {
     return null;
   }
@@ -449,9 +598,16 @@ function RequestedValues(): ReactElement | null {
       <h2 id="requested-values-heading">{t('identityAccess.masterData.requested.title')}</h2>
       <p>{t('identityAccess.masterData.requested.description')}</p>
       <FormAlert message={error} />
-      <TableContainer caption={t('identityAccess.masterData.requested.title')}>
+      <TableContainer
+        caption={t('identityAccess.masterData.requested.title')}
+        selection={{ selection, exportName: 'requested-values' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader
+              ids={requests.data.map((request) => request.id)}
+              selection={selection}
+            />
             <th scope="col">{t('identityAccess.masterData.requested.list')}</th>
             <th scope="col">{t('identityAccess.masterData.requested.value')}</th>
             <th scope="col">{t('identityAccess.masterData.requested.by')}</th>
@@ -462,6 +618,7 @@ function RequestedValues(): ReactElement | null {
         <tbody>
           {requests.data.map((request) => (
             <tr key={request.id}>
+              <SelectRowCell id={request.id} name={request.sourceText} selection={selection} />
               <td>{t(`projects.import.dimensionName.${request.dimension}`)}</td>
               <td dir="auto">{request.sourceText}</td>
               <td>
@@ -504,4 +661,123 @@ function RequestedValues(): ReactElement | null {
 
 async function readOpenRequests(signal: AbortSignal) {
   return (await projectImportApi.valueRequests('OPEN', signal)).items;
+}
+
+/**
+ * Review round 7, item 3: a value's Arabic and English names and its display order; its code never changes. A draft is edited by its author, a published
+ * value by any administrator as an audited correction (the API decides).
+ */
+function EditItemDialog({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: MasterDataItemSummary | null;
+  onClose: () => void;
+  onSaved: () => void;
+}): ReactElement {
+  const { t } = useI18n();
+  return (
+    <Dialog open={item !== null} title={t('identityAccess.masterData.editTitle')} onClose={onClose}>
+      {item !== null && (
+        <EditItemForm key={item.id} item={item} onClose={onClose} onSaved={onSaved} />
+      )}
+    </Dialog>
+  );
+}
+
+function EditItemForm({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: MasterDataItemSummary;
+  onClose: () => void;
+  onSaved: () => void;
+}): ReactElement {
+  const { t } = useI18n();
+  const [ar, setAr] = useState(item.label.ar);
+  const [en, setEn] = useState(item.label.en);
+  const [sortOrder, setSortOrder] = useState(String(item.sortOrder));
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const arIssue = ar.trim() === '' ? 'REQUIRED' : checkScript(ar.trim(), 'ar');
+  const enIssue = en.trim() === '' ? 'REQUIRED' : checkScript(en.trim(), 'en');
+  const orderValid = /^[0-9]{1,6}$/.test(sortOrder);
+  const ready = arIssue === null && enIssue === null && orderValid;
+
+  const submit = async (event: SyntheticEvent) => {
+    event.preventDefault();
+    if (!ready) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const current = await apiRequest<{ description: { ar: string; en: string } | null }>(
+        `/master-data-items/${item.id}`,
+      );
+      await apiRequest(`/master-data-items/${item.id}`, {
+        method: 'PUT',
+        body: {
+          label: { ar: ar.trim(), en: en.trim() },
+          description: current.data.description,
+          parentItemId: item.parentItemId,
+          sortOrder: Number(sortOrder),
+        },
+        ifMatch: current.etag,
+      });
+      onSaved();
+    } catch (caught) {
+      setError(problemMessage(caught, t));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form className="form" noValidate onSubmit={(event) => void submit(event)}>
+      <FormAlert message={error} />
+      <p className="form__readonly">
+        <span className="field__label">{t('identityAccess.masterData.code')}</span>
+        <span dir="ltr">{item.code}</span>
+      </p>
+      <TextField
+        label={t('identityAccess.masterData.labelAr')}
+        name="labelAr"
+        required
+        dir="rtl"
+        value={ar}
+        onChange={setAr}
+        error={arIssue === null ? undefined : fieldMessage(arIssue, t)}
+      />
+      <TextField
+        label={t('identityAccess.masterData.labelEn')}
+        name="labelEn"
+        required
+        dir="ltr"
+        value={en}
+        onChange={setEn}
+        error={enIssue === null ? undefined : fieldMessage(enIssue, t)}
+      />
+      <TextField
+        label={t('identityAccess.masterData.sortOrder')}
+        name="sortOrder"
+        required
+        dir="ltr"
+        inputMode="numeric"
+        value={sortOrder}
+        onChange={setSortOrder}
+        error={orderValid ? undefined : t('identityAccess.masterData.sortOrderInvalid')}
+      />
+      <div className="form__actions">
+        <button type="submit" className="button button--primary" disabled={!ready || saving}>
+          {saving ? t('common.states.saving') : t('common.actions.save')}
+        </button>
+        <button type="button" className="button" disabled={saving} onClick={onClose}>
+          {t('common.actions.cancel')}
+        </button>
+      </div>
+    </form>
+  );
 }

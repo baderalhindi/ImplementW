@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -9,12 +10,15 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { canManageTasks } from './access.ts';
 import { StatusFilterField } from './components/StatusFilterField.tsx';
+import { useTaskStatusFilter } from './useTaskStatusFilter.ts';
 import { TaskTable } from './components/TaskTable.tsx';
 import { type TaskDialog } from './dialogs/taskDialog.ts';
 import { TaskDialogs } from './dialogs/TaskDialogs.tsx';
 import { isForbidden, taskProblemMessage } from './problems.ts';
-import { isLiveLeaf, matchesStatus, type StatusFilter, todayUtc } from './taskRules.ts';
+import { isLiveLeaf, matchesStatus, todayUtc, type TaskEntry } from './taskRules.ts';
 import { useProjectBoard, useTaskLookups } from './useTaskData.ts';
+import { useSearchParams } from 'react-router';
+import { tasksApi } from './api/tasksApi.ts';
 
 /**
  * SCR-047 Project Tasks: the project's tasks, each parent followed by its subtasks, with status, owner, planned dates,
@@ -31,9 +35,24 @@ export function ProjectTasks({
   const { t } = useI18n();
   const board = useProjectBoard(project.id);
   const lookups = useTaskLookups();
-  const [filter, setFilter] = useState<StatusFilter>('open');
+  const [filter, setFilter] = useTaskStatusFilter();
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [dialog, setDialog] = useState<TaskDialog | null>(null);
+  const [params] = useSearchParams();
+  // A register elsewhere sends Edit here with the task's id: its edit form opens on arrival.
+  const [dialog, setDialog] = useState<TaskDialog | null>(() => {
+    const editing = params.get('edit');
+    return editing === null ? null : { kind: 'edit', taskId: editing, fromRow: true };
+  });
+  const rowActions = useRowActions<TaskEntry>({
+    permission: 'TASK_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ task }) => task.title.text,
+    onEdit: ({ task }) => {
+      setDialog({ kind: 'edit', fromRow: true, taskId: task.id });
+    },
+    remove: ({ task }) => tasksApi.remove(task.id),
+    onDeleted: board.reload,
+  });
 
   if (board.data === undefined) {
     if (board.loading) {
@@ -122,6 +141,7 @@ export function ProjectTasks({
               </EmptyState>
             ) : (
               <TaskTable
+                actions={rowActions}
                 caption={t('tasks.project.caption')}
                 entries={shown.map((task) => ({ task, project }))}
                 today={today}

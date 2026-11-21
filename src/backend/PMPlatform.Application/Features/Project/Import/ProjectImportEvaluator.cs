@@ -1,6 +1,7 @@
 using System.Globalization;
 using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Common.Validation;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Content;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Project;
@@ -48,7 +49,9 @@ internal sealed record ResolvedRow(
     DateOnly? ActionDue,
     bool? EntityCompliant,
     NarrativeText? Note,
-    bool IsCanceled = false);
+    bool IsCanceled = false,
+    string? CurrentStageCode = null,
+    decimal? CurrentStagePercent = null);
 
 /// <summary>What a workbook would do, and the rows an approval applies (those with no error).</summary>
 internal sealed record ProjectImportEvaluation(ProjectImportPreview Preview, IReadOnlyList<ResolvedRow> Rows);
@@ -71,7 +74,11 @@ internal static class ProjectImportEvaluator
         IReadOnlyDictionary<string, ProjectEntity> ByFormalId,
         IReadOnlyCollection<(string Title, Guid? Entity)> ExistingNames,
         ProjectImportPlan Plan,
-        DateOnly Today);
+        DateOnly Today)
+    {
+        /// <summary>The project stages in force (review round 7, item 1), which the current stage column names, by code or by either name.</summary>
+        public IReadOnlyList<ProjectStageEntry> Stages { get; init; } = [];
+    }
 
     /// <summary>The key row: the first row holding <see cref="LegacyRef"/>, whose cells name each column.</summary>
     public static (int KeyRow, Dictionary<int, string> Keys, int? Version)? KeysOf(ImportSheet sheet)
@@ -228,6 +235,7 @@ internal static class ProjectImportEvaluator
             bool? compliant = YesNo(EntityCommits);
             FundingSource? funding = FundingOf(Text(Funding));
             string? notes = Text(Notes);
+            (string? stageCode, decimal? stagePercent) = Stage();
 
             if (initiative is { } i && portfolio is { } p && context.References.Items.GetValueOrDefault(i)?.ParentItemId != p)
             {
@@ -281,7 +289,9 @@ internal static class ProjectImportEvaluator
                 planned, actual, plannedSpend, actualSpend,
                 obstacle is null ? null : new NarrativeText(obstacle, Language.Ar), nextAction is null ? null : new NarrativeText(nextAction, Language.Ar),
                 actionOwner, actionDue, compliant, notes is null ? null : new NarrativeText(notes, Language.Ar),
-                status == ProjectLifecycleState.Closed && CanceledWords.Contains(Text(ProjectImportLayout.Status) ?? string.Empty));
+                status == ProjectLifecycleState.Closed && CanceledWords.Contains(Text(ProjectImportLayout.Status) ?? string.Empty),
+                stageCode,
+                stageCode is null ? null : stagePercent);
             if (resolved is not null && _existing is not null && _action == ProjectImportRowAction.Update)
             {
                 Compare(resolved, _existing);
@@ -344,6 +354,11 @@ internal static class ProjectImportEvaluator
             Change("declaredPlannedSpendPercent", Number(p.DeclaredPlannedSpendPercent), Number(row.PlannedSpendPercent));
             Change("declaredActualSpendPercent", Number(p.DeclaredActualSpendPercent), Number(row.ActualSpendPercent));
             Change("entityUpdateCompliant", p.EntityUpdateCompliant?.ToString(), row.EntityCompliant?.ToString());
+            if (ProjectImportStages.TakesImportedStage(p))
+            {
+                Change("currentStage", p.CurrentStageCode, row.CurrentStageCode);
+                Change("currentStagePercent", Number(p.CurrentStagePercent), Number(row.CurrentStagePercent));
+            }
 
             // Registration fields of an approved project change through a change request (WF-08), never an import.
             Governed(NameAr, p.Title.Text != row.Title.Text);
@@ -447,6 +462,33 @@ internal static class ProjectImportEvaluator
             Error(ProjectImportLayout.Status, ProjectImportIssueCodes.StatusToChoose);
             unmatched[(ProjectImportDimension.Status, text)] = unmatched.GetValueOrDefault((ProjectImportDimension.Status, text)) + 1;
             return null;
+        }
+
+        /// <summary>The current stage, named by code or by its Arabic or English name, and its % complete, which needs the stage.</summary>
+        private (string? Code, decimal? Percent) Stage()
+        {
+            string? text = Text(CurrentStage);
+            decimal? percent = Percent(CurrentStagePercent);
+            if (text is null)
+            {
+                if (percent is not null)
+                {
+                    Error(CurrentStage, ValidationCode.Required);
+                }
+
+                return (null, null);
+            }
+
+            string key = ImportNames.Key(text);
+            ProjectStageEntry? stage = context.Stages.FirstOrDefault(s =>
+                string.Equals(s.Code, text.Trim(), StringComparison.OrdinalIgnoreCase) || ImportNames.Key(s.Name.Ar) == key || ImportNames.Key(s.Name.En) == key);
+            if (stage is null)
+            {
+                Error(CurrentStage, ProjectImportIssueCodes.NameUnmatched);
+                return (null, null);
+            }
+
+            return (stage.Code, percent);
         }
 
         private Guid? Id(ProjectImportDimension dimension, string column)
@@ -568,4 +610,12 @@ internal static class ProjectImportEvaluator
 
         private static string? Number(decimal? value) => value?.ToString("0.####", CultureInfo.InvariantCulture);
     }
+}
+
+/// <summary>Review round 7, item 1: where an import's current stage applies.</summary>
+internal static class ProjectImportStages
+{
+    /// <summary>A project that has published a stage-based update keeps its published stage: an import never overrides it.</summary>
+    public static bool TakesImportedStage(ProjectEntity project) =>
+        !(project.DeclaredSource == DeclaredValueSource.ProgressUpdate && project.CurrentStageCode is not null);
 }

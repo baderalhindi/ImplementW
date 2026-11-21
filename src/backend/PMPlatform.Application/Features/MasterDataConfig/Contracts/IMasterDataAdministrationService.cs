@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
 
@@ -30,4 +31,11 @@ public interface IMasterDataAdministrationService
     public Task<AdministrationResult<Versioned<MasterDataItemDetail>>> PublishItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<Versioned<MasterDataItemDetail>>> RetireItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes an item, in any state (the client asked for no "retire"): it is cleared from every record that names it optionally, then erased. A record
+    /// that cannot exist without it, a closed project, a published configuration or the audit trail keeps it, and then nothing is deleted and the
+    /// answer lists those uses. A shipped item is never deleted.
+    /// </summary>
+    public Task<AdministrationResult<DeletionOutcome>> RemoveItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
 }

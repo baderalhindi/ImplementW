@@ -17,7 +17,9 @@ import {
   shownFigures,
 } from '../presentation.ts';
 
-import { BarChart, ColumnChart, DonutChart, GaugeChart } from './Charts.tsx';
+import { BarChart, ColumnChart, GaugeChart } from './Charts.tsx';
+import { DonutWithLegend } from './DonutWithLegend.tsx';
+import { sarExactLabel } from '@/shared/format/money.ts';
 
 // The allowlisted visualisations of FG-01 §10 (TASK-069 `DashboardWidgetType`). Each presents the source's values as
 // the source states them; none computes one. A figure with no value says why — "Restricted" when it is withheld
@@ -28,6 +30,8 @@ interface BodyProps {
   widgetType: DashboardWidgetType;
   data: WidgetData;
   title: string;
+  /** Where a value opens the records it counts, if anywhere (review round 8, point 01). */
+  linkOf?: ((key: string, count: number) => { href: string; hint: string } | null) | undefined;
 }
 
 /** One figure's value, or its state in words. */
@@ -42,8 +46,14 @@ export function FigureValue({ figure }: { figure: WidgetFigure }): ReactElement 
   if (formatted === null) {
     return <ValueStateFlag icon="missing" label={t('dashboards.figure.none')} state="MISSING" />;
   }
+  // Review round 8, point 11: an amount is compact ("64.6 مليار ريال", in the page's direction) with its full figure on hover.
+  const amount = figure.unit === 'SAR' && figure.value !== null;
   return (
-    <span className="figure" dir="ltr">
+    <span
+      className="figure"
+      dir={amount ? undefined : 'ltr'}
+      title={amount && figure.value !== null ? sarExactLabel(figure.value, t) : undefined}
+    >
       {formatted}
     </span>
   );
@@ -131,6 +141,7 @@ export function DistributionBody({
   widgetType,
   data,
   title,
+  linkOf,
 }: BodyProps): ReactElement {
   const { t, language } = useI18n();
   const [active, setActive] = useState<string | null>(null);
@@ -141,35 +152,38 @@ export function DistributionBody({
     labels.map((label) => label.tone),
     isStatusScale(projectionCode),
   );
-  const buckets: ChartBucket[] = data.distribution.map((bucket, index) => ({
-    key: bucket.key,
-    count: bucket.count,
-    text: labels[index]?.text ?? bucket.key,
-    color: colors[index] ?? 'var(--chart-single)',
-  }));
+  const buckets: ChartBucket[] = data.distribution.map((bucket, index) => {
+    const link = linkOf?.(bucket.key, bucket.count) ?? null;
+    return {
+      key: bucket.key,
+      count: bucket.count,
+      text: labels[index]?.text ?? bucket.key,
+      color: colors[index] ?? 'var(--chart-single)',
+      href: link?.href,
+      hint: link?.hint,
+    };
+  });
   const form = chartForm(widgetType, buckets.length);
   const lift = (key: string) => (active === null ? '' : active === key ? 'is-active' : 'is-dimmed');
   return (
     <div className="widget__body">
-      {buckets.length > 0 && (
+      {buckets.length > 0 && form === 'donut' && (
+        <DonutWithLegend
+          buckets={buckets}
+          caption={title}
+          countHeading={t(countedKey(projectionCode))}
+          totalLabel={t('dashboards.distribution.total')}
+          active={active}
+          onActive={setActive}
+        />
+      )}
+      {buckets.length > 0 && form !== 'donut' && (
         <div className={`distribution distribution--${form}`}>
-          {form === 'donut' && (
-            <DonutChart
-              buckets={buckets}
-              active={active}
-              onActive={setActive}
-              totalLabel={t('dashboards.distribution.total')}
-            />
-          )}
           {form === 'columns' && (
             <ColumnChart buckets={buckets} active={active} onActive={setActive} />
           )}
           {form === 'bars' && <BarChart buckets={buckets} active={active} onActive={setActive} />}
-          <table
-            className={
-              form === 'donut' ? 'widget__distribution distribution__donut' : 'visually-hidden'
-            }
-          >
+          <table className="visually-hidden">
             <caption className="visually-hidden">{title}</caption>
             <thead>
               <tr>
@@ -193,6 +207,7 @@ export function DistributionBody({
                 >
                   <th scope="row">
                     <span className="distribution__key" aria-hidden="true" />
+                    {/* Under bars and columns the table is hidden and the marks link. */}
                     {bucket.text}
                   </th>
                   <td>

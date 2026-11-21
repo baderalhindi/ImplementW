@@ -27,4 +27,7 @@ public interface IProjectMilestoneService
 
     /// <summary>The milestones a baseline froze as it activated.</summary>
     public Task<AdministrationResult<BaselineMilestonePage>> ListBaselineMilestonesAsync(Guid callerId, Guid baselineId, PageRequest page, CancellationToken cancellationToken);
+
+    /// <summary>Client review, item 8: hides the milestone and its achievement claims and what belongs to it, keeping all of it in the database. Null on success.</summary>
+    public Task<AdministrationError?> DeleteAsync(Guid callerId, Guid milestoneId, uint? expectedVersion, CancellationToken cancellationToken);
 }

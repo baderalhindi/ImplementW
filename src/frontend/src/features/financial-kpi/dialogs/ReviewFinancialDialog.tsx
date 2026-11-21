@@ -4,6 +4,7 @@ import { checkText, useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
+import { focusFirstInvalid } from '@/shared/forms/focusFirstInvalid.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { RadioGroupField, TextAreaField } from '@/shared/ui/FormFields.tsx';
@@ -78,6 +79,7 @@ function ReviewBody({
     event.preventDefault();
     if (underReview && (decision === null || reasonCode !== null)) {
       setAttempted(true);
+      focusFirstInvalid(event.currentTarget);
       return;
     }
     const result = await save.run(act);

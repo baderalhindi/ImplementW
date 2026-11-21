@@ -209,7 +209,7 @@ its rules. Every screen below is under Administration and needs the permission i
 | Create, edit, disable a user | `/admin/users` — ADM-002 to ADM-005; *Disable* asks for step-up MFA | H-70 D-3, D-11 |
 | Roles and the permission matrix | `/admin/roles` — ADM-006 to ADM-008; `/admin/permission-matrix` — ADM-009 | H-70 |
 | Assign a role to a user over a department, entity or project | `/admin/role-assignments` — ADM-010 | H-70 |
-| Departments and external entities | `/admin/organization` — ADM-011 to ADM-013 | H-70 |
+| Departments and external entities | `/admin/organization/departments` — ADM-012; `/admin/organization/entities` — ADM-013 (ADM-011's overview was removed on 10 Nov 2026; its address redirects to ADM-012) | H-70 |
 | Integration configuration: directory and SSO, Exchange, Nafath, internal systems, the API catalogue | `/admin/integrations-overview` — ADM-040; the per-integration screens ADM-041 to ADM-046 (`/admin/sso-directory-integration`, `/admin/email-exchange-integration`, `/admin/nafath-integration`, `/admin/internal-system-integrations`, `/admin/api-integration-catalogue`, `/admin/integration-detail-configuration/:integrationId`) | H-73, H-76 |
 | Integration health, attempts, dead letters, retry | `/admin/integration-monitoring` — ADM-047; `/admin/integration-logs` — ADM-048 | H-34, H-73 |
 | Audit trail, system event logs, integration audit logs | `/admin/audit-trail` — ADM-050, ADM-051; `/admin/system-event-logs` — ADM-052; `/admin/integration-audit-logs` — ADM-053 | H-74 |

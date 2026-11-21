@@ -26,6 +26,7 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
     private static readonly Dictionary<string, string> NotOfAProject = new(StringComparer.Ordinal)
     {
         ["POST /api/v1/projects"] = "registers a new project",
+        ["DELETE /api/v1/projects/{projectId}"] = "client review, item 4: a holder of PROJECT_DELETE deletes in any state; it changes nothing the project's records say",
         ["POST /api/v1/kpi-measurements/imports"] = "a workbook names no one project: each row goes through the create that refuses a closed project",
         ["POST /api/v1/management-concerns/imports"] = "a workbook names no one project: each row goes through the create that refuses a closed project",
         ["POST /api/v1/project-milestones/imports"] = "a workbook names no one project: each row goes through the create that refuses a closed project",
@@ -44,6 +45,9 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ["POST /api/v1/project-import-batches/{batchId}/rollback"] = "removes only the projects the batch created, untouched since",
         ["POST /api/v1/project-import-value-requests"] = "asks for a list value to be added; of no project",
         ["POST /api/v1/project-import-value-requests/{requestId}/resolve"] = "marks a list value request added or declined; of no project",
+        ["PUT /api/v1/portfolio-insights/design"] = "the Portfolio dashboard's one design (17 Nov 2026 designer); of no project",
+        ["POST /api/v1/portfolio-insights/design/preview"] = "a read sent as POST (DASHBOARD_DESIGN): it calculates a design being edited and writes nothing",
+        ["POST /api/v1/portfolio-insights/design/reset"] = "back to the standard Portfolio dashboard design; of no project",
     };
 
     /// <summary>String values a request's validation knows but the document does not enumerate, by property name.</summary>
@@ -54,6 +58,8 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ["dependencyType"] = "FS",
         ["actionType"] = "MITIGATE",
         ["concernType"] = "ISSUE",
+        ["stageCode"] = "EXECUTION",
+        ["progressMethod"] = "SCHEDULE",
         ["plannedResumptionDate"] = null,
     };
 
@@ -190,6 +196,7 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ("versions", "versionId") => "version",
         ("risks", "riskId") => "risk",
         ("projects", "projectId") => "project",
+        ("project-stage-plans", "projectId") => "project",
         (_, "evidenceReferenceId") => "evidenceReference",
         var unknown => throw new InvalidOperationException($"No fixture record for {unknown} in {path}: add one."),
     };

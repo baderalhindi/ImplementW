@@ -22,4 +22,7 @@ public interface IKpiAssignmentService
     /// <summary>The latest published measurement of each KPI named on each project named, combined only within one unit.</summary>
     public Task<KpiPortfolioAggregate> AggregateAsync(
         Guid callerId, IReadOnlyList<Guid> kpiDefinitionIds, IReadOnlyList<Guid> projectIds, CancellationToken cancellationToken);
+
+    /// <summary>Client review, item 8: hides the KPI on its project, with its targets and measurements, and what belongs to it, keeping all of it in the database. Null on success.</summary>
+    public Task<AdministrationError?> DeleteAsync(Guid callerId, Guid assignmentId, uint? expectedVersion, CancellationToken cancellationToken);
 }

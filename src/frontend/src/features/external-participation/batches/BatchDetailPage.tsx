@@ -10,8 +10,10 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { updateRequestBatchesApi } from '../api/monthlyUpdatesApi.ts';
 import { BATCH_ROW_STATES, type UpdateRequestBatchDetail } from '../api/monthlyUpdateTypes.ts';
@@ -77,6 +79,7 @@ function BatchDetail({
     justSent ? { tone: 'success', message: t('externalParticipation.batch.sent') } : null,
   );
   const [dialog, setDialog] = useState<'remind' | 'withdraw' | null>(null);
+  const selection = useRowSelection();
   const { batch, rows, instructions } = detail;
   const late = rows.filter((row) => row.overdue).length;
   const withdrawn = batch.withdrawnAt !== null;
@@ -178,9 +181,13 @@ function BatchDetail({
           </Detail>
         )}
       </dl>
-      <TableContainer caption={t('externalParticipation.batch.rowsCaption')}>
+      <TableContainer
+        caption={t('externalParticipation.batch.rowsCaption')}
+        selection={{ selection, exportName: 'update-batch-projects' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={rows.map((row) => row.requestId)} selection={selection} />
             <th scope="col">{t('externalParticipation.fields.project')}</th>
             <th scope="col">{t('externalParticipation.fields.entity')}</th>
             <th scope="col">{t('externalParticipation.batch.step2.responder')}</th>
@@ -190,6 +197,11 @@ function BatchDetail({
         <tbody>
           {rows.map((row) => (
             <tr key={row.requestId} data-state={row.state}>
+              <SelectRowCell
+                id={row.requestId}
+                name={row.projectTitle.text}
+                selection={selection}
+              />
               <td>
                 <Link
                   to={externalRequestPath(row.requestId)}

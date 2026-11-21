@@ -11,13 +11,13 @@ using PMPlatform.Domain.IdentityAccess;
 namespace PMPlatform.Api.Controllers;
 
 /// <summary>
-/// ADM-002–005 and MOD-080 (TASK-031): users, never deleted (ERD: RETAIN); <c>disable</c> is the terminal-for-now command
-/// and changes nothing but the user's status. The two <c>current/</c> endpoints are the user's own mobile verification
+/// ADM-002–005 and MOD-080 (TASK-031): users, whose row is never removed (ERD: RETAIN); <c>disable</c> changes nothing but the user's
+/// status, <c>delete</c> also takes them out of administration for good. The two <c>current/</c> endpoints are the user's own mobile verification
 /// (ADR-004), open to any signed-in user for their own record only.
 /// </summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class UsersController(IUserAdministrationService users, IMobileNumberVerificationService mobileVerification, IDataImportService imports) : AdministrationControllerBase
+public sealed class UsersController(IUserAdministrationService users, IUserPermissionOverrideService permissionOverrides, IMobileNumberVerificationService mobileVerification, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/users";
     private const string ImportRegister = ImportRegisterCodes.User;
@@ -153,6 +153,82 @@ public sealed class UsersController(IUserAdministrationService users, IMobileNum
             ? Respond(await users.ActivateAsync(CallerId, userId, version, cancellationToken))
             : problem!;
 
+    /// <summary>Client review, item 5: takes the user out of the platform for good; their history stays. A command, as the row is kept. R-40: a user who is not there is 204 as well.</summary>
+    [HttpPost("{userId:guid}/delete")]
+    [RequirePermission(PermissionCatalogue.UserManage)]
+    [SensitiveWrite]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [EndpointName("IdentityAccess_DeleteUser")]
+    public async Task<IActionResult> Delete(Guid userId, CancellationToken cancellationToken)
+    {
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationError? error = await users.DeleteAsync(CallerId, userId, version, cancellationToken);
+        return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
+    }
+
+    /// <summary>Client review, item 7: records, replaces or removes (null) the user's National ID or Iqama number. The response shows it masked.</summary>
+    [HttpPut("{userId:guid}/national-id")]
+    [RequirePermission(PermissionCatalogue.UserManage)]
+    [SensitiveWrite]
+    [ProducesResponseType<UserDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_SetUserNationalId")]
+    public async Task<IActionResult> SetNationalId(Guid userId, UserNationalIdRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: false, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out string? nationalId) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await users.SetNationalIdAsync(CallerId, userId, nationalId, version, cancellationToken));
+    }
+
+    /// <summary>The full number, for a holder of USER_NATIONAL_ID_VIEW; every reveal is audited and the response is never cached.</summary>
+    [HttpGet("{userId:guid}/national-id")]
+    [RequirePermission(PermissionCatalogue.UserNationalIdView)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [ProducesResponseType<NationalIdDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_RevealUserNationalId")]
+    public async Task<IActionResult> RevealNationalId(Guid userId, CancellationToken cancellationToken) =>
+        Respond(await users.RevealNationalIdAsync(CallerId, userId, cancellationToken));
+
+    /// <summary>What the user's roles give them and what has been adjusted for them, permission by permission (client review, item 5).</summary>
+    [HttpGet("{userId:guid}/permissions")]
+    [RequirePermission(PermissionCatalogue.RoleView)]
+    [ProducesResponseType<UserPermissions>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_ListUserPermissions")]
+    public async Task<IActionResult> ListPermissions(Guid userId, CancellationToken cancellationToken) =>
+        Respond(await permissionOverrides.ListAsync(CallerId, userId, cancellationToken));
+
+    /// <summary>Grants or removes one permission for this user, on top of their roles. Applies at once; the reason is required and audited.</summary>
+    [HttpPut("{userId:guid}/permissions/{permissionCode}")]
+    [RequirePermission(PermissionCatalogue.RoleAssign)]
+    [SensitiveWrite]
+    [ProducesResponseType<UserPermissions>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_SetUserPermissionOverride")]
+    public async Task<IActionResult> SetPermissionOverride(Guid userId, string permissionCode, UserPermissionOverrideRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return request.Validate(out UserPermissionOverrideChange? change) is { Count: > 0 } errors
+            ? ValidationFailed(errors)
+            : Respond(await permissionOverrides.SetAsync(CallerId, userId, permissionCode, change!, cancellationToken));
+    }
+
+    /// <summary>Puts one permission back to what the user's roles give. The reason is required and audited.</summary>
+    [HttpPost("{userId:guid}/permissions/{permissionCode}/clear")]
+    [RequirePermission(PermissionCatalogue.RoleAssign)]
+    [SensitiveWrite]
+    [ProducesResponseType<UserPermissions>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_ClearUserPermissionOverride")]
+    public async Task<IActionResult> ClearPermissionOverride(Guid userId, string permissionCode, UserPermissionOverrideClearRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return request.Validate(out Domain.Common.NarrativeText? reason) is { Count: > 0 } errors
+            ? ValidationFailed(errors)
+            : Respond(await permissionOverrides.ClearAsync(CallerId, userId, permissionCode, reason!, cancellationToken));
+    }
+
     /// <summary>MOD-080: ACTIVE → DISABLED. Takes effect on the user's next request; nothing they owned or did is changed.</summary>
     [HttpPost("{userId:guid}/disable")]
     [RequirePermission(PermissionCatalogue.UserManage)]
@@ -164,7 +240,15 @@ public sealed class UsersController(IUserAdministrationService users, IMobileNum
             ? Respond(await users.DisableAsync(CallerId, userId, version, cancellationToken))
             : problem!;
 
-    /// <summary>ADR-004: sends a code to the caller's own mobile number. 503 until the SMS provider exists (TASK-103).</summary>
+    /// <summary>The caller's own mobile number and whether it is verified, for the account page's sign-in methods (13 Nov 2026 review).</summary>
+    [HttpGet("current/mobile-number")]
+    [AllowAnyAuthenticatedUser]
+    [ProducesResponseType<MobileNumberStatus>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_GetOwnMobileNumber")]
+    public async Task<IActionResult> GetOwnMobileNumber(CancellationToken cancellationToken) =>
+        Respond(await mobileVerification.GetAsync(CallerId, cancellationToken));
+
+    /// <summary>ADR-004: sends a code to the caller's own mobile number. 503 where no SMS gateway is configured.</summary>
     [HttpPost("current/mobile-verification-challenge")]
     [AllowAnyAuthenticatedUser]
     [SensitiveWrite]

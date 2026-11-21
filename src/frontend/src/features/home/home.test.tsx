@@ -8,6 +8,7 @@ import { catalogueFor, dashboardView, widget, withDashboards } from '@/test/dash
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { type MockApi, mockApi, page } from '@/test/mockApi.ts';
 import { notification } from '@/test/notificationFixtures.ts';
+import { projectDetail, projectSummary } from '@/test/projectFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
 
 // The Home (the 24 Oct 2026 review, H2 and M-1; the 27 Oct 2026 review): a welcome banner with the ways in, the Portfolio Dashboard's
@@ -127,6 +128,31 @@ describe('the Home', () => {
     expect(within(actions()).getByRole('link', { name: en('projects.nav.create') })).toBeTruthy();
     // No Portfolio Dashboard for its roles: no portfolio snapshot.
     expect(screen.queryByRole('heading', { name: en('home.portfolio.title') })).toBeNull();
+  });
+
+  test('a Project Manager selects all of the projects it manages', async () => {
+    const session = sessionFor(['R04']);
+    const managed = { projectManagerUserId: session.user.id };
+    homeApi()
+      .on('GET', /^\/projects$/, {
+        body: page([
+          projectSummary(managed),
+          projectSummary({
+            ...managed,
+            id: '4d4d4d4d-0000-4000-8000-000000000105',
+            title: { text: 'Harbour dredging', language: 'EN' },
+          }),
+        ]),
+      })
+      .on('GET', /^\/projects\/[^/]+$/, { body: projectDetail(managed) })
+      .on('GET', /^\/portfolio-insights$/, { body: {} });
+    renderApp({ path: '/', session });
+
+    const table = await screen.findByRole('table', { name: en('home.managed.title') });
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 2 }))).toBeTruthy();
   });
 
   test('someone with projects outside the Portfolio Dashboard audience sees them on the map, and a region opens the register', async () => {

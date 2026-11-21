@@ -21,6 +21,24 @@ public static class ProjectErrorCodes
     /// </summary>
     public const string ManagerInvalid = "PROJECT_MANAGER_INVALID";
 
+    /// <summary>
+    /// 422: the edit of an approved registration changes its budget, planned dates or governance profile, which change only through a change request
+    /// (review round 7, item 4).
+    /// </summary>
+    public const string ChangeRequestRequired = "PROJECT_CHANGE_REQUEST_REQUIRED";
+
+    /// <summary>409: a DRAFT or RETURNED registration is edited as a draft, by its registrant (review round 7, item 4).</summary>
+    public const string EditAsDraft = "PROJECT_EDIT_AS_DRAFT";
+
+    /// <summary>409: the person named already manages the project (review round 7, item 2).</summary>
+    public const string ManagerUnchanged = "PROJECT_MANAGER_UNCHANGED";
+
+    /// <summary>409: the project already uses this progress method (review round 8, point 02).</summary>
+    public const string ProgressMethodUnchanged = "PROJECT_PROGRESS_METHOD_UNCHANGED";
+
+    /// <summary>422: once a progress update is approved, changing the progress method needs a reason (review round 8, point 02).</summary>
+    public const string ProgressMethodReasonRequired = "PROJECT_PROGRESS_METHOD_REASON_REQUIRED";
+
     /// <summary>409: only a DRAFT or RETURNED project is edited, and only a DRAFT one deleted.</summary>
     public const string NotEditable = "PROJECT_NOT_EDITABLE";
 
@@ -36,6 +54,30 @@ public static class ProjectErrorCodes
     /// <summary>409: another project already has this legacy reference, which matches a row on re-import (R3-3).</summary>
     public const string LegacyReferenceTaken = "PROJECT_LEGACY_REFERENCE_TAKEN";
 
+    /// <summary>409: no PROJECT_STAGE version is published, so there are no stages to plan (review round 7, item 1).</summary>
+    public const string StagesNotConfigured = "PROJECT_STAGES_NOT_CONFIGURED";
+
+    /// <summary>
+    /// 422: a stage plan that names a stage the version in force does not have, or twice, leaves one out, applies none, or dates a stage that applies
+    /// outside the project's planned dates or not at all; or gives a starting % to a project that was not under way when it entered the platform.
+    /// </summary>
+    public const string StagePlanInvalid = "PROJECT_STAGE_PLAN_INVALID";
+
+    /// <summary>409: the registration is under review, and AHDA reviews the stage plan with it: it changes again only if AHDA returns it.</summary>
+    public const string StagePlanUnderReview = "PROJECT_STAGE_PLAN_UNDER_REVIEW";
+
+    /// <summary>
+    /// 422: the registration is approved, so changing the stage plan's dates or stages is a schedule change: it needs an applicable STAGE_PLAN_CHANGE
+    /// authorisation of the plan's current revision, which an approved schedule change request in implementation issues.
+    /// </summary>
+    public const string StagePlanChangeRequired = "PROJECT_STAGE_PLAN_CHANGE_REQUIRED";
+
     /// <summary>409: the follow-up of a project not yet approved is not kept: RPMO follows up registered projects (R3-3).</summary>
     public const string FollowUpNotOpen = "PROJECT_FOLLOW_UP_NOT_OPEN";
+
+    /// <summary>
+    /// 422: a Portfolio dashboard design with no visual or more than 40, a visual with no title in either language or one past 100 characters, no measure or more
+    /// than three or one twice, a grouping its type does not take, or a place outside the twelve-column grid or on another visual (the 17 Nov 2026 designer).
+    /// </summary>
+    public const string PortfolioDesignInvalid = "PROJECT_PORTFOLIO_DESIGN_INVALID";
 }

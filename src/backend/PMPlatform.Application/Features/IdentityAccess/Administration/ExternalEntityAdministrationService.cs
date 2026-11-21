@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using Microsoft.Extensions.Logging;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
@@ -118,6 +119,36 @@ internal sealed partial class ExternalEntityAdministrationService(
     public Task<AdministrationResult<Versioned<ExternalEntityDetail>>> RetireAsync(Guid actorId, Guid entityId, uint? expectedVersion, CancellationToken cancellationToken) =>
         TransitionAsync(actorId, entityId, expectedVersion, from: null, ExternalEntityStatus.Retired, "retired",
             IdentityAccessAuditEvents.ExternalEntityRetired, cancellationToken);
+
+    public async Task<AdministrationResult<DeletionOutcome>> DeleteAsync(Guid actorId, Guid entityId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        ExternalEntity? entity = await entities.FindForUpdateAsync(entityId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (entity is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await access.CheckRecordAsync(actorId, PermissionCatalogue.OrganizationManage, SubjectOf(entity.Id), cancellationToken).ConfigureAwait(false) is { } denied)
+        {
+            return denied;
+        }
+
+        IReadOnlyList<RecordUse> uses = await entities.ListUsesAsync(entity.Id, cancellationToken).ConfigureAwait(false);
+        if (uses.Count > 0)
+        {
+            return new DeletionOutcome(false, 0, uses);
+        }
+
+        // Not scoped to the entity: the audit trail keeps no reference to a row that is gone.
+        audit.Stage(new AuditEntry(AuditEventClass.PrivilegedAction, IdentityAccessAuditEvents.ExternalEntityDeleted, AuditOutcome.Success)
+        {
+            ActorUserId = actorId,
+            Subject = new AuditSubject("IdentityAccess", nameof(ExternalEntity), entity.Id),
+            Attributes = [AuditAttribute.Of("code", entity.Code), AuditAttribute.Of("name_en", entity.Name.En), AuditAttribute.Of(IdentityAccessAuditAttributes.Status, entity.Status)],
+        });
+        entities.Remove(entity);
+        return (await entities.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError ? saveError : new DeletionOutcome(true, 0, []);
+    }
 
     /// <summary><paramref name="from"/> null: from any status but RETIRED.</summary>
     private async Task<AdministrationResult<Versioned<ExternalEntityDetail>>> TransitionAsync(

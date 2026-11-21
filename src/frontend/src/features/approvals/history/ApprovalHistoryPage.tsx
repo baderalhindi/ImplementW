@@ -8,6 +8,8 @@ import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { PageNotice, type Notice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { approvalInstancesApi } from '../api/approvalsApi.ts';
 import { type ApprovalInstanceDetail, type ApprovalTaskDetail } from '../api/types.ts';
@@ -57,6 +59,106 @@ function DecidedBy({
         {t('approvals.history.onBehalfOf', { name: names.user(task.assignedUserId) })}
       </span>
     </>
+  );
+}
+
+interface StageTaskTableProps {
+  sequenceNo: number;
+  tasks: ApprovalTaskDetail[];
+  names: ApprovalNames;
+  isRequester: boolean;
+  canEscalate: (task: ApprovalTaskDetail) => boolean;
+  onEscalate: (task: ApprovalTaskDetail) => void;
+}
+
+/** One stage's tasks. Each stage is its own table, so each has its own selection. */
+function StageTaskTable({
+  sequenceNo,
+  tasks,
+  names,
+  isRequester,
+  canEscalate,
+  onEscalate,
+}: StageTaskTableProps): ReactElement {
+  const { t, formatDateTime } = useI18n();
+  const selection = useRowSelection();
+  return (
+    <TableContainer
+      caption={t('approvals.history.stageCaption', { stage: sequenceNo })}
+      selection={{ selection, exportName: `approval-stage-${String(sequenceNo)}` }}
+    >
+      <thead>
+        <tr>
+          <SelectAllHeader ids={tasks.map((task) => task.id)} selection={selection} />
+          <th scope="col">{t('approvals.fields.role')}</th>
+          <th scope="col">{t('approvals.fields.status')}</th>
+          <th scope="col">{t('approvals.fields.dueAt')}</th>
+          <th scope="col">{t('approvals.fields.decidedBy')}</th>
+          <th scope="col">{t('approvals.fields.decidedAt')}</th>
+          <th scope="col">{t('approvals.fields.reason')}</th>
+          {isRequester && <th scope="col">{t('common.table.actions')}</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {tasks.map((task) => (
+          <tr key={task.id}>
+            <SelectRowCell
+              id={task.id}
+              name={names.role(task.assignedRoleId)}
+              selection={selection}
+            />
+            <td>{names.role(task.assignedRoleId)}</td>
+            <td>
+              <StatusBadge
+                label={t(`approvals.taskStatus.${task.status}`)}
+                tone={taskTone(task.status)}
+              />
+              {task.status === 'PENDING' && isOverdue(task.dueAt) && (
+                <>
+                  {' '}
+                  <StatusBadge label={t('approvals.overdue')} tone="negative" />
+                </>
+              )}
+            </td>
+            <td>
+              {task.dueAt === null ? t('approvals.history.notReached') : formatDateTime(task.dueAt)}
+            </td>
+            <td>
+              <DecidedBy task={task} names={names} />
+            </td>
+            <td>{task.decidedAt === null ? '—' : formatDateTime(task.decidedAt)}</td>
+            <td>
+              {task.decisionReason === null ? (
+                '—'
+              ) : (
+                <span
+                  className="reason"
+                  lang={languageTag(task.decisionReason.language)}
+                  dir="auto"
+                >
+                  {task.decisionReason.text}
+                </span>
+              )}
+            </td>
+            {isRequester && (
+              <td className="cell--actions">
+                {canEscalate(task) && (
+                  <button
+                    type="button"
+                    className="button"
+                    onClick={() => {
+                      onEscalate(task);
+                    }}
+                  >
+                    {t('approvals.decision.escalate.action')}
+                  </button>
+                )}
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </TableContainer>
   );
 }
 
@@ -203,76 +305,17 @@ function ApprovalHistory({ run, notice, onNotice, onSettled }: ApprovalHistoryPr
               <StatusBadge label={t('approvals.history.currentStage')} tone="info" />
             )}
           </div>
-          <TableContainer caption={t('approvals.history.stageCaption', { stage: sequenceNo })}>
-            <thead>
-              <tr>
-                <th scope="col">{t('approvals.fields.role')}</th>
-                <th scope="col">{t('approvals.fields.status')}</th>
-                <th scope="col">{t('approvals.fields.dueAt')}</th>
-                <th scope="col">{t('approvals.fields.decidedBy')}</th>
-                <th scope="col">{t('approvals.fields.decidedAt')}</th>
-                <th scope="col">{t('approvals.fields.reason')}</th>
-                {isRequester && <th scope="col">{t('common.table.actions')}</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((task) => (
-                <tr key={task.id}>
-                  <td>{names.role(task.assignedRoleId)}</td>
-                  <td>
-                    <StatusBadge
-                      label={t(`approvals.taskStatus.${task.status}`)}
-                      tone={taskTone(task.status)}
-                    />
-                    {task.status === 'PENDING' && isOverdue(task.dueAt) && (
-                      <>
-                        {' '}
-                        <StatusBadge label={t('approvals.overdue')} tone="negative" />
-                      </>
-                    )}
-                  </td>
-                  <td>
-                    {task.dueAt === null
-                      ? t('approvals.history.notReached')
-                      : formatDateTime(task.dueAt)}
-                  </td>
-                  <td>
-                    <DecidedBy task={task} names={names} />
-                  </td>
-                  <td>{task.decidedAt === null ? '—' : formatDateTime(task.decidedAt)}</td>
-                  <td>
-                    {task.decisionReason === null ? (
-                      '—'
-                    ) : (
-                      <span
-                        className="reason"
-                        lang={languageTag(task.decisionReason.language)}
-                        dir="auto"
-                      >
-                        {task.decisionReason.text}
-                      </span>
-                    )}
-                  </td>
-                  {isRequester && (
-                    <td className="cell--actions">
-                      {canEscalate(task) && (
-                        <button
-                          type="button"
-                          className="button"
-                          onClick={() => {
-                            onNotice(null);
-                            setTarget({ taskId: task.id, action: 'escalate' });
-                          }}
-                        >
-                          {t('approvals.decision.escalate.action')}
-                        </button>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </TableContainer>
+          <StageTaskTable
+            sequenceNo={sequenceNo}
+            tasks={tasks}
+            names={names}
+            isRequester={isRequester}
+            canEscalate={canEscalate}
+            onEscalate={(task) => {
+              onNotice(null);
+              setTarget({ taskId: task.id, action: 'escalate' });
+            }}
+          />
         </section>
       ))}
 

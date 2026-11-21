@@ -29,6 +29,7 @@ import {
   compactMatrix,
   COST_DIMENSION_ID,
   FLOODING_ID,
+  HEDGE_ACTION_ID,
   risk,
   RISK_ETAG,
   type RiskState,
@@ -654,5 +655,48 @@ describe('MOD-030 to MOD-034', () => {
     const [request] = api.requestsTo('POST', /\/start$/);
     expect(request?.path).toBe(`/risk-treatment-actions/${BARRIER_ACTION_ID}/start`);
     expect(request?.headers.get('If-Match')).toBe(ACTION_ETAG);
+  });
+
+  test('select all corrective actions, then Cancel for every chosen one that allows it', async () => {
+    const api = open(FLOODING_PATH, {
+      actions: [
+        treatmentAction(),
+        treatmentAction({
+          id: HEDGE_ACTION_ID,
+          title: { text: 'Raise the embankment', language: 'EN' },
+          status: 'IN_PROGRESS',
+        }),
+        treatmentAction({
+          id: 'f3000000-0000-4000-8000-000000000e03',
+          title: { text: 'Survey the drains', language: 'EN' },
+          status: 'COMPLETED',
+        }),
+      ],
+    });
+    api.on('POST', /^\/risk-treatment-actions\/[^/]+\/cancel$/, {
+      body: treatmentAction({ status: 'CANCELLED' }),
+    });
+    const table = await screen.findByRole('region', { name: en('risks.detail.actionsCaption') });
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    const bar = screen
+      .getByText(en('common.table.selected', { count: 3 }))
+      .closest<HTMLElement>('.selection-bar');
+    if (bar === null) {
+      throw new Error('No selection bar.');
+    }
+    await press(bar, en('risks.actionCommand.cancel.confirm'));
+    const dialog = await screen.findByRole('dialog', {
+      name: en('risks.actionCommand.cancel.title'),
+    });
+    expect(within(dialog).getByText(/Install flood barriers، Raise the embankment/)).toBeTruthy();
+    await press(dialog, en('risks.actionCommand.cancel.confirm'));
+
+    expect(await screen.findByText(en('risks.actionCommand.cancel.done'))).toBeTruthy();
+    expect(api.requestsTo('POST', /\/cancel$/).map((request) => request.path)).toEqual([
+      `/risk-treatment-actions/${BARRIER_ACTION_ID}/cancel`,
+      `/risk-treatment-actions/${HEDGE_ACTION_ID}/cancel`,
+    ]);
   });
 });

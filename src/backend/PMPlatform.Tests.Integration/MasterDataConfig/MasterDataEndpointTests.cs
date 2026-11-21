@@ -23,7 +23,7 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
             .Where(e => e.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName.StartsWith("MasterDataConfig_", StringComparison.Ordinal) == true)
             .ToDictionary(e => e.Metadata.GetMetadata<IEndpointNameMetadata>()!.EndpointName, EndpointAuthorization.DeclarationOf);
 
-        Assert.Equal(30, declarations.Count);
+        Assert.Equal(31, declarations.Count);
         Assert.All(declarations, d => Assert.Equal(
             d.Key == "MasterDataConfig_GetConfigurationResolution" ? "session" // decided in the action: RISK_VIEW for the risk matrix (review round 5)
             : d.Key.Contains("Import", StringComparison.Ordinal) ? "permission:DATA_IMPORT" // TASK-102's migration import
@@ -74,6 +74,68 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
 
         Assert.All(reads, status => Assert.Equal(HttpStatusCode.OK, status));
         Assert.All(refused, status => Assert.Equal(HttpStatusCode.Forbidden, status));
+    }
+
+    /// <summary>
+    /// The client asked for Delete, never Retire: a value is erased after it is cleared from every record that names it optionally (a child item's
+    /// parent, a project's priority); a record that needs it keeps it, and then nothing is deleted and the answer says where it is used.
+    /// </summary>
+    [Fact]
+    public async Task DeleteClearsOptionalUsesAndIsRefusedWhileARecordNeedsTheValue()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Crew crew = await client.SignInCrewAsync();
+        Guid region = await CatalogueIdAsync(client, crew.Author, "REGION");
+        Guid city = await CatalogueIdAsync(client, crew.Author, "CITY");
+        Guid priority = await CatalogueIdAsync(client, crew.Author, "PRIORITY");
+        Guid entityType = await CatalogueIdAsync(client, crew.Author, "EXTERNAL_ENTITY_TYPE");
+
+        Guid draft = await CreateAsync(client, crew, region, "R7-DRAFT");
+        JsonObject deleted = await RemoveAsync(client, crew, draft);
+        Assert.Equal((true, 0), (deleted["deleted"]!.GetValue<bool>(), deleted["clearedCount"]!.GetValue<int>()));
+        using (HttpResponseMessage gone = await client.GetAsync($"{ConfigurationApi.Items}/{draft}", crew.Author))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, gone.StatusCode);
+        }
+
+        // A city under the region, and a project of this priority: both lose the value, which is then erased.
+        Guid parent = await CreateAsync(client, crew, region, "R7-PARENT");
+        Guid child = await CreateAsync(client, crew, city, "R7-CITY", parent);
+        Guid urgent = await CreateAsync(client, crew, priority, "R7-URGENT");
+        await host.Database.ExecuteAsync($"UPDATE project.project SET priority_item_id = '{urgent}' WHERE id = '{IdentityDatabase.EntityProjectId}'");
+
+        Assert.Equal(1, (await RemoveAsync(client, crew, parent))["clearedCount"]!.GetValue<int>());
+        Assert.Equal(string.Empty, Assert.Single(await host.Database.QueryAsync($"SELECT coalesce(parent_item_id::text, '') FROM master_data_config.master_data_item WHERE id = '{child}'")));
+        Assert.Equal(1, (await RemoveAsync(client, crew, urgent))["clearedCount"]!.GetValue<int>());
+        Assert.Equal(string.Empty, Assert.Single(await host.Database.QueryAsync(
+            $"SELECT coalesce(priority_item_id::text, '') FROM project.project WHERE id = '{IdentityDatabase.EntityProjectId}'")));
+
+        // An external entity cannot exist without its type: the type stays, and the answer says where it is needed.
+        Guid type = await CreateAsync(client, crew, entityType, "R7-TYPE");
+        await host.Database.ExecuteAsync($"""
+            INSERT INTO identity_access.external_entity (id, code, name_ar, name_en, entity_type_item_id, status, created_at, created_by, updated_at, updated_by)
+            VALUES (gen_random_uuid(), 'ENT-R7-TYPE', 'جهة', 'Entity', '{type}', 'ACTIVE', now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}')
+            """);
+        JsonObject refused = await RemoveAsync(client, crew, type);
+        Assert.False(refused["deleted"]!.GetValue<bool>());
+        JsonNode use = Assert.Single(refused["blockedBy"]!.AsArray())!;
+        Assert.Equal(("identity_access.external_entity", "entity_type_item_id", true, 1), (
+            use["record"]!.GetValue<string>(), use["field"]!.GetValue<string>(), use["required"]!.GetValue<bool>(), use["count"]!.GetValue<int>()));
+    }
+
+    private static async Task<Guid> CreateAsync(HttpClient client, Crew crew, Guid catalogueId, string code, Guid? parentItemId = null)
+    {
+        using HttpResponseMessage created = await client.PostAsync(
+            ConfigurationApi.Items, crew.Author, new { catalogueId, code, label = new { ar = "قيمة", en = "Value" }, parentItemId });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        return AdministrationApi.IdOf(await created.ReadObjectAsync());
+    }
+
+    private static async Task<JsonObject> RemoveAsync(HttpClient client, Crew crew, Guid itemId)
+    {
+        using HttpResponseMessage removed = await client.PostAsync($"{ConfigurationApi.Items}/{itemId}/remove", crew.Publisher);
+        Assert.Equal(HttpStatusCode.OK, removed.StatusCode);
+        return await removed.ReadObjectAsync();
     }
 
     /// <summary>

@@ -196,16 +196,23 @@ describe('SCR-025 Project Register', () => {
     expect(screen.queryByRole('link', { name: en('projects.create.action') })).toBeNull();
   });
 
-  test('an empty register offers Import and Create to a role that has them', async () => {
+  test('an empty register offers Import and Create once, in the header, and the empty list points to them', async () => {
     openRegister('/projects', sessionFor(['R02']), []);
 
-    const empty = (await screen.findByText(en('projects.register.empty'))).parentElement;
-    const actions = within(empty ?? document.body);
+    const hint = await screen.findByText(en('projects.register.emptyHint'));
+    // Review round 8, point 09: the empty list offers one first step, creating the first project; Import stays in the header only.
+    const empty = within(hint.closest('.state') ?? hint.parentElement ?? document.body);
+    expect(empty.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+      '/projects/new',
+    ]);
+    const header = within(
+      screen.getByRole('heading', { level: 1 }).closest('.page-header') ?? document.body,
+    );
     expect(
-      actions.getByRole('link', { name: en('projects.import.open') }).getAttribute('href'),
+      header.getByRole('link', { name: en('projects.import.open') }).getAttribute('href'),
     ).toBe('/projects/import');
     expect(
-      actions.getByRole('link', { name: en('projects.create.action') }).getAttribute('href'),
+      header.getByRole('link', { name: en('projects.create.action') }).getAttribute('href'),
     ).toBe('/projects/new');
   });
 
@@ -264,6 +271,61 @@ describe('SCR-025 Project Register', () => {
     });
   });
 
+  test('a dashboard count opens the register on its filters, each a chip; measured adds the percentages (review round 8, point 01)', async () => {
+    const api = withProjectLookups(mockApi())
+      .on('GET', /^\/project-stages$/, { body: page([]) })
+      .on('GET', /^\/projects$/, { body: page([PROJECTS[1]]) });
+    renderApp({
+      path: '/projects?registered=true&onPlan=LATE&measured=true&stage=NONE&sort=value:desc',
+      session: sessionFor(['R04']),
+    });
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/projects$/).length).toBeGreaterThan(0);
+    });
+    const query = api.requestsTo('GET', /^\/projects$/)[0]?.query;
+    expect(query?.get('registered')).toBe('true');
+    expect(query?.get('onPlan')).toBe('LATE');
+    expect(query?.get('measured')).toBe('true');
+    expect(query?.get('stage')).toBe('NONE');
+    expect(query?.get('sort')).toBe('value:desc');
+    const chips = await screen.findByRole('list', { name: en('common.filters.active') });
+    const text = chips.textContent;
+    for (const value of [
+      en('projects.filters.registeredOnly'),
+      en('projects.onPlan.LATE'),
+      en('projects.filters.measuredOnly'),
+      en('dashboards.insights.noCurrentStage'),
+    ]) {
+      expect(text).toContain(value);
+    }
+    expect(
+      await screen.findByRole('columnheader', { name: en('projects.followUp.declaredPlanned') }),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('columnheader', { name: en('projects.followUp.declaredActual') }),
+    ).not.toBeNull();
+  });
+
+  test("the Follow-up list takes the dashboard's filters and the main reason, each a chip (review round 8, point 01)", async () => {
+    const api = withProjectLookups(mockApi()).on('GET', /^\/project-follow-ups$/, {
+      body: page([]),
+    });
+    renderApp({
+      path: '/projects/follow-up?mainReason=STALLED&period=2026&status=ACTIVE',
+      session: sessionFor(['R04']),
+    });
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/project-follow-ups$/).length).toBeGreaterThan(0);
+    });
+    const query = api.requestsTo('GET', /^\/project-follow-ups$/)[0]?.query;
+    expect(query?.get('mainReason')).toBe('STALLED');
+    expect(query?.get('period')).toBe('2026');
+    expect(query?.get('status')).toBe('ACTIVE');
+    const chips = await screen.findByRole('list', { name: en('common.filters.active') });
+    expect(within(chips).getAllByRole('button')).toHaveLength(3);
+    expect(chips.textContent).toContain(en('projects.followUpReason.STALLED'));
+  });
+
   test('the Viewer (R06) reads the register and is offered no Import', async () => {
     openRegister('/projects', sessionFor(['R06']));
 
@@ -280,6 +342,42 @@ describe('SCR-025 Project Register', () => {
     },
   );
 
+  test('a holder of PROJECT_DELETE deletes a project in any state (client review, item 4)', async () => {
+    const user = userEvent.setup();
+    const active = projectSummary({
+      id: 'p-active',
+      status: 'ACTIVE',
+      title: { text: 'Live works', language: 'EN' },
+    });
+    const api = withProjectLookups(mockApi())
+      .on('GET', /^\/projects$/, { body: page([active]) })
+      .on('DELETE', /^\/projects\/p-active$/, { status: 204 });
+    renderApp({ path: '/projects', session: sessionFor(['R02']) });
+
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: en('common.table.selectRow', { name: 'Live works' }),
+      }),
+    );
+    expect(screen.queryByText(en('projects.bulk.onlyDrafts'))).toBeNull();
+    await user.click(
+      screen.getByRole('button', { name: en('projects.bulk.any.delete', { count: 1 }) }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(en('projects.bulk.any.deleteBody', { names: 'Live works' })),
+    ).toBeTruthy();
+    await user.click(
+      within(dialog).getByRole('button', { name: en('projects.bulk.any.delete', { count: 1 }) }),
+    );
+
+    await waitFor(() => {
+      expect(api.requestsTo('DELETE', /^\/projects\//).map((request) => request.path)).toEqual([
+        '/projects/p-active',
+      ]);
+    });
+  });
+
   test('a holder of PROJECT_IMPORT_APPROVE alone sees Import on the register', async () => {
     withProjectLookups(mockApi())
       .on('GET', SHELL_PERMISSIONS, {
@@ -294,7 +392,7 @@ describe('SCR-025 Project Register', () => {
     renderApp({ path: '/projects', session: sessionFor(['R09']) });
 
     expect(await screen.findAllByRole('link', { name: en('projects.import.open') })).toHaveLength(
-      2,
+      1,
     );
     expect(screen.queryByRole('link', { name: en('projects.create.action') })).toBeNull();
   });

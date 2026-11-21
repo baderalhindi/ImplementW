@@ -7,16 +7,18 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { isAppPath } from '@/shared/navigation/appPath.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { DirectoryPasswordHelp, NewPasswordFields } from './passwordSelfService.tsx';
+import { DeviceUnlockSetup } from './DeviceUnlockSetup.tsx';
+import { DeviceUnlockSignIn } from './DeviceUnlockSignIn.tsx';
+import { PasswordlessSignIn } from './PasswordlessSignIn.tsx';
 import { checkNewPassword } from './passwordUpdate.ts';
 import { SecondFactorForm } from './SecondFactorForm.tsx';
 import {
@@ -36,10 +38,11 @@ const accountTabs: readonly AccountTab[] = ['microsoft', 'directory'];
 
 const loadSignInOptions = (signal: AbortSignal) => sessionApi.getSignInOptions(signal);
 
-function redirectTarget(state: unknown): string {
-  const from = (state as { from?: unknown } | null)?.from;
-  return isAppPath(from) ? from : '/';
-}
+/**
+ * Where a sign-in lands: the Home page, whoever signs in and whatever page they had opened before (20 Nov 2026, the user: "when signing in
+ * with any user the website goes to the Home page").
+ */
+const SIGNED_IN_PATH = '/';
 
 function Icon({ children }: { children: ReactNode }): ReactElement {
   return (
@@ -150,12 +153,11 @@ function CredentialField({
 }
 
 /**
- * National single sign-on as the mockup lays it out. Nafath and its biometric fallback have no API yet, so every
- * control here is disabled and the panel says so.
+ * National single sign-on as the mockup lays it out. Nafath has no API yet, so its button is disabled and the panel says
+ * so. Below it, sign-in without a password: the device's passkey (Face ID, Touch ID) or a code by SMS (13 Nov 2026 review).
  */
-function NafathPanel(): ReactElement {
+function NafathPanel({ passwordless }: { passwordless: ReactNode }): ReactElement {
   const { t } = useI18n();
-  const idFieldId = useId();
   return (
     <section
       className="sign-in__panel sign-in__nafath"
@@ -180,41 +182,29 @@ function NafathPanel(): ReactElement {
         {t('identityAccess.signIn.nafath.submit')}
       </button>
       <p className="sign-in__divider">{t('identityAccess.signIn.or')}</p>
-      <p className="sign-in__note">{t('identityAccess.signIn.biometric.instructions')}</p>
-      <div className="field">
-        <label className="field__label" htmlFor={idFieldId}>
-          {t('identityAccess.signIn.biometric.nationalId')}
-        </label>
-        <input
-          id={idFieldId}
-          name="nationalId"
-          className="field__input"
-          inputMode="numeric"
-          placeholder={t('identityAccess.signIn.biometric.nationalIdPlaceholder')}
-          disabled
-        />
-      </div>
-      <button type="button" className="button sign-in__wide" disabled>
-        {t('identityAccess.signIn.biometric.submit')}
-      </button>
+      {passwordless}
     </section>
   );
 }
 
 /**
- * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath and biometric
- * sign-in are shown disabled until their integrations exist; Microsoft is offered where the API says single sign-on is
- * configured. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
+ * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath is shown
+ * disabled until its integration exists; Microsoft, the device's passkey and the SMS code are offered where the API says
+ * they are configured. A passkey passes both factors; every other method keeps its second factor. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
  * password sets a new one first (the 5 Nov 2026 review §6.1), then continues to its second factor or its session.
  */
 export function SignInPage(): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
-  const location = useLocation();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [passwordChange, setPasswordChange] = useState<PasswordChangePending | null>(null);
   const [secondFactor, setSecondFactor] = useState<PendingSecondFactor | null>(null);
+  /** Face ID / Touch ID being set up on this device: for this National ID, once the sign-in has a session. */
+  const [deviceUnlockSetup, setDeviceUnlockSetup] = useState<{
+    nationalId: string;
+    session: Session | null;
+  } | null>(null);
   const save = useSaveAction(
     describeRefusal(
       passwordChange !== null
@@ -239,7 +229,7 @@ export function SignInPage(): ReactElement {
   const signInOptions = useApiResource(loadSignInOptions);
   const singleSignOnAvailable = signInOptions.data?.singleSignOnAvailable === true;
 
-  const target = redirectTarget(location.state);
+  const target = SIGNED_IN_PATH;
   if (session !== null) {
     return <Navigate to={target} replace />;
   }
@@ -336,7 +326,7 @@ export function SignInPage(): ReactElement {
     >
       <FormAlert message={save.formError} />
       <CredentialField
-        label={t('identityAccess.signIn.username')}
+        label={t('identityAccess.signIn.usernameOrEmail')}
         name="username"
         autoComplete="username"
         value={username}
@@ -474,6 +464,7 @@ export function SignInPage(): ReactElement {
               >
                 {tab === 'microsoft' && (
                   <>
+                    <FormAlert message={save.formError} />
                     <button
                       type="button"
                       className="sign-in__provider"
@@ -493,18 +484,76 @@ export function SignInPage(): ReactElement {
                         </span>
                       )}
                     </button>
-                    <p className="sign-in__divider">{t('identityAccess.signIn.or')}</p>
+                    <DeviceUnlockSignIn
+                      passkeyAvailable={signInOptions.data?.passkeySignInAvailable === true}
+                      onSignedIn={(step) => {
+                        if ('session' in step) {
+                          finish(step.session);
+                        } else {
+                          setSecondFactor(step.secondFactor);
+                        }
+                      }}
+                    />
                   </>
                 )}
-                <h2 className="sign-in__subtitle">{t('identityAccess.signIn.directoryTitle')}</h2>
-                {credentialsForm}
+                {tab === 'directory' && (
+                  <>
+                    <h2 className="sign-in__subtitle">
+                      {t('identityAccess.signIn.directoryTitle')}
+                    </h2>
+                    {credentialsForm}
+                  </>
+                )}
               </div>
             </div>
           ) : (
-            <SecondFactorForm secondFactor={secondFactor} onSession={finish} />
+            <SecondFactorForm
+              secondFactor={secondFactor}
+              onSession={(signedIn) => {
+                if (deviceUnlockSetup === null) {
+                  finish(signedIn);
+                } else {
+                  setDeviceUnlockSetup({ ...deviceUnlockSetup, session: signedIn });
+                  setSecondFactor(null);
+                }
+              }}
+            />
           )}
         </section>
-        <NafathPanel />
+        <NafathPanel
+          passwordless={
+            deviceUnlockSetup?.session ? (
+              <DeviceUnlockSetup
+                session={deviceUnlockSetup.session}
+                nationalId={deviceUnlockSetup.nationalId}
+                onDone={() => {
+                  if (deviceUnlockSetup.session) {
+                    finish(deviceUnlockSetup.session);
+                  }
+                }}
+              />
+            ) : secondFactor === null && passwordChange === null ? (
+              <PasswordlessSignIn
+                passkeyAvailable={signInOptions.data?.passkeySignInAvailable === true}
+                smsAvailable={signInOptions.data?.smsSignInAvailable === true}
+                loading={signInOptions.loading}
+                onSignedIn={(step, setUpForNationalId) => {
+                  if (setUpForNationalId !== null) {
+                    setDeviceUnlockSetup({
+                      nationalId: setUpForNationalId,
+                      session: 'session' in step ? step.session : null,
+                    });
+                  }
+                  if (!('session' in step)) {
+                    setSecondFactor(step.secondFactor);
+                  } else if (setUpForNationalId === null) {
+                    finish(step.session);
+                  }
+                }}
+              />
+            ) : null
+          }
+        />
       </div>
       <footer className="sign-in__footer">
         {t('identityAccess.signIn.copyright', { year: new Date().getFullYear() })}

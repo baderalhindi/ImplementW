@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PMPlatform.Application.Common.Validation;
 
 namespace PMPlatform.Application.Common.DataImport;
 
@@ -45,6 +46,9 @@ public sealed record ImportColumn(string Key, ImportValueKind Kind, bool Require
 
     /// <summary>The longest value a cell may hold; a code's default is the platform's code length.</summary>
     public int MaxLength { get; init; } = Kind == ImportValueKind.Code ? 50 : 200;
+
+    /// <summary>For a text column of one language of a bilingual name, that language (13 Nov 2026 review).</summary>
+    public TextScript? Script { get; init; }
 
     /// <summary>The values a <see cref="ImportValueKind.Choice"/> column accepts, as the template lists them.</summary>
     public IReadOnlyList<string> Choices { get; init; } = [];

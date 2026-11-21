@@ -17,7 +17,7 @@ MD = HERE / "erd.md"
 CSV = HERE / "erd-appendix-crosswalk.csv"
 
 AUDIT = ["created_at", "created_by", "updated_at", "updated_by"]
-POLICIES = {"APPEND_ONLY", "RETAIN", "HARD_DRAFT", "HARD_OWNER", "HARD_WORKING", "CASCADE"}
+POLICIES = {"APPEND_ONLY", "RETAIN", "HARD_DRAFT", "HARD_OWNER", "HARD_WORKING", "CASCADE", "SOFT_DELETE"}
 MONEY = "numeric(18,2)"
 
 findings = []
@@ -122,8 +122,10 @@ for key, t in tables.items():
             if cname[:-5] not in names:
                 find(f"{key}.{cname}: D-7 language tag without its narrative column")
         # D-3
-        if cname in ("deleted_at", "deleted_by", "is_deleted"):
-            find(f"{key}.{cname}: D-3 forbids soft-delete columns")
+        # deleted_at / deleted_by only on a SOFT_DELETE table (D-3, revised 2026-11-21); never an is_deleted flag
+        soft = key in register and register[key][1] == "SOFT_DELETE"
+        if cname == "is_deleted" or (cname in ("deleted_at", "deleted_by") and not soft):
+            find(f"{key}.{cname}: D-3 forbids soft-delete columns outside SOFT_DELETE")
         # D-14
         m = re.search(r"ref: > (\w+)\.(\w+)\.(\w+)", attrs)
         if m:

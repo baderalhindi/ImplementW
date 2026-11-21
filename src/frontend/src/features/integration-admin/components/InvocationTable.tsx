@@ -3,7 +3,9 @@ import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type InvocationSummary } from '../api/types.ts';
 import { invocationPath } from '../catalogue.ts';
@@ -25,10 +27,12 @@ interface InvocationTableProps {
  */
 export function InvocationTable({ items, caption, current }: InvocationTableProps): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
   return (
-    <TableContainer caption={caption}>
+    <TableContainer caption={caption} selection={{ selection, exportName: 'integration-attempts' }}>
       <thead>
         <tr>
+          <SelectAllHeader ids={items.map((invocation) => invocation.id)} selection={selection} />
           <th scope="col">{t('integrationAdmin.fields.startedAt')}</th>
           <th scope="col">{t('integrationAdmin.fields.integration')}</th>
           <th scope="col">{t('integrationAdmin.fields.operation')}</th>
@@ -45,6 +49,14 @@ export function InvocationTable({ items, caption, current }: InvocationTableProp
             data-invocation={invocation.id}
             aria-current={invocation.id === current ? 'true' : undefined}
           >
+            <SelectRowCell
+              id={invocation.id}
+              name={t('integrationAdmin.invocations.attemptOf', {
+                number: invocation.attemptNo,
+                operation: invocation.operationCode,
+              })}
+              selection={selection}
+            />
             <td>
               <Moment value={invocation.startedAt} />
             </td>

@@ -4,12 +4,14 @@ import { Link, useParams } from 'react-router';
 import { GapValue, OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { ProjectStatusBadge } from '@/features/projects/components/ProjectStatusBadge.tsx';
-import { formatSar, languageTag } from '@/features/projects/presentation.ts';
+import { languageTag } from '@/features/projects/presentation.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { dashboardsApi } from '../api/dashboardsApi.ts';
 import { type PortfolioCard, type PortfolioCardDimension } from '../api/insightTypes.ts';
@@ -17,6 +19,8 @@ import { DASHBOARDS_PATH } from '../paths.ts';
 import { dashboardProblemMessage } from '../problems.ts';
 
 import { Coverage, Percent } from './figures.tsx';
+import { sarWhole } from '@/shared/format/money.ts';
+import { SarAmount } from '@/shared/format/SarAmount.tsx';
 
 const DIMENSIONS: Record<string, PortfolioCardDimension> = {
   portfolio: 'PORTFOLIO',
@@ -64,6 +68,7 @@ export function PortfolioCardPage(): ReactElement {
 function CardView({ card }: { card: PortfolioCard }): ReactElement {
   const { t } = useI18n();
   const lookups = useProjectLookups();
+  const selection = useRowSelection();
   const { summary, projects } = card;
   const name = lookups.itemLabel(card.itemId) ?? '';
   const showValue = summary.valueSar !== null;
@@ -98,9 +103,7 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
               {summary.valueEntered === 0 ? (
                 notAvailable
               ) : (
-                <span dir="ltr">
-                  {t('projects.money.sar', { amount: formatSar(summary.valueSar ?? '0.00') })}
-                </span>
+                <SarAmount amount={summary.valueSar ?? '0.00'} />
               )}
               <Coverage kind="value" count={summary.valueEntered} of={summary.projects} />
             </Detail>
@@ -124,9 +127,16 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
       {projects.length === 0 ? (
         <p className="state">{t('dashboards.noData')}</p>
       ) : (
-        <TableContainer caption={t('dashboards.insights.card.projects')}>
+        <TableContainer
+          caption={t('dashboards.insights.card.projects')}
+          selection={{ selection, exportName: 'portfolio-card-projects' }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={projects.map((project) => project.projectId)}
+                selection={selection}
+              />
               <th scope="col">{t('projects.fields.formalProjectId')}</th>
               <th scope="col">{t('projects.fields.title')}</th>
               <th scope="col">{t('projects.fields.status')}</th>
@@ -143,6 +153,11 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
           <tbody>
             {projects.map((project) => (
               <tr key={project.projectId}>
+                <SelectRowCell
+                  id={project.projectId}
+                  name={project.title.text}
+                  selection={selection}
+                />
                 <td dir="ltr" className="cell--ltr">
                   {project.formalProjectId ?? project.legacyReference ?? '—'}
                 </td>
@@ -163,7 +178,7 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
                     {project.valueSar === null ? (
                       notAvailable
                     ) : (
-                      <span dir="ltr">{formatSar(project.valueSar)}</span>
+                      <span dir="ltr">{sarWhole(project.valueSar)}</span>
                     )}
                   </td>
                 )}

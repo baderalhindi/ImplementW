@@ -179,6 +179,12 @@ export interface NarrativeText {
   language: 'AR' | 'EN';
 }
 
+/** A note as a request sends it: the API reads the language in lower case (RequestValidation.Language), unlike a response. */
+export interface NarrativeTextRequest {
+  text: string;
+  language: 'ar' | 'en';
+}
+
 export interface OperationalAlertView {
   id: string;
   integrationInstanceId: string;

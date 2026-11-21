@@ -13,7 +13,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        IQueryable<User> users = context.Set<User>().AsNoTracking();
+        IQueryable<User> users = context.Set<User>().AsNoTracking().Where(u => u.Status != UserStatus.Deleted);
         if (query.Statuses.Count > 0)
         {
             users = users.Where(u => query.Statuses.Contains(u.Status));
@@ -63,7 +63,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
     public async Task<Versioned<UserDetail>?> FindDetailAsync(Guid userId, CancellationToken cancellationToken)
     {
         var row = await context.Set<User>().AsNoTracking()
-            .Where(u => u.Id == userId)
+            .Where(u => u.Id == userId && u.Status != UserStatus.Deleted)
             .Select(u => new { User = u, Version = EF.Property<uint>(u, EntityTypeBuilderExtensions.RowVersion) })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (row is null)
@@ -77,13 +77,14 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
                 user.Id, user.UserType, user.DirectorySubjectId, user.Username, user.DisplayName, user.Email, user.MobileNumber, user.MobileVerifiedAt,
                 user.JobTitle, user.DepartmentId, user.ManagerUserId, user.ExternalEntityId, LanguageCode.Of(user.PreferredLanguage), user.Status,
                 user.DisabledAt, user.MfaEnrolledAt is not null, user.NafathVerifiedAt, user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy,
-                user.AccountSource, user.MustChangePassword, user.LockedUntil, user.AccountEndsOn),
+                user.AccountSource, user.MustChangePassword, user.LockedUntil, user.AccountEndsOn,
+                user.NationalIdLastDigits is { } last ? NationalIdNumber.Masked(last) : null),
             row.Version);
     }
 
     public async Task<User?> FindForUpdateAsync(Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
     {
-        User? user = await context.Set<User>().SingleOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
+        User? user = await context.Set<User>().SingleOrDefaultAsync(u => u.Id == userId && u.Status != UserStatus.Deleted, cancellationToken).ConfigureAwait(false);
         if (user is not null)
         {
             AdministrationPersistence.ExpectVersion(context, user, expectedVersion);
@@ -91,6 +92,12 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
 
         return user;
     }
+
+    public Task<Guid?> FindIdByNationalIdFingerprintAsync(string fingerprint, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.NationalIdFingerprint == fingerprint).Select(u => (Guid?)u.Id).SingleOrDefaultAsync(cancellationToken);
+
+    public Task<string?> FindNationalIdSealedAsync(Guid userId, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.Id == userId && u.Status != UserStatus.Deleted).Select(u => u.NationalIdSealed).SingleOrDefaultAsync(cancellationToken);
 
     public void Add(User user) => context.Set<User>().Add(user);
 

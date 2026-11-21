@@ -29,7 +29,8 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.Property(e => e.SeedSource).HasMaxLength(20);
         builder.HasCheck("seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
         builder.Property(e => e.LegacyReference).HasMaxLength(100);
-        builder.HasIndex(e => e.LegacyReference).IsUnique().HasFilter("legacy_reference IS NOT NULL");
+        // A deleted project lets go of its register number, so importing that row again makes a new project.
+        builder.HasIndex(e => e.LegacyReference).IsUnique().HasFilter("legacy_reference IS NOT NULL AND deleted_at IS NULL");
         builder.HasNarrative(e => e.CurrentObstacle, "current_obstacle");
         builder.HasNarrative(e => e.NextAction, "next_action");
         builder.Property(e => e.NextActionOwner).HasMaxLength(200);
@@ -42,6 +43,13 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
             "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100)"
             + " AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100)"
             + " AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
+
+        // Review round 7, item 1: the stage plan's revision and the current stage of the latest published stage-based period.
+        builder.Property(e => e.StagePlanRevisionNo).HasDatabaseDefault(0);
+        builder.HasCheck("stage_plan_revision_no", "stage_plan_revision_no >= 0");
+        builder.Property(e => e.CurrentStageCode).HasMaxLength(50);
+        builder.Property(e => e.CurrentStagePercent).HasPrecision(5, 2);
+        builder.HasCheck("current_stage_percent", "current_stage_percent IS NULL OR (current_stage_code IS NOT NULL AND current_stage_percent BETWEEN 0 AND 100)");
 
         // TASK-041: the formal identifier is issued when AHDA approves, so every state from APPROVED_PLANNED on has one.
         builder.HasCheck(
@@ -61,6 +69,7 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.FollowUpOwnerUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.EntityContactUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.SubmittedByUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(e => e.ProposedProjectManagerUserId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(e => e.IsCanceled).HasDatabaseDefault(false);
         builder.HasCheck("canceled", "NOT is_canceled OR lifecycle_state = 'CLOSED'");
         builder.HasOne<ProjectImportBatch>().WithMany().HasForeignKey(e => e.ProjectImportBatchId).OnDelete(DeleteBehavior.Restrict);

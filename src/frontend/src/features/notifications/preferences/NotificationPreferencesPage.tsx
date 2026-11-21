@@ -50,7 +50,7 @@ export function NotificationPreferencesPage(): ReactElement {
       {preferences.loading && <LoadingState label={t('notifications.preferences.loading')} />}
       {preferences.error !== null &&
         (isConfigurationMissing(preferences.error) ? (
-          <EmptyState title={t('notifications.preferences.notConfigured')} />
+          <EmptyState title={t('notifications.preferences.notConfigured')} reason="setup" />
         ) : (
           <ErrorState
             error={preferences.error}

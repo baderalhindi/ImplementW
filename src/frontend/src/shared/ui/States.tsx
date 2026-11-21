@@ -1,5 +1,6 @@
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { type ReactElement, type ReactNode } from 'react';
+import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -12,16 +13,42 @@ export function LoadingState({ label }: { label?: string }): ReactElement {
   );
 }
 
-interface EmptyStateProps {
-  title: string;
-  children?: ReactNode;
-}
+/**
+ * Why a list, dashboard or chart is empty (review round 8, point 09): nothing in the person's scope, nothing in the period, nothing set up yet, nothing
+ * matching the filters, nothing recorded yet, or a screen the person's role does not offer. Each has one sentence, said the same way everywhere.
+ */
+export type EmptyReason = 'scope' | 'period' | 'setup' | 'filter' | 'notYet' | 'role';
 
-export function EmptyState({ title, children }: EmptyStateProps): ReactElement {
+/** Where the person can act on the emptiness: a page to open, or a step on this one (such as clearing the filters). */
+export type EmptyAction = { label: string } & ({ to: string } | { onClick: () => void });
+
+/** An empty state always says why: a standard `reason`, its own explanation in `children`, or both. */
+type EmptyStateProps = {
+  title: string;
+  action?: EmptyAction | undefined;
+} & ({ reason: EmptyReason; children?: ReactNode } | { reason?: undefined; children: ReactNode });
+
+export function EmptyState({ title, reason, children, action }: EmptyStateProps): ReactElement {
+  const { t } = useI18n();
   return (
     <div className="state state--empty" role="status">
       <p className="state__title">{title}</p>
+      {reason !== undefined && <p>{t(`common.empty.${reason}`)}</p>}
       {children}
+      {action !== undefined &&
+        ('to' in action ? (
+          <Link className="button button--primary state__action" to={action.to}>
+            {action.label}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="button button--primary state__action"
+            onClick={action.onClick}
+          >
+            {action.label}
+          </button>
+        ))}
     </div>
   );
 }

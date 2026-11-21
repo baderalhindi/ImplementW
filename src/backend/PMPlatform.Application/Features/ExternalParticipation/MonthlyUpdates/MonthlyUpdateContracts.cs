@@ -1,3 +1,4 @@
+using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.ExternalParticipation;
@@ -40,7 +41,14 @@ public sealed record UpdateRequestBatchPage(IReadOnlyList<UpdateRequestBatchSumm
 public sealed record MyUpdateRequest(
     Guid RequestId, uint RequestVersion, Guid ProjectId, string? FormalProjectId, string? LegacyReference, NarrativeText ProjectTitle, DateOnly? DueDate, bool Overdue, ExternalUpdateRequestStatus Status,
     NarrativeText Instructions, Guid? ContributionId, uint? ContributionVersion, ExternalContributionStatus? ContributionStatus, NarrativeText? ReturnReason, bool PreviouslyReturned,
-    decimal? PlannedProgressPercent, IReadOnlyDictionary<string, string> Prefill, IReadOnlyDictionary<string, Language> PrefillLanguages);
+    decimal? PlannedProgressPercent, IReadOnlyDictionary<string, string> Prefill, IReadOnlyDictionary<string, Language> PrefillLanguages)
+{
+    /// <summary>
+    /// Review round 7, item 1: the stages of the project's plan that apply, each with its planned % today. When there are any, the answer gives the current
+    /// stage and its % complete instead of the overall figure.
+    /// </summary>
+    public IReadOnlyList<ProjectMonthlyStage> Stages { get; init; } = [];
+}
 
 /// <summary>What the bell and the window need: the due requests, soonest first, with how many are late.</summary>
 public sealed record MyUpdateRequestPage(IReadOnlyList<MyUpdateRequest> Items, int Page, int PageSize, int TotalCount, int OverdueCount, DateOnly? EarliestDueDate);

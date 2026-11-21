@@ -44,6 +44,7 @@
         "DOCUMENT_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-dev-document-storage-connection-string" },
         "E2E_TEST_USER_CREDENTIALS_SECRET_REF": { "kind": "secret", "secret_id": "pmplatform-dev-e2e-test-user-credentials-secret-ref" },
         "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-dev-jwt-signing-key" },
+        "PERSONAL_DATA_KEY": { "kind": "secret", "secret_id": "pmplatform-dev-personal-data-key" },
         "SSO_OIDC_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-dev-sso-oidc-client-secret" },
         "APP_BASE_URL": { "kind": "config", "value": "" }
       }
@@ -80,6 +81,7 @@
         "MFA_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-mfa-provider-api-key" },
         "NAFATH_CLIENT_ID": { "kind": "secret", "secret_id": "pmplatform-sit-nafath-client-id" },
         "NAFATH_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-sit-nafath-client-secret" },
+        "PERSONAL_DATA_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-personal-data-key" },
         "RATE_LIMIT_STORE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-sit-rate-limit-store-connection-string" },
         "SIEM_API_TOKEN": { "kind": "secret", "secret_id": "pmplatform-sit-siem-api-token" },
         "SMS_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-sms-provider-api-key" },
@@ -119,6 +121,7 @@
         "MFA_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-mfa-provider-api-key" },
         "NAFATH_CLIENT_ID": { "kind": "secret", "secret_id": "pmplatform-uat-nafath-client-id" },
         "NAFATH_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-uat-nafath-client-secret" },
+        "PERSONAL_DATA_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-personal-data-key" },
         "RATE_LIMIT_STORE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-uat-rate-limit-store-connection-string" },
         "SIEM_API_TOKEN": { "kind": "secret", "secret_id": "pmplatform-uat-siem-api-token" },
         "SMS_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-sms-provider-api-key" },
@@ -158,6 +161,7 @@
         "MFA_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-mfa-provider-api-key" },
         "NAFATH_CLIENT_ID": { "kind": "secret", "secret_id": "pmplatform-prod-nafath-client-id" },
         "NAFATH_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-prod-nafath-client-secret" },
+        "PERSONAL_DATA_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-personal-data-key" },
         "RATE_LIMIT_STORE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-prod-rate-limit-store-connection-string" },
         "SIEM_API_TOKEN": { "kind": "secret", "secret_id": "pmplatform-prod-siem-api-token" },
         "SMS_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-sms-provider-api-key" },

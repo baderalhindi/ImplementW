@@ -81,7 +81,8 @@
     "running": "جارٍ تشغيل التقرير…",
     "empty": "لا يوجد مشروع ضمن نطاقك يطابق ذلك.",
     "generatedAt": "شُغّل في {date}. هذا وقت تشغيل التقرير، لا وقت حداثة مصادره.",
-    "rowCount": "عدد الصفوف: {count}"
+    "rowCount": "عدد الصفوف: {count}",
+    "chooseParametersHint": "اختر معايير التقرير أعلاه ثم اعرضه، فتظهر نتيجته هنا."
   },
   "banner": {
     "label": "التغطية وحداثة البيانات",
@@ -250,7 +251,9 @@
     "delete": "حذف",
     "deleteTitle": "حذف العرض المحفوظ",
     "deleteMessage": "هل تريد حذف العرض {name}؟ سيفقده أيضاً كل من شاركته معه.",
-    "deleted": "حُذف العرض {name}."
+    "deleted": "حُذف العرض {name}.",
+    "deleteManyMessage": "هل تريد حذف هذه العروض: {names}؟ سيفقدها أيضاً كل من شاركتها معه.",
+    "deletedMany": "حُذفت هذه العروض: {names}."
   },
   "compatibility": {
     "VALID": "نعم",
@@ -276,7 +279,8 @@
     "expiresAt": "متاح حتى",
     "you": "{name} (أنت)",
     "cancel": "إلغاء",
-    "cancelled": "أُلغي تصدير {name}."
+    "cancelled": "أُلغي تصدير {name}.",
+    "cancelledMany": "أُلغي تصدير كلٍّ من: {names}."
   },
   "notFound": {
     "title": "التقرير غير موجود",

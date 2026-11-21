@@ -69,6 +69,9 @@ public sealed class TestIdentityProvider : IAsyncDisposable
     /// <summary>Further claims every ID token carries, as an identity provider that says more than it was asked would.</summary>
     public IReadOnlyDictionary<string, object> ExtraClaims { get; set; } = new Dictionary<string, object>();
 
+    /// <summary>Leaves out the account e-mail the provider otherwise asserts for a test directory person (client review, item 7).</summary>
+    public bool WithoutEmail { get; set; }
+
     /// <summary>While true, every endpoint answers 503: the provider is down.</summary>
     public bool Unavailable { get; set; }
 
@@ -195,6 +198,11 @@ public sealed class TestIdentityProvider : IAsyncDisposable
     private Dictionary<string, object> IdTokenClaims(PendingCode pending)
     {
         Dictionary<string, object> claims = new(ExtraClaims) { ["sub"] = pending.Subject, ["nonce"] = NonceOverride ?? pending.Nonce };
+        if (!WithoutEmail && !claims.ContainsKey("email") && TestDirectory.EmailOf(pending.Subject) is { } email)
+        {
+            claims["email"] = email;
+        }
+
         if (AuthenticationMethods is { } methods)
         {
             claims["amr"] = methods;

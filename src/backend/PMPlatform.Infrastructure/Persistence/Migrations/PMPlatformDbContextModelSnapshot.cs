@@ -826,7 +826,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_change_authorization_applied", "(status = 'APPLIED') = (applied_at IS NOT NULL) AND (status = 'APPLIED') = (applied_by_user_id IS NOT NULL) AND (status = 'APPLIED') = (applied_reference IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_change_authorization_authorization_scope", "\"authorization_scope\" IN ('REBASELINE', 'COMMITMENT_CHANGE', 'PROFILE_CHANGE', 'SCOPE_CHANGE')");
+                            t.HasCheckConstraint("ck_change_authorization_authorization_scope", "\"authorization_scope\" IN ('REBASELINE', 'COMMITMENT_CHANGE', 'PROFILE_CHANGE', 'SCOPE_CHANGE', 'STAGE_PLAN_CHANGE')");
 
                             t.HasCheckConstraint("ck_change_authorization_expires_at", "expires_at IS NULL OR expires_at > issued_at");
 
@@ -865,6 +865,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
 
                     b.Property<DateTimeOffset?>("ImplementedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2290,6 +2298,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("DataClassificationItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("data_classification_item_id");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
 
                     b.Property<Guid>("DocumentTypeItemId")
                         .HasColumnType("uuid")
@@ -3746,6 +3762,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
                     b.Property<Guid>("KpiDefinitionId")
                         .HasColumnType("uuid")
                         .HasColumnName("kpi_definition_id");
@@ -4277,9 +4301,113 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("access_relationship", "identity_access", t =>
                         {
-                            t.HasCheckConstraint("ck_access_relationship_end_reason", "\"end_reason\" IN ('PROJECT_CLOSED', 'ROLE_CHANGE', 'MIGRATED', 'MANUAL', 'EXPIRED')");
+                            t.HasCheckConstraint("ck_access_relationship_end_reason", "\"end_reason\" IN ('PROJECT_CLOSED', 'ROLE_CHANGE', 'MIGRATED', 'MANUAL', 'EXPIRED', 'USER_DELETED')");
 
                             t.HasCheckConstraint("ck_access_relationship_status", "\"status\" IN ('ACTIVE', 'ENDED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.BannerImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AltAr")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("alt_ar");
+
+                    b.Property<string>("AltEn")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("alt_en");
+
+                    b.Property<string>("CaptionAr")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("caption_ar");
+
+                    b.Property<string>("CaptionEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("caption_en");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Credit")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("credit");
+
+                    b.Property<short>("FocalX")
+                        .HasColumnType("smallint")
+                        .HasColumnName("focal_x");
+
+                    b.Property<short>("FocalY")
+                        .HasColumnType("smallint")
+                        .HasColumnName("focal_y");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id")
+                        .HasName("pk_banner_image");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_banner_image_code");
+
+                    b.ToTable("banner_image", "identity_access", t =>
+                        {
+                            t.HasCheckConstraint("ck_banner_image_content_size", "octet_length(content) <= 307200");
+
+                            t.HasCheckConstraint("ck_banner_image_focal_point", "focal_x BETWEEN 0 AND 100 AND focal_y BETWEEN 0 AND 100");
                         });
                 });
 
@@ -4303,6 +4431,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("DirectoryReference")
                         .HasMaxLength(200)
@@ -4842,6 +4974,77 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("role", "identity_access");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.SmsCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset?>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("consumed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<int>("FailedAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("failed_attempts");
+
+                    b.Property<string>("MobileNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("mobile_number");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("purpose");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sms_code");
+
+                    b.HasIndex("UserId", "Purpose", "CreatedAt")
+                        .HasDatabaseName("ix_sms_code_user_id_purpose_created_at");
+
+                    b.ToTable("sms_code", "identity_access", t =>
+                        {
+                            t.HasCheckConstraint("ck_sms_code_purpose", "\"purpose\" IN ('SIGN_IN', 'MOBILE_VERIFICATION')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4945,6 +5148,21 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("nafath_verified_at");
 
+                    b.Property<string>("NationalIdFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("national_id_fingerprint");
+
+                    b.Property<string>("NationalIdLastDigits")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("national_id_last_digits");
+
+                    b.Property<string>("NationalIdSealed")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("national_id_sealed");
+
                     b.Property<DateTimeOffset?>("PasswordChangedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_changed_at");
@@ -5017,6 +5235,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ManagerUserId")
                         .HasDatabaseName("ix_user_manager_user_id");
 
+                    b.HasIndex("NationalIdFingerprint")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_national_id_fingerprint")
+                        .HasFilter("national_id_fingerprint IS NOT NULL");
+
                     b.HasIndex("Username")
                         .IsUnique()
                         .HasDatabaseName("ix_user_username");
@@ -5036,10 +5259,131 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_user_preferred_language", "\"preferred_language\" IN ('ar', 'en')");
 
-                            t.HasCheckConstraint("ck_user_status", "\"status\" IN ('ACTIVE', 'DISABLED')");
+                            t.HasCheckConstraint("ck_user_status", "\"status\" IN ('ACTIVE', 'DISABLED', 'DELETED')");
 
                             t.HasCheckConstraint("ck_user_user_type", "\"user_type\" IN ('INTERNAL', 'EXTERNAL', 'SERVICE')");
                         });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserBannerPreference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.PrimitiveCollection<List<Guid>>("ImageIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("image_ids");
+
+                    b.PrimitiveCollection<List<string>>("QuickActions")
+                        .HasColumnType("text[]")
+                        .HasColumnName("quick_actions");
+
+                    b.Property<string>("Style")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("style");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_banner_preference");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_banner_preference_user_id");
+
+                    b.ToTable("user_banner_preference", "identity_access", t =>
+                        {
+                            t.HasCheckConstraint("ck_user_banner_preference_style", "\"style\" IN ('DEFAULT', 'IMAGE', 'ROTATE')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasskey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<byte[]>("CredentialId")
+                        .IsRequired()
+                        .HasMaxLength(1023)
+                        .HasColumnType("bytea")
+                        .HasColumnName("credential_id");
+
+                    b.Property<DateTimeOffset?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<byte[]>("PublicKey")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("bytea")
+                        .HasColumnName("public_key");
+
+                    b.Property<long>("SignatureCounter")
+                        .HasColumnType("bigint")
+                        .HasColumnName("signature_counter");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_passkey");
+
+                    b.HasIndex("CredentialId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_passkey_credential_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_passkey_user_id");
+
+                    b.ToTable("user_passkey", "identity_access");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasswordHistory", b =>
@@ -5082,6 +5426,85 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_user_password_history_user_id_created_at");
 
                     b.ToTable("user_password_history", "identity_access");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPermissionOverride", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DataScope")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("data_scope");
+
+                    b.Property<string>("Effect")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("effect");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("permission_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Reason", "PMPlatform.Domain.IdentityAccess.UserPermissionOverride.Reason#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_permission_override");
+
+                    b.HasIndex("PermissionId")
+                        .HasDatabaseName("ix_user_permission_override_permission_id");
+
+                    b.HasIndex("UserId", "PermissionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_permission_override_user_id_permission_id");
+
+                    b.ToTable("user_permission_override", "identity_access", t =>
+                        {
+                            t.HasCheckConstraint("ck_user_permission_override_data_scope", "\"data_scope\" IN ('ALL', 'DEPT', 'OWN', 'ASSIGNED', 'ENTITY', 'READ_ONLY')");
+
+                            t.HasCheckConstraint("ck_user_permission_override_effect", "\"effect\" IN ('GRANT', 'REMOVE')");
+
+                            t.HasCheckConstraint("ck_user_permission_override_reason_lang", "\"reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_user_permission_override_scope", "(effect = 'GRANT') = (data_scope IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
@@ -5881,6 +6304,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
 
                     b.Property<DateTimeOffset?>("LastReviewedAt")
                         .HasColumnType("timestamp with time zone")
@@ -8460,6 +8891,111 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressStageEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("ActualFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_finish_date");
+
+                    b.Property<DateOnly?>("ActualStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_start_date");
+
+                    b.Property<bool>("Applies")
+                        .HasColumnType("boolean")
+                        .HasColumnName("applies");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsFromSchedule")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_from_schedule");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<decimal?>("PercentComplete")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("percent_complete");
+
+                    b.Property<decimal?>("PlannedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("planned_percent");
+
+                    b.Property<Guid>("ProgressSubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("progress_submission_id");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("StageCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("stage_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<decimal>("WeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("weight_percent");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "DecreaseReason", "PMPlatform.Domain.Progress.ProgressStageEntry.DecreaseReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("decrease_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("decrease_reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_progress_stage_entry");
+
+                    b.HasIndex("ProgressSubmissionId", "StageCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_progress_stage_entry_progress_submission_id_stage_code");
+
+                    b.ToTable("progress_stage_entry", "progress", t =>
+                        {
+                            t.HasCheckConstraint("ck_progress_stage_entry_actual_dates", "actual_start_date IS NULL OR actual_finish_date IS NULL OR actual_start_date <= actual_finish_date");
+
+                            t.HasCheckConstraint("ck_progress_stage_entry_decrease_reason_lang", "\"decrease_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_progress_stage_entry_decrease_reason_pair", "(\"decrease_reason\" IS NULL) = (\"decrease_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_progress_stage_entry_percent", "weight_percent BETWEEN 0 AND 100 AND (planned_percent IS NULL OR planned_percent BETWEEN 0 AND 100) AND (percent_complete IS NULL OR percent_complete BETWEEN 0 AND 100)");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8527,6 +9063,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(1)
                         .HasColumnName("revision_no");
+
+                    b.Property<Guid?>("StageConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("stage_configuration_version_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -8607,6 +9147,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ReviewedByUserId")
                         .HasDatabaseName("ix_progress_submission_reviewed_by_user_id");
 
+                    b.HasIndex("StageConfigurationVersionId")
+                        .HasDatabaseName("ix_progress_submission_stage_configuration_version_id");
+
                     b.HasIndex("SubmittedByUserId")
                         .HasDatabaseName("ix_progress_submission_submitted_by_user_id");
 
@@ -8619,7 +9162,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("progress_submission", "progress", t =>
                         {
-                            t.HasCheckConstraint("ck_progress_submission_actual_source", "\"actual_source\" IN ('WORK_BREAKDOWN', 'DECLARED', 'NOT_AVAILABLE')");
+                            t.HasCheckConstraint("ck_progress_submission_actual_source", "\"actual_source\" IN ('WORK_BREAKDOWN', 'DECLARED', 'NOT_AVAILABLE', 'STAGE_WEIGHTED')");
 
                             t.HasCheckConstraint("ck_progress_submission_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
 
@@ -8633,7 +9176,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_progress_submission_percent", "actual_percent_calculated BETWEEN 0 AND 100 AND (actual_percent_override IS NULL OR actual_percent_override BETWEEN 0 AND 100) AND (planned_percent IS NULL OR planned_percent BETWEEN 0 AND 100)");
 
-                            t.HasCheckConstraint("ck_progress_submission_planned_baseline", "planned_percent IS NULL OR baseline_id IS NOT NULL");
+                            t.HasCheckConstraint("ck_progress_submission_planned_baseline", "planned_percent IS NULL OR baseline_id IS NOT NULL OR stage_configuration_version_id IS NOT NULL");
 
                             t.HasCheckConstraint("ck_progress_submission_return_reason", "(status = 'RETURNED') = (return_reason IS NOT NULL)");
 
@@ -8891,6 +9434,158 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Project.PortfolioVisual", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Axes")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("axes");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DataFields")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("data_fields");
+
+                    b.Property<string>("GroupBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("group_by");
+
+                    b.PrimitiveCollection<List<string>>("HiddenColumns")
+                        .HasColumnType("text[]")
+                        .HasColumnName("hidden_columns");
+
+                    b.Property<decimal>("LayoutColumn")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("layout_column");
+
+                    b.Property<decimal>("LayoutHeight")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("layout_height");
+
+                    b.Property<decimal>("LayoutRow")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("layout_row");
+
+                    b.Property<decimal>("LayoutWidth")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("layout_width");
+
+                    b.PrimitiveCollection<List<string>>("Measures")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("measures");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_id");
+
+                    b.Property<string>("Section")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("section");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("TextBox")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("text_box");
+
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("title_ar");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("title_en");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("VisualType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("visual_type");
+
+                    b.Property<string>("WidgetCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("widget_code");
+
+                    b.HasKey("Id")
+                        .HasName("pk_portfolio_visual");
+
+                    b.HasIndex("ParentId")
+                        .HasDatabaseName("ix_portfolio_visual_parent_id");
+
+                    b.HasIndex("Section")
+                        .IsUnique()
+                        .HasDatabaseName("ix_portfolio_visual_section")
+                        .HasFilter("section IS NOT NULL AND section <> 'DASHBOARD_WIDGET'");
+
+                    b.HasIndex("SortOrder")
+                        .IsUnique()
+                        .HasDatabaseName("ix_portfolio_visual_sort_order");
+
+                    b.HasIndex("WidgetCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_portfolio_visual_widget_code")
+                        .HasFilter("widget_code IS NOT NULL");
+
+                    b.ToTable("portfolio_visual", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_portfolio_visual_axes", "axes IS NULL OR visual_type IN ('BAR', 'COLUMN', 'LINE')");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_container", "visual_type <> 'CONTAINER' OR (cardinality(measures) = 0 AND section IS NULL AND group_by = 'NONE' AND data_fields IS NULL AND axes IS NULL AND widget_code IS NULL AND layout_height >= 2 AND parent_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_group_by", "\"group_by\" IN ('NONE', 'PORTFOLIO', 'INITIATIVE', 'SECTOR', 'DEPARTMENT', 'ENTITY', 'STATUS', 'STAGE', 'ON_PLAN', 'REGION', 'CITY', 'PRIORITY')");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_hidden_columns", "hidden_columns IS NULL OR (visual_type = 'SECTION' AND section IN ('PORTFOLIO_TABLE', 'INITIATIVE_TABLE', 'SECTOR_TABLE', 'STATUS_TABLE', 'CURRENT_STAGE_TABLE', 'TOP_FOLLOW_UP', 'ENTITY_COMPLETION_TABLE') AND cardinality(hidden_columns) BETWEEN 1 AND 20)");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_layout", "layout_column BETWEEN 0 AND 11 AND layout_width BETWEEN 1 AND 12 AND layout_column + layout_width <= 12 AND layout_row >= 0 AND layout_height BETWEEN 1 AND 24");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_measures", "visual_type = 'CONTAINER' OR (visual_type = 'SECTION' AND cardinality(measures) = 0 AND section IS NOT NULL AND group_by = 'NONE' AND data_fields IS NULL) OR (visual_type = 'TEXT' AND cardinality(measures) = 0 AND section IS NULL AND group_by = 'NONE' AND data_fields IS NULL) OR (visual_type = 'MAP' AND section IS NULL AND group_by IN ('CITY', 'REGION') AND data_fields IS NOT NULL AND (cardinality(measures) = 0 OR (cardinality(measures) = 1 AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS', 'ON_TRACK', 'LATE', 'STALLED', 'NOT_MEASURED', 'FOLLOW_UP_STALLED', 'FOLLOW_UP_SUSPENDED', 'FOLLOW_UP_LATE', 'FOLLOW_UP_ACTION_OVERDUE', 'FOLLOW_UP_OPEN_OBSTACLE']::text[]))) OR (visual_type NOT IN ('SECTION', 'TEXT', 'MAP') AND section IS NULL AND ((cardinality(measures) BETWEEN 1 AND 3 AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', 'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS', 'ON_TRACK', 'LATE', 'STALLED', 'NOT_MEASURED', 'FOLLOW_UP_STALLED', 'FOLLOW_UP_SUSPENDED', 'FOLLOW_UP_LATE', 'FOLLOW_UP_ACTION_OVERDUE', 'FOLLOW_UP_OPEN_OBSTACLE']::text[]) OR (cardinality(measures) = 0 AND data_fields IS NOT NULL)))");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_section", "\"section\" IN ('PORTFOLIO_TABLE', 'INITIATIVE_TABLE', 'SECTOR_TABLE', 'STATUS_TABLE', 'CURRENT_STAGE_TABLE', 'ON_PLAN_COUNTS', 'FOLLOW_UP_REASONS', 'TOP_FOLLOW_UP', 'ENTITY_COMPLETION', 'PROJECT_LOCATIONS', 'DASHBOARD_WIDGETS', 'ENTITY_COMPLETION_TABLE', 'DASHBOARD_WIDGET')");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_text_box", "(visual_type = 'TEXT') = (text_box IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'SECTION', 'LINE', 'CONTAINER', 'TEXT', 'MAP')");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_widget_code", "COALESCE(section = 'DASHBOARD_WIDGET', FALSE) = (widget_code IS NOT NULL) AND (widget_code IS NULL OR widget_code ~ '^[A-Za-z0-9_.-]+$')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8922,6 +9617,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("CurrentStageCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("current_stage_code");
+
+                    b.Property<decimal?>("CurrentStagePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("current_stage_percent");
+
                     b.Property<decimal?>("DeclaredActualPercent")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -8950,6 +9655,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("declared_source");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
 
                     b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid")
@@ -9053,6 +9766,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("priority_item_id");
 
+                    b.Property<string>("ProgressMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("progress_method");
+
                     b.Property<Guid?>("ProjectImportBatchId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_import_batch_id");
@@ -9060,6 +9778,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ProjectManagerUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_manager_user_id");
+
+                    b.Property<Guid?>("ProposedProjectManagerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("proposed_project_manager_user_id");
 
                     b.Property<Guid?>("RegionItemId")
                         .HasColumnType("uuid")
@@ -9080,6 +9802,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("seed_source");
+
+                    b.Property<int>("StagePlanRevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("stage_plan_revision_no");
 
                     b.Property<Guid?>("StrategicInitiativeItemId")
                         .HasColumnType("uuid")
@@ -9204,13 +9932,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("LegacyReference")
                         .IsUnique()
                         .HasDatabaseName("ix_project_legacy_reference")
-                        .HasFilter("legacy_reference IS NOT NULL");
+                        .HasFilter("legacy_reference IS NOT NULL AND deleted_at IS NULL");
 
                     b.HasIndex("PriorityItemId")
                         .HasDatabaseName("ix_project_priority_item_id");
 
                     b.HasIndex("ProjectImportBatchId")
                         .HasDatabaseName("ix_project_project_import_batch_id");
+
+                    b.HasIndex("ProposedProjectManagerUserId")
+                        .HasDatabaseName("ix_project_proposed_project_manager_user_id");
 
                     b.HasIndex("RegionItemId")
                         .HasDatabaseName("ix_project_region_item_id");
@@ -9247,6 +9978,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_current_obstacle_pair", "(\"current_obstacle\" IS NULL) = (\"current_obstacle_lang\" IS NULL)");
 
+                            t.HasCheckConstraint("ck_project_current_stage_percent", "current_stage_percent IS NULL OR (current_stage_code IS NOT NULL AND current_stage_percent BETWEEN 0 AND 100)");
+
                             t.HasCheckConstraint("ck_project_declared_percent_range", "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100) AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100) AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
 
                             t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE', 'PROGRESS_UPDATE')");
@@ -9271,7 +10004,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_participation_mode", "\"participation_mode\" IN ('ENTITY_MANAGED', 'AHDA_MANAGED')");
 
+                            t.HasCheckConstraint("ck_project_progress_method", "\"progress_method\" IN ('SCHEDULE', 'STAGES')");
+
                             t.HasCheckConstraint("ck_project_seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
+
+                            t.HasCheckConstraint("ck_project_stage_plan_revision_no", "stage_plan_revision_no >= 0");
 
                             t.HasCheckConstraint("ck_project_title_lang", "\"title_lang\" IN ('ar', 'en')");
                         });
@@ -9863,6 +10600,71 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectStagePlanEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Applies")
+                        .HasColumnType("boolean")
+                        .HasColumnName("applies");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("PlannedEndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_end_date");
+
+                    b.Property<DateOnly?>("PlannedStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_start_date");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("StageCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("stage_code");
+
+                    b.Property<decimal?>("StartingPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("starting_percent");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_stage_plan");
+
+                    b.HasIndex("ProjectId", "StageCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_stage_plan_project_id_stage_code");
+
+                    b.ToTable("project_stage_plan", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_stage_plan_dates", "planned_start_date IS NULL OR planned_end_date IS NULL OR planned_start_date <= planned_end_date");
+
+                            t.HasCheckConstraint("ck_project_stage_plan_starting_percent", "starting_percent IS NULL OR starting_percent BETWEEN 0 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.ProjectTask.ActivityExecutionProgress", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9954,6 +10756,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
 
                     b.Property<Guid?>("ParentTaskId")
                         .HasColumnType("uuid")
@@ -11206,6 +12016,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
                     b.Property<DateOnly>("IdentifiedDate")
                         .HasColumnType("date")
                         .HasColumnName("identified_date");
@@ -12067,6 +12885,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
                     b.Property<DateOnly>("ForecastDate")
                         .HasColumnType("date")
                         .HasColumnName("forecast_date");
@@ -12790,18 +13616,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ActorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_audit_event_user_actor_user_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("DataClassificationItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_audit_event_master_data_item_data_classification_item_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
-                        .WithMany()
-                        .HasForeignKey("ScopeExternalEntityId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_audit_event_external_entity_scope_external_entity_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEventAttribute", b =>
@@ -13721,6 +14535,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_permission_profile_version_user_validated_by_user_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.SmsCode", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sms_code_user_user_id");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.User", b =>
                 {
                     b.HasOne("PMPlatform.Domain.IdentityAccess.Department", null)
@@ -13742,6 +14566,26 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_user_user_manager_user_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserBannerPreference", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_banner_preference_user_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasskey", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_passkey_user_user_id");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasswordHistory", b =>
                 {
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
@@ -13750,6 +14594,23 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_user_password_history_user_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPermissionOverride", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_permission_override_permission_permission_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_permission_override_user_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
@@ -14393,6 +15254,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_notification_template_user_validated_by_user_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressStageEntry", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Progress.ProgressSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("ProgressSubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_progress_stage_entry_progress_submission_progress_submissio");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
                 {
                     b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
@@ -14426,6 +15297,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ReviewedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_progress_submission_user_reviewed_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("StageConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_progress_submission_configuration_version_stage_configurati");
 
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
@@ -14499,6 +15376,15 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_reporting_cycle_project_project_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Project.PortfolioVisual", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.PortfolioVisual", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_portfolio_visual_portfolio_visual_parent_id");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>
                 {
                     b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
@@ -14563,6 +15449,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProjectManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_user_project_manager_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ProposedProjectManagerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_user_proposed_project_manager_user_id");
 
                     b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
                         .WithMany()
@@ -14648,6 +15540,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_project_intake_milestone_project_intake_project_intake_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectStagePlanEntry", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_stage_plan_project_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ProjectTask.ActivityExecutionProgress", b =>

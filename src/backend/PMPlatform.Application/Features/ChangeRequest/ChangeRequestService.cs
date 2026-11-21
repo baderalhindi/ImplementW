@@ -114,16 +114,17 @@ internal sealed class ChangeRequestService(
             return refused;
         }
 
-        // HARD_DRAFT, and only a draft never submitted (WF-08 BR-CHG-037): a submitted request is history, withdrawn rather than removed.
+        // Client review, item 8: any state but one under review, and the request stays in the database, its history with it. Under review
+        // it is an approval run that would be left with nothing to decide.
         (ProjectFacts project, ChangeRequestEntity request) = (loaded.Project!, loaded.Request!);
-        if (request.Status != ChangeRequestStatus.Draft)
+        if (request.Status == ChangeRequestStatus.UnderReview)
         {
-            return AdministrationError.Conflict(ChangeRequestErrorCodes.NotEditable);
+            return AdministrationError.Conflict(RecordDeletion.ApprovalPending);
         }
 
         await using IChangeRequestWork work = await repository.BeginAsync(cancellationToken).ConfigureAwait(false);
         audit.Stage(ChangeRequestAudit.Deleted(callerId, project, request));
-        repository.Remove(request);
+        RecordDeletion.Stamp(request, "ChangeRequest", callerId, project.Id, timeProvider.GetUtcNow());
         return await gate.SaveAsync(work, cancellationToken).ConfigureAwait(false) == ChangeRequestSaveOutcome.Saved ? null : AdministrationError.PreconditionFailed;
     }
 

@@ -144,7 +144,7 @@ public sealed class AdministrationReadAndEditTests(MasterDataConfigTestHost host
 
     private static async Task<Guid> PublishedItemAsync(HttpClient client, Crew crew, Guid catalogueId, string code)
     {
-        using HttpResponseMessage create = await client.PostAsync(ConfigurationApi.Items, crew.Author, new { catalogueId, code, label = new { ar = code, en = code } });
+        using HttpResponseMessage create = await client.PostAsync(ConfigurationApi.Items, crew.Author, new { catalogueId, code, label = new { ar = $"قيمة {code}", en = $"Value {code}" } });
         Guid item = AdministrationApi.IdOf(await create.ReadObjectAsync());
         foreach ((string token, string step) in new[] { (crew.Reviewer, "validate"), (crew.Publisher, "publish") })
         {

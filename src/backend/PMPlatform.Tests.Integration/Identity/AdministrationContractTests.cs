@@ -232,6 +232,7 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
         using HttpResponseMessage children = await client.GetAsync($"{AdministrationApi.Departments}?parentDepartmentId={parentId}", token);
         using HttpResponseMessage deactivated = await client.PostAsync($"{parentPath}/deactivate", token, ifMatch: AdministrationApi.ETagOf(parent));
         using HttpResponseMessage noLabel = await client.PostAsync(AdministrationApi.Departments, token, new { code = "lower-case", name = new { ar = "", en = "Label" } });
+        using HttpResponseMessage swapped = await client.PostAsync(AdministrationApi.Departments, token, new { code = $"{code}-2", name = new { ar = "Parent", en = "إدارة" } });
 
         Assert.Equal(HttpStatusCode.Created, child.StatusCode);
         await AssertProblemAsync(duplicate, HttpStatusCode.Conflict, IdentityAccessErrorCodes.DuplicateKey);
@@ -240,6 +241,8 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
         Assert.Equal(childId, AdministrationApi.IdOf(Assert.Single((await children.ReadObjectAsync())["items"]!.AsArray())!.AsObject()));
         Assert.False((await deactivated.ReadObjectAsync())["isActive"]!.GetValue<bool>());
         Assert.Equal(["code MALFORMED", "name.ar REQUIRED"], await noLabel.ReadFieldErrorsAsync());
+        // The 13 Nov 2026 review: each language's field is written in that language.
+        Assert.Equal(["name.ar NOT_ARABIC", "name.en NOT_ENGLISH"], await swapped.ReadFieldErrorsAsync());
     }
 
     [Fact]
@@ -282,6 +285,42 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
         await AssertProblemAsync(reactivate, HttpStatusCode.Conflict, "TERMINAL_STATE");
     }
 
+    /// <summary>The client wants Delete, not Retire: an entity nothing uses is erased; one a person belongs to is kept, and the answer says so.</summary>
+    [Fact]
+    public async Task AnEntityNothingUsesIsDeletedAndOneWithPeopleIsKept()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string token = (await client.SignInOrFailAsync(1)).AccessToken;
+        string entityType = (await host.Database.QueryAsync("""
+            SELECT i.id::text FROM master_data_config.master_data_item i
+            JOIN master_data_config.master_data_catalogue c ON c.id = i.catalogue_id AND c.code = 'EXTERNAL_ENTITY_TYPE' ORDER BY i.code LIMIT 1
+            """))[0];
+        using HttpResponseMessage created = await client.PostAsync(AdministrationApi.ExternalEntities, token, new
+        {
+            code = $"ENT-{Suffix().ToUpperInvariant()}",
+            name = new { ar = "جهة", en = "Entity" },
+            entityTypeItemId = entityType,
+            sponsorUserId = IdentityDatabase.UserId(2),
+        });
+        Guid unused = AdministrationApi.IdOf(await created.ReadObjectAsync());
+        using (HttpResponseMessage deleted = await client.PostAsync($"{AdministrationApi.ExternalEntities}/{unused}/remove", token))
+        {
+            Assert.Equal((HttpStatusCode.OK, true), (deleted.StatusCode, (await deleted.ReadObjectAsync())["deleted"]!.GetValue<bool>()));
+        }
+
+        using (HttpResponseMessage gone = await client.GetAsync($"{AdministrationApi.ExternalEntities}/{unused}", token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, gone.StatusCode);
+        }
+
+        // The active test entity has people and their role assignments: it stays.
+        using HttpResponseMessage kept = await client.PostAsync($"{AdministrationApi.ExternalEntities}/{IdentityDatabase.ActiveEntityId}/remove", token);
+        JsonObject answer = await kept.ReadObjectAsync();
+        Assert.False(answer["deleted"]!.GetValue<bool>());
+        Assert.Contains(answer["blockedBy"]!.AsArray(), use => use!["record"]!.GetValue<string>() == "identity_access.user");
+        Assert.Single(await host.Database.QueryAsync($"SELECT id::text FROM identity_access.external_entity WHERE id = '{IdentityDatabase.ActiveEntityId}'"));
+    }
+
     [Fact]
     public async Task RolesPermissionsAndProfilesAreReadAndARoleIsRenamed()
     {
@@ -302,10 +341,10 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
             using HttpResponseMessage renamed = await client.PutAsync($"{AdministrationApi.Roles}/{r06RoleId}", token, new { name = new { ar = "مستعرض فقط", en = "Read-only viewer" } }, AdministrationApi.ETagOf(role));
 
             Assert.Equal(["R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08"], (await roles.ReadArrayAsync()).Where(r => r!["isSystem"]!.GetValue<bool>()).Select(r => r!["code"]!.GetValue<string>()));
-            Assert.Equal(99, (await permissions.ReadArrayAsync()).Count);
+            Assert.Equal(104, (await permissions.ReadArrayAsync()).Count);
             Assert.Equal("R01-DEFAULT", Assert.Single((await profiles.ReadObjectAsync())["items"]!.AsArray())!["code"]!.GetValue<string>());
             JsonObject version = (await profile.ReadObjectAsync())["versions"]!.AsArray()[0]!.AsObject();
-            Assert.Equal(("PUBLISHED", 24), (version["lifecycleState"]!.GetValue<string>(), version["grants"]!.AsArray().Count));
+            Assert.Equal(("PUBLISHED", 25), (version["lifecycleState"]!.GetValue<string>(), version["grants"]!.AsArray().Count));
             Assert.Equal("R06-DEFAULT", Assert.Single(original["profiles"]!.AsArray())!["code"]!.GetValue<string>());
             Assert.Equal(HttpStatusCode.OK, renamed.StatusCode);
             Assert.Equal("Read-only viewer", (await renamed.ReadObjectAsync())["name"]!["en"]!.GetValue<string>());

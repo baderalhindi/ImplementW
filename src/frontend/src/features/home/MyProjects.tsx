@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback } from 'react';
+import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { useCounted } from '@/features/external-participation/monthly/counts.ts';
@@ -12,13 +12,14 @@ import {
   type ProjectQuery,
   type ProjectSummary,
 } from '@/features/projects/api/types.ts';
-import { OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { readInBatches } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 /** How many projects a Home view lists; each costs a read for its follow-up. */
 const SHOWN = 25;
@@ -54,81 +55,6 @@ function ProjectLink({ project }: { project: ProjectSummary }): ReactElement {
   );
 }
 
-/**
- * The projects the person manages (the 5 Nov 2026 review §3 row 12), decided by the data and no role code: shown when any project names them
- * as its manager, each with its on-plan label, days remaining, next action due and the update requests waiting on them.
- */
-export function ManagedProjects({ userId }: { userId: string }): ReactElement | null {
-  const { t } = useI18n();
-  const { page } = useMyUpdates();
-  const managed = useApiResource(
-    useCallback(
-      (signal: AbortSignal) => readProjectRows({ projectManagerUserId: userId }, signal),
-      [userId],
-    ),
-  );
-  if (managed.data === undefined || managed.data.rows.length === 0) {
-    return null;
-  }
-  const notAvailable = t('projects.followUp.notAvailable');
-  return (
-    <section className="home__work">
-      <h2>{t('home.managed.title')}</h2>
-      <TableContainer caption={t('home.managed.title')}>
-        <thead>
-          <tr>
-            <th scope="col">{t('projects.fields.title')}</th>
-            <th scope="col">{t('projects.followUp.onPlan')}</th>
-            <th scope="col">{t('projects.followUp.daysRemaining')}</th>
-            <th scope="col">{t('home.managed.nextActionDue')}</th>
-            <th scope="col">{t('home.managed.requestsWaiting')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {managed.data.rows.map(({ project, followUp }) => {
-            const indicators = project.indicators;
-            const waiting = (page?.items ?? []).filter(
-              (item) => item.projectId === project.id,
-            ).length;
-            return (
-              <tr key={project.id}>
-                <td>
-                  <ProjectLink project={project} />
-                </td>
-                <td>
-                  <OnPlanBadge status={indicators?.onPlan} />
-                </td>
-                <td>
-                  {indicators?.daysRemaining === null || indicators?.daysRemaining === undefined
-                    ? notAvailable
-                    : t('projects.followUp.daysValue', { days: indicators.daysRemaining })}
-                </td>
-                <td>
-                  <span dir="ltr">{followUp?.nextActionDueDate ?? notAvailable}</span>
-                  {indicators?.actionDue === 'OVERDUE' && (
-                    <>
-                      {' '}
-                      <StatusBadge label={t('projects.followUp.actionOverdue')} tone="negative" />
-                    </>
-                  )}
-                </td>
-                <td dir="ltr" className="cell--ltr">
-                  {waiting}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </TableContainer>
-      {managed.data.total > managed.data.rows.length && (
-        <Link className="home__more" to="/projects/mine">
-          {t('home.managed.all', { count: managed.data.total })}
-        </Link>
-      )}
-    </section>
-  );
-}
-
 async function readOwnProjects(signal: AbortSignal) {
   return readProjectRows({}, signal);
 }
@@ -142,6 +68,7 @@ export function EntityProjects(): ReactElement | null {
   const { page } = useMyUpdates();
   const counted = useCounted();
   const own = useApiResource(readOwnProjects);
+  const selection = useRowSelection();
   const due = page?.totalCount ?? 0;
   if (own.data === undefined) {
     return null;
@@ -166,9 +93,16 @@ export function EntityProjects(): ReactElement | null {
       {own.data.rows.length === 0 ? (
         <p className="home__empty">{t('home.entity.noProjects')}</p>
       ) : (
-        <TableContainer caption={t('home.entity.title')}>
+        <TableContainer
+          caption={t('home.entity.title')}
+          selection={{ selection, exportName: 'my-projects' }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={own.data.rows.map(({ project }) => project.id)}
+                selection={selection}
+              />
               <th scope="col">{t('projects.fields.title')}</th>
               <th scope="col">{t('home.entity.lastUpdate')}</th>
               <th scope="col">{t('home.entity.nextDue')}</th>
@@ -183,6 +117,7 @@ export function EntityProjects(): ReactElement | null {
               );
               return (
                 <tr key={project.id}>
+                  <SelectRowCell id={project.id} name={project.title.text} selection={selection} />
                   <td>
                     <ProjectLink project={project} />
                   </td>

@@ -1,5 +1,9 @@
-import { type ReactElement, type RefObject, useEffect, useId, useRef, useState } from 'react';
+import { type CSSProperties, type ReactElement, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
+
+import { useRailImage } from '@/features/home/banner/useRailImage.ts';
+import { OneLineTabs } from '@/shared/ui/OneLineTabs.tsx';
+import { usePopover } from '@/shared/ui/usePopover.ts';
 
 import { useInboxCount } from '@/features/approvals/useInboxCount.ts';
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
@@ -15,10 +19,21 @@ import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { RecentNotifications } from '@/features/notifications/bell/RecentNotifications.tsx';
 import { unreadCountStore, useUnreadCount } from '@/features/notifications/unreadCount.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { type MenuScreens, MenuScreensContext } from '@/shared/navigation/menuScreens.ts';
+import { usePageCrumbs } from '@/shared/navigation/pageCrumbs.ts';
 import { useTheme } from '@/shared/theme/theme.ts';
 
 import { GlobalSearch } from './search/GlobalSearch.tsx';
-import { activeItem, activeMenu, isCurrent, type Menu, type MenuId, menusFor } from './menus.ts';
+
+import {
+  activeItem,
+  activeMenu,
+  isCurrent,
+  type Menu,
+  type MenuGroup,
+  type MenuId,
+  menusFor,
+} from './menus.ts';
 import { ShellIcon } from './ShellIcon.tsx';
 
 /** Each language in its own script, so a reader finds theirs whichever is showing. */
@@ -28,47 +43,6 @@ const languageChoices = [
 ] as const;
 
 const COLLAPSED_KEY = 'pmplatform.shell.collapsed';
-
-interface Popover {
-  open: boolean;
-  setOpen: (open: boolean | ((value: boolean) => boolean)) => void;
-  containerRef: RefObject<HTMLDivElement | null>;
-  buttonRef: RefObject<HTMLButtonElement | null>;
-  menuId: string;
-}
-
-/** A button's drop-down: a click elsewhere or Escape closes it, and Escape returns focus to the button. */
-function usePopover(): Popover {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuId = useId();
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-    const closeOnOutsideClick = (event: PointerEvent): void => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        setOpen(false);
-        buttonRef.current?.focus();
-      }
-    };
-    document.addEventListener('pointerdown', closeOnOutsideClick);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsideClick);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [open]);
-
-  return { open, setOpen, containerRef, buttonRef, menuId };
-}
 
 /**
  * The language list; the current one is ticked. Signed out it is a globe alone; in the top bar it is labelled
@@ -96,7 +70,9 @@ function LanguageSwitch({ labelled = false }: { labelled?: boolean }): ReactElem
         }}
       >
         <ShellIcon name="globe" className="language-switch__icon" />
-        <span className={labelled ? undefined : 'visually-hidden'}>{t('common.language')}</span>
+        <span className={labelled ? 'topbar__control-label' : 'visually-hidden'}>
+          {t('common.language')}
+        </span>
         {labelled && <ShellIcon name="chevronDown" className="topbar__chevron" />}
       </button>
       <ul className="popover__menu" id={menuId} hidden={!open}>
@@ -176,7 +152,7 @@ function CreateMenu(): ReactElement | null {
         }}
       >
         <ShellIcon name="create" />
-        {t('common.shell.create')}
+        <span className="topbar__control-label">{t('common.shell.create')}</span>
       </button>
       <ul className="popover__menu" id={menuId} hidden={!open}>
         {project && (
@@ -289,6 +265,15 @@ function AccountMenu({ user }: { user: SessionUser }): ReactElement {
         >
           {t('identityAccess.passwordSelfService.changeMenu')}
         </Link>
+        <Link
+          className="popover__option"
+          to="/account/sign-in-methods"
+          onClick={() => {
+            setOpen(false);
+          }}
+        >
+          {t('identityAccess.signInMethods.menu')}
+        </Link>
         <button
           type="button"
           className="popover__option"
@@ -314,17 +299,21 @@ function Breadcrumb({
   const { t } = useI18n();
   const { search } = useLocation();
   const item = activeItem(menu, pathname, search);
-  const crumbs = [
+  // Review round 8, point 16: the steps only the page knows, such as a project and its tab, follow the menu's.
+  const pageCrumbs = usePageCrumbs();
+  const crumbs: { to: string | null; label: string }[] = [
     ...(menu === undefined ? [] : [{ to: menu.to, label: t(menu.label) }]),
-    ...(item === undefined ? [] : [{ to: item.to, label: t(item.label) }]),
+    ...(item === undefined || pageCrumbs.length > 0 ? [] : [{ to: item.to, label: t(item.label) }]),
+    ...pageCrumbs,
   ];
 
   return (
     <nav className="breadcrumb" aria-label={t('common.shell.breadcrumb')}>
       <ol>
         {crumbs.map((crumb, index) => (
-          <li key={crumb.label}>
-            {index === crumbs.length - 1 && isCurrent(crumb.to, pathname, search) ? (
+          <li key={`${String(index)}-${crumb.label}`}>
+            {crumb.to === null ||
+            (index === crumbs.length - 1 && isCurrent(crumb.to, pathname, search)) ? (
               <span aria-current="page">{crumb.label}</span>
             ) : (
               <Link to={crumb.to}>{crumb.label}</Link>
@@ -413,6 +402,14 @@ function Rail({
       {/* The link carries the name, so it has one whichever image the rail's width shows. */}
       <Link className="rail__brand" to="/" aria-label={t('common.organizationName')}>
         <img className="rail__logo" src="/brand/ahda-logo.png" alt="" width="596" height="232" />
+        {/* The client's divider under the logo; only the expanded rail shows it. */}
+        <img
+          className="rail__divider"
+          src="/brand/rail-divider.png"
+          alt=""
+          width="884"
+          height="128"
+        />
         <img
           className="rail__emblem"
           src="/brand/ahda-emblem.png"
@@ -465,7 +462,8 @@ function Rail({
 
 /**
  * The open menu's screens as tabs, so a person moves between them without going back to the Home. Shown on those screens only: a
- * record's page has its own heading and tabs, and its breadcrumb leads back.
+ * record's page has its own heading and tabs, and its breadcrumb leads back. A menu with headings (Administration) shows them on one row,
+ * each opening its first screen, then the open heading's screens.
  */
 function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null {
   const { t } = useI18n();
@@ -478,17 +476,87 @@ function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null 
     return null;
   }
   return (
-    <nav className="tabs section-tabs print-hide" aria-label={t('common.menu.sections')}>
-      <ul aria-label={t(menu.label)}>
-        {menu.items.map((item) => (
-          <li key={item.to}>
-            <NavLink to={item.to} end={item.end ?? false}>
-              {t(item.label)}
-            </NavLink>
-          </li>
+    <OneLineTabs
+      className="section-tabs print-hide"
+      label={t('common.menu.sections')}
+      listLabel={t(menu.label)}
+      tabs={menu.items.map((item) => ({
+        to: item.to,
+        label: t(item.label),
+        end: item.end,
+        current: isCurrent(item.to, pathname, search),
+      }))}
+    />
+  );
+}
+
+/** Whether a menu's screens are shown as a line of headings with drop-downs rather than a row of tabs: Administration's (review round 8, point 15). */
+function hasSideMenu(menu: Menu | undefined): menu is Menu & { groups: MenuGroup[] } {
+  return menu?.groups !== undefined && menu.groups.length > 1;
+}
+
+/**
+ * Administration's menu (review round 8, point 15; one horizontal line since 17 Nov 2026): its five headings side by side above the page,
+ * each opening its screens as a drop-down, the heading of the open screen marked. It changes how one gets there, not who sees what: a
+ * heading lists only the screens the person may open.
+ */
+function AdminMenuBar({ menu }: { menu: Menu & { groups: MenuGroup[] } }): ReactElement {
+  const { t } = useI18n();
+  const { pathname } = useLocation();
+  return (
+    <nav className="admin-bar print-hide" aria-label={t('common.menu.adminMenu')}>
+      <ul className="admin-bar__groups">
+        {menu.groups.map((group) => (
+          <AdminMenuGroup
+            key={group.label}
+            group={group}
+            current={group.items.some(
+              (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
+            )}
+          />
         ))}
       </ul>
     </nav>
+  );
+}
+
+function AdminMenuGroup({ group, current }: { group: MenuGroup; current: boolean }): ReactElement {
+  const { t } = useI18n();
+  const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
+  return (
+    <li>
+      <div className="popover" ref={containerRef}>
+        <button
+          ref={buttonRef}
+          type="button"
+          className={`admin-bar__button${current ? ' admin-bar__button--current' : ''}`}
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={() => {
+            setOpen((value) => !value);
+          }}
+        >
+          {t(group.label)}
+          <ShellIcon name="chevronDown" className="admin-bar__chevron" />
+        </button>
+        <ul className="popover__menu admin-bar__menu" id={menuId} hidden={!open}>
+          {group.items.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                className="popover__option"
+                to={item.to}
+                end={item.end ?? false}
+                onClick={() => {
+                  setOpen(false);
+                }}
+              >
+                {t(item.label)}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </li>
   );
 }
 
@@ -544,6 +612,8 @@ function SignedOutLayout(): ReactElement {
  * account) over the page. On a narrow window the rail is a drawer, closed again by a choice, Escape or the backdrop.
  */
 function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
+  // Review round 8, point 07: the side menu's fixed picture, the same for everyone.
+  const railImage = useRailImage();
   const { t } = useI18n();
   const { pathname, search } = useLocation();
   const menus = menusFor(
@@ -553,6 +623,13 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
     useDashboardCatalogue().data ?? [],
   );
   const current = activeMenu(menus, pathname, search);
+  // The menus' screens for the pages: the Home banner offers each of them as a quick action.
+  const menuScreens: MenuScreens[] = menus
+    .filter((menu) => menu.items.length > 0)
+    .map((menu) => ({
+      label: menu.label,
+      screens: menu.items.map((item) => ({ to: item.to, label: item.label })),
+    }));
   const [collapsed, setCollapsed] = useState(readCollapsed);
   // The drawer is open on the page it was opened on, so choosing a screen closes it.
   const [drawerOpenOn, setDrawerOpenOn] = useState<string | null>(null);
@@ -593,7 +670,15 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
       <a className="skip-link" href="#main">
         {t('common.skipToContent')}
       </a>
-      <aside className={railClass} id="main-menu">
+      <aside
+        className={railImage === null ? railClass : `${railClass} rail--image`}
+        id="main-menu"
+        style={
+          railImage === null
+            ? undefined
+            : ({ '--rail-image': `url("${railImage}")` } as CSSProperties)
+        }
+      >
         <Rail
           menus={menus}
           current={current}
@@ -634,6 +719,16 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
               {t(drawerOpen ? 'common.menu.close' : 'common.menu.open')}
             </span>
           </button>
+          {/* The rail, and its logo, is a drawer on a phone or tablet: the bar shows the logo instead. */}
+          <Link className="topbar__brand" to="/" aria-label={t('common.organizationName')}>
+            <img
+              className="shell__logo topbar__logo"
+              src="/brand/ahda-logo.png"
+              alt=""
+              width="596"
+              height="232"
+            />
+          </Link>
           <Breadcrumb menu={current} pathname={pathname} />
           <div className="topbar__actions">
             <GlobalSearch menus={menus} />
@@ -645,8 +740,19 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
           </div>
         </header>
         <main id="main" className="app__main" tabIndex={-1}>
-          <SectionTabs menu={current} />
-          <Outlet context={menus} />
+          <MenuScreensContext value={menuScreens}>
+            {hasSideMenu(current) ? (
+              <>
+                <AdminMenuBar menu={current} />
+                <Outlet context={menus} />
+              </>
+            ) : (
+              <>
+                <SectionTabs menu={current} />
+                <Outlet context={menus} />
+              </>
+            )}
+          </MenuScreensContext>
         </main>
       </div>
       <StepUpDialog />

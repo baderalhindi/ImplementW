@@ -64,7 +64,7 @@ export function GanttView({
       <PageNotice notice={notice} />
       <FormAlert message={failure} />
       {data.schedule === null ? (
-        <EmptyState title={t('schedule.notInitialized.title')} />
+        <EmptyState title={t('schedule.notInitialized.title')} reason="setup" />
       ) : (
         <>
           <ScheduleSummary view={data} projectId={project.id} />

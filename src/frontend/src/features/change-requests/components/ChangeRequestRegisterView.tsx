@@ -1,3 +1,4 @@
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -12,10 +13,12 @@ import { ChangeRequestTable } from './ChangeRequestTable.tsx';
 
 /** SCR-105's status filter and table. The statuses offered are the ones the requests carry; all are shown by default. */
 export function ChangeRequestRegisterView({
+  actions,
   entries,
   showProject,
   caption,
 }: {
+  actions?: RowActionsColumn<ChangeRequestEntry> | undefined;
   entries: ChangeRequestEntry[];
   showProject: boolean;
   caption: string;
@@ -54,9 +57,14 @@ export function ChangeRequestRegisterView({
         {t('changeRequests.filter.showing', { shown: shown.length, total: entries.length })}
       </p>
       {shown.length === 0 ? (
-        <EmptyState title={t('changeRequests.filter.noMatch')} />
+        <EmptyState title={t('changeRequests.filter.noMatch')} reason="filter" />
       ) : (
-        <ChangeRequestTable entries={shown} showProject={showProject} caption={caption} />
+        <ChangeRequestTable
+          entries={shown}
+          showProject={showProject}
+          caption={caption}
+          actions={actions}
+        />
       )}
     </>
   );

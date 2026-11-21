@@ -1,9 +1,12 @@
 import { type ReactElement } from 'react';
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { Link } from 'react-router';
 
 import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type ConcernEntry, isOverdue, isReturned, isReviewDue } from '../concernRules.ts';
 import { concernPath } from '../paths.ts';
@@ -18,6 +21,8 @@ interface ConcernTableProps {
   showProject: boolean;
   itemLabel: (id: string) => string;
   personName: (id: string | null) => string;
+  /** Client review, item 8: the row's Edit and Delete, for a role that may manage it. */
+  actions?: RowActionsColumn<ConcernEntry> | undefined;
 }
 
 /**
@@ -26,6 +31,7 @@ interface ConcernTableProps {
  * Overdue, review due and escalated are said in words with an icon, never by colour alone.
  */
 export function ConcernTable({
+  actions,
   caption,
   entries,
   today,
@@ -34,101 +40,118 @@ export function ConcernTable({
   personName,
 }: ConcernTableProps): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
   return (
-    <TableContainer caption={caption}>
-      <thead>
-        <tr>
-          <th scope="col">{t('issuesChallenges.table.title')}</th>
-          {showProject && <th scope="col">{t('issuesChallenges.table.project')}</th>}
-          <th scope="col">{t('issuesChallenges.table.assignee')}</th>
-          <th scope="col">{t('issuesChallenges.table.status')}</th>
-          <th scope="col">{t('issuesChallenges.table.severity')}</th>
-          <th scope="col">{t('issuesChallenges.table.priority')}</th>
-          <th scope="col">{t('issuesChallenges.table.target')}</th>
-          <th scope="col">{t('issuesChallenges.table.escalation')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map(({ concern, project }) => {
-          const overdue = isOverdue(concern, today);
-          return (
-            <tr
-              key={concern.id}
-              data-concern={concern.id}
-              className={
-                overdue ? 'row--overdue' : concern.status === 'CLOSED' ? 'row--muted' : undefined
-              }
-            >
-              <td>
-                <Link
-                  to={concernPath(project.id, concern.id)}
-                  lang={languageTag(concern.title.language)}
-                  dir="auto"
-                >
-                  {concern.title.text}
-                </Link>
-                <span className="cell__aside">{itemLabel(concern.categoryItemId)}</span>
-                {concern.originatingRiskId !== null && (
-                  <span className="cell__aside">{t('issuesChallenges.table.fromRisk')}</span>
-                )}
-              </td>
-              {showProject && (
+    <>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'issues-challenges',
+          actions: actions?.bulk(entries, selection, ({ concern }) => concern.id),
+        }}
+      >
+        <thead>
+          <tr>
+            <SelectAllHeader ids={entries.map(({ concern }) => concern.id)} selection={selection} />
+            <th scope="col">{t('issuesChallenges.table.title')}</th>
+            {showProject && <th scope="col">{t('issuesChallenges.table.project')}</th>}
+            <th scope="col">{t('issuesChallenges.table.assignee')}</th>
+            <th scope="col">{t('issuesChallenges.table.status')}</th>
+            <th scope="col">{t('issuesChallenges.table.severity')}</th>
+            <th scope="col">{t('issuesChallenges.table.priority')}</th>
+            <th scope="col">{t('issuesChallenges.table.target')}</th>
+            <th scope="col">{t('issuesChallenges.table.escalation')}</th>
+            {actions !== undefined && <th scope="col">{t('common.table.actions')}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map(({ concern, project }) => {
+            const overdue = isOverdue(concern, today);
+            return (
+              <tr
+                key={concern.id}
+                data-concern={concern.id}
+                className={
+                  overdue ? 'row--overdue' : concern.status === 'CLOSED' ? 'row--muted' : undefined
+                }
+              >
+                <SelectRowCell id={concern.id} name={concern.title.text} selection={selection} />
                 <td>
                   <Link
-                    to={`/projects/${project.id}/issues-challenges`}
-                    lang={languageTag(project.title.language)}
+                    to={concernPath(project.id, concern.id)}
+                    lang={languageTag(concern.title.language)}
                     dir="auto"
                   >
-                    {project.title.text}
+                    {concern.title.text}
                   </Link>
+                  <span className="cell__aside">{itemLabel(concern.categoryItemId)}</span>
+                  {concern.originatingRiskId !== null && (
+                    <span className="cell__aside">{t('issuesChallenges.table.fromRisk')}</span>
+                  )}
                 </td>
-              )}
-              <td>
-                {concern.assigneeUserId === null
-                  ? t('issuesChallenges.table.unassigned')
-                  : personName(concern.assigneeUserId)}
-              </td>
-              <td>
-                <ConcernStatusBadge status={concern.status} />
-                {isReturned(concern) && (
-                  <span className="cell__aside">{t('issuesChallenges.table.returned')}</span>
+                {showProject && (
+                  <td>
+                    <Link
+                      to={`/projects/${project.id}/issues-challenges`}
+                      lang={languageTag(project.title.language)}
+                      dir="auto"
+                    >
+                      {project.title.text}
+                    </Link>
+                  </td>
                 )}
-                {isReviewDue(concern, today) && (
-                  <DueFlag label={t('issuesChallenges.table.reviewDue')} />
+                <td>
+                  {concern.assigneeUserId === null
+                    ? t('issuesChallenges.table.unassigned')
+                    : personName(concern.assigneeUserId)}
+                </td>
+                <td>
+                  <ConcernStatusBadge status={concern.status} />
+                  {isReturned(concern) && (
+                    <span className="cell__aside">{t('issuesChallenges.table.returned')}</span>
+                  )}
+                  {isReviewDue(concern, today) && (
+                    <DueFlag label={t('issuesChallenges.table.reviewDue')} />
+                  )}
+                </td>
+                <td>
+                  <SeverityBadge concern={concern} itemLabel={itemLabel} />
+                  {concern.overallImpactLevel !== null && (
+                    <span className="cell__aside">
+                      {t('issuesChallenges.table.overallImpact', {
+                        level: concern.overallImpactLevel,
+                      })}
+                    </span>
+                  )}
+                </td>
+                <td>{itemLabel(concern.priorityItemId)}</td>
+                <td>
+                  {concern.targetResolutionDate === null ? (
+                    <span className="figure figure--none">
+                      {t('issuesChallenges.table.noTarget')}
+                    </span>
+                  ) : (
+                    <span dir="ltr">{concern.targetResolutionDate}</span>
+                  )}
+                  {overdue && <DueFlag label={t('issuesChallenges.table.overdue')} />}
+                </td>
+                <td>
+                  {concern.openEscalation === null ? (
+                    <span className="figure figure--none">{t('issuesChallenges.table.none')}</span>
+                  ) : (
+                    <EscalatedFlag />
+                  )}
+                </td>
+                {actions !== undefined && (
+                  <td className="cell--actions">{actions.render({ concern, project })}</td>
                 )}
-              </td>
-              <td>
-                <SeverityBadge concern={concern} itemLabel={itemLabel} />
-                {concern.overallImpactLevel !== null && (
-                  <span className="cell__aside">
-                    {t('issuesChallenges.table.overallImpact', {
-                      level: concern.overallImpactLevel,
-                    })}
-                  </span>
-                )}
-              </td>
-              <td>{itemLabel(concern.priorityItemId)}</td>
-              <td>
-                {concern.targetResolutionDate === null ? (
-                  <span className="figure figure--none">
-                    {t('issuesChallenges.table.noTarget')}
-                  </span>
-                ) : (
-                  <span dir="ltr">{concern.targetResolutionDate}</span>
-                )}
-                {overdue && <DueFlag label={t('issuesChallenges.table.overdue')} />}
-              </td>
-              <td>
-                {concern.openEscalation === null ? (
-                  <span className="figure figure--none">{t('issuesChallenges.table.none')}</span>
-                ) : (
-                  <EscalatedFlag />
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </TableContainer>
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableContainer>
+      {actions?.dialog}
+    </>
   );
 }

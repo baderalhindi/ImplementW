@@ -60,7 +60,54 @@ internal sealed class AuthorizationRepository(PMPlatformDbContext context, TimeP
                     permission.DataClassificationItemId))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        return new AuthorizationPrincipal(user.Id, user.UserType, isActive, user.DepartmentId, user.ExternalEntityId, grants);
+        return new AuthorizationPrincipal(user.Id, user.UserType, isActive, user.DepartmentId, user.ExternalEntityId,
+            await ApplyOverridesAsync(userId, external, now, grants, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Client review, item 5: a removal takes the permission away whichever role gave it. A grant joins each role assignment in force, with that
+    /// assignment's anchors: a per-project assignment still reaches only its project, and the engine holds it to GrantPolicy like any grant.
+    /// </summary>
+    private async Task<List<EffectiveGrant>> ApplyOverridesAsync(
+        Guid userId, bool external, DateTimeOffset now, List<EffectiveGrant> fromRoles, CancellationToken cancellationToken)
+    {
+        var overrides = await (
+                from adjusted in context.Set<UserPermissionOverride>().AsNoTracking()
+                join permission in context.Set<Permission>() on adjusted.PermissionId equals permission.Id
+                where adjusted.UserId == userId
+                select new { permission.Code, adjusted.Effect, adjusted.DataScope, permission.DataClassificationItemId })
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        if (overrides.Count == 0)
+        {
+            return fromRoles;
+        }
+
+        HashSet<string> removed = [.. overrides.Where(o => o.Effect == PermissionOverrideEffect.Remove).Select(o => o.Code)];
+        List<EffectiveGrant> grants = [.. fromRoles.Where(g => !removed.Contains(g.PermissionCode))];
+        var granted = overrides.Where(o => o.Effect == PermissionOverrideEffect.Grant).ToList();
+        if (granted.Count == 0)
+        {
+            return grants;
+        }
+
+        var assignments = await (
+                from assignment in context.Set<AccessRelationship>().AsNoTracking()
+                join version in context.Set<PermissionProfileVersion>() on assignment.PermissionProfileVersionId equals version.Id
+                join profile in context.Set<PermissionProfile>() on version.PermissionProfileId equals profile.Id
+                join role in context.Set<Role>() on profile.BaseRoleId equals role.Id
+                where assignment.UserId == userId
+                      && assignment.Status == AccessRelationshipStatus.Active
+                      && assignment.StartsAt <= now
+                      && (assignment.EndsAt == null || assignment.EndsAt > now)
+                      && version.LifecycleState == GovernedLifecycleState.Published
+                      && (!external || role.IsExternalEligible)
+                select new { role.Code, assignment.DepartmentId, assignment.ExternalEntityId, assignment.ProjectId })
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        grants.AddRange(
+            from o in granted
+            from a in assignments
+            select new EffectiveGrant(a.Code, o.Code, o.DataScope!.Value, a.DepartmentId, a.ExternalEntityId, a.ProjectId, o.DataClassificationItemId));
+        return grants;
     }
 
     public async Task<IReadOnlyDictionary<Guid, int>> GetClassificationRanksAsync(CancellationToken cancellationToken) =>

@@ -118,7 +118,7 @@ export function RequestRegisterView({
         {t('externalParticipation.filter.showing', { shown: shown.length, total: requests.length })}
       </p>
       {shown.length === 0 ? (
-        <EmptyState title={t('externalParticipation.filter.noMatch')} />
+        <EmptyState title={t('externalParticipation.filter.noMatch')} reason="filter" />
       ) : (
         <RequestTable
           requests={shown}

@@ -54,6 +54,20 @@ internal static class QueryParameters
         return values;
     }
 
+    /// <summary>One R-19 value, e.g. <c>onPlan=LATE</c>; absent, null. A set is malformed here.</summary>
+    public static TEnum? OneEnum<TEnum>(string? value, string field, List<FieldError> errors)
+        where TEnum : struct, Enum
+    {
+        IReadOnlyCollection<TEnum> values = EnumSet<TEnum>(value, field, errors);
+        if (values.Count > 1)
+        {
+            errors.Add(new FieldError(field, FieldError.Malformed));
+            return null;
+        }
+
+        return values.Count == 1 ? values.First() : null;
+    }
+
     /// <summary>R-32 for ADM-002: <c>displayName</c> (the default) or <c>username</c>, <c>:asc</c> or <c>:desc</c>.</summary>
     /// <summary>The project register's order, as R-32 writes it (review round 5, item 2); recently changed first when absent.</summary>
     public static ProjectSort ProjectSortOf(string? value, List<FieldError> errors)
@@ -73,6 +87,8 @@ internal static class QueryParameters
                 return ProjectSort.FormalIdAscending;
             case "formalProjectId:desc":
                 return ProjectSort.FormalIdDescending;
+            case "value:desc":
+                return ProjectSort.ValueDescending;
             default:
                 errors.Add(new FieldError("sort", FieldError.EnumValue));
                 return ProjectSort.UpdatedDescending;

@@ -143,6 +143,53 @@ describe('SCR-111 the closeout as two sequential stages (acceptance criterion 1)
     ).toBeTruthy();
   });
 
+  test('obligations: select all, then one command for every chosen obligation that allows it', async () => {
+    const user = userEvent.setup();
+    const settled = obligation({
+      id: '00000000-0000-4000-8000-0000000000f9',
+      title: { text: 'Handover of as-built drawings', language: 'EN' },
+      status: 'SATISFIED',
+    });
+    const api = open(
+      `/projects/${PROJECT_ID}/closeout`,
+      { completions: [completionEffected()], obligations: [obligation(), settled] },
+      { project: concernProject({ status: 'COMPLETED' }) },
+    );
+    api.on('POST', /^\/post-project-obligations\/[^/]+\/start$/, {
+      body: obligation({ status: 'IN_PROGRESS' }),
+    });
+    const table = await screen.findByRole('region', {
+      name: en('suspensionClosure.obligations.caption'),
+    });
+
+    await user.click(within(table).getByRole('checkbox', { name: en('common.table.selectAll') }));
+    const bar = screen
+      .getByText(en('common.table.selected', { count: 2 }))
+      .closest('.selection-bar');
+    if (!(bar instanceof HTMLElement)) {
+      throw new Error('No selection bar.');
+    }
+    // A settled obligation takes no command, so only the open one's are offered.
+    await user.click(
+      within(bar).getByRole('button', {
+        name: en('suspensionClosure.obligations.command.start.action'),
+      }),
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).toContain('Defect liability period');
+    expect(dialog.textContent).not.toContain('Handover of as-built drawings');
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: en('suspensionClosure.obligations.command.start.action'),
+      }),
+    );
+
+    await screen.findByText(en('suspensionClosure.done.obligationStarted'));
+    expect(api.requestsTo('POST', /\/start$/).map((request) => request.path)).toEqual([
+      `/post-project-obligations/${obligation().id}/start`,
+    ]);
+  });
+
   test('the Project Manager records an obligation against the completion case, naming themself as its owner', async () => {
     const user = userEvent.setup();
     const nora = managerSession();

@@ -1,10 +1,10 @@
 import { type ReactElement, useCallback, useState } from 'react';
+import { Link } from 'react-router';
 
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { dashboardsApi, type PortfolioFilters } from './api/dashboardsApi.ts';
@@ -16,10 +16,10 @@ import {
   PortfolioFilterBar,
 } from './components/PortfolioFilterBar.tsx';
 import { ProjectLocations } from './components/ProjectLocations.tsx';
-import { mayPersonalize } from './landing.ts';
+import { DesignedVisuals } from './design/DesignedVisuals.tsx';
 import { PortfolioInsightsSection } from './insights/PortfolioInsightsSection.tsx';
-import { hasNoData } from './presentation.ts';
-import { PersonalizeDialog } from './PersonalizeDialog.tsx';
+import { emptyPortfolioReason, hasNoData } from './presentation.ts';
+import { DASHBOARD_DESIGNER_PATH } from './paths.ts';
 import { dashboardProblemMessage } from './problems.ts';
 
 function optionsOf(view: DashboardView): FilterOptions {
@@ -64,7 +64,10 @@ export function HostedDashboard({
   filters,
   onFilterChange,
   onClearFilters,
+  executive = false,
 }: {
+  /** Review round 8, point 14: the Executive's one dashboard, laid out for them. */
+  executive?: boolean;
   entry: DashboardCatalogueEntry;
   filters: PortfolioFilters;
   onFilterChange: (name: FilterName, value: string | undefined) => void;
@@ -118,8 +121,6 @@ export function HostedDashboard({
   );
   const view = useApiResource(load, { keepWhileReloading: true });
   const [options, setOptions] = useState<FilterOptions>(NO_OPTIONS);
-  const [personalizing, setPersonalizing] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
 
   // The options do not depend on the filters (the API lists them before narrowing), so the last ones read stay offered
   // while another choice loads: a select never disappears under a keyboard user.
@@ -127,6 +128,8 @@ export function HostedDashboard({
     setOptions(optionsOf(view.data));
   }
 
+  // Review round 8, point 14 keeps the Executive's own layout; everyone else's Portfolio Dashboard is the design.
+  const designed = entry.code === 'PORTFOLIO' && !executive;
   const filterRefused =
     view.error instanceof ApiError && view.error.code === 'DASHBOARD_FILTER_VALUE_UNAUTHORIZED';
 
@@ -146,26 +149,20 @@ export function HostedDashboard({
               <button type="button" className="button button--quiet" onClick={view.reload}>
                 {t('dashboards.actions.refresh')}
               </button>
-              {mayPersonalize(permissions, entry) && (
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => {
-                    setPersonalizing(true);
-                  }}
-                >
-                  {t('dashboards.personalize.open')}
-                </button>
+              {entry.code === 'PORTFOLIO' && permissions.can('DASHBOARD_DESIGN') && (
+                <Link className="button" to={DASHBOARD_DESIGNER_PATH}>
+                  {t('dashboards.designer.open')}
+                </Link>
               )}
             </p>
           )
         }
       />
-      <PageNotice notice={notice} />
-      {entry.code === 'PORTFOLIO' && (
+      {entry.code === 'PORTFOLIO' && executive && (
         <PortfolioInsightsSection
           filters={filters}
           emptySaidElsewhere={view.data !== undefined && hasNoData(view.data)}
+          onClearFilters={onClearFilters}
         />
       )}
       {view.data === undefined ? (
@@ -178,8 +175,32 @@ export function HostedDashboard({
             onRetry={filterRefused ? onClearFilters : view.reload}
           />
         )
+      ) : designed ? (
+        // The whole Portfolio Dashboard is the Portfolio Manager's design (17 and 18 Nov 2026): cards, charts, tables, map and widgets.
+        <DesignedVisuals
+          filters={filters}
+          view={view.data}
+          onClearFilters={onClearFilters}
+          map={{
+            selectedRegion: regionItemId,
+            onSelectRegion: (region) => {
+              onFilterChange('regionItemId', region);
+            },
+            onFilterCity: (city) => {
+              onFilterChange('cityItemId', city);
+            },
+          }}
+        />
       ) : hasNoData(view.data) ? (
-        <EmptyState title={t('dashboards.noData')} />
+        <EmptyState
+          title={t('dashboards.noData')}
+          reason={emptyPortfolioReason(filters)}
+          action={
+            emptyPortfolioReason(filters) === 'scope'
+              ? undefined
+              : { label: t('common.filters.clear'), onClick: onClearFilters }
+          }
+        />
       ) : (
         <>
           {entry.code === 'PORTFOLIO' && (
@@ -198,24 +219,7 @@ export function HostedDashboard({
               }}
             />
           )}
-          <DashboardCanvas view={view.data} headingLevel={2} />
-          <PersonalizeDialog
-            open={personalizing}
-            view={view.data}
-            onClose={() => {
-              setPersonalizing(false);
-            }}
-            onSaved={(reset) => {
-              setPersonalizing(false);
-              setNotice({
-                tone: 'success',
-                message: t(
-                  reset ? 'dashboards.personalize.wasReset' : 'dashboards.personalize.saved',
-                ),
-              });
-              view.reload();
-            }}
-          />
+          <DashboardCanvas view={view.data} headingLevel={2} filters={filters} />
         </>
       )}
     </div>

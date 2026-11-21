@@ -43,7 +43,7 @@ export function RecentDocumentsPage(): ReactElement {
       )}
       {recent.data !== undefined &&
         (recent.data.items.length === 0 ? (
-          <EmptyState title={t('documents.list.empty')} />
+          <EmptyState title={t('documents.list.empty')} reason="notYet" />
         ) : (
           <DocumentTable
             caption={t('documents.recent.title')}

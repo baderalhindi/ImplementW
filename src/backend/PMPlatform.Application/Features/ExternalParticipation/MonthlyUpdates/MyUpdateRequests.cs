@@ -41,7 +41,10 @@ internal sealed class MyUpdateRequests(
             items.Add(new MyUpdateRequest(
                 request.Id, repository.RowVersionOf(request), request.ProjectId, project.FormalProjectId, project.LegacyReference, project.Title, request.DueDate,
                 request.DueDate < today, request.Status, request.Instructions, contribution?.Id, contribution is null ? null : repository.RowVersionOf(contribution), contribution?.Status,
-                returned?.ReviewReason, returned is not null, project.DeclaredPlannedPercent, values, languages));
+                returned?.ReviewReason, returned is not null, project.DeclaredPlannedPercent, values, languages)
+            {
+                Stages = project.Stages,
+            });
         }
 
         return new MyUpdateRequestPage(items, page.Page, page.PageSize, open.Count, open.Count(r => r.DueDate < today), open.Min(r => r.DueDate));
@@ -87,7 +90,16 @@ internal sealed class MyUpdateRequests(
             }
         }
 
-        Number(ContributionSchemas.ActualProgressPercent, project.DeclaredActualPercent);
+        if (project.Stages.Count > 0 && project.CurrentStageCode is { } stage && project.Stages.Any(s => s.StageCode == stage))
+        {
+            values[ContributionSchemas.CurrentStageCode] = stage;
+            Number(ContributionSchemas.CurrentStagePercent, project.CurrentStagePercent);
+        }
+        else
+        {
+            Number(ContributionSchemas.ActualProgressPercent, project.DeclaredActualPercent);
+        }
+
         Number(ContributionSchemas.ActualSpendPercent, project.DeclaredActualSpendPercent);
         Narrative(ContributionSchemas.CurrentObstacle, project.CurrentObstacle);
         Narrative(ContributionSchemas.NextAction, project.NextAction);

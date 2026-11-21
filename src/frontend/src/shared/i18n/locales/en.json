@@ -16,7 +16,9 @@
     "next": "Next",
     "back": "Back",
     "retry": "Try again",
-    "search": "Search"
+    "search": "Search",
+    "close": "Close",
+    "more": "More"
   },
   "globalSearch": {
     "label": "Search the platform",
@@ -53,7 +55,12 @@
     "selectAll": "Select all rows shown",
     "selectRow": "Select {name}",
     "selected": "{count} selected",
-    "clearSelection": "Clear selection"
+    "clearSelection": "Clear selection",
+    "exportSelected": "Export selected",
+    "sort": {
+      "ascending": "Sort ascending",
+      "descending": "Sort descending"
+    }
   },
   "filters": {
     "label": "Filters",
@@ -88,7 +95,9 @@
     "malformed": "This value is not in the expected format.",
     "invalidChoice": "Choose one of the listed values.",
     "notAllowed": "This field does not apply here; leave it empty.",
-    "invalid": "This value is not accepted."
+    "invalid": "This value is not accepted.",
+    "notArabic": "Write this in Arabic.",
+    "notEnglish": "Write this in English, without Arabic letters."
   },
   "problems": {
     "network": "The server could not be reached. Check your connection and try again.",
@@ -103,7 +112,8 @@
     "unavailable": "The service is unavailable at the moment. Try again later.",
     "rateLimited": "You have made too many requests in a short time. Wait a minute, then try again.",
     "unexpected": "Something went wrong. Try again.",
-    "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}."
+    "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}.",
+    "approvalPending": "This record is in an approval that has not finished. Wait for the decision, or have it returned, then delete it."
   },
   "forbidden": {
     "title": "Access denied",
@@ -139,7 +149,15 @@
     "expand": "Expand menu",
     "open": "Open menu",
     "close": "Close menu",
-    "help": "Help and Knowledge"
+    "help": "Help and Knowledge",
+    "adminGroups": {
+      "usersRoles": "Users and roles",
+      "organization": "Organization",
+      "data": "Data",
+      "integrations": "Integrations",
+      "auditLogs": "Audit and logs"
+    },
+    "adminMenu": "Administration menu"
   },
   "shell": {
     "breadcrumb": "Breadcrumb",
@@ -157,7 +175,6 @@
       "title": "User guide",
       "description": "Step-by-step guides to the platform’s screens, starting with the one you land on.",
       "forYou": "For your role",
-      "others": "Other guides",
       "back": "All guides",
       "related": "Screens in this guide"
     },
@@ -169,5 +186,23 @@
       "title": "Knowledge base",
       "description": "The terms the platform’s screens use, and what each one means."
     }
+  },
+  "rowActions": {
+    "delete": "Delete",
+    "deleteTitle": "Delete this record?",
+    "deleteBody": "Delete “{name}”? It and what belongs to it leave every list. Its data and history stay on file."
+  },
+  "empty": {
+    "scope": "What shows here follows your role assignments, and none of it is in your scope yet. If you expect to see data here, ask the system administrator to review your role assignments.",
+    "period": "There is nothing in this period. Choose another period to see what it holds.",
+    "setup": "This has not been set up yet. It shows here once it is.",
+    "filter": "Nothing matches the current filters. Change or clear them to see everything.",
+    "notYet": "Nothing has been recorded here yet. It shows here once it is.",
+    "role": "Your current role does not offer this page. If you need it, ask the system administrator to review your role assignments."
+  },
+  "money": {
+    "sar": "{amount} SAR",
+    "million": "{amount} million SAR",
+    "billion": "{amount} billion SAR"
   }
 }

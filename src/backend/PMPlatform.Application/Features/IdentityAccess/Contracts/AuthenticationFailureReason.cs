@@ -53,4 +53,10 @@ public enum AuthenticationFailureReason
 
     /// <summary>The session began before the account's password last changed.</summary>
     PasswordChanged = 15,
+
+    /// <summary>Microsoft's account e-mail is missing or not the e-mail on the user's profile (client review, item 7).</summary>
+    EmailMismatch = 16,
+
+    /// <summary>Nafath verified someone, but not the National ID or Iqama number recorded for the user, or none is recorded (SR-53).</summary>
+    IdentityMismatch = 17,
 }

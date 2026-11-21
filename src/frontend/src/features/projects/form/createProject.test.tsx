@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
@@ -50,52 +50,50 @@ async function fillRequired(user: UserEvent) {
 }
 
 describe('SCR-033 Create Project', () => {
-  test('saving is disabled until every required field is filled, and the note says what is missing', async () => {
+  test('saving with fields to complete marks each and moves to the first; the note says what is missing (review round 8, point 16)', async () => {
     const user = userEvent.setup();
     const api = openCreate();
     await screen.findByRole('option', { name: 'Infrastructure' });
 
-    expect(createButton()).toHaveProperty('disabled', true);
+    // Required fields are marked as such.
+    expect(screen.getByLabelText(/Project title/).closest('.field')?.textContent).toContain(
+      en('common.form.required'),
+    );
     const note = document.getElementById(createButton().getAttribute('aria-describedby') ?? '');
     expect(note?.textContent).toContain('Project title');
     expect(note?.textContent).toContain('Owning department');
 
-    await user.type(screen.getByLabelText(/Project title/), 'Coastal road upgrade');
-    expect(createButton()).toHaveProperty('disabled', true);
-    expect(note?.textContent).not.toContain('Project title');
+    await user.click(createButton());
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByLabelText(/Project title/));
+    });
+    expect(screen.getByLabelText(/Project title/).getAttribute('aria-invalid')).toBe('true');
+    expect(api.requestsTo('POST', /^\/projects$/)).toHaveLength(0);
 
-    await fillRequired(user);
-    await user.clear(screen.getByLabelText(/Project title/));
     await user.type(screen.getByLabelText(/Project title/), 'Coastal road upgrade');
-    expect(createButton()).toHaveProperty('disabled', false);
+    expect(note?.textContent).not.toContain('Project title');
+    await user.click(createButton());
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByLabelText(/Sector/));
+    });
     expect(api.requestsTo('POST', /^\/projects$/)).toHaveLength(0);
   });
 
-  test('an entity-managed project needs its entity before it can be saved', async () => {
+  test('an entity-managed project needs its entity before it is saved', async () => {
     const user = userEvent.setup();
-    openCreate();
+    const api = openCreate();
     await fillRequired(user);
-    expect(createButton()).toHaveProperty('disabled', false);
-
     await user.click(screen.getByLabelText(en('projects.participationMode.ENTITY_MANAGED')));
-    expect(createButton()).toHaveProperty('disabled', true);
-
-    await user.selectOptions(screen.getByLabelText(/External entity/), ENTITY_ID);
-    expect(createButton()).toHaveProperty('disabled', false);
+    await user.click(createButton());
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByLabelText(/External entity/));
+    });
+    expect(api.requestsTo('POST', /^\/projects$/)).toHaveLength(0);
   });
 
-  test('the governance profile explains itself (review round 5, item 13)', async () => {
+  test('values of the wrong shape are flagged as typed, and saving moves to them', async () => {
     const user = userEvent.setup();
-    openCreate();
-    await user.click(
-      await screen.findByRole('button', { name: en('projects.form.governanceProfileInfoLabel') }),
-    );
-    expect(screen.getByRole('tooltip').textContent).toBe(en('projects.form.governanceProfileInfo'));
-  });
-
-  test('values of the wrong shape are flagged as typed and keep saving disabled', async () => {
-    const user = userEvent.setup();
-    openCreate();
+    const api = openCreate();
     await fillRequired(user);
 
     await user.type(screen.getByLabelText(/Registration budget/), '1500000.5');
@@ -107,11 +105,11 @@ describe('SCR-033 Create Project', () => {
     await user.type(screen.getByLabelText(/Planned start date/), '2026-12-01');
     await user.type(screen.getByLabelText(/Planned end date/), '2026-11-01');
     expect(screen.getByText(en('identityAccess.fieldErrors.dateBeforeStart'))).toBeTruthy();
-    expect(createButton()).toHaveProperty('disabled', true);
-
-    await user.clear(screen.getByLabelText(/Planned end date/));
-    await user.type(screen.getByLabelText(/Latitude/), '95');
-    expect(createButton()).toHaveProperty('disabled', true);
+    await user.click(createButton());
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByLabelText(/Planned end date/));
+    });
+    expect(api.requestsTo('POST', /^\/projects$/)).toHaveLength(0);
   });
 
   test('sends the registration as the API reads it, then opens the new draft', async () => {
@@ -150,6 +148,7 @@ describe('SCR-033 Create Project', () => {
       fundingSource: null,
       legacyReference: null,
       followUpOwnerUserId: null,
+      proposedProjectManagerUserId: null,
     });
     // No Formal Project ID is ever sent: AHDA issues it (ADR-013).
     expect(request?.body).not.toHaveProperty('formalProjectId');

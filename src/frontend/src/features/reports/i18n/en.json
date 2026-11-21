@@ -81,7 +81,8 @@
     "running": "Running the report…",
     "empty": "No project in your scope matches.",
     "generatedAt": "Run at {date}. This is when the report ran, not when its sources were current.",
-    "rowCount": "{count} rows"
+    "rowCount": "{count} rows",
+    "chooseParametersHint": "Choose the report’s parameters above and run it; its result shows here."
   },
   "banner": {
     "label": "Coverage and freshness",
@@ -250,7 +251,9 @@
     "delete": "Delete",
     "deleteTitle": "Delete saved view",
     "deleteMessage": "Delete the view {name}? Anyone it is shared with will lose it too.",
-    "deleted": "The view {name} was deleted."
+    "deleted": "The view {name} was deleted.",
+    "deleteManyMessage": "Delete these views: {names}? Anyone they are shared with will lose them too.",
+    "deletedMany": "These views were deleted: {names}."
   },
   "compatibility": {
     "VALID": "Yes",
@@ -276,7 +279,8 @@
     "expiresAt": "Available until",
     "you": "{name} (you)",
     "cancel": "Cancel",
-    "cancelled": "The export of {name} was canceled."
+    "cancelled": "The export of {name} was canceled.",
+    "cancelledMany": "These exports were canceled: {names}."
   },
   "notFound": {
     "title": "Report not found",

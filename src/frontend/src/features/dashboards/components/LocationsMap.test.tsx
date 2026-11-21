@@ -130,14 +130,16 @@ const HOFUF: MapPoint = {
   name: 'Hofuf',
   latitude: 25.38,
   longitude: 49.59,
-  projectCount: 8,
+  value: 8,
+  figure: '8',
 };
 const ABQAIQ: MapPoint = {
   id: 'abqaiq',
   name: 'Abqaiq',
   latitude: 25.93,
   longitude: 49.67,
-  projectCount: 1,
+  value: 1,
+  figure: '1',
 };
 
 function renderMap(

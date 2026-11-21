@@ -9,7 +9,7 @@ using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 namespace PMPlatform.Api.Controllers;
 
-/// <summary>ADM-011 Organization Structure and ADM-012 Departments (TASK-031). Never deleted (RETAIN): deactivated.</summary>
+/// <summary>ADM-011 Organization Structure and ADM-012 Departments (TASK-031). Deactivated, or deleted (client review, item 6): the row stays (RETAIN).</summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
 public sealed class DepartmentsController(IDepartmentAdministrationService departments, IDataImportService imports) : AdministrationControllerBase
@@ -101,4 +101,21 @@ public sealed class DepartmentsController(IDepartmentAdministrationService depar
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
             ? Respond(await departments.DeactivateAsync(CallerId, departmentId, version, cancellationToken))
             : problem!;
+
+    /// <summary>Client review, item 6: out of administration and pickers for good; records keep its name. 409 while anything depends on it.</summary>
+    [HttpPost("{departmentId:guid}/delete")]
+    [RequirePermission(PermissionCatalogue.OrganizationManage)]
+    [SensitiveWrite]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [EndpointName("IdentityAccess_DeleteDepartment")]
+    public async Task<IActionResult> Delete(Guid departmentId, CancellationToken cancellationToken)
+    {
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationError? error = await departments.DeleteAsync(CallerId, departmentId, version, cancellationToken);
+        return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
+    }
 }

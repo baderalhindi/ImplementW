@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -10,6 +11,7 @@ import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { StatusFilterField } from './components/StatusFilterField.tsx';
+import { useTaskStatusFilter } from './useTaskStatusFilter.ts';
 import { TaskTable } from './components/TaskTable.tsx';
 import { type TaskDialog } from './dialogs/taskDialog.ts';
 import { TaskDialogs } from './dialogs/TaskDialogs.tsx';
@@ -19,12 +21,13 @@ import {
   listEntries,
   managesAny,
   matchesStatus,
-  type StatusFilter,
   type TaskListKind,
   todayUtc,
   updateReasons,
+  type TaskEntry,
 } from './taskRules.ts';
 import { useProjectBoard, useTaskLookups, useTaskPortfolio } from './useTaskData.ts';
+import { tasksApi } from './api/tasksApi.ts';
 
 interface ListCopy {
   title: TranslationKey;
@@ -83,7 +86,15 @@ export function TaskListPage({ list }: { list: TaskListKind }): ReactElement | n
   const { t } = useI18n();
   const { session } = useSession();
   const portfolio = useTaskPortfolio();
-  const [filter, setFilter] = useState<StatusFilter>('open');
+  const rowActions = useRowActions<TaskEntry>({
+    permission: 'TASK_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ task }) => task.title.text,
+    editTo: ({ task, project }) => `/projects/${project.id}/tasks?edit=${task.id}`,
+    remove: ({ task }) => tasksApi.remove(task.id),
+    onDeleted: portfolio.reload,
+  });
+  const [filter, setFilter] = useTaskStatusFilter();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [open, setOpen] = useState<{ project: ProjectSummary; dialog: TaskDialog } | null>(null);
   const copy = COPY[list];
@@ -150,6 +161,7 @@ export function TaskListPage({ list }: { list: TaskListKind }): ReactElement | n
             </EmptyState>
           ) : (
             <TaskTable
+              actions={rowActions}
               caption={t(copy.caption)}
               entries={shown}
               today={today}

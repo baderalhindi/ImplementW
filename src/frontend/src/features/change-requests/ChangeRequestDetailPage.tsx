@@ -9,7 +9,6 @@ import { usePersonNames } from '@/features/identity-access/assignments/useUserNa
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
-import { formatSar } from '@/features/projects/presentation.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { ConfirmCommandDialog } from '@/features/risks/dialogs/ConfirmCommandDialog.tsx';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -17,6 +16,8 @@ import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import {
   canCloseChangeRequest,
@@ -55,6 +56,7 @@ import {
   useChangeRequestReview,
   useOptionalProject,
 } from './useChangeRequestData.ts';
+import { sarWhole } from '@/shared/format/money.ts';
 
 /** The notices SCR-106 hands over when it lands here. */
 const ARRIVAL_NOTICES: Record<string, TranslationKey> = {
@@ -142,6 +144,7 @@ export function ChangeRequestDetailPage(): ReactElement | null {
     request?.requestedByUserId ?? null,
     ...(request?.authorizations ?? []).map((authorization) => authorization.appliedByUserId),
   ]);
+  const authorizationSelection = useRowSelection();
 
   if (session === null) {
     return null;
@@ -385,7 +388,7 @@ export function ChangeRequestDetailPage(): ReactElement | null {
               t('changeRequests.impacts.none')
             ) : (
               <span dir="ltr">
-                {t('changeRequests.impacts.sar', { amount: formatSar(request.costImpactSar) })}
+                {t('changeRequests.impacts.sar', { amount: sarWhole(request.costImpactSar) })}
               </span>
             )}
           </Detail>
@@ -482,9 +485,19 @@ export function ChangeRequestDetailPage(): ReactElement | null {
         ) : (
           <>
             <p className="form__note">{t('changeRequests.detail.authorizationsNote')}</p>
-            <TableContainer caption={t('changeRequests.detail.authorizationsCaption')}>
+            <TableContainer
+              caption={t('changeRequests.detail.authorizationsCaption')}
+              selection={{
+                selection: authorizationSelection,
+                exportName: 'change-request-authorizations',
+              }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={request.authorizations.map((authorization) => authorization.id)}
+                    selection={authorizationSelection}
+                  />
                   <th scope="col">{t('changeRequests.authorization.scope')}</th>
                   <th scope="col">{t('changeRequests.authorization.target')}</th>
                   <th scope="col">{t('changeRequests.authorization.status')}</th>
@@ -497,6 +510,11 @@ export function ChangeRequestDetailPage(): ReactElement | null {
                   const screen = TARGET_SCREENS[authorization.authorizationScope];
                   return (
                     <tr key={authorization.id}>
+                      <SelectRowCell
+                        id={authorization.id}
+                        name={`${t(`changeRequests.authorization.scopes.${authorization.authorizationScope}`)} ${t('changeRequests.authorization.targetVersion', { version: authorization.targetRevisionNo })}`}
+                        selection={authorizationSelection}
+                      />
                       <td>
                         {t(
                           `changeRequests.authorization.scopes.${authorization.authorizationScope}`,

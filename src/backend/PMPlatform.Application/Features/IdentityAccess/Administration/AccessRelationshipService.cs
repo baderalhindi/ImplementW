@@ -252,6 +252,15 @@ internal sealed partial class AccessRelationshipService(
     /// ENDED now, or at its start if it has not started, or at its own end if that has already passed. The audit event is
     /// staged here, so no path can end an assignment without one.
     /// </summary>
+    /// <summary>Stages the end of every active assignment of the user, for the caller to save with its own change.</summary>
+    internal async Task EndAllOfUserAsync(Guid actorId, Guid userId, AccessEndReason reason, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        foreach (AccessRelationship assignment in await assignments.FindActiveOfUserForUpdateAsync(userId, cancellationToken).ConfigureAwait(false))
+        {
+            End(assignment, reason, now, actorId);
+        }
+    }
+
     private void End(AccessRelationship assignment, AccessEndReason reason, DateTimeOffset now, Guid actorId)
     {
         audit.Stage(Entry(actorId, assignment, IdentityAccessAuditEvents.RoleAssignmentEnded,

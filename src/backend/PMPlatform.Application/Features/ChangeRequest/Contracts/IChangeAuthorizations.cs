@@ -80,4 +80,6 @@ public static class ChangeTargets
     public const string ProjectBaseline = "ProjectBaseline";
     public const string FinancialKpiModule = "FinancialKpi";
     public const string FinancialCommitment = "FinancialCommitment";
+    public const string ProjectModule = "Project";
+    public const string ProjectStagePlan = "ProjectStagePlan";
 }

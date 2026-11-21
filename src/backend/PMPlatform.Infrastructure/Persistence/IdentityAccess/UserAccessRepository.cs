@@ -23,8 +23,35 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
     public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         FindAsync(u => u.Id == userId, cancellationToken);
 
+    public Task<Guid?> FindByNationalIdFingerprintAsync(string fingerprint, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.NationalIdFingerprint == fingerprint).Select(u => (Guid?)u.Id)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public Task<string?> FindMobileNumberAsync(Guid userId, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.Id == userId).Select(u => u.MobileNumber).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task RecordMobileNumberVerifiedAsync(Guid userId, string mobileNumber, CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        await context.Set<User>()
+            .Where(u => u.Id == userId && u.MobileNumber == mobileNumber && u.MobileVerifiedAt == null)
+            .ExecuteUpdateAsync(set => set.SetProperty(u => u.MobileVerifiedAt, now).SetProperty(u => u.UpdatedAt, now).SetProperty(u => u.UpdatedBy, userId), cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken) =>
         LocalCredentialAsync(u => u.Username == username, cancellationToken);
+
+    public async Task<string?> FindUsernameByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        string pattern = AdministrationPersistence.ExactPattern(email);
+        List<string> usernames = await context.Set<User>().AsNoTracking()
+            .Where(u => EF.Functions.ILike(u.Email, pattern, AdministrationPersistence.LikeEscape))
+            .Select(u => u.Username)
+            .Take(2)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        return usernames.Count == 1 ? usernames[0] : null;
+    }
 
     public Task<LocalCredential?> FindLocalCredentialByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         LocalCredentialAsync(u => u.Id == userId, cancellationToken);
@@ -202,11 +229,14 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
                    manager == null ? null : manager.DirectorySubjectId))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public Task<string?> FindNationalIdFingerprintAsync(Guid userId, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.Id == userId).Select(u => u.NationalIdFingerprint).SingleOrDefaultAsync(cancellationToken);
+
     private async Task<UserAccess?> FindAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken)
     {
         var user = await context.Set<User>().AsNoTracking()
             .Where(predicate)
-            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt, u.PasswordChangedAt })
+            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.ExternalEntityId, u.Username, u.DisplayName, u.Email, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt, u.PasswordChangedAt })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
@@ -242,7 +272,7 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         UserStatus status = user.AccountEndsOn is { } endsOn && endsOn < DateOnly.FromDateTime(now.UtcDateTime) ? UserStatus.Disabled : user.Status;
         return new UserAccess(
             user.Id, user.UserType, status, entityStatus, user.Username, user.DisplayName, user.PreferredLanguage, user.MfaEnrolledAt is not null,
-            user.NafathVerifiedAt is not null, assignments, user.PasswordChangedAt);
+            user.NafathVerifiedAt is not null, assignments, user.PasswordChangedAt, user.Email);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Directory {Attribute} of user {UserId} not applied: {Reason}. The stored value stands.")]

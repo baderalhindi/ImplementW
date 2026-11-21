@@ -19,6 +19,7 @@ internal sealed class ProjectMilestoneService(
     IProjectFactsReader projects,
     ScheduleAccess access,
     IMasterDataResolver masterData,
+    IMilestoneClaimsInProgress claims,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectMilestoneService
 {
@@ -274,4 +275,41 @@ internal sealed class ProjectMilestoneService(
     private sealed record Loaded(ProjectFacts? Project, ProjectMilestone? Milestone, AdministrationError? Error);
 
     private sealed record Opened(ProjectSchedule? Schedule, AdministrationError? Error);
+
+    public async Task<AdministrationError?> DeleteAsync(Guid callerId, Guid milestoneId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.ScheduleEdit, milestoneId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (loaded.Error is { } refused)
+        {
+            return refused;
+        }
+
+        (ProjectFacts project, ProjectMilestone milestone) = (loaded.Project!, loaded.Milestone!);
+        if (ScheduleService.NotEligible(project) is { } notEligible)
+        {
+            return notEligible;
+        }
+
+        // An achievement claim awaiting its decision would be left with nothing to record: it is decided or returned first.
+        if (await claims.HasPendingAsync(milestoneId, cancellationToken).ConfigureAwait(false))
+        {
+            return AdministrationError.Conflict(RecordDeletion.ApprovalPending);
+        }
+
+        await using IScheduleWork work = await repository.BeginAsync(cancellationToken).ConfigureAwait(false);
+        Opened opened = await OpenAsync(project, cancellationToken).ConfigureAwait(false);
+        if (opened.Error is { } closed)
+        {
+            return closed;
+        }
+
+        audit.Stage(RecordDeletion.Stamp(milestone, "Schedule", callerId, project.Id, timeProvider.GetUtcNow()));
+        if (await repository.SaveAsync(cancellationToken).ConfigureAwait(false) != ScheduleSaveOutcome.Saved)
+        {
+            return AdministrationError.PreconditionFailed;
+        }
+
+        await work.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return null;
+    }
 }

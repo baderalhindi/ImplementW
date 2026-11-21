@@ -5,7 +5,6 @@
     "roles": "Roles",
     "permissionMatrix": "Permission matrix",
     "roleAssignments": "Role assignments",
-    "organization": "Organization structure",
     "departments": "Departments",
     "entities": "External entities",
     "masterData": "Master data",
@@ -63,7 +62,9 @@
     "passwordReused": "This is one of your last 5 passwords. Choose a different one.",
     "passwordMismatch": "The two passwords do not match.",
     "passwordIncorrect": "The current password is wrong.",
-    "passwordRejectedByDirectory": "The AHDA directory refused this password. Choose a longer or less common one that you have not used before."
+    "passwordRejectedByDirectory": "The AHDA directory refused this password. Choose a longer or less common one that you have not used before.",
+    "nationalIdNotRegistered": "This National ID / Iqama number is not registered.",
+    "mobileNumberMismatch": "This mobile number is not the one registered for this National ID / Iqama number."
   },
   "problems": {
     "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
@@ -89,7 +90,16 @@
     "passwordInvalid": "The password does not meet the rules. See the highlighted field.",
     "roleInUse": "People have held this role, so it cannot be deleted. Deactivate it instead.",
     "roleInactive": "This role is deactivated and cannot be assigned.",
-    "roleSystem": "A built-in role cannot be deactivated or deleted."
+    "roleSystem": "A built-in role cannot be deactivated or deleted.",
+    "userHasNoRole": "This user holds no role. Assign a role first, then adjust its permissions.",
+    "departmentInUse": "This department still has users, sub-departments, open projects or role assignments. Move or end them first, then delete it.",
+    "recentSignInRequired": "For your security, add a passkey within 15 minutes of signing in. Sign out, sign in again, then add it.",
+    "passkeyRejected": "The device did not create a passkey for this site, or it is already added. Try again on this device.",
+    "mobileNumberMissing": "There is no mobile number on your profile. Ask your administrator to add it.",
+    "mobileVerificationFailed": "The code is wrong or has expired. Send a new code and try again.",
+    "nationalIdNotRegistered": "This National ID / Iqama number is not registered.",
+    "mobileNumberMismatch": "This mobile number is not the one registered for this National ID / Iqama number.",
+    "smsCodeRecentlySent": "A code was sent less than a minute ago. Wait a moment, then ask for a new one."
   },
   "userPicker": {
     "searchLabel": "Search by name, username or email",
@@ -132,7 +142,7 @@
         "usernameAsc": "Username (A to Z)",
         "usernameDesc": "Username (Z to A)"
       },
-      "noDelete": "A user is disabled from their page, never deleted: the audit trail names them."
+      "serviceAccount": "Service account: not edited here"
     },
     "create": {
       "title": "Create user"
@@ -144,6 +154,8 @@
       "userTypeHint": "The user type cannot be changed after the user is created.",
       "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
       "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
+      "nationalIdHintNone": "Optional. 10 digits: a National ID starts with 1, an Iqama number with 2. You may be asked for a verification code from your authenticator app.",
+      "nationalIdHintRecorded": "Recorded: {current}. Leave blank to keep it, or type a new number. Remove it from the user's page.",
       "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognize them.",
       "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in.",
       "accountSourceDirectory": "Directory account",
@@ -195,6 +207,55 @@
       "endsOn": "Last usable day",
       "endsOnHint": "Leave empty for no end date.",
       "noEndDate": "No end date"
+    },
+    "delete": {
+      "title": "Delete user",
+      "body": "Delete {name}? They can no longer sign in and leave every list. Their name stays on past records. This cannot be undone here.",
+      "confirm": "Delete user",
+      "short": "Delete"
+    },
+    "bulk": {
+      "disable": "Disable selected ({count})",
+      "disableTitle": "Disable the selected users?",
+      "disableBody": "These users can no longer sign in until they are activated again; their data and history stay: {names}.",
+      "delete": "Delete selected ({count})",
+      "deleteTitle": "Delete the selected users?",
+      "deleteBody": "These users can no longer sign in and leave every list; their names stay on past records. This cannot be undone here: {names}."
+    },
+    "permissions": {
+      "title": "Custom permissions",
+      "description": "The user starts from their roles. Here you can grant or remove single permissions for this user only. A change applies at once and is recorded in the audit trail.",
+      "adjust": "Adjust a permission",
+      "ownAccount": "These are your own permissions, so you cannot adjust them here. Another administrator can adjust them from your user page.",
+      "adjustFor": "Adjust a permission for {name}",
+      "saved": "The permission was changed.",
+      "none": "No permission has been adjusted for this user.",
+      "caption": "Permissions adjusted for {name}",
+      "permission": "Permission",
+      "fromRole": "From their roles",
+      "notFromRole": "Not given by a role",
+      "adjustment": "Adjustment",
+      "reason": "Reason",
+      "scope": "Scope of the grant",
+      "granted": "Granted ({scope})",
+      "removed": "Removed",
+      "changeOf": "Change {permission}",
+      "held": "All permissions this user holds ({count})",
+      "choiceGrant": "Grant this permission",
+      "choiceRemove": "Remove this permission",
+      "choiceRole": "Back to what the roles give"
+    },
+    "nationalId": {
+      "title": "National ID / Iqama",
+      "none": "Not recorded",
+      "add": "Add",
+      "change": "Change",
+      "show": "Show the full number",
+      "hide": "Hide",
+      "remove": "Remove the number",
+      "field": "National ID or Iqama number",
+      "hint": "10 digits: a National ID starts with 1, an Iqama number with 2. Nafath verification checks it.",
+      "dialogTitle": "National ID / Iqama of {name}"
     }
   },
   "userStatusDialog": {
@@ -344,11 +405,6 @@
     "open": "Open this version",
     "openToEdit": "Open to review or change"
   },
-  "organization": {
-    "title": "Organization structure",
-    "description": "AHDA's departments and the external entities that take part in projects.",
-    "manage": "Manage"
-  },
   "departments": {
     "title": "Departments",
     "description": "AHDA's departments. A department linked to a directory reference is assigned to staff automatically at sign-in.",
@@ -374,7 +430,11 @@
     "activateTitle": "Activate department",
     "deactivateTitle": "Deactivate department",
     "activateBody": "{name} will be available again for new assignments.",
-    "deactivateBody": "{name} will no longer be offered for new assignments. Existing records keep it."
+    "deactivateBody": "{name} will no longer be offered for new assignments. Existing records keep it.",
+    "delete": "Delete",
+    "deleteSelected": "Delete selected ({count})",
+    "deleteTitle": "Delete the selected departments?",
+    "deleteBody": "These departments leave every list and picker; records that name them keep the name. A department still in use is refused: {names}."
   },
   "entities": {
     "title": "External entities",
@@ -404,17 +464,20 @@
         "title": "Activate entity",
         "body": "Users of {name} will be able to sign in and act again.",
         "action": "Activate"
-      },
-      "retire": {
-        "title": "Retire entity",
-        "body": "{name} will be retired permanently. Its users will not be able to sign in, and it cannot be activated again.",
-        "action": "Retire"
       }
+    },
+    "delete": {
+      "title": "Delete entity",
+      "body": "Delete {name}? It is erased only if nothing uses it: no project, person, role assignment, update request or audit entry.",
+      "action": "Delete",
+      "done": "{name} was deleted.",
+      "blocked": "{name} was not deleted: it is used by {uses}. Move or remove those first."
     }
   },
   "signIn": {
     "title": "Sign in to the platform",
     "username": "Username",
+    "usernameOrEmail": "Username or email address",
     "password": "Password",
     "submit": "Sign in",
     "signingIn": "Signing in…",
@@ -448,11 +511,62 @@
       "instructions": "Users inside the Kingdom of Saudi Arabia sign in through the National Single Sign-On (Nafath)",
       "submit": "Sign in with Nafath"
     },
-    "biometric": {
+    "passwordless": {
       "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
       "nationalId": "National ID / Iqama number",
-      "nationalIdPlaceholder": "Enter your national ID or Iqama number",
-      "submit": "Sign in with biometrics"
+      "submit": "Sign in with biometrics",
+      "continue": "Continue",
+      "noDeviceUnlock": "This device or browser does not support Face ID or Touch ID. Use the code by SMS.",
+      "passkeyCancelled": "Face ID / Touch ID was cancelled, or is not set up on this device for this account.",
+      "refused": "We could not verify you. Check the National ID, or verify another way.",
+      "resend": "Send a new code",
+      "resendIn": "Send a new code in {seconds} s",
+      "changeNationalId": "Use another National ID",
+      "firstTime": {
+        "faceId": "First time with Face ID on this device: enter the mobile number registered on your account, and we will send it a verification code. After that, Face ID is all you need on this device.",
+        "touchId": "First time with Touch ID on this device: enter the mobile number registered on your account, and we will send it a verification code. After that, Touch ID is all you need on this device.",
+        "windowsHello": "First time with Windows Hello on this device: enter the mobile number registered on your account, and we will send it a verification code. After that, Windows Hello is all you need on this device.",
+        "fingerprint": "First time with your fingerprint on this device: enter the mobile number registered on your account, and we will send it a verification code. After that, your fingerprint is all you need on this device.",
+        "deviceUnlock": "First time with this device's unlock on this device: enter the mobile number registered on your account, and we will send it a verification code. After that, this device's unlock is all you need on this device."
+      },
+      "mobileOnly": "Enter the mobile number registered on your account, and we will send it a verification code.",
+      "mobileNumber": "Mobile number",
+      "sendCode": "Send verification code",
+      "codeSent": "A verification code was sent to {number}. Enter it below; if you asked for more than one, only the newest works.",
+      "verifyCode": "Verify and sign in",
+      "already": {
+        "faceId": "Face ID is already set up on this device",
+        "touchId": "Touch ID is already set up on this device",
+        "windowsHello": "Windows Hello is already set up on this device",
+        "fingerprint": "your fingerprint is already set up on this device",
+        "deviceUnlock": "this device's unlock is already set up on this device"
+      },
+      "noSms": "Codes by SMS are not available yet. Sign in with your password.",
+      "setup": {
+        "confirmed": {
+          "faceId": "It is you. Save Face ID on this device so that next time it is all you need.",
+          "touchId": "It is you. Save Touch ID on this device so that next time it is all you need.",
+          "windowsHello": "It is you. Save Windows Hello on this device so that next time it is all you need.",
+          "fingerprint": "It is you. Save your fingerprint on this device so that next time it is all you need.",
+          "deviceUnlock": "It is you. Save this device's unlock on this device so that next time it is all you need."
+        },
+        "save": {
+          "faceId": "Save Face ID",
+          "touchId": "Save Touch ID",
+          "windowsHello": "Save Windows Hello",
+          "fingerprint": "Save your fingerprint",
+          "deviceUnlock": "Save this device's unlock"
+        },
+        "notNow": "Not now",
+        "cancelled": "Nothing was saved: the prompt was closed. Try again, or choose Not now."
+      },
+      "notRecognised": {
+        "faceId": "Face ID on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "touchId": "Touch ID on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "windowsHello": "Windows Hello on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "fingerprint": "your fingerprint on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "deviceUnlock": "this device's unlock on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again."
+      }
     },
     "copyright": "© {year} Al Ahsa Development Authority. All rights reserved.",
     "wrongCredentials": "The username or password is wrong.",
@@ -463,7 +577,50 @@
     "newPassword": "New password",
     "confirmPassword": "Confirm the new password",
     "setNewPassword": "Set password and continue",
-    "backToSignIn": "Back to sign-in"
+    "backToSignIn": "Back to sign-in",
+    "deviceUnlock": {
+      "faceId": "Sign in with Face ID",
+      "touchId": "Sign in with Touch ID",
+      "windowsHello": "Sign in with Windows Hello",
+      "fingerprint": "Sign in with your fingerprint",
+      "deviceUnlock": "Sign in with this device's unlock"
+    },
+    "deviceUnlockGone": "The Face ID / Touch ID saved in this browser is no longer on an account. Sign in another way, then add it again under Sign-in methods in the account menu."
+  },
+  "signInMethods": {
+    "menu": "Sign-in methods",
+    "title": "Sign-in methods",
+    "description": "Ways to sign in without your password: Face ID or Touch ID on your devices, and a code by SMS to your verified mobile number.",
+    "passkeysTitle": "Face ID and Touch ID",
+    "passkeysDescription": "Add a passkey on each device you use. It stays on the device and is unlocked by your face, fingerprint or device PIN; the platform never sees them. Signing in with it needs no other code.",
+    "noPasskeys": "You have not added a passkey yet.",
+    "added": "Added {date}",
+    "lastUsed": "last used {date}",
+    "neverUsed": "not used yet",
+    "remove": "Remove",
+    "removeTitle": "Remove passkey",
+    "removeBody": "\"{name}\" will no longer sign you in. You can add it again later.",
+    "deviceName": "Device name",
+    "deviceNameHint": "So you can tell your passkeys apart.",
+    "add": {
+      "faceId": "Add Face ID for this device",
+      "touchId": "Add Touch ID for this device",
+      "windowsHello": "Add Windows Hello for this device",
+      "fingerprint": "Add fingerprint for this device",
+      "deviceUnlock": "Add a passkey for this device"
+    },
+    "passkeyCancelled": "No passkey was added: the device prompt was closed.",
+    "noDeviceUnlock": "This device or browser cannot create a passkey. Open this page on a phone or computer with Face ID, Touch ID or Windows Hello.",
+    "mobileTitle": "Code by SMS",
+    "mobileDescription": "Sign-in codes go only to a mobile number you have verified. An administrator records the number; you verify it here.",
+    "noMobileNumber": "There is no mobile number on your profile. Ask your administrator to add it.",
+    "notVerified": "not verified",
+    "verifiedOn": "verified {date}",
+    "sendVerificationCode": "Send verification code",
+    "verify": "Verify",
+    "smsUnavailable": "SMS is not available in this environment yet.",
+    "passkeyAlreadyOnDevice": "This device already has a passkey for your account (it is in the list above), so it cannot add another. To use it with the Face ID / Touch ID button on the sign-in page, remove it from the list, then add it again here.",
+    "passkeyRefusedForSite": "Your browser does not allow a passkey from this address. Open the platform at its usual address and try again."
   },
   "stepUp": {
     "title": "Confirm it is you",
@@ -532,8 +689,7 @@
     "codeInvalid": "Use capital letters, digits, hyphens and underscores.",
     "validate": "Validate",
     "publish": "Publish",
-    "retire": "Retire",
-    "lifecycleNote": "The value is saved as a draft. Someone else validates it, and a third person publishes it, before forms offer it.",
+    "lifecycleNote": "The value is saved as a draft, then validated and published before forms offer it. How many administrators that takes is set per environment: one where there is only one, otherwise the author, a reviewer and a publisher.",
     "states": {
       "DRAFT": "Draft",
       "VALIDATED": "Validated",
@@ -549,7 +705,14 @@
       "note": "Note to the importer",
       "added": "Mark added",
       "declined": "Decline"
-    }
+    },
+    "delete": "Delete",
+    "deleteConfirm": "Delete {code}? It is removed from the records that use it optionally and erased; this cannot be undone.",
+    "deleted": "{code} was deleted.",
+    "editTitle": "Edit value",
+    "sortOrderInvalid": "Enter a whole number from 0.",
+    "deletedAndCleared": "{code} was deleted and removed from {count} records that used it.",
+    "deleteBlocked": "{code} was not deleted: {uses} cannot be without it. Change those records first."
   },
   "passwordSelfService": {
     "changeMenu": "Change password",
@@ -581,8 +744,15 @@
   },
   "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username.",
   "projectStages": {
+    "showStages": "Show stages",
+    "inactive": "Inactive",
+    "remove": "Remove",
+    "removeOrder": "stage {order}",
+    "stages": "Stages",
+    "empty": "No stages yet. Use Add stage to add the first one.",
+    "publishTitle": "Publish the change",
     "title": "Project stages",
-    "description": "The stages of a project and their weights. Saving makes a new version with its effective date, so earlier figures keep the weights they were calculated with. A stage is deactivated, never deleted.",
+    "description": "The stages of a project and their weights. Saving makes a new version with its effective date, so earlier figures keep the weights they were calculated with. Removing a stage leaves it out of the next version; earlier versions keep it.",
     "order": "Order",
     "nameAr": "Arabic name",
     "nameEn": "English name",
@@ -603,6 +773,32 @@
     "needsAnother": "Saved. This environment needs another administrator to validate or publish it.",
     "history": "Versions",
     "version": "Version",
-    "state": "State"
+    "state": "State",
+    "deleteVersion": "Delete",
+    "versionNumber": "version {version}",
+    "deleteVersionTitle": "Delete version {version}",
+    "deleteVersionPublished": "The version stops applying from now on and is removed from the list. Until you save a new version no stage setup applies — the version before it does not come back. Figures already calculated keep their weights.",
+    "deleteVersionDraft": "The unpublished version is removed.",
+    "versionDeleted": "The version is deleted.",
+    "noVersions": "No versions yet.",
+    "namesLanguage": "Write each stage's Arabic name in Arabic and its English name in English."
+  },
+  "deletion": {
+    "use": "{count} {record}",
+    "records": {
+      "projects": "projects",
+      "closedProjects": "closed projects",
+      "entities": "external entities",
+      "people": "people",
+      "assignments": "role assignments",
+      "updateRequests": "update requests",
+      "contributions": "entity answers",
+      "risks": "risks",
+      "concerns": "issues and challenges",
+      "documents": "documents",
+      "milestones": "milestones",
+      "audit": "audit trail entries",
+      "settings": "published settings"
+    }
   }
 }
