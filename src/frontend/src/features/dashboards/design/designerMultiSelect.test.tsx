@@ -1,6 +1,6 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import { dashboardView, withDashboards } from '@/test/dashboardFixtures.ts';
@@ -157,6 +157,101 @@ describe('several visuals selected together', () => {
     expect([isSelected('First'), isSelected('Second'), isSelected('Third')]).toEqual([
       false,
       true,
+      false,
+    ]);
+  });
+});
+
+describe('box selection with the mouse', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** jsdom draws nothing: each visual is given a box on screen (x, y, width, height), the canvas from (0, 0). */
+  function layOut(boxes: Record<string, [number, number, number, number]>) {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: Element,
+    ) {
+      const [x, y, width, height] = boxes[this.getAttribute('aria-label') ?? ''] ?? [0, 0, 0, 0];
+      return {
+        x,
+        y,
+        width,
+        height,
+        left: x,
+        top: y,
+        right: x + width,
+        bottom: y + height,
+        toJSON: () => ({}),
+      };
+    });
+  }
+
+  const canvasElement = () => {
+    const element = document.querySelector<HTMLElement>('.designer__canvas');
+    if (element === null) {
+      throw new Error('The canvas is not there');
+    }
+    return element;
+  };
+
+  function drawBox(from: [number, number], to: [number, number], modifiers = {}) {
+    fireEvent.pointerDown(canvasElement(), {
+      button: 0,
+      clientX: from[0],
+      clientY: from[1],
+      ...modifiers,
+    });
+    fireEvent.pointerMove(window, {
+      clientX: (from[0] + to[0]) / 2,
+      clientY: (from[1] + to[1]) / 2,
+    });
+    fireEvent.pointerMove(window, { clientX: to[0], clientY: to[1] });
+    fireEvent.pointerUp(window, { clientX: to[0], clientY: to[1] });
+  }
+
+  test('a box dragged on empty canvas selects every visual it touches, and only those', async () => {
+    api();
+    await openDesigner();
+    layOut({ First: [0, 0, 100, 50], Second: [200, 0, 100, 50], Third: [0, 200, 100, 50] });
+
+    drawBox([150, 120], [90, 10]);
+
+    expect([isSelected('First'), isSelected('Second'), isSelected('Third')]).toEqual([
+      true,
+      false,
+      false,
+    ]);
+
+    drawBox([90, 10], [250, 40]);
+
+    expect([isSelected('First'), isSelected('Second'), isSelected('Third')]).toEqual([
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  test('with Shift the box adds to the selection; a press on empty canvas that does not move clears it', async () => {
+    api();
+    await openDesigner();
+    layOut({ First: [0, 0, 100, 50], Second: [200, 0, 100, 50], Third: [0, 200, 100, 50] });
+
+    drawBox([150, 120], [90, 10]);
+    drawBox([150, 120], [50, 220], { shiftKey: true });
+
+    expect([isSelected('First'), isSelected('Second'), isSelected('Third')]).toEqual([
+      true,
+      false,
+      true,
+    ]);
+
+    fireEvent.pointerDown(canvasElement(), { button: 0, clientX: 400, clientY: 400 });
+    fireEvent.pointerUp(window, { clientX: 400, clientY: 400 });
+
+    expect([isSelected('First'), isSelected('Second'), isSelected('Third')]).toEqual([
+      false,
+      false,
       false,
     ]);
   });

@@ -8206,6 +8206,19 @@ tr[data-flagged='true'] {
   opacity: 0.92;
 }
 
+/* Box selection (21 Nov 2026): the box dragged on empty canvas, translucent over the visuals it touches. */
+.designer__canvas {
+  position: relative;
+}
+
+.designer__marquee {
+  position: absolute;
+  z-index: 30;
+  border: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  pointer-events: none;
+}
+
 .designer__visual.is-selected {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;

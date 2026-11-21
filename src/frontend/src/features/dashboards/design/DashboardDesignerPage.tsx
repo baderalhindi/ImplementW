@@ -261,6 +261,13 @@ export function DashboardDesignerPage(): ReactElement {
     setSelectedKeys(key === null ? [] : [key]);
   }, []);
   const [draggingKeys, setDraggingKeys] = useState<readonly string[]>([]);
+  // The selection box drawn by dragging on empty canvas (21 Nov 2026), in pixels from the canvas's padding edge.
+  const [marquee, setMarquee] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const draggingKey = draggingKeys.at(0) ?? null;
   // The alignment guides of the visual being moved or sized (20 Nov 2026, Power BI's red lines).
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -614,6 +621,79 @@ export function DashboardDesignerPage(): ReactElement {
       drag.current = null;
       setDraggingKeys([]);
       setGuides([]);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
+  };
+
+  /**
+   * Box selection (21 Nov 2026, "select with the mouse, as on the desktop"): pressed on empty canvas and dragged, a box is drawn from the press
+   * to the pointer and every visual on the dashboard it touches is selected (with Ctrl, ⌘ or Shift, added to those selected already). A press
+   * that does not move clears the selection. Near the window's edge the page scrolls, and the box grows with it.
+   */
+  const startBoxSelection = (event: PointerEvent<HTMLDivElement>) => {
+    const element = canvas.current;
+    if (element === null || event.button !== 0 || event.target !== element) {
+      return;
+    }
+    event.preventDefault();
+    const adding = addsToSelection(event);
+    const kept = adding
+      ? selectedKeys.filter((key) => visuals.some((visual) => visual.key === key))
+      : [];
+    // The press, from the canvas's padding edge, so it stays put as the page scrolls.
+    const origin = () => {
+      const box = element.getBoundingClientRect();
+      return { x: box.left + element.clientLeft, y: box.top + element.clientTop };
+    };
+    const at = origin();
+    const startX = event.clientX - at.x;
+    const startY = event.clientY - at.y;
+    let drawn = false;
+    const drawTo = (clientX: number, clientY: number) => {
+      const now = origin();
+      const x = clientX - now.x;
+      const y = clientY - now.y;
+      if (!drawn && Math.hypot(x - startX, y - startY) < 4) {
+        return;
+      }
+      drawn = true;
+      const area = {
+        left: Math.min(startX, x),
+        top: Math.min(startY, y),
+        width: Math.abs(x - startX),
+        height: Math.abs(y - startY),
+      };
+      setMarquee(area);
+      // The visuals on the dashboard (not a container's children) whose drawn box the selection box touches.
+      const touched = [...element.querySelectorAll<HTMLElement>(':scope > [data-visual-key]')]
+        .filter((visualElement) => {
+          const box = visualElement.getBoundingClientRect();
+          return (
+            box.left - now.x < area.left + area.width &&
+            box.right - now.x > area.left &&
+            box.top - now.y < area.top + area.height &&
+            box.bottom - now.y > area.top
+          );
+        })
+        .flatMap((visualElement) => visualElement.dataset.visualKey ?? []);
+      setSelectedKeys([...kept, ...touched.filter((key) => !kept.includes(key))]);
+    };
+    const scroller = edgeScroller(drawTo);
+    const onMove = (move: globalThis.PointerEvent) => {
+      drawTo(move.clientX, move.clientY);
+      scroller.update(move.clientX, move.clientY);
+    };
+    const onEnd = () => {
+      if (!drawn && !adding) {
+        setSelectedKey(null);
+      }
+      scroller.stop();
+      setMarquee(null);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onEnd);
@@ -1050,6 +1130,7 @@ export function DashboardDesignerPage(): ReactElement {
         }`}
         style={gridPlace(container)}
         aria-label={container.title[language]}
+        data-visual-key={container.key}
         aria-current={container.key === selectedKey ? 'true' : undefined}
         data-visual="CONTAINER"
       >
@@ -1180,6 +1261,7 @@ export function DashboardDesignerPage(): ReactElement {
               ref={canvas}
               className="visual-grid designer__canvas"
               style={gridRows(Math.ceil(rowsOf(visuals)) + SPARE_ROWS)}
+              onPointerDown={startBoxSelection}
             >
               {visuals.map((visual) =>
                 isContainer(visual)
@@ -1195,6 +1277,18 @@ export function DashboardDesignerPage(): ReactElement {
                     aria-hidden="true"
                   />
                 ))}
+              {marquee !== null && (
+                <span
+                  className="designer__marquee"
+                  style={{
+                    left: marquee.left,
+                    top: marquee.top,
+                    width: marquee.width,
+                    height: marquee.height,
+                  }}
+                  aria-hidden="true"
+                />
+              )}
             </div>
           </div>
           <aside className="designer__pane">
