@@ -97,6 +97,8 @@ internal static class ModuleRegistry
         ("GlobalSearch", "DocumentManagement"),      // 54 query: the header search's documents, through their own list
         ("Progress", "ProjectTask"),                 // 55 query: the work breakdown WF-02 rolls up (ADR-009; review round 5)
         ("Progress", "Schedule"),                    // 56 query: the active baseline's plan and Schedule Health (ADR-009; review round 5)
+        ("Dashboards", "Progress"),                  // 57 query: reporting periods due this month on the caller's managed projects (round 8, point 13)
+        ("Dashboards", "Schedule"),                  // 58 query: overdue milestones on the caller's managed projects (round 8, point 13)
     };
 
     public static bool Allows(string referrer, string referenced) =>

@@ -374,6 +374,8 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 55 | Progress | ProjectTask | query | the live work breakdown WF-02 rolls up (`IProjectWorkBreakdownReader`; ADR-009) | Review round 5, 2026-11-07 |
 | 56 | Progress | Schedule | query | the active baseline's plan and Schedule Health (`IActiveBaselinePlanReader`, `IScheduleHealthReader`; ADR-009) | Review round 5, 2026-11-07 |
 | 52 | Dashboards | Suspension | read projection | open suspension and resumption requests per project (`ISuspensionCloseoutReader`): `SUSPENSION.OPEN_REQUESTS` | TASK-071 (added 2026-10-10, `reports.md` D-4) |
+| 57 | Dashboards | Progress | query | the reporting periods due by the end of the month and not yet published, per project the caller manages (`IReportingCycleReader`): the Home's "needs action this month" (`IManagedProjectAttentionService`) | Review round 8, point 13 (added 2026-11-21) |
+| 58 | Dashboards | Schedule | query | the milestones past their forecast date per project the caller manages (`IOverdueMilestoneCounter`), for the same read; its overdue tasks come over edge 48 (`IOverdueTaskCounter`) | Review round 8, point 13 (added 2026-11-21) |
 
 ### 8.3 Count
 
@@ -382,7 +384,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | Modules | **21** |
 | WF/FG domains mapped | **21** (WF-01–WF-15, FG-01–FG-06), 1:1 |
 | Universal edge rules | 4 |
-| Specific edges | 52 |
+| Specific edges | 59 (the test registry, `ModuleRegistry.SpecificEdges`) |
 | Edges whose mechanism is direct cross-module repository or table access | **0** |
 | Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19 beyond ProjectTask, 25, 26, 27) |
 | Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10, the declared split-authority contract, runs Milestone → Schedule only) |

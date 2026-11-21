@@ -1,13 +1,18 @@
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Features.Dashboards.Contracts;
 using PMPlatform.Application.Features.Progress.Contracts;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Application.Features.Schedule.Contracts;
 using PMPlatform.Domain.Progress;
 
-namespace PMPlatform.Application.Features.Project.FollowUp;
+namespace PMPlatform.Application.Features.Dashboards;
 
 /// <inheritdoc cref="IManagedProjectAttentionService"/>
+/// <remarks>
+/// A read model over other modules' contracts, so it lives with the Dashboards read models (ADR-003 §8.2 edges 47, 48, 57, 58) rather than in
+/// Project, which Progress and Schedule already depend on.
+/// </remarks>
 /// <remarks>
 /// The projects are those PROJECT_VIEW reaches for the caller that name them as manager, read in one query; each kind of item is then read for
 /// all of them at once, so a manager of many projects costs four queries, not one per project.

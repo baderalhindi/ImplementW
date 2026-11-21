@@ -1,4 +1,4 @@
-namespace PMPlatform.Application.Features.Project.Contracts;
+namespace PMPlatform.Application.Features.Dashboards.Contracts;
 
 /// <summary>
 /// What waits on one project the caller manages (review round 8, point 13): the earliest progress and financial reporting period due by the end

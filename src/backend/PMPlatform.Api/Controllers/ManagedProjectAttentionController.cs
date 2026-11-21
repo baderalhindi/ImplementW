@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Application.Common.Authorization;
-using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Application.Features.Dashboards.Contracts;
 
 namespace PMPlatform.Api.Controllers;
 
