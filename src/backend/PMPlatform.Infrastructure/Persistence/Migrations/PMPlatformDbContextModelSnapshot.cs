@@ -9580,7 +9580,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_portfolio_visual_text_box", "(visual_type = 'TEXT') = (text_box IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'SECTION', 'LINE', 'CONTAINER', 'TEXT', 'MAP')");
+                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'SECTION', 'LINE', 'CONTAINER', 'TEXT', 'MAP', 'HEATMAP')");
 
                             t.HasCheckConstraint("ck_portfolio_visual_widget_code", "COALESCE(section = 'DASHBOARD_WIDGET', FALSE) = (widget_code IS NOT NULL) AND (widget_code IS NULL OR widget_code ~ '^[A-Za-z0-9_.-]+$')");
                         });

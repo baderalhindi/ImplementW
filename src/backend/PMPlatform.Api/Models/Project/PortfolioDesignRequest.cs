@@ -67,7 +67,8 @@ public sealed record PortfolioVisualRequest(
     bool? ShowTotals = null,
     PortfolioTextBoxRequest? Text = null,
     PortfolioMapOptionsRequest? Map = null,
-    PortfolioRecordSource? Source = null)
+    PortfolioRecordSource? Source = null,
+    string? ColumnField = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -136,7 +137,7 @@ public sealed record PortfolioVisualRequest(
             Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes(), WidgetCode,
             Children?.Select(c => c!.ToInput()).ToList(), HiddenColumns?.Select(c => c!).ToList(),
             Columns?.Select(c => new PortfolioTableColumn(c!.Kind!.Value, c.Key!, c.Aggregation)).ToList(), ShowTotals, Text?.ToTextBox(),
-            Map?.ToOptions(), Source);
+            Map?.ToOptions(), Source, ColumnField);
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct

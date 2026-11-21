@@ -39466,6 +39466,22 @@
                 "$ref": "#/components/schemas/OnPlanStatus"
               }
             ]
+          },
+          "columnKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "columnLabel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
           }
         },
         "description": "One group of a visual: its key (an item, department or entity id, a status, stage or on-plan code; null for the projects with none, and for the one group of an\nungrouped visual), the stage's name when it is a stage, and one value per measure in the visual's order. A value is null when it cannot be calculated (an average\nwith nothing measured) or the caller may not see it (an amount). int PortfolioVisualGroup.Measured and int PortfolioVisualGroup.ValueEntered say how many projects the averages and the\nvalue cover."
@@ -39679,6 +39695,12 @@
               {
                 "$ref": "#/components/schemas/PortfolioRecordSource"
               }
+            ]
+          },
+          "columnField": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -39894,6 +39916,12 @@
                 "$ref": "#/components/schemas/PortfolioRecordSource"
               }
             ]
+          },
+          "columnField": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."
@@ -39911,7 +39939,8 @@
           "LINE",
           "CONTAINER",
           "TEXT",
-          "MAP"
+          "MAP",
+          "HEATMAP"
         ],
         "description": "How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer)."
       },

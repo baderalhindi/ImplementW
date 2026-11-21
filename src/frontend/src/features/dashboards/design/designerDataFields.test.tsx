@@ -830,6 +830,7 @@ describe('the gallery without the sections list (19 Nov 2026)', () => {
       'DONUT',
       'TABLE',
       'GAUGE',
+      'HEATMAP',
       'MAP',
       'TEXT',
       'CONTAINER',

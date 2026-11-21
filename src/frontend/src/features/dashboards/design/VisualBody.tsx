@@ -16,6 +16,7 @@ import { DonutWithLegend } from '../components/DonutWithLegend.tsx';
 import { drawnAxes, valueScale } from './axes.ts';
 import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx';
 import { ColumnTable } from './ColumnTable.tsx';
+import { HeatmapChart } from './HeatmapChart.tsx';
 import { LineChart } from './LineChart.tsx';
 import { MapVisual } from './MapVisual.tsx';
 import { RISK_COUNT_FIELD } from './riskFields.ts';
@@ -387,6 +388,26 @@ export function VisualBody({
           format={(value, index) => (series[index] ?? first).format(value)}
         />
       );
+    case 'HEATMAP': {
+      // Rows by the group field, columns by the columns field, a cell per pair (heatmap.ts).
+      const rowsField = groupField;
+      const columnsField = visual.columnField ?? null;
+      if (rowsField === null || columnsField === null) {
+        return <p className="state">{t('dashboards.noData')}</p>;
+      }
+      return (
+        <HeatmapChart
+          caption={visual.title[language]}
+          groups={groups}
+          rowsHeading={fieldName(rowsField, language)}
+          columnsHeading={fieldName(columnsField, language)}
+          rowText={(group) => fieldGroupText(rowsField, null, group, t, language, riskMatrix)}
+          columnText={(group) => fieldGroupText(columnsField, null, group, t, language, riskMatrix)}
+          format={first.format}
+          cellHint={(group) => projectsHint(group.projects)}
+        />
+      );
+    }
     case 'MAP':
       return (
         <MapVisual

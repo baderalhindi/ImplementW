@@ -132,14 +132,15 @@ public sealed record PortfolioMapOptions(bool ShowList = true, bool ShowCounts =
 /// <paramref name="Text"/> and draws nothing else (the 20 Nov 2026 text box); any other visual has none. A <see cref="PortfolioVisualType.Map"/> draws one
 /// figure per city or region and may set its <paramref name="Map"/> options (the 20 Nov 2026 map visual); any other visual has none. A card, chart, line or
 /// table counts the risks of its projects instead when its <paramref name="Source"/> is <see cref="PortfolioRecordSource.Risks"/> (the 20 Nov 2026 record
-/// sources); null is <see cref="PortfolioRecordSource.Projects"/>.
+/// sources); null is <see cref="PortfolioRecordSource.Projects"/>. A <see cref="PortfolioVisualType.Heatmap"/> is grouped by two fields, its rows by
+/// <paramref name="GroupField"/> and its columns by <paramref name="ColumnField"/> (the 22 Nov 2026 heatmap); any other visual has no column field.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
     IReadOnlyList<PortfolioVisualInput>? Children = null, IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null,
-    bool? ShowTotals = null, PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null);
+    bool? ShowTotals = null, PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null, string? ColumnField = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -160,8 +161,11 @@ public sealed record PortfolioDesignInput(IReadOnlyList<PortfolioVisualInput> Vi
 /// with nothing measured) or the caller may not see it (an amount). <see cref="Measured"/> and <see cref="ValueEntered"/> say how many projects the averages and the
 /// value cover.
 /// </summary>
+/// A heatmap's group is one cell: <see cref="Key"/> and <see cref="Label"/> name its row, <see cref="ColumnKey"/> and <see cref="ColumnLabel"/> its column;
+/// both are null on any other visual.
 public sealed record PortfolioVisualGroup(
-    string? Key, BilingualLabel? Label, int Projects, int Measured, int ValueEntered, IReadOnlyList<decimal?> Values, OnPlanStatus? OnPlan);
+    string? Key, BilingualLabel? Label, int Projects, int Measured, int ValueEntered, IReadOnlyList<decimal?> Values, OnPlanStatus? OnPlan,
+    string? ColumnKey = null, BilingualLabel? ColumnLabel = null);
 
 /// <summary>A visual with its figures; <see cref="Groups"/> is null when the caller holds no permission for its grouping, and the dashboard leaves it out.</summary>
 /// A section carries no groups of its own (an empty list): the dashboard draws it from the insights and the dashboard view, each under its own permission.
@@ -180,7 +184,7 @@ public sealed record PortfolioVisualResult(
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
     PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null,
     IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioTableResult? Table = null,
-    PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null);
+    PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null, string? ColumnField = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -509,10 +513,12 @@ internal sealed partial class PortfolioDesignService(
         : v.Columns is { Count: > 0 } && v.VisualType != PortfolioVisualType.Table ? new FieldIssue("columns", FieldIssue.NotAllowed)
         : v.Text is not null && v.VisualType != PortfolioVisualType.Text ? new FieldIssue("text", FieldIssue.NotAllowed)
         : v.Map is not null && v.VisualType != PortfolioVisualType.Map ? new FieldIssue("map", FieldIssue.NotAllowed)
+        : v.ColumnField is not null && v.VisualType != PortfolioVisualType.Heatmap ? new FieldIssue("columnField", FieldIssue.NotAllowed)
         : (v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
             : v.VisualType == PortfolioVisualType.Text ? TextBoxIssue(v.Text) ?? DrawsNothingIssue(v)
             : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections)
                 : v.VisualType == PortfolioVisualType.Map ? MapIssue(v, catalogue)
+                : v.VisualType == PortfolioVisualType.Heatmap ? HeatmapIssue(v, catalogue)
                 : DrawingIssue(v, catalogue))
                 ?? AxesIssue(v)
                 ?? WidgetCodeIssue(v, widgetCodes))
@@ -523,7 +529,7 @@ internal sealed partial class PortfolioDesignService(
     private static readonly HashSet<PortfolioVisualType> RiskVisualTypes =
     [
         PortfolioVisualType.Card, PortfolioVisualType.Bar, PortfolioVisualType.Column, PortfolioVisualType.Pie, PortfolioVisualType.Donut, PortfolioVisualType.Line,
-        PortfolioVisualType.Table,
+        PortfolioVisualType.Table, PortfolioVisualType.Heatmap,
     ];
 
     /// <summary>
@@ -707,6 +713,37 @@ internal sealed partial class PortfolioDesignService(
             : null)
         ?? FiltersIssue(v, catalogue);
 
+    /// <summary>
+    /// What is wrong with what a heatmap draws, or null (the 22 Nov 2026 heatmap): exactly one figure — one measure of projects, or one value of a project- or
+    /// risk-grain field — never both, and a visual of risks a value; rows by <see cref="PortfolioVisualInput.GroupField"/> and columns by
+    /// <see cref="PortfolioVisualInput.ColumnField"/>, two different CODE, BOOLEAN or ITEM fields the designer offers (a matrix has no date axis); no project
+    /// grouping; then its filters as any visual's.
+    /// </summary>
+    private static FieldIssue? HeatmapIssue(PortfolioVisualInput v, Dictionary<string, PortfolioFieldDescriptor> catalogue) =>
+        (v.Values is { Count: > 0 } values
+            ? (v.Measures?.Count ?? 0) != 0 || values.Count != 1 ? new FieldIssue("values", FieldIssue.NotAllowed)
+                : ValuesIssue(PortfolioVisualType.Heatmap, values, catalogue)
+                    ?? (catalogue[values[0].Field].Grain == PortfolioFieldGrain.Snapshot ? new FieldIssue("values", FieldIssue.NotAllowed) : null)
+            : IsRisks(v) ? new FieldIssue("values", FieldIssue.Required)
+            : v.Measures is not { Count: > 0 } ? new FieldIssue("measures", FieldIssue.Required)
+            : v.Measures.Count != 1 ? new FieldIssue("measures", FieldIssue.NotAllowed)
+            : MeasuresIssue(v))
+        ?? (v.GroupBy != PortfolioGroupBy.None ? new FieldIssue("groupBy", FieldIssue.NotAllowed)
+            : v.GroupDateUnit is not null ? new FieldIssue("groupDateUnit", FieldIssue.NotAllowed)
+            : v.GroupField is null ? new FieldIssue("groupField", FieldIssue.Required)
+            : !MatrixAxisFits(v.GroupField, catalogue) ? new FieldIssue("groupField", FieldIssue.NotAllowed)
+            : v.ColumnField is null ? new FieldIssue("columnField", FieldIssue.Required)
+            : !MatrixAxisFits(v.ColumnField, catalogue) ? new FieldIssue("columnField", FieldIssue.NotAllowed)
+            : v.ColumnField == v.GroupField ? new FieldIssue("columnField", FieldIssue.Duplicate)
+            : null)
+        ?? FiltersIssue(v, catalogue);
+
+    /// <summary>Whether a heatmap's rows or columns may be grouped by a field: a project- or risk-grain CODE, BOOLEAN or ITEM field the designer offers.</summary>
+    private static bool MatrixAxisFits(string key, Dictionary<string, PortfolioFieldDescriptor> catalogue) =>
+        catalogue.TryGetValue(key, out PortfolioFieldDescriptor? field)
+        && field.Grain != PortfolioFieldGrain.Snapshot
+        && field.Type is PortfolioFieldType.Code or PortfolioFieldType.Boolean or PortfolioFieldType.Item;
+
     /// <summary>Whether a map may draw a field value: a project-grain field the designer offers, counted, summed or its yeses counted, as its field allows.</summary>
     private static bool MapValueFits(PortfolioFieldValue? value, Dictionary<string, PortfolioFieldDescriptor> catalogue) =>
         value?.Field is not null
@@ -762,7 +799,8 @@ internal sealed partial class PortfolioDesignService(
             PortfolioVisualType.Pie or PortfolioVisualType.Donut =>
                 first.Aggregation is PortfolioFieldAggregation.Count or PortfolioFieldAggregation.Sum or PortfolioFieldAggregation.CountTrue,
             PortfolioVisualType.Card or PortfolioVisualType.Bar or PortfolioVisualType.Column or PortfolioVisualType.Table or PortfolioVisualType.Line
-                or PortfolioVisualType.Section or PortfolioVisualType.Container or PortfolioVisualType.Text or PortfolioVisualType.Map => true,
+                or PortfolioVisualType.Section or PortfolioVisualType.Container or PortfolioVisualType.Text or PortfolioVisualType.Map
+                or PortfolioVisualType.Heatmap => true,
             _ => true,
         };
         return fits ? null : new("values", FieldIssue.NotAllowed);
@@ -774,7 +812,8 @@ internal sealed partial class PortfolioDesignService(
     /// </summary>
     private static int MaxDrawn(PortfolioVisualType type, bool fieldValues) => type switch
     {
-        PortfolioVisualType.Bar or PortfolioVisualType.Pie or PortfolioVisualType.Donut or PortfolioVisualType.Gauge or PortfolioVisualType.Map => 1,
+        PortfolioVisualType.Bar or PortfolioVisualType.Pie or PortfolioVisualType.Donut or PortfolioVisualType.Gauge or PortfolioVisualType.Map
+            or PortfolioVisualType.Heatmap => 1,
         PortfolioVisualType.Card => 2,
         PortfolioVisualType.Column => 3,
         PortfolioVisualType.Table => fieldValues ? 6 : 3,
@@ -1011,7 +1050,8 @@ internal sealed partial class PortfolioDesignService(
             ? ColumnTableResultOf(v, tableOf?.Invoke(v))
         : new PortfolioVisualResult(
             v.Title, v.VisualType, v.Measures, v.GroupBy, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
-            groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes, Map: MapOptionsOf(v), Source: SourceOf(v));
+            groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes, Map: MapOptionsOf(v), Source: SourceOf(v),
+            ColumnField: v.ColumnField);
 
     /// <summary>A map's options as stored and echoed: as sent, or the defaults when it was sent none; null on any other visual.</summary>
     internal static PortfolioMapOptions? MapOptionsOf(PortfolioVisualInput v) =>
@@ -1039,6 +1079,7 @@ internal sealed partial class PortfolioDesignService(
         (v.Values ?? []).Select(value => value.Field)
             .Concat((v.Columns ?? []).Where(c => c.Kind == PortfolioTableColumnKind.Field).Select(c => c.Key))
             .Concat(v.GroupField is { } key ? [key] : [])
+            .Concat(v.ColumnField is { } column ? [column] : [])
             .Concat((v.Filters ?? []).Select(f => f.Field).Where(field => !Dimensions.ContainsKey(field)));
 
     /// <summary>
@@ -1082,6 +1123,11 @@ internal sealed partial class PortfolioDesignService(
                 key, label, figures.Projects, figures.Measured, figures.ValueEntered, [.. visual.Measures.Select(m => ValueOf(m, figures, projectRows))], figures.OnPlan);
         }
 
+        if (visual.VisualType == PortfolioVisualType.Heatmap && visual.GroupField is { } rowField && visual.ColumnField is { } columnField)
+        {
+            return Cells(members, FieldOf(rowField), rowField, FieldOf(columnField), columnField, records, GroupOf);
+        }
+
         if (visual.GroupField is { } field)
         {
             // A date's groups run in time order; any other field's from the largest group. The rows whose value is not revealed come last.
@@ -1104,6 +1150,35 @@ internal sealed partial class PortfolioDesignService(
             ? groups.OrderBy(g => g.Key is null).ThenBy(g => ScaleOrder(visual.GroupBy, g.First().Project, stages))
             : groups.OrderBy(g => g.Key is null).ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal);
         return [.. scaled.Select(g => GroupOf(g.Key, visual.GroupBy == PortfolioGroupBy.Stage && g.Key is { } code ? stages?.Find(code)?.Name : null, [.. g]))];
+    }
+
+    /// <summary>
+    /// A heatmap's cells (the 22 Nov 2026 heatmap): one per pair of a row value and a column value, every pair of the fields' values even when none of the
+    /// members has it (its figure is then that of no member: a count of 0, an average not available), so the matrix is whole. Each axis runs in its field's own
+    /// order when the field lists its values (a risk's probability and impact levels), else from the largest group; the members with no value come last.
+    /// </summary>
+    private static List<PortfolioVisualGroup> Cells(
+        List<FieldRow> members, PortfolioFieldDescriptor? row, string rowKey, PortfolioFieldDescriptor? column, string columnKey, PortfolioRecords? records,
+        Func<string?, BilingualLabel?, IReadOnlyList<FieldRow>, PortfolioVisualGroup> groupOf)
+    {
+        List<string?> rows = AxisOf(members, row, rowKey);
+        List<string?> columns = AxisOf(members, column, columnKey);
+        BilingualLabel? LabelOf(PortfolioFieldDescriptor? field, string? key) =>
+            key is { } named && field?.Type == PortfolioFieldType.Item ? records?.Labels.GetValueOrDefault(named) : null;
+        return [.. rows.SelectMany(r => columns.Select(c => groupOf(
+                r, LabelOf(row, r),
+                [.. members.Where(m => GroupKeyOf(row, null, m.Cell(rowKey)) == r && GroupKeyOf(column, null, m.Cell(columnKey)) == c)])
+            with { ColumnKey = c, ColumnLabel = LabelOf(column, c) }))];
+    }
+
+    /// <summary>One axis of a heatmap: the field's listed values in order, then any other value the members have from the largest group, and null last when a member has none.</summary>
+    private static List<string?> AxisOf(List<FieldRow> members, PortfolioFieldDescriptor? field, string key)
+    {
+        List<string?> keys = [.. members.Select(m => GroupKeyOf(field, null, m.Cell(key)))];
+        List<string?> listed = [.. (field?.Values ?? []).Select(v => GroupKeyOf(field, null, v))];
+        IEnumerable<string?> others = keys.Where(k => k is not null && !listed.Contains(k)).GroupBy(k => k)
+            .OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key);
+        return [.. listed.Distinct(), .. others, .. keys.Contains(null) ? [null] : Array.Empty<string?>()];
     }
 
     /// <summary>A visual's projects with their first cell of each field, narrowed by its filters on projects (a snapshot filter narrows snapshots, in <see cref="Groups"/>).</summary>
@@ -1260,7 +1335,8 @@ internal sealed partial class PortfolioDesignService(
             v.Section, data?.Values, data?.GroupField, data?.Filters, data?.GroupDateUnit,
             v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode, HiddenColumns: v.HiddenColumns,
             Columns: data?.Columns, ShowTotals: data?.ShowTotals,
-            Text: v.TextBox is { } text ? JsonSerializer.Deserialize<PortfolioTextBox>(text, StoredJson) : null, Map: data?.Map, Source: data?.Source);
+            Text: v.TextBox is { } text ? JsonSerializer.Deserialize<PortfolioTextBox>(text, StoredJson) : null, Map: data?.Map, Source: data?.Source,
+            ColumnField: data?.ColumnField);
     }
 
     /// <summary>A table section's hidden columns as saved and echoed: null when it hides none (an empty list or null), so a design reads back as it was drawn.</summary>
@@ -1271,12 +1347,13 @@ internal sealed partial class PortfolioDesignService(
     /// section, a container).
     /// </summary>
     internal static string? DataFieldsOf(PortfolioVisualInput v) =>
-        v.Values is { Count: > 0 } || v.GroupField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null || IsColumnTable(v)
+        v.Values is { Count: > 0 } || v.GroupField is not null || v.ColumnField is not null || v.Filters is { Count: > 0 } || v.GroupDateUnit is not null
+            || IsColumnTable(v)
             || v.VisualType == PortfolioVisualType.Map
             ? JsonSerializer.Serialize(
                 new PortfolioVisualDataFields(
                     v.Values, v.GroupField, v.Filters, v.GroupDateUnit, IsColumnTable(v) ? v.Columns : null, IsColumnTable(v) ? v.ShowTotals : null, MapOptionsOf(v),
-                    SourceOf(v)),
+                    SourceOf(v), v.VisualType == PortfolioVisualType.Heatmap ? v.ColumnField : null),
                 StoredJson)
             : null;
 
@@ -1357,7 +1434,8 @@ internal sealed partial class PortfolioDesignService(
     private sealed record PortfolioVisualDataFields(
         IReadOnlyList<PortfolioFieldValue>? Values, string? GroupField, IReadOnlyList<PortfolioFieldFilter>? Filters, PortfolioDateUnit? GroupDateUnit = null,
         IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioMapOptions? Map = null,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] PortfolioRecordSource? Source = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] PortfolioRecordSource? Source = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ColumnField = null);
 
     /// <summary>A row a visual of fields calculates over: a project, or one published snapshot of it; <see cref="Cell"/> reads a field key's revealed value.</summary>
     private sealed record FieldRow(PortfolioProjectRow Project, Func<string, string?> Cell);

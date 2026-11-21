@@ -58,6 +58,31 @@ const SHAPES: Record<VisualType, ReactElement> = {
     </>
   ),
   // A map pin over a folded map.
+  // A grid of cells, darker where the figure is larger.
+  HEATMAP: (
+    <>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+      <path d="M3.5 9.2h17M3.5 14.8h17M9.2 3.5v17M14.8 3.5v17" />
+      <rect
+        x="14.8"
+        y="3.5"
+        width="5.7"
+        height="5.7"
+        fill="currentColor"
+        opacity="0.85"
+        stroke="none"
+      />
+      <rect
+        x="9.2"
+        y="9.2"
+        width="5.6"
+        height="5.6"
+        fill="currentColor"
+        opacity="0.45"
+        stroke="none"
+      />
+    </>
+  ),
   MAP: (
     <>
       <path d="M3 8.5l5-2 8 3 5-2v12l-5 2-8-3-5 2z" />

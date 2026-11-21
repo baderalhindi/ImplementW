@@ -255,7 +255,7 @@ public sealed class PortfolioDesignRiskTests
 
     private static PortfolioRecordRow Risk(
         PortfolioProjectRow project, string status = "IDENTIFIED", string? rating = null, Guid? category = null, Guid? owner = null, bool overdue = false,
-        string identified = "2026-03-01")
+        string identified = "2026-03-01", string? probability = null, string? impact = null)
     {
         var id = Guid.NewGuid();
         return new PortfolioRecordRow(id, project.Project.Id, new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -269,6 +269,8 @@ public sealed class PortfolioDesignRiskTests
             [PortfolioRiskFields.Owner] = owner?.ToString(),
             [PortfolioRiskFields.ReviewOverdue] = overdue ? "true" : "false",
             [PortfolioRiskFields.IdentifiedDate] = identified,
+            [PortfolioRiskFields.Probability] = probability,
+            [PortfolioRiskFields.Impact] = impact,
         });
     }
 
@@ -689,4 +691,56 @@ public sealed class PortfolioDesignRiskTests
 
         public Task<RiskSaveOutcome> SaveAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
+
+    // The 22 Nov 2026 heatmap: a matrix of the number of risks by probability and impact.
+
+    private static PortfolioVisualInput Heatmap(string? rows = PortfolioRiskFields.Probability, string? columns = PortfolioRiskFields.Impact) =>
+        Risks(PortfolioVisualType.Heatmap, groupField: rows) with { ColumnField = columns };
+
+    [Fact]
+    public void AHeatmapCountsRisksByTwoFields() => Assert.Null(Issue(Heatmap()));
+
+    [Fact]
+    public void AHeatmapNeedsTwoDifferentCodeFieldsAndOneValue()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].columnField", FieldIssue.Required), Issue(Heatmap(columns: null)));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.Required), Issue(Heatmap(rows: null)));
+        Assert.Equal(new FieldIssue("visuals[0].columnField", FieldIssue.Duplicate), Issue(Heatmap(columns: PortfolioRiskFields.Probability)));
+        Assert.Equal(new FieldIssue("visuals[0].columnField", FieldIssue.NotAllowed), Issue(Heatmap(columns: PortfolioRiskFields.IdentifiedDate)));
+        Assert.Equal(new FieldIssue("visuals[0].groupField", FieldIssue.NotAllowed), Issue(Heatmap(rows: PortfolioRiskFields.Score)));
+        Assert.Equal(new FieldIssue("visuals[0].values", FieldIssue.NotAllowed), Issue(Heatmap() with { Values = [Count(), Count(PortfolioRiskFields.Score)] }));
+        Assert.Equal(new FieldIssue("visuals[0].groupBy", FieldIssue.NotAllowed), Issue(Heatmap() with { GroupBy = PortfolioGroupBy.Sector }));
+    }
+
+    [Fact]
+    public void OnlyAHeatmapNamesAColumnField() =>
+        Assert.Equal(new FieldIssue("visuals[0].columnField", FieldIssue.NotAllowed), Issue(Risks() with { ColumnField = PortfolioRiskFields.Impact }));
+
+    [Fact]
+    public void AHeatmapHasACellForEveryPairOfLevelsInTheirOrderTheUnassessedLast()
+    {
+        PortfolioProjectRow a = Project(Health);
+        PortfolioRecords records = Records(
+            null, Risk(a, probability: "3", impact: "3"), Risk(a, probability: "3", impact: "3"), Risk(a, probability: "1", impact: "2"), Risk(a));
+
+        IReadOnlyList<PortfolioVisualGroup> cells = Groups(Heatmap(), [a], records);
+
+        // Three probability levels, then the unassessed; each across the three impact levels, then the unassessed.
+        Assert.Equal(16, cells.Count);
+        Assert.Equal([("1", "1"), ("1", "2"), ("1", "3"), ("1", null)], cells.Take(4).Select(c => (c.Key, c.ColumnKey)));
+        Assert.Equal(2m, cells.Single(c => (c.Key, c.ColumnKey) == ("3", "3")).Values[0]);
+        Assert.Equal(1m, cells.Single(c => (c.Key, c.ColumnKey) == ("1", "2")).Values[0]);
+        Assert.Equal(0m, cells.Single(c => (c.Key, c.ColumnKey) == ("2", "2")).Values[0]);
+        Assert.Equal(1m, cells.Single(c => c is { Key: null, ColumnKey: null }).Values[0]);
+    }
+
+    [Fact]
+    public void AHeatmapsColumnFieldIsStoredAndReadBack()
+    {
+        string? stored = PortfolioDesignService.DataFieldsOf(Heatmap());
+
+        Assert.Contains("\"columnField\":\"RISK.IMPACT\"", stored, StringComparison.Ordinal);
+        Assert.DoesNotContain("columnField", PortfolioDesignService.DataFieldsOf(Risks()), StringComparison.Ordinal);
+    }
+
 }

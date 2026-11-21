@@ -384,7 +384,8 @@
       "LINE": "Line chart",
       "CONTAINER": "Container",
       "MAP": "Map",
-      "TEXT": "Text box"
+      "TEXT": "Text box",
+      "HEATMAP": "Heatmap"
     },
     "measure": {
       "PROJECTS": "Projects",
@@ -795,6 +796,11 @@
     "riskCount": "Number of risks",
     "riskGroupHint": "{count} risks",
     "riskFieldCoverage": "{count} of {total} risks have a value",
-    "filtersHintRisks": "Only risks with one of the ticked values (theirs, or their project's) are counted. Up to {count} filters."
+    "filtersHintRisks": "Only risks with one of the ticked values (theirs, or their project's) are counted. Up to {count} filters.",
+    "titleByTwo": "{measure} by {rows} and {columns}",
+    "heatmapRows": "Rows",
+    "heatmapColumns": "Columns",
+    "heatmapLow": "Fewer",
+    "heatmapHigh": "More"
   }
 }

@@ -384,7 +384,8 @@
       "LINE": "مخطط خطي",
       "CONTAINER": "حاوية",
       "MAP": "خريطة",
-      "TEXT": "مربع نص"
+      "TEXT": "مربع نص",
+      "HEATMAP": "خريطة حرارية"
     },
     "measure": {
       "PROJECTS": "عدد المشاريع",
@@ -795,6 +796,11 @@
     "riskCount": "عدد المخاطر",
     "riskGroupHint": "{count} من المخاطر",
     "riskFieldCoverage": "{count} من {total} من المخاطر لها قيمة",
-    "filtersHintRisks": "تُحتسب المخاطر التي تحمل إحدى القيم المحددة فقط (قيمها أو قيم مشروعها). حتى {count} عوامل تصفية."
+    "filtersHintRisks": "تُحتسب المخاطر التي تحمل إحدى القيم المحددة فقط (قيمها أو قيم مشروعها). حتى {count} عوامل تصفية.",
+    "titleByTwo": "{measure} حسب {rows} و{columns}",
+    "heatmapRows": "الصفوف",
+    "heatmapColumns": "الأعمدة",
+    "heatmapLow": "أقل",
+    "heatmapHigh": "أكثر"
   }
 }

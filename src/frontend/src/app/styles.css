@@ -10114,3 +10114,114 @@ tr[data-flagged='true'] {
     block-size: 1px;
   }
 }
+
+/*
+ * The heatmap visual (22 Nov 2026): a table of cells, each shaded from the neutral surface towards the danger colour as its figure grows (--heat,
+ * 0 to 1); the number is always written, so the colour only repeats it. The row field's name sits on the corner's lower edge, the column field's on its upper.
+ */
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.heatmap__scroll {
+  flex: 1;
+  min-block-size: 0;
+  overflow: auto;
+}
+
+.heatmap__table {
+  inline-size: 100%;
+  block-size: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.heatmap__corner {
+  position: relative;
+  inline-size: 7rem;
+  min-block-size: 2.5rem;
+  padding: 0;
+  font-weight: 400;
+}
+
+.heatmap__axis {
+  position: absolute;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.heatmap__axis--columns {
+  inset-block-start: 0;
+  inset-inline-end: var(--space-1);
+}
+
+.heatmap__axis--rows {
+  inset-block-end: 0;
+  inset-inline-start: var(--space-1);
+}
+
+.heatmap__column,
+.heatmap__row {
+  padding: var(--space-1);
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.heatmap__column {
+  text-align: center;
+}
+
+.heatmap__row {
+  text-align: start;
+}
+
+.heatmap__cell {
+  min-inline-size: 2.5rem;
+  padding: var(--space-2) var(--space-1);
+  border-radius: 6px;
+  background: color-mix(
+    in oklab,
+    var(--color-danger) calc(var(--heat, 0) * 85%),
+    var(--color-neutral-surface)
+  );
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.heatmap__cell--strong {
+  /* The page's own colour: white on the light theme's strong red, dark on the dark theme's light one. */
+  color: var(--color-background);
+}
+
+.heatmap__legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.heatmap__ramp {
+  inline-size: 6rem;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-neutral-surface),
+    color-mix(in oklab, var(--color-danger) 85%, var(--color-neutral-surface))
+  );
+}
+
+[dir='rtl'] .heatmap__ramp {
+  transform: scaleX(-1);
+}
