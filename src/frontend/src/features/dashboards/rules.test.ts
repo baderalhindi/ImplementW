@@ -182,8 +182,9 @@ describe('values in words and units', () => {
     expect(formatFigure(figure('PERCENT', '40.25'), t)).toBe('40.25%');
     expect(formatFigure(figure('DAYS', '-3'), t)).toBe(t('dashboards.units.days', { value: '-3' }));
     expect(formatFigure(figure('DAYS', '4'), t)).toBe(t('dashboards.units.days', { value: '+4' }));
+    // Review round 8, point 11: a widget's riyals read compact, the full figure on hover.
     expect(formatFigure(figure('SAR', '1234567.80'), t)).toBe(
-      t('dashboards.units.sar', { amount: '1,234,567.80' }),
+      t('common.money.million', { amount: '1.2' }),
     );
     expect(formatFigure(figure('SAR', null, true), t)).toBeNull();
     expect(formatFigure(figure('COUNT', null), t)).toBeNull();

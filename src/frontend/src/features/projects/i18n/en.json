@@ -177,7 +177,7 @@
       "audit": "Audit history (formal)"
     },
     "groups": {
-      "label": "Project sections",
+      "label": "Project section groups",
       "overview": "Overview",
       "planning": "Planning",
       "performance": "Performance",

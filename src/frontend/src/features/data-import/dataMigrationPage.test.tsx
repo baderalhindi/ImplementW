@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
+import { adminMenuTargets } from '@/test/shell.ts';
 import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
 import { mockApi } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
@@ -41,9 +42,8 @@ describe('Data migration access', () => {
     renderApp({ path: '/admin/data-migration', session: sessionFor(['R01']) });
     const user = userEvent.setup();
 
-    expect(
-      await screen.findByRole('link', { name: translate('en', 'dataImport.nav') }),
-    ).toBeTruthy();
+    // Review round 8, point 15: Administration's side menu, under its Data heading.
+    expect(await adminMenuTargets()).toContain('/admin/data-migration');
     await user.click(screen.getByRole('button', { name: /^Import\s+Users$/ }));
 
     expect(

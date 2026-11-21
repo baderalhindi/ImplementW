@@ -63,8 +63,9 @@ function openOverview(project: ProjectDetail): MockApi {
 }
 
 async function overallSection(): Promise<HTMLElement> {
+  // The Overview's card (15 Nov 2026: the Overview as a dashboard; its headline tile carries the short title).
   const heading = await screen.findByRole('heading', {
-    name: en('projects.overallProgress.title'),
+    name: en('projects.overallProgress.cardTitle'),
   });
   return heading.closest('section') ?? heading;
 }
@@ -94,8 +95,10 @@ describe('the overall progress figure (review round 8, point 02)', () => {
       ),
     );
     const section = await overallSection();
-    expect(within(section).getAllByText('55.0%').length).toBeGreaterThan(0);
-    expect(within(section).getByText('60.0%')).not.toBeNull();
+    // The figures are the Overview's headline tile (15 Nov 2026); the card below keeps their source, date and stages.
+    const tiles = screen.getByRole('list', { name: en('projects.overview.kpis') });
+    expect(within(tiles).getAllByText(/55\.0%/).length).toBeGreaterThan(0);
+    expect(within(tiles).getAllByText(/60\.0%/).length).toBeGreaterThan(0);
     expect(within(section).getByText(en('projects.overallProgress.source.STAGES'))).not.toBeNull();
     expect(
       within(section).getByText(en('projects.overallProgress.asOf', { date: '2026-11-10' })),

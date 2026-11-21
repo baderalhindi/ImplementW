@@ -360,8 +360,9 @@ describe('acceptance criterion 2: every widget states its semantic state and its
       const term = within(region).getByText(en(`dashboards.measures.${measure}`));
       return present(term.parentElement?.querySelector('dd'), `figure ${measure}`);
     };
+    // Review round 8, point 11: a widget's riyals read compact, the full figure on hover.
     expect(figure('APPROVED_BUDGET').textContent).toBe(
-      en('dashboards.units.sar', { amount: '1,250,000' }),
+      en('common.money.million', { amount: '1.3' }),
     );
     expect(
       figure('ACTUAL_EXPENDITURE_TO_DATE')

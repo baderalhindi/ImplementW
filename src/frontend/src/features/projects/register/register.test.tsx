@@ -200,8 +200,11 @@ describe('SCR-025 Project Register', () => {
     openRegister('/projects', sessionFor(['R02']), []);
 
     const hint = await screen.findByText(en('projects.register.emptyHint'));
-    // The empty list repeats neither button: they are in the page header only.
-    expect(within(hint.parentElement ?? document.body).queryAllByRole('link')).toHaveLength(0);
+    // Review round 8, point 09: the empty list offers one first step, creating the first project; Import stays in the header only.
+    const empty = within(hint.closest('.state') ?? hint.parentElement ?? document.body);
+    expect(empty.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+      '/projects/new',
+    ]);
     const header = within(
       screen.getByRole('heading', { level: 1 }).closest('.page-header') ?? document.body,
     );

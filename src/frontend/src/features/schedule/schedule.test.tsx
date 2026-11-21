@@ -955,8 +955,10 @@ describe('the Schedule tab sits in the workspace', () => {
         .getByRole('link', { name: en('schedule.nav.manager') })
         .getAttribute('href'),
     ).toBe(SCHEDULE_PATH);
+    // The workspace's Schedule tab, under the Planning heading (review round 8, point 04), is the current one.
+    const tabs = screen.getByRole('navigation', { name: en('projects.workspace.tabs.label') });
     expect(
-      screen
+      within(tabs)
         .getByRole('link', { name: en('projects.workspace.tabs.schedule') })
         .getAttribute('aria-current'),
     ).toBe('page');

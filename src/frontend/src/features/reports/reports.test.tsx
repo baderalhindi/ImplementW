@@ -12,7 +12,7 @@ import {
   openFilters,
   renderApp,
 } from '@/test/renderApp.tsx';
-import { findMainMenu, openMenuNames } from '@/test/shell.ts';
+import { findMainMenu, menuLink, openMenuNames, sectionTabs } from '@/test/shell.ts';
 import {
   ALLOWLIST,
   COLLEAGUE_ID,
@@ -621,10 +621,12 @@ describe('navigation, accessibility and language', () => {
   test('the builder and saved views are offered to ADR-019’s composers, the export history to whoever may export (the review, H3)', async () => {
     at('/reports', sessionFor(['R06']));
     await findMainMenu();
-    expect(openMenuNames('common.menu.dashboardsReports')).toEqual([
-      en('common.menu.dashboards'),
-      en('reports.nav.center'),
-    ]);
+    // R06 composes nothing and exports nothing: the menu holds Reports Center alone (Dashboards is the Portfolio menu's for whoever has it,
+    // 18 Nov 2026), so it leads there and draws no tabs.
+    await waitFor(() => {
+      expect(menuLink('common.menu.dashboardsReports')?.getAttribute('href')).toBe('/reports');
+    });
+    expect(sectionTabs()).toBeNull();
     cleanup();
 
     at('/reports', sessionFor(['R04']));

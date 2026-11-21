@@ -30,3 +30,10 @@ if (typeof Element.prototype.setPointerCapture !== 'function') {
     this.removeAttribute('data-pointer-capture');
   };
 }
+
+// jsdom lays nothing out, so it has no scrollIntoView; a save that finds fields to complete moves to the first one (review round 8, point 16).
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = function scrollIntoView() {
+    // Nothing to scroll in a page that is not laid out.
+  };
+}

@@ -32,7 +32,7 @@ import {
   openFilters,
   renderApp,
 } from '@/test/renderApp.tsx';
-import { findMainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
+import { adminMenuTargets, findMainMenu, menuLink } from '@/test/shell.ts';
 
 // TASK-076, the FG-05 Integration Administration UI over TASK-075's API. Acceptance criteria: (1) the Test Integration
 // Connection action never displays or logs the underlying secret value in the UI or the browser console; (2) ADM-047
@@ -470,7 +470,8 @@ describe('access', () => {
   test('the sidebar offers the integrations group to R01 only', async () => {
     open('/admin/integrations-overview');
     await findMainMenu();
-    expect(openMenuTargets('common.menu.administration')).toEqual(
+    // Review round 8, point 15: an admin page carries Administration's side menu; its Integrations heading holds these screens.
+    expect(await adminMenuTargets()).toEqual(
       expect.arrayContaining(integrationAdminNavigation.map((item) => item.to)),
     );
     cleanup();

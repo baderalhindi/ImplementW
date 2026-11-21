@@ -25,6 +25,7 @@ import {
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { offeredTabs } from '@/test/workspaceTabs.ts';
 
 // SCR-040 Project Workspace with its tabs (SCR-041, SCR-042, SCR-043, SCR-035) and MOD-001 to MOD-003. Acceptance
 // criterion 3: the tabs follow the signed-in person's RBAC scope.
@@ -55,13 +56,6 @@ function openWorkspace(
   return api;
 }
 
-function tabNames(): string[] {
-  const tabs = screen.getByRole('navigation', { name: en('projects.workspace.tabs.label') });
-  return within(tabs)
-    .getAllByRole('link')
-    .map((link) => link.textContent);
-}
-
 const TAB = {
   overview: en('projects.workspace.tabs.overview'),
   registration: en('projects.workspace.tabs.registration'),
@@ -84,21 +78,32 @@ const TAB = {
 
 const button = (key: string) => screen.queryByRole('button', { name: en(key) });
 
+/** The page's "More" actions (review round 8, point 06: edit and delete are there, delete last), by name; none when there is no "More". */
+async function moreActions(user: ReturnType<typeof userEvent.setup>): Promise<string[]> {
+  const more = screen.queryByRole('button', {
+    name: (name) => name.includes(en('common.actions.more')),
+  });
+  if (more === null) {
+    return [];
+  }
+  await user.click(more);
+  return screen.getAllByRole('menuitem').map((item) => item.textContent);
+}
+
 describe('SCR-040 workspace tabs follow the RBAC scope', () => {
   test('an AHDA user whose department owns the project sees every tab', async () => {
+    const user = userEvent.setup();
     openWorkspace(projectDetail(), reviewerSession());
     const heading = await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
     // The project title is read in the language it was entered in (WCAG 3.1.2, TASK-087 A11Y-F-002).
     expect(heading.getAttribute('lang')).toBe('en');
 
-    expect(tabNames()).toEqual([
+    expect(await offeredTabs(user)).toEqual([
       TAB.overview,
-      TAB.registration,
-      TAB.location,
-      TAB.progress,
       TAB.schedule,
       TAB.tasks,
       TAB.milestones,
+      TAB.progress,
       TAB.financials,
       TAB.kpis,
       TAB.risks,
@@ -107,23 +112,24 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.suspension,
       TAB.closeout,
       TAB.externalRequests,
-      TAB.reviews,
+      TAB.registration,
+      TAB.location,
       TAB.documents,
+      TAB.reviews,
     ]);
   });
 
   test('the entity Project Manager sees every tab of the project it manages but review history (ADR-013; TASK-035 F-8)', async () => {
+    const user = userEvent.setup();
     openWorkspace(projectDetail(), entityManagerSession());
     await screen.findByRole('heading', { level: 1 });
 
-    expect(tabNames()).toEqual([
+    expect(await offeredTabs(user)).toEqual([
       TAB.overview,
-      TAB.registration,
-      TAB.location,
-      TAB.progress,
       TAB.schedule,
       TAB.tasks,
       TAB.milestones,
+      TAB.progress,
       TAB.financials,
       TAB.kpis,
       TAB.risks,
@@ -132,33 +138,37 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.suspension,
       TAB.closeout,
       TAB.externalRequests,
+      TAB.registration,
+      TAB.location,
       TAB.documents,
     ]);
   });
 
   test('an entity contributor sees the tabs its R08 permissions read, and no schedule, governance request or document (the review, M-12)', async () => {
+    const user = userEvent.setup();
     openWorkspace(projectDetail(), entitySession());
     await screen.findByRole('heading', { level: 1 });
 
-    expect(tabNames()).toEqual([
+    expect(await offeredTabs(user)).toEqual([
       TAB.overview,
-      TAB.registration,
-      TAB.location,
-      TAB.progress,
       TAB.tasks,
+      TAB.progress,
       TAB.financials,
       TAB.kpis,
       TAB.risks,
       TAB.issuesChallenges,
       TAB.externalRequests,
+      TAB.registration,
+      TAB.location,
     ]);
   });
 
   test('an AHDA user whose assignments do not reach the project sees only what the API showed them', async () => {
+    const user = userEvent.setup();
     openWorkspace(projectDetail(), reviewerSession(OTHER_DEPARTMENT_ID));
     await screen.findByRole('heading', { level: 1 });
 
-    expect(tabNames()).toEqual([TAB.overview, TAB.registration, TAB.location]);
+    expect(await offeredTabs(user)).toEqual([TAB.overview, TAB.registration, TAB.location]);
     // Nothing to change either: no assignment reaches it.
     expect(button('projects.actions.submit')).toBeNull();
     expect(screen.queryByRole('link', { name: en('projects.actions.edit') })).toBeNull();
@@ -250,20 +260,24 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
 
 describe('SCR-040 actions follow the state and the person', () => {
   test('the creator of a draft may edit, submit and delete it; there is no status to change', async () => {
+    const user = userEvent.setup();
     openWorkspace(projectDetail(), entitySession());
     await screen.findByRole('heading', { level: 1 });
 
-    expect(screen.getByRole('link', { name: en('projects.actions.edit') })).toBeTruthy();
     expect(button('projects.actions.submit')).not.toBeNull();
-    expect(button('projects.actions.delete')).not.toBeNull();
     expect(button('projects.actions.changeStatus')).toBeNull();
+    expect(await moreActions(user)).toEqual([
+      en('projects.actions.edit'),
+      en('projects.actions.delete'),
+    ]);
   });
 
   test('someone else’s draft cannot be deleted by them', async () => {
+    const user = userEvent.setup();
     openWorkspace(projectDetail({ createdBy: REVIEWER_ID }), entitySession());
     await screen.findByRole('heading', { level: 1 });
 
-    expect(button('projects.actions.delete')).toBeNull();
+    expect(await moreActions(user)).not.toContain(en('projects.actions.delete'));
   });
 
   test('an external user may only withdraw a submission; AHDA may also start the review', async () => {
@@ -322,11 +336,15 @@ describe('MOD-001 Delete Draft', () => {
       .on('DELETE', /^\/projects\//, { status: 204 })
       .on('GET', /^\/projects$/, { body: page([]) });
 
-    await user.click(await screen.findByRole('button', { name: en('projects.actions.delete') }));
+    await screen.findByRole('heading', { level: 1 });
+    await moreActions(user);
+    await user.click(screen.getByRole('menuitem', { name: en('projects.actions.delete') }));
     const dialog = await screen.findByRole('dialog');
     expect(
       within(dialog).getByText(en('projects.delete.body', { title: 'Coastal road upgrade' })),
     ).toBeTruthy();
+    // The client's delete (13 Nov 2026) is confirmed by typing the project's number; a draft has none, so its title.
+    await user.type(within(dialog).getByRole('textbox'), 'Coastal road upgrade');
     await user.click(within(dialog).getByRole('button', { name: en('projects.delete.confirm') }));
 
     expect(await screen.findByText(en('projects.done.deleted'))).toBeTruthy();
@@ -341,8 +359,12 @@ describe('MOD-001 Delete Draft', () => {
     const api = openWorkspace(projectDetail(), entitySession());
     api.on('DELETE', /^\/projects\//, problem(409, 'PROJECT_IN_USE'));
 
-    await user.click(await screen.findByRole('button', { name: en('projects.actions.delete') }));
+    await screen.findByRole('heading', { level: 1 });
+    await moreActions(user);
+    await user.click(screen.getByRole('menuitem', { name: en('projects.actions.delete') }));
     const dialog = await screen.findByRole('dialog');
+    // The client's delete (13 Nov 2026) is confirmed by typing the project's number; a draft has none, so its title.
+    await user.type(within(dialog).getByRole('textbox'), 'Coastal road upgrade');
     await user.click(within(dialog).getByRole('button', { name: en('projects.delete.confirm') }));
 
     expect(await screen.findByText(en('projects.problems.inUse'))).toBeTruthy();
