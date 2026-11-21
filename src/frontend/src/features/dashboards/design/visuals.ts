@@ -783,18 +783,21 @@ export function packed<T extends Box>(visuals: T[]): T[] {
 }
 
 /**
- * Free placement (the user, 19 Nov 2026: "no worries if there is white space, I want free dragging"): the visual at `index` stays where it
- * was put, and every visual it covers moves straight down to just below it, then whatever those cover in turn; nothing else moves and empty
+ * Free placement (the user, 19 Nov 2026: "no worries if there is white space, I want free dragging"): the visual at `index` (or each of
+ * several) stays where it was put, and every visual it covers moves straight down to just below it, then whatever those cover in turn; nothing else moves and empty
  * room stays. The result is in reading order (top to bottom, then from the reading start), the order a screen reader and the API take.
  */
-export function settled<T extends Box>(visuals: T[], index: number): T[] {
-  const anchor = visuals[index];
-  if (anchor === undefined) {
+export function settled<T extends Box>(visuals: T[], index: number | readonly number[]): T[] {
+  const anchors = typeof index === 'number' ? [index] : index;
+  const fixed = anchors.flatMap((at) => {
+    const anchor = visuals[at];
+    return anchor === undefined ? [] : [anchor];
+  });
+  if (fixed.length === 0) {
     return visuals;
   }
-  const fixed: T[] = [anchor];
   const others = visuals
-    .filter((_, at) => at !== index)
+    .filter((_, at) => !anchors.includes(at))
     .sort((a, b) => a.layoutRow - b.layoutRow || a.layoutColumn - b.layoutColumn);
   for (const visual of others) {
     let box = visual;
@@ -808,6 +811,44 @@ export function settled<T extends Box>(visuals: T[], index: number): T[] {
     fixed.push(box);
   }
   return inReadingOrder(fixed);
+}
+
+/**
+ * Several visuals moved together (21 Nov 2026: "select more than one visual and drag them up or down at once"): each of those at `indexes`
+ * moves by the same `columns` and `rows`, kept as a group within the grid (the offset stops where the first of them would leave it), so they
+ * keep their places to each other; what they land on moves down below them (`settled`).
+ */
+export function shiftedTogether<T extends Box>(
+  visuals: T[],
+  indexes: readonly number[],
+  columns: number,
+  rows: number,
+): T[] {
+  const group = visuals.filter((_, at) => indexes.includes(at));
+  if (group.length === 0) {
+    return visuals;
+  }
+  const leftmost = Math.min(...group.map((visual) => visual.layoutColumn));
+  const room = Math.min(
+    ...group.map((visual) => COLUMNS - visual.layoutColumn - visual.layoutWidth),
+  );
+  const top = Math.min(...group.map((visual) => visual.layoutRow));
+  const by = {
+    column: tenth(Math.min(room, Math.max(-leftmost, columns))),
+    row: tenth(Math.max(-top, rows)),
+  };
+  return settled(
+    visuals.map((visual, at) =>
+      indexes.includes(at)
+        ? {
+            ...visual,
+            layoutColumn: tenth(visual.layoutColumn + by.column),
+            layoutRow: tenth(visual.layoutRow + by.row),
+          }
+        : visual,
+    ),
+    indexes,
+  );
 }
 
 /** The visuals top to bottom, then from the reading start. */

@@ -17,6 +17,7 @@ import {
   retitled,
   rowsOf,
   settled,
+  shiftedTogether,
   tenth,
   withoutEmptyRows,
   withType,
@@ -268,6 +269,44 @@ describe('free placement (19 Nov 2026)', () => {
       [0, 0],
       [6, 2],
     ]);
+  });
+});
+
+describe('several visuals moved together (21 Nov 2026)', () => {
+  const at = (title: string, column: number, row: number, width = 4, height = 2) => ({
+    ...card,
+    title: { ar: title, en: title },
+    layoutColumn: column,
+    layoutRow: row,
+    layoutWidth: width,
+    layoutHeight: height,
+  });
+  const places = (visuals: Visual[]) =>
+    Object.fromEntries(visuals.map((v) => [v.title.en, [v.layoutColumn, v.layoutRow]]));
+
+  test('the selected visuals move by the same offset and keep their places to each other; the others stay', () => {
+    const design = [at('A', 0, 0), at('B', 6, 0), at('C', 0, 8)];
+    expect(places(shiftedTogether(design, [0, 1], 0, 3))).toEqual({
+      A: [0, 3],
+      B: [6, 3],
+      C: [0, 8],
+    });
+  });
+
+  test('what the group lands on moves down below it', () => {
+    // A and B (rows 0–2) are moved down onto C (row 3): C goes under them.
+    const design = [at('A', 0, 0), at('B', 6, 0), at('C', 0, 3)];
+    expect(places(shiftedTogether(design, [0, 1], 0, 2))).toEqual({
+      A: [0, 2],
+      B: [6, 2],
+      C: [0, 4],
+    });
+  });
+
+  test('the group stops at the grid edges as one: none of them leaves the grid, and they stay apart', () => {
+    const design = [at('A', 1, 1), at('B', 6, 2, 4)];
+    expect(places(shiftedTogether(design, [0, 1], 9, -5))).toEqual({ A: [3, 0], B: [8, 1] });
+    expect(places(shiftedTogether(design, [0, 1], -9, 0))).toEqual({ A: [0, 1], B: [5, 2] });
   });
 });
 

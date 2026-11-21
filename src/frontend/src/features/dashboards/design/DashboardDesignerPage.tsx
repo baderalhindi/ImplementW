@@ -89,6 +89,7 @@ import {
   packed,
   rowsOf,
   settled,
+  shiftedTogether,
   tenth,
   VISUAL_TYPES,
 } from './visuals.ts';
@@ -127,7 +128,15 @@ interface Drag {
   /** Where on the visual (in columns and rows from its top-start corner) it was grabbed, so that point stays under the pointer. */
   grabColumn: number;
   grabRow: number;
+  /** The selected visuals that move with it (top-level ones, itself included); empty when it moves alone. */
+  group: readonly string[];
+  /** Whether the pointer has moved the visual yet: a press on a selected group that never moves selects that visual alone. */
+  moved: boolean;
 }
+
+/** Ctrl (Windows), ⌘ (Mac) or Shift held: a press on a visual's bar adds it to the selection, or takes it out. */
+const addsToSelection = (event: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }) =>
+  event.ctrlKey || event.metaKey || event.shiftKey;
 
 let nextKey = 0;
 const keyed = ({ children, ...visual }: Visual): Draft => ({
@@ -244,8 +253,15 @@ export function DashboardDesignerPage(): ReactElement {
   const [previewError, setPreviewError] = useState<string | null>(null);
   /** The field issues of the last refused preview or save, with the design sent, so a text box's settings can say what was refused. */
   const [refusal, setRefusal] = useState<{ sent: Draft[]; issues: FieldIssue[] } | null>(null);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  // The selected visuals (21 Nov 2026: several may be selected and dragged together); the last one chosen is the one the Properties pane edits.
+  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
+  const selectedKey = selectedKeys.at(-1) ?? null;
+  /** Selects the visual `key` alone, or nothing. */
+  const setSelectedKey = useCallback((key: string | null) => {
+    setSelectedKeys(key === null ? [] : [key]);
+  }, []);
+  const [draggingKeys, setDraggingKeys] = useState<readonly string[]>([]);
+  const draggingKey = draggingKeys.at(0) ?? null;
   // The alignment guides of the visual being moved or sized (20 Nov 2026, Power BI's red lines).
   const [guides, setGuides] = useState<Guide[]>([]);
   const [busy, setBusy] = useState(false);
@@ -314,7 +330,7 @@ export function DashboardDesignerPage(): ReactElement {
         setLoadError(error);
       },
     );
-  }, [adopt]);
+  }, [adopt, setSelectedKey]);
 
   useEffect(load, [load]);
 
@@ -378,6 +394,22 @@ export function DashboardDesignerPage(): ReactElement {
     path.child === null ? undefined : all[path.index];
   const removing =
     removingKey === null ? undefined : visuals.find((visual) => visual.key === removingKey);
+
+  /**
+   * Adds the visual `key` to the selection, or takes it out (Ctrl, ⌘ or Shift on its bar). Only visuals on the dashboard are selected together;
+   * a container's child is selected alone, and a container selected moves with its visuals.
+   */
+  const toggleSelected = (key: string) => {
+    const onTop = (member: string) => visuals.some((visual) => visual.key === member);
+    if (!onTop(key)) {
+      setSelectedKey(key);
+      return;
+    }
+    setSelectedKeys((keys) => {
+      const tops = keys.filter(onTop);
+      return tops.includes(key) ? tops.filter((member) => member !== key) : [...tops, key];
+    });
+  };
 
   /** Applies a change to the latest design (pointer events come faster than renders). */
   const relayout = (change: (all: Draft[]) => Draft[]) => {
@@ -531,6 +563,15 @@ export function DashboardDesignerPage(): ReactElement {
       return;
     }
     event.preventDefault();
+    if (gesture === 'move' && addsToSelection(event)) {
+      toggleSelected(start.key);
+      return;
+    }
+    // A selected visual pressed while others are selected too takes them along; any other press selects it alone.
+    const group =
+      gesture === 'move' && selectedKeys.length > 1 && selectedKeys.includes(start.key)
+        ? selectedKeys.filter((key) => visuals.some((visual) => visual.key === key))
+        : [];
     const size = step();
     const grabbed = cellAt(event.clientX, event.clientY, size);
     // A child is drawn at its container's place plus its own.
@@ -549,9 +590,13 @@ export function DashboardDesignerPage(): ReactElement {
       before: visuals,
       grabColumn: grabbed.column - drawn.column,
       grabRow: grabbed.row - drawn.row,
+      group,
+      moved: false,
     };
-    setSelectedKey(start.key);
-    setDraggingKey(start.key);
+    if (group.length === 0) {
+      setSelectedKey(start.key);
+    }
+    setDraggingKeys(group.length === 0 ? [start.key] : group);
     // Near the window's top or bottom edge the page scrolls, and the visual follows, so it can reach any place on a long dashboard.
     const scroller = edgeScroller(dragTo);
     const onMove = (move: globalThis.PointerEvent) => {
@@ -559,12 +604,15 @@ export function DashboardDesignerPage(): ReactElement {
       scroller.update(move.clientX, move.clientY);
     };
     const onEnd = () => {
+      if (drag.current !== null && drag.current.group.length > 0 && !drag.current.moved) {
+        setSelectedKey(start.key);
+      }
       scroller.stop();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onEnd);
       window.removeEventListener('pointercancel', onEnd);
       drag.current = null;
-      setDraggingKey(null);
+      setDraggingKeys([]);
       setGuides([]);
     };
     window.addEventListener('pointermove', onMove);
@@ -627,8 +675,10 @@ export function DashboardDesignerPage(): ReactElement {
           // The visual's top-start corner follows the pointer.
           grabColumn: 0,
           grabRow: 0,
+          group: [],
+          moved: true,
         };
-        setDraggingKey(draft.key);
+        setDraggingKeys([draft.key]);
         setNotice(null);
       }
       follow(move.clientX, move.clientY);
@@ -665,7 +715,7 @@ export function DashboardDesignerPage(): ReactElement {
       window.removeEventListener('pointerup', onEnd);
       window.removeEventListener('pointercancel', onEnd);
       drag.current = null;
-      setDraggingKey(null);
+      setDraggingKeys([]);
       setGuides([]);
       setGhost(null);
     }
@@ -728,6 +778,33 @@ export function DashboardDesignerPage(): ReactElement {
       column: tenth(pointer.column - active.grabColumn),
       row: tenth(pointer.row - active.grabRow),
     };
+    if (active.group.length > 0) {
+      // A selected group moves by the offset the grabbed visual takes, pulled onto the other visuals' lines; it stays on the dashboard.
+      const outside = active.before.filter((visual) => !active.group.includes(visual.key));
+      const pulled = snappedPlace(
+        { ...active.start, layoutColumn: place.column, layoutRow: place.row },
+        outside,
+      );
+      const columns = pulled.column - active.start.layoutColumn;
+      const rows = pulled.row - active.start.layoutRow;
+      if (!active.moved && columns === 0 && rows === 0) {
+        return;
+      }
+      active.moved = true;
+      const result = shiftedTogether(
+        active.before,
+        active.before.flatMap((visual, index) =>
+          active.group.includes(visual.key) ? [index] : [],
+        ),
+        columns,
+        rows,
+      );
+      const placed = result.find((visual) => visual.key === active.key);
+      setGuides(placed === undefined ? [] : guidesFor(placed, outside));
+      setPlaceProblem(null);
+      setVisuals(result);
+      return;
+    }
     // On the dashboard its edges and centre near another visual's are pulled onto them, and the lines that then align show.
     const others = active.before.filter((visual) => visual.key !== active.key);
     const pulled = snappedPlace(
@@ -771,6 +848,19 @@ export function DashboardDesignerPage(): ReactElement {
       return;
     }
     event.preventDefault();
+    // A selected group moves together on any of its move handles.
+    const group = selectedKeys.filter((member) => visuals.some((top) => top.key === member));
+    if (gesture === 'move' && group.length > 1 && group.includes(visual.key)) {
+      relayout((all) =>
+        shiftedTogether(
+          all,
+          all.flatMap((top, index) => (group.includes(top.key) ? [index] : [])),
+          sideways,
+          down,
+        ),
+      );
+      return;
+    }
     setSelectedKey(visual.key);
     relayout((all) =>
       withChanged(all, key, (latest) =>
@@ -821,8 +911,8 @@ export function DashboardDesignerPage(): ReactElement {
   };
 
   const classOf = (base: string, visual: Draft) =>
-    `${base}${visual.key === selectedKey ? ' is-selected' : ''}${
-      visual.key === draggingKey ? ' is-dragging' : ''
+    `${base}${selectedKeys.includes(visual.key) ? ' is-selected' : ''}${
+      draggingKeys.includes(visual.key) ? ' is-dragging' : ''
     }`;
 
   /** A visual's bar: the whole bar drags it, as its handle does; the keyboard moves it on the handle. Its pencil opens its settings. */
@@ -841,8 +931,15 @@ export function DashboardDesignerPage(): ReactElement {
           className="designer__handle designer__handle--move"
           aria-label={t('dashboards.designer.moveHandle', { title })}
           title={t('dashboards.designer.moveHandle', { title })}
-          onClick={() => {
-            setSelectedKey(visual.key);
+          onClick={(event) => {
+            // A press has selected already (startDrag); Enter or Space on the handle selects here, with Ctrl, ⌘ or Shift adding to the selection.
+            if (event.detail === 0) {
+              if (addsToSelection(event)) {
+                toggleSelected(visual.key);
+              } else {
+                setSelectedKey(visual.key);
+              }
+            }
           }}
           onKeyDown={(event) => {
             keyOnHandle(event, visual.key, 'move');
@@ -1195,7 +1292,11 @@ export function DashboardDesignerPage(): ReactElement {
               <h2 id="designer-settings" className="designer__heading">
                 {t('dashboards.designer.properties')}
               </h2>
-              {current === undefined ? (
+              {selectedKeys.length > 1 ? (
+                <p className="designer__hint" role="status">
+                  {t('dashboards.designer.severalSelected', { count: selectedKeys.length })}
+                </p>
+              ) : current === undefined ? (
                 <p className="designer__hint">{t('dashboards.designer.selectHint')}</p>
               ) : (
                 <VisualSettings
