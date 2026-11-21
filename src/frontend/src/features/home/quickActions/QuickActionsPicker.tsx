@@ -7,12 +7,11 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 
 import {
   MAX_QUICK_ACTIONS,
-  QUICK_ACTION_GROUPS,
   type QuickAction,
   type QuickActionContext,
   availableQuickActions,
   defaultQuickActionCodes,
-  quickActionLabel,
+  quickActionGroups,
 } from './quickActions.ts';
 
 interface QuickActionsPickerProps {
@@ -28,7 +27,8 @@ interface QuickActionsPickerProps {
 }
 
 /**
- * "تخصيص الإجراءات السريعة" (review round 8, point 08): the person ticks up to six of the actions they may do, grouped as open, create and follow,
+ * "تخصيص الإجراءات السريعة" (review round 8, point 08): the person ticks up to six of the actions they may do, grouped as what they may create
+ * or submit, then each of their menus' screens under the menu's name (21 Nov 2026),
  * puts them in order by dragging (or with the move buttons, from the keyboard), and saves; "restore default" brings back their role's set.
  */
 export function QuickActionsPicker(props: QuickActionsPickerProps): ReactElement {
@@ -122,7 +122,7 @@ function PickerBody({
               if (entry === undefined) {
                 return null;
               }
-              const name = t(quickActionLabel(entry, context));
+              const name = t(entry.label);
               return (
                 <li
                   key={code}
@@ -186,21 +186,17 @@ function PickerBody({
         )}
       </section>
       {full && <p className="form__note">{t('home.quickActions.full')}</p>}
-      {QUICK_ACTION_GROUPS.map((group) => {
-        const entries = available.filter((entry) => entry.group === group);
-        if (entries.length === 0) {
-          return null;
-        }
+      {quickActionGroups(available).map(({ group, actions: entries }) => {
         return (
-          <fieldset key={group} className="quick-picker__group">
-            <legend>{t(`home.quickActions.groups.${group}`)}</legend>
+          <fieldset key={group.key} className="quick-picker__group">
+            <legend>{t(group.label)}</legend>
             {entries.map((entry) => {
               const picked = chosen.includes(entry.code);
               return (
                 <CheckboxField
                   key={entry.code}
                   name={`quick-action-${entry.code}`}
-                  label={t(quickActionLabel(entry, context))}
+                  label={t(entry.label)}
                   checked={picked}
                   disabled={full && !picked}
                   onChange={() => {

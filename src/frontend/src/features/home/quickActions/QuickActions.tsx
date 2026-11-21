@@ -1,21 +1,15 @@
 import { type ReactElement, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
-import { EXECUTIVE_ROLE, landingRole } from '@/features/dashboards/landing.ts';
-import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalogue.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { useMenuScreens } from '@/shared/navigation/menuScreens.ts';
 import { MoreMenu } from '@/shared/ui/MoreMenu.tsx';
 import { useOneLineCount } from '@/shared/ui/useOneLineCount.ts';
 
 import { ProjectActionDialog } from './ProjectActionDialog.tsx';
-import {
-  type QuickAction,
-  type QuickActionContext,
-  quickActionLabel,
-  shownQuickActions,
-} from './quickActions.ts';
+import { type QuickAction, type QuickActionContext, shownQuickActions } from './quickActions.ts';
 import { QuickActionsPicker } from './QuickActionsPicker.tsx';
 import { useQuickActions } from './useQuickActions.ts';
 
@@ -41,24 +35,16 @@ function PencilIcon(): ReactElement {
 export function QuickActions({ user }: { user: SessionUser }): ReactElement | null {
   const { t } = useI18n();
   const { can } = usePermissions();
-  const dashboards = useDashboardCatalogue();
+  const menus = useMenuScreens();
   const quick = useQuickActions();
   const [picking, setPicking] = useState(false);
   const [inProject, setInProject] = useState<QuickAction | null>(null);
   const barRef = useRef<HTMLElement>(null);
   const measureRef = useRef<HTMLUListElement>(null);
-  const context: QuickActionContext | null =
-    quick.loaded && !dashboards.loading
-      ? {
-          can,
-          external: user.userType === 'EXTERNAL',
-          portfolioDashboard: (dashboards.data ?? []).some((entry) => entry.code === 'PORTFOLIO'),
-          executive: landingRole(user) === EXECUTIVE_ROLE,
-        }
-      : null;
+  // The menus fill in as what they read arrives (the dashboard catalogue, the audit access); the person's choice waits for its own read.
+  const context: QuickActionContext | null = quick.loaded ? { can, menus } : null;
   const shown = context === null ? [] : shownQuickActions(quick.saved, context);
-  const labelOf = (entry: QuickAction): string =>
-    context === null ? '' : t(quickActionLabel(entry, context));
+  const labelOf = (entry: QuickAction): string => t(entry.label);
   // The actions stay on one line; those that do not fit go into "More", before the pencil.
   const fitting = useOneLineCount(
     barRef,
@@ -79,7 +65,7 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
         {shown.slice(0, fitting).map((entry) => (
           <li key={entry.code}>
             {'to' in entry.target ? (
-              <Link to={entry.target.to}>{t(quickActionLabel(entry, context))}</Link>
+              <Link to={entry.target.to}>{labelOf(entry)}</Link>
             ) : (
               <button
                 type="button"
@@ -87,7 +73,7 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
                   setInProject(entry);
                 }}
               >
-                {t(quickActionLabel(entry, context))}
+                {labelOf(entry)}
               </button>
             )}
           </li>

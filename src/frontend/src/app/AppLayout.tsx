@@ -19,6 +19,7 @@ import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { RecentNotifications } from '@/features/notifications/bell/RecentNotifications.tsx';
 import { unreadCountStore, useUnreadCount } from '@/features/notifications/unreadCount.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { type MenuScreens, MenuScreensContext } from '@/shared/navigation/menuScreens.ts';
 import { usePageCrumbs } from '@/shared/navigation/pageCrumbs.ts';
 import { useTheme } from '@/shared/theme/theme.ts';
 
@@ -622,6 +623,13 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
     useDashboardCatalogue().data ?? [],
   );
   const current = activeMenu(menus, pathname, search);
+  // The menus' screens for the pages: the Home banner offers each of them as a quick action.
+  const menuScreens: MenuScreens[] = menus
+    .filter((menu) => menu.items.length > 0)
+    .map((menu) => ({
+      label: menu.label,
+      screens: menu.items.map((item) => ({ to: item.to, label: item.label })),
+    }));
   const [collapsed, setCollapsed] = useState(readCollapsed);
   // The drawer is open on the page it was opened on, so choosing a screen closes it.
   const [drawerOpenOn, setDrawerOpenOn] = useState<string | null>(null);
@@ -732,17 +740,19 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
           </div>
         </header>
         <main id="main" className="app__main" tabIndex={-1}>
-          {hasSideMenu(current) ? (
-            <>
-              <AdminMenuBar menu={current} />
-              <Outlet context={menus} />
-            </>
-          ) : (
-            <>
-              <SectionTabs menu={current} />
-              <Outlet context={menus} />
-            </>
-          )}
+          <MenuScreensContext value={menuScreens}>
+            {hasSideMenu(current) ? (
+              <>
+                <AdminMenuBar menu={current} />
+                <Outlet context={menus} />
+              </>
+            ) : (
+              <>
+                <SectionTabs menu={current} />
+                <Outlet context={menus} />
+              </>
+            )}
+          </MenuScreensContext>
         </main>
       </div>
       <StepUpDialog />

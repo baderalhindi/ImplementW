@@ -1,5 +1,4 @@
 import { type ReactElement, useCallback } from 'react';
-import { Link } from 'react-router';
 
 import { auditActivityApi } from '@/features/audit-activity/api/auditActivityApi.ts';
 import { SYSTEM_EVENT_LOGS_PATH } from '@/features/audit-activity/access.ts';
@@ -29,41 +28,6 @@ export function PlatformHealth(): ReactElement {
         {can('USER_VIEW') && <People />}
       </div>
     </section>
-  );
-}
-
-/** The administration the administrator starts most, in the Home's banner like every other role's ways in. */
-export function AdministrationActions(): ReactElement {
-  const { t } = useI18n();
-  const { can } = usePermissions();
-  return (
-    <nav className="home__actions-bar" aria-label={t('home.actions.title')}>
-      <ul className="home__actions">
-        {can('USER_MANAGE') && (
-          <li>
-            <Link to="/admin/users/new">{t('home.health.createUser')}</Link>
-          </li>
-        )}
-        {can('ROLE_ASSIGN') && (
-          <li>
-            <Link to="/admin/role-assignments">{t('identityAccess.nav.roleAssignments')}</Link>
-          </li>
-        )}
-        {can('ROLE_VIEW') && (
-          <li>
-            <Link to="/admin/permission-matrix">{t('identityAccess.nav.permissionMatrix')}</Link>
-          </li>
-        )}
-        {can('DATA_IMPORT') && (
-          <li>
-            <Link to="/admin/data-migration">{t('dataImport.nav')}</Link>
-          </li>
-        )}
-        <li>
-          <Link to="/notifications/preferences">{t('notifications.nav.preferences')}</Link>
-        </li>
-      </ul>
-    </nav>
   );
 }
 

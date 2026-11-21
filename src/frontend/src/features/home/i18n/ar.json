@@ -124,9 +124,7 @@
     "noneChosen": "لم تختر أي إجراء. اختر من القائمة أدناه.",
     "full": "اخترت ستة إجراءات، وهو الحد الأعلى. أزل إجراءً لتضيف غيره.",
     "groups": {
-      "open": "فتح",
-      "create": "إنشاء",
-      "follow": "متابعة"
+      "create": "إنشاء وإرسال"
     },
     "moveUp": "نقل {name} إلى الأعلى",
     "moveDown": "نقل {name} إلى الأسفل",
@@ -140,23 +138,13 @@
     "noProjects": "لا توجد مشاريع نشطة يمكنك تنفيذ هذا الإجراء عليها.",
     "projectsUnavailable": "تعذّر عرض المشاريع. حاول مرة أخرى.",
     "actions": {
-      "projectRegister": "سجل المشاريع",
-      "portfolioDashboard": "لوحة المحفظة",
-      "dashboards": "اللوحات",
-      "reports": "التقارير",
-      "notificationPreferences": "تفضيلات الإشعارات",
       "createProject": "إنشاء مشروع",
       "importProjects": "استيراد مشاريع",
       "raiseChangeRequest": "طلب تغيير",
       "registerRisk": "تسجيل خطر",
       "raiseIssue": "طرح مسألة",
       "submitProgress": "رفع تحديث الإنجاز",
-      "submitFinancials": "تحديث مالي",
-      "followUpList": "قائمة المتابعة",
-      "approvalsInbox": "صندوق الموافقات",
-      "entityUpdateRequests": "طلبات التحديث للجهات",
-      "tasks": "المهام",
-      "notifications": "الإشعارات"
+      "submitFinancials": "تحديث مالي"
     }
   },
   "roleLines": {

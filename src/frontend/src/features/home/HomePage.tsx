@@ -15,7 +15,7 @@ import { ManagedProjects } from './managed/ManagedProjects.tsx';
 import { EntityProjects } from './MyProjects.tsx';
 import { MyWork } from './MyWork.tsx';
 import { QuickActions } from './quickActions/QuickActions.tsx';
-import { AdministrationActions, PlatformHealth } from './PlatformHealth.tsx';
+import { PlatformHealth } from './PlatformHealth.tsx';
 import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
 
 /**
@@ -23,7 +23,7 @@ import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
  * submitted, what is due; the 27 Oct 2026 review asked for more meaning: a welcome banner with the ways in, and for the Portfolio
  * Dashboard's audience a snapshot of the portfolio — its headline figures and where its projects are — above their work. The full
  * analysis stays the Portfolio menu's (/dashboards). Someone who administers the platform and holds no business data, R01, sees the
- * platform's health instead (M-1), under the same welcome banner with the administration's ways in. `menuOverview` is the shell's map
+ * platform's health instead (M-1), under the same welcome banner and quick actions (their default set is the administration's ways in). `menuOverview` is the shell's map
  * of the screens this person can open, directly under the banner; since the 13 Nov 2026 review only the administrator sees it, and
  * everyone else reaches the screens from the side menu.
  */
@@ -77,7 +77,7 @@ export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactEl
         <p className="home__date">{today.format(new Date())}</p>
         <h1 className="home__title">{t('home.title', { name: session.user.displayName })}</h1>
         <p className="home__intro">{t(roleLine)}</p>
-        {administers ? <AdministrationActions /> : <QuickActions user={session.user} />}
+        <QuickActions user={session.user} />
         <BannerCustomizer
           images={banner.images}
           preference={banner.preference}

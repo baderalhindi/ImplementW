@@ -124,9 +124,7 @@
     "noneChosen": "No actions chosen. Pick from the list below.",
     "full": "You have chosen six actions, the most allowed. Remove one to add another.",
     "groups": {
-      "open": "Open",
-      "create": "Create",
-      "follow": "Follow up"
+      "create": "Create and submit"
     },
     "moveUp": "Move {name} up",
     "moveDown": "Move {name} down",
@@ -140,23 +138,13 @@
     "noProjects": "There are no active projects you can do this on.",
     "projectsUnavailable": "The projects could not be shown. Try again.",
     "actions": {
-      "projectRegister": "Project register",
-      "portfolioDashboard": "Portfolio dashboard",
-      "dashboards": "Dashboards",
-      "reports": "Reports",
-      "notificationPreferences": "Notification preferences",
       "createProject": "Create project",
       "importProjects": "Import projects",
       "raiseChangeRequest": "Change request",
       "registerRisk": "Register a risk",
       "raiseIssue": "Raise an issue",
       "submitProgress": "Submit a progress update",
-      "submitFinancials": "Financial update",
-      "followUpList": "Follow-up list",
-      "approvalsInbox": "Approvals inbox",
-      "entityUpdateRequests": "Update requests to entities",
-      "tasks": "Tasks",
-      "notifications": "Notifications"
+      "submitFinancials": "Financial update"
     }
   },
   "roleLines": {
