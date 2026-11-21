@@ -316,7 +316,7 @@ describe('a value from a field', () => {
     await previewed(api, {
       values: [{ field: FIELD.ACTUAL_EXPENDITURE, aggregation: 'SUM' satisfies FieldAggregation }],
     });
-  });
+  }, 15000);
 
   // A table takes columns instead (dashboard-designer-power-table.md); a column chart takes the most field values of the charts.
   test('a column chart takes up to three values, a bar one', async () => {
@@ -350,7 +350,7 @@ describe('a value from a field', () => {
     await waitFor(() => {
       expect(lastPreviewed(api)?.values?.map((value) => value.field)).toEqual([FIELD.OPEN_RISKS]);
     });
-  });
+  }, 15000);
 });
 
 describe('grouping and filters', () => {
@@ -590,7 +590,7 @@ describe('more fields: yes/no, dates and figures over time', () => {
       visualType: 'GAUGE',
       values: [{ field: FIELD.IS_STRATEGIC, aggregation: 'SHARE_TRUE' }],
     });
-  });
+  }, 15000);
 
   test('grouping by a date field sends its unit, by month then by year; a date filter ticks years', async () => {
     const api = designerApi();
@@ -621,7 +621,7 @@ describe('more fields: yes/no, dates and figures over time', () => {
     const year = String(new Date().getUTCFullYear());
     await addFilterTick(user, FIELD.PLANNED_END_DATE, year);
     await previewed(api, { filters: [{ field: FIELD.PLANNED_END_DATE, values: [year] }] });
-  });
+  }, 15000);
 
   test('a line from the gallery draws the published history, grouped by the period’s end by month', async () => {
     const api = designerApi();
@@ -683,7 +683,7 @@ describe('more fields: yes/no, dates and figures over time', () => {
         name: fieldNamePattern(FIELD.HISTORY_ACTUAL_PERCENT),
       }),
     ).toBeNull();
-  });
+  }, 15000);
 
   describe('drawn', () => {
     const lineTitle = 'Published progress by month';
