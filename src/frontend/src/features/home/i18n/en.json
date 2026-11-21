@@ -2,7 +2,15 @@
   "title": "Welcome, {name}",
   "description": "Follow what awaits you, and open what you need from the menu.",
   "menus": {
-    "title": "Browse the platform"
+    "title": "Browse the platform",
+    "adminDescription": "Every setting of the platform, by area.",
+    "groups": {
+      "usersRoles": "People, their roles and what each role may do.",
+      "organization": "Departments and the external entities projects belong to.",
+      "data": "Master data, project stages and moving data in.",
+      "integrations": "Connected systems, their health and their logs.",
+      "auditLogs": "Who did what, and what the platform recorded."
+    }
   },
   "work": {
     "title": "My work"

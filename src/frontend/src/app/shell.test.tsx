@@ -338,7 +338,9 @@ describe('the master navigation', () => {
     const menus = Array.from(mainMenu().querySelectorAll('.rail__label'))
       .map((label) => label.textContent)
       .filter((name) => name !== en('common.menu.home'));
-    expect(cards).toEqual(menus);
+    // The same menus as the rail, Administration first (21 Nov 2026: the administrator's own work leads the map).
+    expect([...cards].sort()).toEqual([...menus].sort());
+    expect(cards[0]).toBe(en('common.menu.administration'));
     expect(
       within(overview).getByRole('link', { name: en('identityAccess.nav.users') }),
     ).toBeTruthy();

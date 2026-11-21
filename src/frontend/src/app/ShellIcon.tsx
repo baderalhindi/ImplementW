@@ -13,7 +13,13 @@ export type ShellIconName =
   | 'collapse'
   | 'expand'
   | 'menu'
-  | 'close';
+  | 'close'
+  | 'usersRoles'
+  | 'organization'
+  | 'data'
+  | 'integrations'
+  | 'auditLogs'
+  | 'chevronEnd';
 
 const paths: Record<ShellIconName, ReactElement> = {
   home: <path d="M3 10.5 12 3l9 7.5M5.5 8.5V20h13V8.5M10 20v-5.5h4V20" />,
@@ -64,6 +70,19 @@ const paths: Record<ShellIconName, ReactElement> = {
   expand: <path d="M4 5h16v14H4zM9 5v14M13 10l2 2-2 2" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   close: <path d="M6 6l12 12M18 6 6 18" />,
+  // Administration's headings (review round 8, point 15) on the administrator's Home.
+  usersRoles: (
+    <path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18.5 14a5.5 5.5 0 0 1 3 5.5" />
+  ),
+  organization: (
+    <path d="M9 3h6v5H9zM12 8v4M5 12h14M5 12v4M19 12v4M2.5 16h5v5h-5zM16.5 16h5v5h-5z" />
+  ),
+  data: (
+    <path d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+  ),
+  integrations: <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />,
+  auditLogs: <path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6M4 7v14h3" />,
+  chevronEnd: <path d="m9 6 6 6-6 6" />,
 };
 
 export function ShellIcon({

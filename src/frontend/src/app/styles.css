@@ -5786,7 +5786,10 @@ path.trend__line--ACTUAL_PERCENT {
   font-weight: 600;
 }
 
-/* The Home's map of the platform: a card per menu. Cards share each row's width, so no row ends in an empty column. */
+/*
+ * The administrator's map of the platform (21 Nov 2026): Administration as one panel with a card per heading of its menu, each heading's
+ * screens as rows with an arrow; the other menus below, smaller, their screens as chips.
+ */
 .home__menus {
   display: grid;
   gap: var(--space-4);
@@ -5796,9 +5799,169 @@ path.trend__line--ACTUAL_PERCENT {
   margin: 0;
 }
 
-.home__menu-cards {
+.admin-map {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 7%, transparent),
+      transparent 55%
+    ),
+    var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+.admin-map__header {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.admin-map__badge {
+  display: inline-flex;
+  flex: none;
+  padding: var(--space-2);
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.admin-map__badge .shell-icon {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.admin-map__title {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.admin-map__lead,
+.admin-map__group-lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.admin-map__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-map__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-map__group:hover,
+.admin-map__group:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border-subtle));
+  box-shadow: var(--shadow-card);
+}
+
+.admin-map__group-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.admin-map__icon {
+  display: inline-flex;
+  padding: var(--space-2);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.admin-map__group-title {
+  margin: 0 0 var(--space-1);
+  font-size: 1rem;
+}
+
+.admin-map__group-lead {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.admin-map__count {
+  min-inline-size: 1.75rem;
+  padding: 0.1rem var(--space-2);
+  border-radius: 999px;
+  background: var(--color-neutral-surface);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.admin-map__links {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-block-start: 1px solid var(--color-border-subtle);
+  list-style: none;
+}
+
+.admin-map__links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+  border-block-end: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.admin-map__links li:last-child a {
+  border-block-end: 0;
+}
+
+.admin-map__links a:hover,
+.admin-map__links a:focus-visible {
+  color: var(--color-primary);
+}
+
+.admin-map__chevron {
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.admin-map__links a:hover .admin-map__chevron {
+  color: var(--color-primary);
+  transform: translateX(2px);
+}
+
+[dir='rtl'] .admin-map__chevron {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .admin-map__links a:hover .admin-map__chevron {
+  transform: scaleX(-1) translateX(2px);
+}
+
+/* The other menus: side by side, their screens as chips. */
+.home__menu-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: var(--space-3);
   margin: 0;
   padding: 0;
@@ -5806,7 +5969,6 @@ path.trend__line--ACTUAL_PERCENT {
 }
 
 .home__menu-card {
-  flex: 1 1 min(100%, 16rem);
   min-inline-size: 0;
   padding: var(--space-4);
   border: 1px solid var(--color-border-subtle);
@@ -5814,15 +5976,11 @@ path.trend__line--ACTUAL_PERCENT {
   background: var(--color-background);
 }
 
-.home__menu-card--wide {
-  flex-basis: 100%;
-}
-
 .home__menu-title {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-3);
   font-size: 1rem;
 }
 
@@ -5835,29 +5993,36 @@ path.trend__line--ACTUAL_PERCENT {
   color: var(--color-primary);
 }
 
-/* Links take as many columns as the card's width holds, so a wide card reads as a short block. */
-.home__menu-links {
+.home__menu-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
-  columns: 13rem;
-  column-gap: var(--space-3);
 }
 
-.home__menu-links li {
-  break-inside: avoid;
-}
-
-.home__menu-links a {
-  display: block;
-  padding: var(--space-1) var(--space-2);
-  border-radius: 6px;
+.home__menu-chips a {
+  display: inline-block;
+  padding: 0.3rem var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  color: var(--color-text);
+  font-size: 0.9rem;
   text-decoration: none;
 }
 
-.home__menu-links a:hover {
-  background: var(--color-neutral-surface);
-  text-decoration: underline;
+.home__menu-chips a:hover,
+.home__menu-chips a:focus-visible {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-map__group,
+  .admin-map__chevron {
+    transition: none;
+  }
 }
 
 /* The portfolio snapshot: headline figures as tiles, health tiles marked by their tone on the start edge. */
@@ -7558,7 +7723,7 @@ tr[data-flagged='true'] {
 .chip-toggle[aria-pressed='true'] {
   border-color: var(--color-primary, var(--color-border));
   background: var(--color-primary, var(--color-surface));
-  color: var(--color-on-primary, #fff);
+  color: var(--color-on-primary);
 }
 
 .chip-toggle__count {
