@@ -126,8 +126,14 @@ function useFloatingMenu(
     menu.style.position = 'fixed';
     const px = (value: number): string => `${String(value)}px`;
     menu.style.top = px(fitsBelow ? anchor.bottom + gap : Math.max(gap, anchor.top - gap - height));
-    menu.style.left = rtl ? px(anchor.left) : 'auto';
-    menu.style.right = rtl ? 'auto' : px(window.innerWidth - anchor.right);
+    // It opens from the button's edge toward the reading start (to the left in English, to the right in Arabic), and is pushed back inside
+    // the window when that would cross its edge: on a phone the button may sit mid-screen (21 Nov 2026, the Home banner's More in Arabic).
+    const room = window.innerWidth - 2 * gap;
+    const width = Math.min(menu.offsetWidth, room);
+    const preferred = rtl ? anchor.left : anchor.right - width;
+    menu.style.maxInlineSize = px(room);
+    menu.style.left = px(Math.min(Math.max(gap, preferred), window.innerWidth - gap - width));
+    menu.style.right = 'auto';
     const close = (): void => {
       setOpen(false);
     };
