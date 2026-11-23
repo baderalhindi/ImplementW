@@ -18,7 +18,8 @@
     "retry": "Try again",
     "search": "Search",
     "close": "Close",
-    "more": "More"
+    "more": "More",
+    "helpAbout": "Help: {subject}"
   },
   "globalSearch": {
     "label": "Search the platform",

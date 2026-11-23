@@ -19,6 +19,7 @@ import { ApiError, type FieldIssue } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
+import { HelpTip } from '@/shared/ui/HelpTip.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
@@ -1197,7 +1198,7 @@ export function DashboardDesignerPage(): ReactElement {
         )}
         <PageHeader
           title={t('dashboards.designer.title')}
-          description={t('dashboards.designer.intro')}
+          help={t('dashboards.designer.intro')}
           actions={
             <>
               <Link className="button button--quiet" to={PORTFOLIO_DASHBOARD_PATH}>
@@ -1296,9 +1297,14 @@ export function DashboardDesignerPage(): ReactElement {
           </div>
           <aside className="designer__pane">
             <section className="designer__gallery" aria-labelledby="designer-gallery">
-              <h2 id="designer-gallery" className="designer__heading">
-                {t('dashboards.designer.gallery')}
-              </h2>
+              <div className="designer__heading-row">
+                <h2 id="designer-gallery" className="designer__heading">
+                  {t('dashboards.designer.gallery')}
+                </h2>
+                <HelpTip label={t('dashboards.designer.gallery')} align="end">
+                  {t('dashboards.designer.keyboardHint')}
+                </HelpTip>
+              </div>
               <p className="designer__hint">{t('dashboards.designer.galleryHint')}</p>
               <ul className="designer__types">
                 {GALLERY_TYPES.map((type) => (
@@ -1383,7 +1389,6 @@ export function DashboardDesignerPage(): ReactElement {
                   </ul>
                 </section>
               )}
-              <p className="designer__hint">{t('dashboards.designer.keyboardHint')}</p>
             </section>
             <section className="designer__settings" aria-labelledby="designer-settings">
               <h2 id="designer-settings" className="designer__heading">
