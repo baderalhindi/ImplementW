@@ -10225,3 +10225,20 @@ tr[data-flagged='true'] {
 [dir='rtl'] .heatmap__ramp {
   transform: scaleX(-1);
 }
+
+/* A heatmap of risks by probability and impact is the Risk register's matrix (RiskHeatMap): inside a visual its title is the visual's, so the
+   matrix's caption is read but not shown, and the matrix scrolls within the box. */
+.visual__risk-matrix {
+  block-size: 100%;
+  min-block-size: 0;
+  overflow: auto;
+}
+
+.visual__risk-matrix .risk-matrix__caption {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
