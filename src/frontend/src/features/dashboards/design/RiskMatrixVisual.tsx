@@ -21,10 +21,15 @@ export function RiskMatrixVisual({
   matrix,
   caption,
   countAt,
+  probabilityName,
+  impactName,
 }: {
   matrix: RiskMatrix;
   caption: string;
   countAt: (probabilityLevel: number, impactLevel: number) => number;
+  /** A level's name as the visual shows it (its own, else the guide's, heatmap.ts); null for the matrix's own. */
+  probabilityName: (level: number) => { ar: string; en: string } | null;
+  impactName: (level: number) => { ar: string; en: string } | null;
 }): ReactElement {
   const { t, language } = useI18n();
   const probabilities = [...matrix.probabilityLevels].reverse();
@@ -42,7 +47,10 @@ export function RiskMatrixVisual({
             {probabilities.map((probability) => (
               <tr key={probability.level}>
                 <th scope="row" className="risk-grid__level">
-                  {levelName(probability.level, probability.label)}
+                  {levelName(
+                    probability.level,
+                    probabilityName(probability.level) ?? probability.label,
+                  )}
                 </th>
                 {matrix.impactLevels.map((impact) => {
                   const rating = ratingAt(matrix, probability.level, impact);
@@ -71,7 +79,7 @@ export function RiskMatrixVisual({
               <td />
               {matrix.impactLevels.map((impact) => (
                 <th key={impact} scope="col" className="risk-grid__level risk-grid__level--impact">
-                  {levelName(impact, impactLabel(matrix, impact))}
+                  {levelName(impact, impactName(impact) ?? impactLabel(matrix, impact))}
                 </th>
               ))}
             </tr>

@@ -10455,3 +10455,25 @@ tbody .risk-grid__level {
 .help-tip__note[hidden] {
   display: none;
 }
+
+/* A heatmap's level names (24 Nov 2026): a value's key, then its Arabic and English name, on one line where the pane is wide enough. */
+.heatmap-names__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.heatmap-names__value {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.heatmap-names__key {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}

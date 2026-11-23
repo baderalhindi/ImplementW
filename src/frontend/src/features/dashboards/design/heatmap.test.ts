@@ -2,7 +2,14 @@ import { describe, expect, test } from 'vitest';
 
 import { type FieldDescriptor, type Visual, type VisualGroup } from './designApi.ts';
 import { normalized } from './fields.ts';
-import { asHeatmap, heatmapMatrix, heatmapVisual, heatStrength } from './heatmap.ts';
+import {
+  asHeatmap,
+  heatmapLabel,
+  heatmapMatrix,
+  heatmapVisual,
+  heatStrength,
+  withHeatmapLabel,
+} from './heatmap.ts';
 import { newVisual, withType } from './visuals.ts';
 
 // The 22 Nov 2026 heatmap: one figure per pair of two fields' values; the API sends a cell per pair, the designer lays them out.
@@ -106,5 +113,21 @@ describe('the heatmap', () => {
     expect(back.columnField).toBeNull();
     expect('columnField' in normalized(back)).toBe(false);
     expect(normalized(heatmapVisual({ column: 0, row: 0 }, 6, 6)).columnField).toBe('RISK.IMPACT');
+  });
+
+  test('the levels read as the guide names them until the visual names them itself; the names go only with a heatmap', () => {
+    const visual = heatmapVisual({ column: 0, row: 0 }, 6, 6);
+
+    expect(heatmapLabel(visual, 'rows', '5')).toEqual({ ar: 'مُرجّح', en: 'Almost certain' });
+    expect(heatmapLabel(visual, 'columns', '1')).toEqual({ ar: 'ضئيل', en: 'Negligible' });
+    expect(heatmapLabel(visual, 'rows', null)).toBeNull();
+
+    const named = withHeatmapLabel(visual, 'rows', '5', { ar: 'شبه مؤكد', en: 'Near certain' });
+    expect(heatmapLabel(named, 'rows', '5')).toEqual({ ar: 'شبه مؤكد', en: 'Near certain' });
+    expect(heatmapLabel(named, 'rows', '4')).toEqual({ ar: 'مُحتمل', en: 'Likely' });
+    expect(normalized(named).labels?.rows).toEqual([
+      { key: '5', label: { ar: 'شبه مؤكد', en: 'Near certain' } },
+    ]);
+    expect('labels' in normalized({ ...named, visualType: 'BAR' })).toBe(false);
   });
 });

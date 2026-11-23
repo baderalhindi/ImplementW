@@ -372,6 +372,7 @@ export function normalized<T extends Visual>(visual: T): T {
     values,
     groupField,
     columnField,
+    labels,
     groupDateUnit,
     filters,
     axes: _axes,
@@ -401,6 +402,13 @@ export function normalized<T extends Visual>(visual: T): T {
     ...(widgetCode === undefined || widgetCode === null ? {} : { widgetCode }),
     ...(values === undefined || values === null || values.length === 0 ? {} : { values }),
     ...(groupField === undefined || groupField === null ? {} : { groupField }),
+    // Only on a heatmap, its names for its values where it names any (heatmap.ts).
+    ...(visual.visualType !== 'HEATMAP' ||
+    labels === undefined ||
+    labels === null ||
+    labels.rows.length + labels.columns.length === 0
+      ? {}
+      : { labels }),
     // Only on a heatmap, its columns (heatmap.ts).
     ...(visual.visualType !== 'HEATMAP' || columnField === undefined || columnField === null
       ? {}

@@ -743,4 +743,40 @@ public sealed class PortfolioDesignRiskTests
         Assert.DoesNotContain("columnField", PortfolioDesignService.DataFieldsOf(Risks()), StringComparison.Ordinal);
     }
 
+
+    // The 24 Nov 2026 heatmap names: a heatmap's own names for its levels, as the risk methodology guide names them.
+
+    private static PortfolioHeatmapLabels GuideNames() => new(
+        [new("5", new BilingualLabel("مُرجّح", "Almost certain")), new("1", new BilingualLabel(" نادر ", " Rare "))],
+        [new("1", new BilingualLabel("ضئيل", "Negligible"))]);
+
+    [Fact]
+    public void AHeatmapNamesItsLevelsAndTheNamesAreStoredTrimmedAndEchoed()
+    {
+        PortfolioVisualInput named = Heatmap() with { Labels = GuideNames() };
+
+        Assert.Null(Issue(named));
+        string? stored = PortfolioDesignService.DataFieldsOf(named);
+        Assert.Contains("\"labels\":", stored, StringComparison.Ordinal);
+        PortfolioHeatmapLabels? echoed = PortfolioDesignService.HeatmapLabelsOf(named);
+        Assert.Equal(new BilingualLabel("نادر", "Rare"), echoed?.Rows[1].Label);
+        Assert.DoesNotContain("labels", PortfolioDesignService.DataFieldsOf(Heatmap()), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OnlyAHeatmapNamesLevelsEachOnceAndShort()
+    {
+        Assert.Equal(new FieldIssue("visuals[0].labels", FieldIssue.NotAllowed), Issue(Risks() with { Labels = GuideNames() }));
+        PortfolioHeatmapLabel five = new("5", new BilingualLabel("مُرجّح", "Almost certain"));
+        Assert.Equal(
+            new FieldIssue("visuals[0].labels.rows", FieldIssue.Duplicate),
+            Issue(Heatmap() with { Labels = new([five, five], []) }));
+        Assert.Equal(
+            new FieldIssue("visuals[0].labels.columns", FieldIssue.OutsideRange),
+            Issue(Heatmap() with { Labels = new([], [new("1", new BilingualLabel("ضئيل", new string('x', 41)))]) }));
+        Assert.Equal(
+            new FieldIssue("visuals[0].labels.rows", FieldIssue.NotAllowed),
+            Issue(Heatmap() with { Labels = new([new("5 or more", five.Label)], []) }));
+    }
+
 }

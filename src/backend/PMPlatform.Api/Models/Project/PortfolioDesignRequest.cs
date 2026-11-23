@@ -68,7 +68,8 @@ public sealed record PortfolioVisualRequest(
     PortfolioTextBoxRequest? Text = null,
     PortfolioMapOptionsRequest? Map = null,
     PortfolioRecordSource? Source = null,
-    string? ColumnField = null)
+    string? ColumnField = null,
+    PortfolioHeatmapLabelsRequest? Labels = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -117,6 +118,7 @@ public sealed record PortfolioVisualRequest(
         }
 
         Axes?.Validate($"{at}.axes", errors);
+        Labels?.Validate($"{at}.labels", errors);
         Text?.Validate($"{at}.text", errors);
         for (int i = 0; i < (Children?.Count ?? 0); i++)
         {
@@ -137,7 +139,7 @@ public sealed record PortfolioVisualRequest(
             Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList(), GroupDateUnit, Axes?.ToAxes(), WidgetCode,
             Children?.Select(c => c!.ToInput()).ToList(), HiddenColumns?.Select(c => c!).ToList(),
             Columns?.Select(c => new PortfolioTableColumn(c!.Kind!.Value, c.Key!, c.Aggregation)).ToList(), ShowTotals, Text?.ToTextBox(),
-            Map?.ToOptions(), Source, ColumnField);
+            Map?.ToOptions(), Source, ColumnField, Labels?.ToLabels());
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct
@@ -280,6 +282,40 @@ public sealed record PortfolioAxesRequest(PortfolioAxisRequest? Category, Portfo
             RequestValidation.Label(title, field, errors);
         }
     }
+}
+
+/// <summary>A heatmap's names for its rows' and columns' values (24 Nov 2026); either list may be empty. Their count, keys and length are checked by the service.</summary>
+public sealed record PortfolioHeatmapLabelsRequest(IReadOnlyList<PortfolioHeatmapLabelRequest?>? Rows, IReadOnlyList<PortfolioHeatmapLabelRequest?>? Columns)
+{
+    internal void Validate(string at, List<FieldError> errors)
+    {
+        Each(Rows, $"{at}.rows", errors);
+        Each(Columns, $"{at}.columns", errors);
+    }
+
+    internal PortfolioHeatmapLabels ToLabels() =>
+        new([.. (Rows ?? []).Select(l => l!.ToLabel())], [.. (Columns ?? []).Select(l => l!.ToLabel())]);
+
+    private static void Each(IReadOnlyList<PortfolioHeatmapLabelRequest?>? labels, string at, List<FieldError> errors)
+    {
+        for (int i = 0; i < (labels?.Count ?? 0); i++)
+        {
+            if (labels![i] is not { Key: not null, Label: not null } label)
+            {
+                errors.Add(new FieldError($"{at}[{i}]", FieldError.Required));
+            }
+            else
+            {
+                RequestValidation.Label(label.Label, $"{at}[{i}].label", errors);
+            }
+        }
+    }
+}
+
+/// <summary>One value's name on a heatmap's axis: the value's key and its name in both languages.</summary>
+public sealed record PortfolioHeatmapLabelRequest(string? Key, BilingualLabelRequest? Label)
+{
+    internal PortfolioHeatmapLabel ToLabel() => new(Key!, Label!.ToLabel());
 }
 
 /// <summary>The category axis: shown or not, and its title (null for none).</summary>

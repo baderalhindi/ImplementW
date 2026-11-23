@@ -801,6 +801,11 @@
     "heatmapRows": "الصفوف",
     "heatmapColumns": "الأعمدة",
     "heatmapLow": "أقل",
-    "heatmapHigh": "أكثر"
+    "heatmapHigh": "أكثر",
+    "heatmapRowNames": "أسماء الصفوف: {field}",
+    "heatmapColumnNames": "أسماء الأعمدة: {field}",
+    "heatmapNamesNone": "لا يسرد هذا الحقل قيمًا لتسميتها.",
+    "heatmapNameAr": "الاسم العربي لـ {field} {value}",
+    "heatmapNameEn": "الاسم الإنجليزي لـ {field} {value}"
   }
 }

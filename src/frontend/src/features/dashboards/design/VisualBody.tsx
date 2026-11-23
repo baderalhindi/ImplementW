@@ -17,7 +17,7 @@ import { drawnAxes, valueScale } from './axes.ts';
 import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx';
 import { ColumnTable } from './ColumnTable.tsx';
 import { HeatmapChart } from './HeatmapChart.tsx';
-import { heatmapMatrix, RISK_HEATMAP_COLUMNS, RISK_HEATMAP_ROWS } from './heatmap.ts';
+import { heatmapLabel, heatmapMatrix, RISK_HEATMAP_COLUMNS, RISK_HEATMAP_ROWS } from './heatmap.ts';
 import { LineChart } from './LineChart.tsx';
 import { MapVisual } from './MapVisual.tsx';
 import { RISK_COUNT_FIELD } from './riskFields.ts';
@@ -419,6 +419,12 @@ export function VisualBody({
                   : cells.cell(String(impact), String(probability))
                 )?.values[0] ?? 0
               }
+              probabilityName={(level) =>
+                heatmapLabel(visual, byProbability ? 'rows' : 'columns', String(level))
+              }
+              impactName={(level) =>
+                heatmapLabel(visual, byProbability ? 'columns' : 'rows', String(level))
+              }
             />
           </div>
         );
@@ -429,8 +435,14 @@ export function VisualBody({
           groups={groups}
           rowsHeading={fieldName(rowsField, language)}
           columnsHeading={fieldName(columnsField, language)}
-          rowText={(group) => fieldGroupText(rowsField, null, group, t, language, riskMatrix)}
-          columnText={(group) => fieldGroupText(columnsField, null, group, t, language, riskMatrix)}
+          rowText={(group) =>
+            heatmapLabel(visual, 'rows', group.key)?.[language] ??
+            fieldGroupText(rowsField, null, group, t, language, riskMatrix)
+          }
+          columnText={(group) =>
+            heatmapLabel(visual, 'columns', group.key)?.[language] ??
+            fieldGroupText(columnsField, null, group, t, language, riskMatrix)
+          }
           format={first.format}
           cellHint={(group) => projectsHint(group.projects)}
         />

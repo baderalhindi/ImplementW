@@ -119,6 +119,22 @@ public sealed record PortfolioMapOptions(bool ShowList = true, bool ShowCounts =
 }
 
 /// <summary>
+/// A heatmap's own name for one value of its rows' or columns' field (24 Nov 2026: "(5) مُرجّح", as the risk methodology guide names its levels): the value's
+/// key as the cells carry it (a level <c>5</c>, a code, <c>TRUE</c>, an item's id) and its name in both languages.
+/// </summary>
+public sealed record PortfolioHeatmapLabel(string Key, BilingualLabel Label);
+
+/// <summary>A heatmap's names for its rows' and columns' values; a value it does not name keeps the field's own.</summary>
+public sealed record PortfolioHeatmapLabels(IReadOnlyList<PortfolioHeatmapLabel> Rows, IReadOnlyList<PortfolioHeatmapLabel> Columns)
+{
+    /// <summary>The most values one axis names.</summary>
+    public const int MaxLabels = 30;
+
+    /// <summary>The longest name, in either language, once trimmed.</summary>
+    public const int MaxLength = 40;
+}
+
+/// <summary>
 /// A visual as the designer sends it: a title in both languages, a type, one to three measures, a grouping and a place on the grid; or, as a
 /// <see cref="PortfolioVisualType.Section"/>, one of the dashboard's own sections and no measure. Since 18 Nov 2026 a visual may draw
 /// <paramref name="Values"/> of the data catalogue instead of measures, be grouped by a CODE field (<paramref name="GroupField"/>) and narrowed by
@@ -133,14 +149,16 @@ public sealed record PortfolioMapOptions(bool ShowList = true, bool ShowCounts =
 /// figure per city or region and may set its <paramref name="Map"/> options (the 20 Nov 2026 map visual); any other visual has none. A card, chart, line or
 /// table counts the risks of its projects instead when its <paramref name="Source"/> is <see cref="PortfolioRecordSource.Risks"/> (the 20 Nov 2026 record
 /// sources); null is <see cref="PortfolioRecordSource.Projects"/>. A <see cref="PortfolioVisualType.Heatmap"/> is grouped by two fields, its rows by
-/// <paramref name="GroupField"/> and its columns by <paramref name="ColumnField"/> (the 22 Nov 2026 heatmap); any other visual has no column field.
+/// <paramref name="GroupField"/> and its columns by <paramref name="ColumnField"/> (the 22 Nov 2026 heatmap), and may name their values in <paramref name="Labels"/>;
+/// any other visual has neither.
 /// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, decimal LayoutColumn, decimal LayoutRow, decimal LayoutWidth,
     decimal LayoutHeight, PortfolioSection? Section = null, IReadOnlyList<PortfolioFieldValue>? Values = null, string? GroupField = null,
     IReadOnlyList<PortfolioFieldFilter>? Filters = null, PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null,
     IReadOnlyList<PortfolioVisualInput>? Children = null, IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null,
-    bool? ShowTotals = null, PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null, string? ColumnField = null);
+    bool? ShowTotals = null, PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null, string? ColumnField = null,
+    PortfolioHeatmapLabels? Labels = null);
 
 /// <summary>The fields the designer offers, in the register's order.</summary>
 public sealed record PortfolioDesignFields(IReadOnlyList<PortfolioFieldDescriptor> Fields);
@@ -184,7 +202,8 @@ public sealed record PortfolioVisualResult(
     string? GroupField = null, IReadOnlyList<PortfolioFieldFilter>? Filters = null, IReadOnlyList<PortfolioFieldType>? ValueTypes = null,
     PortfolioDateUnit? GroupDateUnit = null, PortfolioAxes? Axes = null, string? WidgetCode = null, IReadOnlyList<PortfolioVisualResult>? Children = null,
     IReadOnlyList<string>? HiddenColumns = null, IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioTableResult? Table = null,
-    PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null, string? ColumnField = null);
+    PortfolioTextBox? Text = null, PortfolioMapOptions? Map = null, PortfolioRecordSource? Source = null, string? ColumnField = null,
+    PortfolioHeatmapLabels? Labels = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -514,6 +533,7 @@ internal sealed partial class PortfolioDesignService(
         : v.Text is not null && v.VisualType != PortfolioVisualType.Text ? new FieldIssue("text", FieldIssue.NotAllowed)
         : v.Map is not null && v.VisualType != PortfolioVisualType.Map ? new FieldIssue("map", FieldIssue.NotAllowed)
         : v.ColumnField is not null && v.VisualType != PortfolioVisualType.Heatmap ? new FieldIssue("columnField", FieldIssue.NotAllowed)
+        : v.Labels is not null && v.VisualType != PortfolioVisualType.Heatmap ? new FieldIssue("labels", FieldIssue.NotAllowed)
         : (v.VisualType == PortfolioVisualType.Container ? ContainerIssue(v)
             : v.VisualType == PortfolioVisualType.Text ? TextBoxIssue(v.Text) ?? DrawsNothingIssue(v)
             : (v.VisualType == PortfolioVisualType.Section || v.Section is not null ? SectionIssue(v, sections)
@@ -736,7 +756,22 @@ internal sealed partial class PortfolioDesignService(
             : !MatrixAxisFits(v.ColumnField, catalogue) ? new FieldIssue("columnField", FieldIssue.NotAllowed)
             : v.ColumnField == v.GroupField ? new FieldIssue("columnField", FieldIssue.Duplicate)
             : null)
+        ?? HeatmapLabelsIssue(v.Labels?.Rows, "labels.rows") ?? HeatmapLabelsIssue(v.Labels?.Columns, "labels.columns")
         ?? FiltersIssue(v, catalogue);
+
+    /// <summary>
+    /// What is wrong with one axis's names, or null (24 Nov 2026): at most <see cref="PortfolioHeatmapLabels.MaxLabels"/>, each a key of <c>[A-Za-z0-9_.-]</c> (a
+    /// level, a code, a yes/no, an item's id) named once, and a name of at most <see cref="PortfolioHeatmapLabels.MaxLength"/> characters in each language once
+    /// trimmed (the request checked both are there and in their script).
+    /// </summary>
+    private static FieldIssue? HeatmapLabelsIssue(IReadOnlyList<PortfolioHeatmapLabel>? labels, string field) =>
+        labels is null ? null
+        : labels.Count > PortfolioHeatmapLabels.MaxLabels ? new FieldIssue(field, FieldIssue.OutsideRange)
+        : labels.Any(l => l?.Key is null || !HeatmapKeyShape().IsMatch(l.Key) || l.Label is null) ? new FieldIssue(field, FieldIssue.NotAllowed)
+        : labels.Select(l => l.Key).Distinct(StringComparer.Ordinal).Count() != labels.Count ? new FieldIssue(field, FieldIssue.Duplicate)
+        : labels.Any(l => l.Label.Ar.Trim().Length > PortfolioHeatmapLabels.MaxLength || l.Label.En.Trim().Length > PortfolioHeatmapLabels.MaxLength)
+            ? new FieldIssue(field, FieldIssue.OutsideRange)
+        : null;
 
     /// <summary>Whether a heatmap's rows or columns may be grouped by a field: a project- or risk-grain CODE, BOOLEAN or ITEM field the designer offers.</summary>
     private static bool MatrixAxisFits(string key, Dictionary<string, PortfolioFieldDescriptor> catalogue) =>
@@ -1051,7 +1086,16 @@ internal sealed partial class PortfolioDesignService(
         : new PortfolioVisualResult(
             v.Title, v.VisualType, v.Measures, v.GroupBy, Shortest(v.LayoutColumn), Shortest(v.LayoutRow), Shortest(v.LayoutWidth), Shortest(v.LayoutHeight),
             groupsOf(v), null, v.Values, v.GroupField, v.Filters, ValueTypesOf(v, types), v.GroupDateUnit, v.Axes, Map: MapOptionsOf(v), Source: SourceOf(v),
-            ColumnField: v.ColumnField);
+            ColumnField: v.ColumnField, Labels: HeatmapLabelsOf(v));
+
+    /// <summary>A heatmap's names as stored and echoed: trimmed, null when it names none; null on any other visual.</summary>
+    internal static PortfolioHeatmapLabels? HeatmapLabelsOf(PortfolioVisualInput v) =>
+        v.VisualType != PortfolioVisualType.Heatmap || v.Labels is not { } labels || (labels.Rows.Count == 0 && labels.Columns.Count == 0)
+            ? null
+            : new PortfolioHeatmapLabels([.. labels.Rows.Select(Trimmed)], [.. labels.Columns.Select(Trimmed)]);
+
+    private static PortfolioHeatmapLabel Trimmed(PortfolioHeatmapLabel label) =>
+        new(label.Key, new BilingualLabel(label.Label.Ar.Trim(), label.Label.En.Trim()));
 
     /// <summary>A map's options as stored and echoed: as sent, or the defaults when it was sent none; null on any other visual.</summary>
     internal static PortfolioMapOptions? MapOptionsOf(PortfolioVisualInput v) =>
@@ -1336,7 +1380,7 @@ internal sealed partial class PortfolioDesignService(
             v.Axes is { } axes ? JsonSerializer.Deserialize<PortfolioAxes>(axes, StoredJson) : null, v.WidgetCode, HiddenColumns: v.HiddenColumns,
             Columns: data?.Columns, ShowTotals: data?.ShowTotals,
             Text: v.TextBox is { } text ? JsonSerializer.Deserialize<PortfolioTextBox>(text, StoredJson) : null, Map: data?.Map, Source: data?.Source,
-            ColumnField: data?.ColumnField);
+            ColumnField: data?.ColumnField, Labels: data?.Labels);
     }
 
     /// <summary>A table section's hidden columns as saved and echoed: null when it hides none (an empty list or null), so a design reads back as it was drawn.</summary>
@@ -1353,7 +1397,7 @@ internal sealed partial class PortfolioDesignService(
             ? JsonSerializer.Serialize(
                 new PortfolioVisualDataFields(
                     v.Values, v.GroupField, v.Filters, v.GroupDateUnit, IsColumnTable(v) ? v.Columns : null, IsColumnTable(v) ? v.ShowTotals : null, MapOptionsOf(v),
-                    SourceOf(v), v.VisualType == PortfolioVisualType.Heatmap ? v.ColumnField : null),
+                    SourceOf(v), v.VisualType == PortfolioVisualType.Heatmap ? v.ColumnField : null, HeatmapLabelsOf(v)),
                 StoredJson)
             : null;
 
@@ -1418,6 +1462,10 @@ internal sealed partial class PortfolioDesignService(
     [GeneratedRegex(@"^[A-Z_]{1,40}\z", RegexOptions.CultureInvariant)]
     private static partial Regex ColumnCodeShape();
 
+    /// <summary>A heatmap's value key: a level, a code, a yes/no or an item's id.</summary>
+    [GeneratedRegex(@"^[A-Za-z0-9_.-]{1,64}\z", RegexOptions.CultureInvariant)]
+    private static partial Regex HeatmapKeyShape();
+
     /// <summary>A filter value of a date field: a year.</summary>
     [GeneratedRegex("^[0-9]{4}$", RegexOptions.CultureInvariant)]
     private static partial Regex YearShape();
@@ -1435,7 +1483,8 @@ internal sealed partial class PortfolioDesignService(
         IReadOnlyList<PortfolioFieldValue>? Values, string? GroupField, IReadOnlyList<PortfolioFieldFilter>? Filters, PortfolioDateUnit? GroupDateUnit = null,
         IReadOnlyList<PortfolioTableColumn>? Columns = null, bool? ShowTotals = null, PortfolioMapOptions? Map = null,
         [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] PortfolioRecordSource? Source = null,
-        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ColumnField = null);
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ColumnField = null,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] PortfolioHeatmapLabels? Labels = null);
 
     /// <summary>A row a visual of fields calculates over: a project, or one published snapshot of it; <see cref="Cell"/> reads a field key's revealed value.</summary>
     private sealed record FieldRow(PortfolioProjectRow Project, Func<string, string?> Cell);

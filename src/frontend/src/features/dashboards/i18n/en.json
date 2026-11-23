@@ -801,6 +801,11 @@
     "heatmapRows": "Rows",
     "heatmapColumns": "Columns",
     "heatmapLow": "Fewer",
-    "heatmapHigh": "More"
+    "heatmapHigh": "More",
+    "heatmapRowNames": "Row names: {field}",
+    "heatmapColumnNames": "Column names: {field}",
+    "heatmapNamesNone": "This field lists no values to name.",
+    "heatmapNameAr": "Arabic name of {field} {value}",
+    "heatmapNameEn": "English name of {field} {value}"
   }
 }

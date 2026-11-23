@@ -498,6 +498,8 @@ function ColumnFieldSelect({
             ...visual,
             columnField: chosen,
             ...(chosen === visual.groupField ? { groupField: visual.columnField ?? null } : {}),
+            // Its names name the old fields' values.
+            labels: null,
           });
         }}
       >
@@ -570,10 +572,11 @@ function GroupBySelect({
                     ...visual,
                     groupBy: 'NONE',
                     ...groupedBy(visual, chosen, catalogue),
-                    // A heatmap's rows taking its columns' field swap the two.
+                    // A heatmap's rows taking its columns' field swap the two; its names, of the old fields' values, go.
                     ...(visual.visualType === 'HEATMAP' && chosen === visual.columnField
                       ? { columnField: visual.groupField ?? null }
                       : {}),
+                    ...(visual.visualType === 'HEATMAP' ? { labels: null } : {}),
                   },
             );
           }}

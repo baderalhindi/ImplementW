@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
 import { dashboardView, withDashboards } from '@/test/dashboardFixtures.ts';
@@ -39,6 +40,24 @@ const DESIGN = {
   visuals: [HEATMAP],
 } as unknown as DesignView;
 
+// The risk fields the designer reads for a visual of risks: probability and impact list their five levels.
+const level = (key: string) => ({
+  key,
+  projectionCode: 'RISK',
+  sourceDomain: 'WF-06',
+  fieldCode: key.split('.')[1],
+  type: 'CODE',
+  isSensitive: false,
+  values: ['1', '2', '3', '4', '5'],
+  aggregations: ['COUNT'],
+  grain: 'PROJECT',
+});
+const RISK_FIELDS = [
+  { ...level('RISK.RISK'), type: 'COUNT', values: [] },
+  level('RISK.PROBABILITY'),
+  level('RISK.IMPACT'),
+];
+
 const visualsSent = (body: unknown): Visual[] => (body as { visuals: Visual[] }).visuals;
 
 function api(): MockApi {
@@ -47,7 +66,10 @@ function api(): MockApi {
   withDashboards(mock, { views: { PORTFOLIO: dashboardView('PORTFOLIO') } });
   return mock
     .on('GET', /^\/portfolio-insights\/design$/, { body: DESIGN })
-    .on('GET', /^\/portfolio-insights\/design\/fields$/, { body: designFieldsFixture() })
+    .on('GET', /^\/portfolio-insights\/design\/fields$/, (request) => ({
+      body:
+        request.query.get('source') === 'RISKS' ? { fields: RISK_FIELDS } : designFieldsFixture(),
+    }))
     .on('POST', /^\/portfolio-insights\/design\/preview$/, (request) => ({
       body: {
         isStandard: false,
@@ -76,5 +98,38 @@ describe('a saved heatmap', () => {
       groupField: 'RISK.PROBABILITY',
       columnField: 'RISK.IMPACT',
     });
+  });
+
+  test('its settings name each level, the guide’s names first; a name changed is sent with the design', async () => {
+    const mock = api();
+    const user = userEvent.setup();
+    renderApp({ path: '/dashboards/design', session: sessionFor(['R02']) });
+    await screen.findByRole('region', { name: HEATMAP.title.en });
+    await user.click(
+      screen.getByRole('button', {
+        name: (name) => name.replace(/[\u2068\u2069]/g, '') === `Edit ${HEATMAP.title.en}`,
+      }),
+    );
+
+    const english = await screen.findByRole('textbox', {
+      name: (name) => name.replace(/[\u2068\u2069]/g, '') === 'English name of Probability 5',
+    });
+    expect((english as HTMLInputElement).value).toBe('Almost certain');
+    await user.clear(english);
+    await user.type(english, 'Near certain');
+
+    await waitFor(() => {
+      const sent = visualsSent(
+        mock.requestsTo('POST', /^\/portfolio-insights\/design\/preview$/).at(-1)?.body,
+      )[0];
+      expect(sent?.labels?.rows).toEqual([
+        { key: '5', label: { ar: 'مُرجّح', en: 'Near certain' } },
+      ]);
+    });
+    expect(
+      screen.getByRole('group', {
+        name: (name) => name.replace(/[\u2068\u2069]/g, '') === 'Row names: Probability',
+      }),
+    ).toBeTruthy();
   });
 });

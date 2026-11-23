@@ -174,6 +174,7 @@ function withoutFigures(visual: VisualResult): Visual {
     values: visual.values,
     groupField: visual.groupField,
     columnField: visual.columnField,
+    labels: visual.labels,
     groupDateUnit: visual.groupDateUnit,
     filters: visual.filters,
     axes: visual.axes,

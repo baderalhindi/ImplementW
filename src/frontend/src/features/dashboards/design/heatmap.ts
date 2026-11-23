@@ -1,8 +1,10 @@
+import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
 import { type Language, translate } from '@/shared/i18n/i18n.ts';
 
 import {
   type FieldDescriptor,
   type FieldValue,
+  type HeatmapLabels,
   type Visual,
   type VisualGroup,
 } from './designApi.ts';
@@ -147,4 +149,70 @@ export function heatmapMatrix(groups: readonly VisualGroup[]): HeatmapMatrix {
 /** A cell's colour strength, 0 to 1: its figure over the largest (an empty or unavailable cell 0). */
 export function heatStrength(value: number | null | undefined, max: number): number {
   return typeof value === 'number' && max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+}
+
+/**
+ * The risk methodology guide's names for the levels (24 Nov 2026, "Impact matrix model"): what a heatmap of risks by probability and impact shows until
+ * someone names them otherwise on the visual.
+ */
+export const GUIDE_LEVEL_NAMES: Readonly<Record<string, Readonly<Record<string, BilingualLabel>>>> =
+  {
+    [RISK_HEATMAP_ROWS]: {
+      '1': { ar: 'نادر', en: 'Rare' },
+      '2': { ar: 'مُستبعد', en: 'Unlikely' },
+      '3': { ar: 'مُمكن', en: 'Possible' },
+      '4': { ar: 'مُحتمل', en: 'Likely' },
+      '5': { ar: 'مُرجّح', en: 'Almost certain' },
+    },
+    [RISK_HEATMAP_COLUMNS]: {
+      '1': { ar: 'ضئيل', en: 'Negligible' },
+      '2': { ar: 'منخفض', en: 'Low' },
+      '3': { ar: 'متوسط', en: 'Moderate' },
+      '4': { ar: 'عالٍ', en: 'High' },
+      '5': { ar: 'حرج', en: 'Critical' },
+    },
+  };
+
+export type HeatmapAxis = 'rows' | 'columns';
+
+/** The field an axis groups by. */
+export function axisField(
+  visual: Pick<Visual, 'groupField' | 'columnField'>,
+  axis: HeatmapAxis,
+): string | null {
+  return (axis === 'rows' ? visual.groupField : visual.columnField) ?? null;
+}
+
+/** A value's name on a heatmap's axis: the visual's own, else the guide's for a risk's probability or impact; null for the field's own words. */
+export function heatmapLabel(
+  visual: Pick<Visual, 'groupField' | 'columnField' | 'labels'>,
+  axis: HeatmapAxis,
+  key: string | null,
+): BilingualLabel | null {
+  if (key === null) {
+    return null;
+  }
+  const own = visual.labels?.[axis].find((entry) => entry.key === key)?.label;
+  const field = axisField(visual, axis);
+  return own ?? (field === null ? null : (GUIDE_LEVEL_NAMES[field]?.[key] ?? null));
+}
+
+/** The values an axis can name: its field's listed values (a risk's levels, a code's codes, yes and no); none for an item field. */
+export function axisValues(field: FieldDescriptor | undefined): string[] {
+  if (field === undefined) {
+    return [];
+  }
+  return field.type === 'BOOLEAN' ? ['TRUE', 'FALSE'] : [...field.values];
+}
+
+/** The heatmap with one value's name on one axis set in one language; the other language keeps what it shows now. */
+export function withHeatmapLabel(
+  visual: Visual,
+  axis: HeatmapAxis,
+  key: string,
+  label: BilingualLabel,
+): Visual {
+  const labels: HeatmapLabels = visual.labels ?? { rows: [], columns: [] };
+  const others = labels[axis].filter((entry) => entry.key !== key);
+  return { ...visual, labels: { ...labels, [axis]: [...others, { key, label }] } };
 }
