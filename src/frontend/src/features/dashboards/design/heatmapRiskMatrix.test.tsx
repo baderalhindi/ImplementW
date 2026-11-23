@@ -66,7 +66,14 @@ describe('a heatmap of risks by probability and impact', () => {
     expect(grid.querySelector('[data-cell="4:4"]')?.getAttribute('data-rating')).toBe('CRITICAL');
     expect(grid.querySelector('[data-cell="4:4"]')?.textContent).toContain('2');
     expect(grid.querySelector('[data-cell="1:1"]')?.getAttribute('data-rating')).toBe('LOW');
-    expect(within(grid).getAllByRole('row')[1]?.textContent).toContain('5');
+    // Probability 5 is the first row; the impact levels run along the last, as the guide draws them; a cell holds only its number.
+    const rows = within(grid).getAllByRole('row');
+    expect(rows[0]?.querySelector('th')?.textContent).toContain('(5)');
+    expect(rows.at(-1)?.textContent).toContain('(1)');
+    expect(grid.querySelector('[data-cell="1:1"]')?.textContent).toBe('Low: 0');
+    expect(
+      grid.querySelector('[data-cell="1:1"]')?.querySelector('.visually-hidden')?.textContent,
+    ).toBe('Low: ');
     expect(screen.queryByText('Fewer')).toBeNull();
   });
 

@@ -10239,10 +10239,10 @@ tr[data-flagged='true'] {
 }
 
 /*
- * A heatmap of risks by probability and impact is the Risk register's matrix (RiskHeatMap). Inside a visual it fills its box whatever size the
- * visual is given (22 Nov 2026: "when I make a visual smaller or larger it follows"): the table takes the whole width and height, its rows and
- * columns sharing them, and its words, padding and gaps scale with the box (container units). Its title is the visual's, so the matrix's caption is
- * read but not shown. The Risk register's own matrix is not changed.
+ * A heatmap of risks by probability and impact (RiskMatrixVisual, 24 Nov 2026, as the risk methodology guide draws its matrix): each cell its
+ * rating's colour with only its number; "(5) Likely" down the side with the word Probability on its side, "(1) Negligible" along the bottom with
+ * the word Impact under it; the ratings' legend last. It fills its visual whatever size it is given: the table takes the room left by the axes'
+ * words, and its words, numbers and gaps scale with the box (container units).
  */
 .visual__risk-matrix {
   container-type: size;
@@ -10251,64 +10251,107 @@ tr[data-flagged='true'] {
   overflow: hidden;
 }
 
-.visual__risk-matrix .risk-matrix {
-  display: flex;
-  flex-direction: column;
+.risk-grid {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: clamp(2px, 1cqmin, 8px);
   block-size: 100%;
   margin: 0;
 }
 
-.visual__risk-matrix .risk-matrix__scroll {
-  flex: 1 1 auto;
+.risk-grid__body {
+  display: flex;
+  gap: clamp(2px, 1cqmin, 8px);
   min-block-size: 0;
-  overflow: hidden;
 }
 
-.visual__risk-matrix .risk-matrix__grid {
+.risk-grid__axis {
+  margin: 0;
+  border-radius: var(--radius-card);
+  background: var(--color-neutral-surface);
+  color: var(--color-text);
+  font-size: clamp(0.6rem, 3cqmin, 1.1rem);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Probability reads up the side, as the guide's. */
+.risk-grid__axis--probability {
+  display: grid;
+  place-items: center;
+  padding: clamp(2px, 1cqmin, 8px) clamp(2px, 0.8cqmin, 6px);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* Impact under the cells, from the end of the row names' column. */
+.risk-grid__axis--impact {
+  margin-inline-start: calc(22% + 1.5rem);
+  padding: clamp(1px, 0.8cqmin, 6px);
+}
+
+.risk-grid__table {
+  flex: 1;
   inline-size: 100%;
   block-size: 100%;
-  table-layout: fixed;
+  border-collapse: separate;
   border-spacing: clamp(1px, 0.6cqmin, 4px);
-  font-size: clamp(0.55rem, 3.2cqmin, 1.05rem);
+  table-layout: fixed;
 }
 
-.visual__risk-matrix .risk-matrix__grid th {
-  padding: clamp(1px, 1cqmin, 8px);
-  font-size: 0.85em;
+.risk-grid__level {
+  padding: clamp(1px, 0.8cqmin, 6px);
+  color: var(--color-text);
+  font-size: clamp(0.55rem, 2.8cqmin, 0.95rem);
+  font-weight: 700;
+  text-align: start;
   overflow-wrap: anywhere;
 }
 
-.visual__risk-matrix .risk-matrix__corner {
-  inline-size: 18%;
+tbody .risk-grid__level {
+  inline-size: 22%;
 }
 
-.visual__risk-matrix .risk-matrix__cell {
-  min-inline-size: 0;
-  padding: clamp(1px, 1cqmin, 8px);
-  overflow: hidden;
+.risk-grid__level--impact {
+  text-align: center;
 }
 
-.visual__risk-matrix .risk-matrix__count {
-  font-size: 0.85em;
+.risk-grid__cell {
+  padding: 0;
+  border-radius: var(--radius);
+  font-size: clamp(0.7rem, 4.5cqmin, 1.6rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+  vertical-align: middle;
 }
 
-.visual__risk-matrix .risk-matrix__legend {
-  flex: none;
-  margin-block-start: clamp(2px, 1cqmin, 8px);
-  font-size: clamp(0.55rem, 2.6cqmin, 0.875rem);
+.risk-grid__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(2px, 1cqmin, 8px);
+  margin: 0;
+  padding: 0;
+  font-size: clamp(0.55rem, 2.4cqmin, 0.85rem);
+  list-style: none;
 }
 
-.visual__risk-matrix .risk-matrix__legend .badge {
+.risk-grid__legend .badge {
   font-size: 1em;
 }
 
-.visual__risk-matrix .risk-matrix__caption {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+/* A small one keeps its cells whole: the legend goes first, then the axes' words (each level still names its axis by its place). */
+@container (max-block-size: 18rem) {
+  .risk-grid__legend {
+    display: none;
+  }
+}
+
+@container (max-block-size: 12rem) {
+  .risk-grid__axis {
+    display: none;
+  }
 }
 
 /* The shaded heatmap fills its box the same way: its words and gaps scale with it. */
@@ -10338,19 +10381,6 @@ tr[data-flagged='true'] {
 
 .heatmap__corner {
   inline-size: 18%;
-}
-
-/* A small risk-matrix visual keeps its cells whole: its legend's words go first, then the legend (the ratings are in every cell). */
-@container (max-block-size: 22rem) {
-  .visual__risk-matrix .risk-matrix__legend > span {
-    display: none;
-  }
-}
-
-@container (max-block-size: 15rem) {
-  .visual__risk-matrix .risk-matrix__legend {
-    display: none;
-  }
 }
 
 /*

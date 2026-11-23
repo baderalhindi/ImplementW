@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 
 import { OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
-import { RiskHeatMap } from '@/features/risks/components/RiskHeatMap.tsx';
 import { formatPoints } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { sarExactLabel } from '@/shared/format/money.ts';
@@ -22,6 +21,7 @@ import { heatmapMatrix, RISK_HEATMAP_COLUMNS, RISK_HEATMAP_ROWS } from './heatma
 import { LineChart } from './LineChart.tsx';
 import { MapVisual } from './MapVisual.tsx';
 import { RISK_COUNT_FIELD } from './riskFields.ts';
+import { RiskMatrixVisual } from './RiskMatrixVisual.tsx';
 import { useDesignRiskMatrix } from './riskMatrixContext.ts';
 import { hasColumns } from './tableColumns.ts';
 import { Coverage } from '../insights/figures.tsx';
@@ -410,7 +410,7 @@ export function VisualBody({
         const byProbability = rowsField === RISK_HEATMAP_ROWS;
         return (
           <div className="visual__risk-matrix">
-            <RiskHeatMap
+            <RiskMatrixVisual
               matrix={riskMatrix}
               caption={visual.title[language]}
               countAt={(probability, impact) =>
