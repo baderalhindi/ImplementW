@@ -62,8 +62,8 @@ Deliberately outside the line:
   `dependency-vuln-gate.yml`, each a required check (`secret-and-dependency-scanning.md`). `repo-checks` runs
   their static guard, `secret-and-dependency-scanning-check.py`.
 
-`timeout-minutes` on each job makes the budget mechanical: 10, and 15 on `backend` and `backend-risk-governance`
-(change log, 2026-11-06). The gate cannot quietly grow past its budget, it fails instead. NuGet packages are cached on the hash of `Directory.Packages.props`; npm packages on
+`timeout-minutes` on each job makes the budget mechanical: 10, and 15 on `backend`, `backend-risk-governance`
+and `backend-platform-services` (change log, 2026-11-06 and 2026-11-24). The gate cannot quietly grow past its budget, it fails instead. NuGet packages are cached on the hash of `Directory.Packages.props`; npm packages on
 `package-lock.json` via `setup-node`.
 
 ### 3.2 The four scripts had nowhere else to go
@@ -164,7 +164,7 @@ cold runner the dominant costs are SDK setup, `npm ci` and the first restore, al
 | --- | --- | --- |
 | 1 | CI fails a PR that introduces a lint error, a type error, or a failing unit test | **MET** — §4 rows 5–9, each violation class proven red against the workflow's own commands, both tiers |
 | 2 | Passing the gate is a required branch-protection check on `main` | **MET ON FILE, PENDING APPLICATION** — the ruleset lists `backend`, `frontend` and `repo-checks` on `main`, `dev` and `stage` — `pr-policy` was removed from the required checks on 2026-09-22 (`branching-strategy.md` §5.1), which does not affect this task's three; it takes effect when an administrator runs `apply.sh` (F-1). Same shape as `monorepo-bootstrap.md` S-3 |
-| 3 | Gate stage run time under 10 minutes on a representative PR | **NOT MET since 2026-11-06 for `backend` and `backend-risk-governance`**, which are capped at 15 minutes (change log); the other jobs stay enforced at `timeout-minutes: 10`; measured times in §4 |
+| 3 | Gate stage run time under 10 minutes on a representative PR | **NOT MET since 2026-11-06 for `backend` and `backend-risk-governance`, and since 2026-11-24 for `backend-platform-services`**, which are capped at 15 minutes (change log); the other jobs stay enforced at `timeout-minutes: 10`; measured times in §4 |
 
 CTL-39 (cybersecurity control matrix) additionally names the contract check: `contract-check.py` runs in
 `repo-checks` over the conventions sample and the event samples. It does **not** yet run over a document generated
@@ -185,6 +185,7 @@ from the built API — F-5.
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-11-24 | `backend-platform-services` goes from a 10 to a 15 minute cap, following the 2026-11-06 decision: it ran 6.5 to 10 min on recent runs and was cancelled at 10 min 15 s on PR #143 (run 45471761127) and at 10 min on `dev` after PR #142, each time after its last step had passed (IntegrationMonitoring 37/37). No test failed | PR #143 |
 | 2026-11-06 | `backend` and `backend-risk-governance` go from a 10 to a 15 minute cap, by the project owner's decision on PR #136: both were cancelled at about 10 min (run 42224666736, in the ProjectTask and Milestone integration steps, no test failed), which also skipped `coverage`. This departs from the 2026-10-09 approach of splitting a job and keeping the cap, and criterion 3 is no longer met for these two jobs. The slowdown has not been investigated | PR #136 |
 | 2026-10-16 | `repo-checks` gains "Secret scanning and dependency vulnerability gates (TASK-080)", the static guard of the two new required checks, which run in their own workflows | TASK-080 (`secret-and-dependency-scanning.md`) |
 | 2026-10-14 | A sixth job, `backend-endpoint-hardening`: it builds the commit and runs the "Endpoint hardening integration tests" step (rate limiting, CORS, security headers; about 40 s of tests) against PostgreSQL, the test directory and a `mirror.gcr.io/library/redis:7-alpine` service container, which the shared rate-limit counter tests need. On `dev` before it, `backend` ran 8 min 29 s and `backend-risk-governance` 9 min 1 s, so neither had room (F-4). The filter ends in `.`. The ruleset file and `ci-cd-pipeline.yml`'s job list gain the check | TASK-078 (`endpoint-hardening.md` §5.1) |
