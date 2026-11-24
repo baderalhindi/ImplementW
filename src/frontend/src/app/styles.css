@@ -1131,12 +1131,6 @@ h3 {
   letter-spacing: normal;
 }
 
-.page-header__description {
-  margin: var(--space-1) 0 0;
-  color: var(--color-text-muted);
-  max-inline-size: 60ch;
-}
-
 .page-header__actions {
   display: flex;
   flex-wrap: wrap;

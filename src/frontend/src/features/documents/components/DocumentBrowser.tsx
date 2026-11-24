@@ -7,6 +7,7 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { TextField } from '@/shared/ui/FormFields.tsx';
+import { HelpTip } from '@/shared/ui/HelpTip.tsx';
 import { PageHeader, Pagination } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -118,9 +119,9 @@ export function DocumentBrowser({
     <>
       {embedded ? (
         <div className="section__header">
-          <div>
+          <div className="page-header__heading">
             <h2>{title}</h2>
-            <p className="page-header__description">{description}</p>
+            <HelpTip label={title}>{description}</HelpTip>
           </div>
           {uploadButton}
         </div>

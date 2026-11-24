@@ -11,9 +11,8 @@ interface PageHeaderProps {
   title: string;
   /** The title's own language when it is stored narrative (a project title), which may differ from the interface's. */
   titleLanguage?: string | undefined;
+  /** The page's guide text, behind a "?" beside the title (HelpTip; 24 Nov 2026: every guide text behind a question mark). */
   description?: string | undefined;
-  /** A note behind a "?" beside the title (HelpTip), in place of a description under it. */
-  help?: ReactNode;
   actions?: ReactNode;
 }
 
@@ -25,7 +24,6 @@ export function PageHeader({
   title,
   titleLanguage,
   description,
-  help,
   actions,
 }: PageHeaderProps): ReactElement {
   const { t } = useI18n();
@@ -44,9 +42,8 @@ export function PageHeader({
             {title}
           </h1>
           {/* Beside the heading, not in it, so the heading's name stays the title. */}
-          {help !== undefined && <HelpTip label={title}>{help}</HelpTip>}
+          {description !== undefined && <HelpTip label={title}>{description}</HelpTip>}
         </div>
-        {description !== undefined && <p className="page-header__description">{description}</p>}
       </div>
       {actions !== undefined && <div className="page-header__actions">{actions}</div>}
     </div>

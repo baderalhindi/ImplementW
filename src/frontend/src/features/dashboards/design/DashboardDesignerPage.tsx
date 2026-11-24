@@ -1271,7 +1271,7 @@ export function DashboardDesignerPage(): ReactElement {
         )}
         <PageHeader
           title={t('dashboards.designer.title')}
-          help={t('dashboards.designer.intro')}
+          description={t('dashboards.designer.intro')}
           actions={
             <>
               <Link className="button button--quiet" to={PORTFOLIO_DASHBOARD_PATH}>
