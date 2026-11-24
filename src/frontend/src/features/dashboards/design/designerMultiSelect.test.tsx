@@ -256,3 +256,62 @@ describe('box selection with the mouse', () => {
     ]);
   });
 });
+
+describe('several visuals removed together', () => {
+  // 24 Nov 2026, "I can't delete more than one selection in the dashboard".
+  const titlesPreviewed = (mock: MockApi) => Object.keys(rowsPreviewed(mock)).sort();
+
+  async function selectFirstAndThird(user: ReturnType<typeof userEvent.setup>) {
+    await user.keyboard('{Control>}');
+    await user.click(moveHandle('First'));
+    await user.click(moveHandle('Third'));
+    await user.keyboard('{/Control}');
+  }
+
+  test('the Properties pane removes all the visuals selected', async () => {
+    const mock = api();
+    const user = userEvent.setup();
+    await openDesigner();
+    await selectFirstAndThird(user);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: (name) =>
+          plain(name) === plain(en('dashboards.designer.removeSelected', { count: 2 })),
+      }),
+    );
+
+    expect(screen.queryByRole('region', { name: 'First' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Third' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Second' })).toBeTruthy();
+    await waitFor(() => {
+      expect(titlesPreviewed(mock)).toEqual(['Second']);
+    });
+  });
+
+  test('Delete removes them all, wherever the focus is, but not while a box is being typed in', async () => {
+    api();
+    const user = userEvent.setup();
+    await openDesigner();
+    await selectFirstAndThird(user);
+
+    // A box of the page being typed in keeps its own Delete.
+    const search = document.createElement('input');
+    document.body.append(search);
+    act(() => {
+      search.focus();
+    });
+    await user.keyboard('{Delete}');
+    expect(screen.getByRole('region', { name: 'First' })).toBeTruthy();
+
+    act(() => {
+      search.blur();
+      search.remove();
+    });
+    await user.keyboard('{Delete}');
+
+    expect(screen.queryByRole('region', { name: 'First' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Third' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Second' })).toBeTruthy();
+  });
+});

@@ -5,6 +5,7 @@ import {
   type ReactElement,
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
 } from 'react';
@@ -248,6 +249,22 @@ function sameDesign(a: Visual[], b: Visual[]): boolean {
  * Saving changes the dashboard for everyone, with no approval. A keyboard moves a visual one cell with the arrow keys on its move handle
  * (a child within its container) and sizes it on its size handle.
  */
+/**
+ * The design without the visuals `keys`: a container with visuals in it goes with them, or (`keepVisuals`) leaves them on the dashboard where
+ * they are; a container's child leaves its container.
+ */
+function withoutVisuals(all: Draft[], keys: readonly string[], keepVisuals: boolean): Draft[] {
+  return keys.reduce((rest, key) => {
+    const index = rest.findIndex((visual) => visual.key === key);
+    const top = rest[index];
+    if (top !== undefined && childrenOf(top).length > 0) {
+      return withoutContainer(rest, index, keepVisuals);
+    }
+    const path = pathWhere(rest, (visual) => visual.key === key);
+    return path === null ? rest : withoutVisual(rest, path);
+  }, all);
+}
+
 export function DashboardDesignerPage(): ReactElement {
   const { t, language } = useI18n();
   const [saved, setSaved] = useState<Visual[] | null>(null);
@@ -280,8 +297,8 @@ export function DashboardDesignerPage(): ReactElement {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [placeProblem, setPlaceProblem] = useState<string | null>(null);
-  /** The container whose removal is being asked about: with its visuals, or keeping them. */
-  const [removingKey, setRemovingKey] = useState<string | null>(null);
+  /** The visuals being removed while the dialog asks whether the visuals in the containers among them go too, or stay; empty when none. */
+  const [removingKeys, setRemovingKeys] = useState<readonly string[]>([]);
   // A tile dragged from the gallery: its name follows the pointer until it is dropped.
   const [ghost, setGhost] = useState<{ x: number; y: number; label: string } | null>(null);
   // A click that ends a drag from the gallery adds nothing more.
@@ -383,6 +400,49 @@ export function DashboardDesignerPage(): ReactElement {
     setVisuals(packed(splitWidgets(visuals, viewWidgets, keyed)));
   }
 
+  /**
+   * Removes the visuals `keys` (24 Nov 2026, "I can't delete more than one selection"): at once, unless a container with visuals in it is among
+   * them, when the dialog asks first whether its visuals go with it.
+   */
+  const removeVisuals = (keys: readonly string[]) => {
+    const holdsVisuals = keys.some((key) => {
+      const visual = visuals.find((candidate) => candidate.key === key);
+      return visual !== undefined && childrenOf(visual).length > 0;
+    });
+    if (holdsVisuals) {
+      setRemovingKeys(keys);
+      return;
+    }
+    setPlaceProblem(null);
+    setVisuals((all) => withoutVisuals(all, keys, false));
+    setSelectedKeys([]);
+  };
+
+  // Delete (or Backspace) removes the visuals selected, wherever the focus is but in a box being typed in or a dialog.
+  const deleteSelection = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    if (
+      (event.key !== 'Delete' && event.key !== 'Backspace') ||
+      event.defaultPrevented ||
+      selectedKeys.length === 0 ||
+      (event.target instanceof HTMLElement &&
+        (event.target.isContentEditable ||
+          event.target.closest('input, textarea, select, dialog, [role="dialog"]') !== null))
+    ) {
+      return;
+    }
+    event.preventDefault();
+    removeVisuals(selectedKeys);
+  });
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      deleteSelection(event);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
   if (loadError !== null) {
     return (
       <ErrorState
@@ -405,7 +465,9 @@ export function DashboardDesignerPage(): ReactElement {
   const containerOf = (all: Draft[], path: VisualPath): Draft | undefined =>
     path.child === null ? undefined : all[path.index];
   const removing =
-    removingKey === null ? undefined : visuals.find((visual) => visual.key === removingKey);
+    removingKeys.length === 1
+      ? visuals.find((visual) => visual.key === removingKeys[0])
+      : undefined;
 
   /**
    * Adds the visual `key` to the selection, or takes it out (Ctrl, ⌘ or Shift on its bar). Only visuals on the dashboard are selected together;
@@ -493,31 +555,11 @@ export function DashboardDesignerPage(): ReactElement {
   // The view's widgets no visual draws: each can be placed again from the gallery.
   const unplaced = view.data === undefined ? [] : unplacedWidgets(visuals, view.data.widgets);
 
-  /** Removes the visual `key`; a container with visuals in it asks first whether they go with it. */
-  const remove = (key: string) => {
-    const path = pathOf(visuals, key);
-    const visual = path === null ? undefined : visualAt(visuals, path);
-    if (visual !== undefined && childrenOf(visual).length > 0) {
-      setRemovingKey(key);
-      return;
-    }
-    relayout((all) => {
-      const at = pathOf(all, key);
-      return at === null ? all : withoutVisual(all, at);
-    });
-    setSelectedKey(null);
-  };
-
-  const removeContainer = (keepVisuals: boolean) => {
-    const key = removingKey;
-    relayout((all) =>
-      withoutContainer(
-        all,
-        all.findIndex((visual) => visual.key === key),
-        keepVisuals,
-      ),
-    );
-    setRemovingKey(null);
+  /** Removes the visuals the dialog asked about, the visuals in their containers with them or kept on the dashboard. */
+  const removeAsked = (keepVisuals: boolean) => {
+    const keys = removingKeys;
+    relayout((all) => withoutVisuals(all, keys, keepVisuals));
+    setRemovingKeys([]);
     setSelectedKey(null);
   };
 
@@ -919,7 +961,7 @@ export function DashboardDesignerPage(): ReactElement {
     }
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
-      remove(key);
+      removeVisuals(selectedKeys.includes(key) ? selectedKeys : [key]);
       return;
     }
     const across = containerOf(visuals, path)?.layoutWidth ?? COLUMNS;
@@ -1396,9 +1438,20 @@ export function DashboardDesignerPage(): ReactElement {
                 {t('dashboards.designer.properties')}
               </h2>
               {selectedKeys.length > 1 ? (
-                <p className="designer__hint" role="status">
-                  {t('dashboards.designer.severalSelected', { count: selectedKeys.length })}
-                </p>
+                <>
+                  <p className="designer__hint" role="status">
+                    {t('dashboards.designer.severalSelected', { count: selectedKeys.length })}
+                  </p>
+                  <button
+                    type="button"
+                    className="button button--danger"
+                    onClick={() => {
+                      removeVisuals(selectedKeys);
+                    }}
+                  >
+                    {t('dashboards.designer.removeSelected', { count: selectedKeys.length })}
+                  </button>
+                </>
               ) : current === undefined ? (
                 <p className="designer__hint">{t('dashboards.designer.selectHint')}</p>
               ) : (
@@ -1424,7 +1477,7 @@ export function DashboardDesignerPage(): ReactElement {
                     duplicate(current);
                   }}
                   onRemove={() => {
-                    remove(current.key);
+                    removeVisuals([current.key]);
                   }}
                 />
               )}
@@ -1432,41 +1485,49 @@ export function DashboardDesignerPage(): ReactElement {
           </aside>
         </div>
         <Dialog
-          open={removing !== undefined}
-          title={t('dashboards.designer.removeContainer')}
+          open={removingKeys.length > 0}
+          title={
+            removing === undefined
+              ? t('dashboards.designer.removeSelected', { count: removingKeys.length })
+              : t('dashboards.designer.removeContainer')
+          }
           onClose={() => {
-            setRemovingKey(null);
+            setRemovingKeys([]);
           }}
         >
           <p>
-            {t('dashboards.designer.removeContainerBody', {
-              title: removing?.title[language] ?? '',
-            })}
+            {removing === undefined
+              ? t('dashboards.designer.removeSelectedBody', { count: removingKeys.length })
+              : t('dashboards.designer.removeContainerBody', { title: removing.title[language] })}
           </p>
           <div className="form__actions">
             <button
               type="button"
               className="button button--danger"
               onClick={() => {
-                removeContainer(false);
+                removeAsked(false);
               }}
             >
-              {t('dashboards.designer.removeWithVisuals')}
+              {removing === undefined
+                ? t('dashboards.designer.removeSelectedWithVisuals')
+                : t('dashboards.designer.removeWithVisuals')}
             </button>
             <button
               type="button"
               className="button button--primary"
               onClick={() => {
-                removeContainer(true);
+                removeAsked(true);
               }}
             >
-              {t('dashboards.designer.keepVisuals')}
+              {removing === undefined
+                ? t('dashboards.designer.keepContainersVisuals')
+                : t('dashboards.designer.keepVisuals')}
             </button>
             <button
               type="button"
               className="button"
               onClick={() => {
-                setRemovingKey(null);
+                setRemovingKeys([]);
               }}
             >
               {t('dashboards.designer.cancel')}
