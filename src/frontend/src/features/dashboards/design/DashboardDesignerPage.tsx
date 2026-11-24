@@ -1111,6 +1111,30 @@ export function DashboardDesignerPage(): ReactElement {
     );
   };
 
+  /**
+   * A press on a visual's body (24 Nov 2026, "if I press a visual and press Shift to select another visual I can't"): selects it alone, or with
+   * Ctrl, ⌘ or Shift adds it to the selection or takes it out, as its bar does. Its bar and size handle keep their own presses, and a link or
+   * a box in it keeps its click; a child's press is not its container's too.
+   */
+  const pressOnVisual = (event: PointerEvent<HTMLElement>, key: string) => {
+    const target = event.target as Element;
+    if (
+      event.button !== 0 ||
+      target.closest(
+        '.designer__visual-bar, .designer__handle--resize, a, button, input, select, textarea',
+      ) !== null
+    ) {
+      return;
+    }
+    event.stopPropagation();
+    if (addsToSelection(event)) {
+      event.preventDefault();
+      toggleSelected(key);
+    } else if (!(selectedKeys.length === 1 && selectedKeys[0] === key)) {
+      setSelectedKey(key);
+    }
+  };
+
   /** A visual at `place`: on the dashboard's grid, or on its container's inner grid. */
   const renderVisual = (visual: Draft, place: CSSProperties) => {
     // A text box's background and border (frameOf) are drawn in the designer as on the dashboard.
@@ -1125,6 +1149,9 @@ export function DashboardDesignerPage(): ReactElement {
         data-visual-key={visual.key}
         aria-current={visual.key === selectedKey ? 'true' : undefined}
         data-visual={visual.visualType}
+        onPointerDown={(event) => {
+          pressOnVisual(event, visual.key);
+        }}
       >
         {renderBar(visual, 'designer__visual-bar', 'widget__title')}
         <VisualBodyBox
@@ -1180,6 +1207,9 @@ export function DashboardDesignerPage(): ReactElement {
         data-visual-key={container.key}
         aria-current={container.key === selectedKey ? 'true' : undefined}
         data-visual="CONTAINER"
+        onPointerDown={(event) => {
+          pressOnVisual(event, container.key);
+        }}
       >
         {renderBar(
           container,

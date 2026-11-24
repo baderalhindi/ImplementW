@@ -315,3 +315,37 @@ describe('several visuals removed together', () => {
     expect(screen.getByRole('region', { name: 'Second' })).toBeTruthy();
   });
 });
+
+describe('a press on a visual’s body', () => {
+  // 24 Nov 2026, "if I press a visual and press Shift to select another visual I can't do it".
+  const body = (title: string) => {
+    const element = screen.getByRole('region', { name: title }).querySelector('.visual__body');
+    if (element === null) {
+      throw new Error(`${title} has no body`);
+    }
+    return element;
+  };
+
+  test('selects it, and with Shift, Ctrl or ⌘ adds another visual to the selection', async () => {
+    api();
+    await openDesigner();
+
+    fireEvent.pointerDown(body('First'), { button: 0 });
+    expect([isSelected('First'), isSelected('Second'), isSelected('Third')]).toEqual([
+      true,
+      false,
+      false,
+    ]);
+
+    fireEvent.pointerDown(body('Second'), { button: 0, shiftKey: true });
+    fireEvent.pointerDown(body('Third'), { button: 0, metaKey: true });
+    expect([isSelected('First'), isSelected('Second'), isSelected('Third')]).toEqual([
+      true,
+      true,
+      true,
+    ]);
+
+    fireEvent.pointerDown(body('Second'), { button: 0, ctrlKey: true });
+    expect(isSelected('Second')).toBe(false);
+  });
+});
