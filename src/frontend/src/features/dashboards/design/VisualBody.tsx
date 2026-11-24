@@ -16,9 +16,12 @@ import { DonutWithLegend } from '../components/DonutWithLegend.tsx';
 import { drawnAxes, valueScale } from './axes.ts';
 import { AxisBarChart, AxisColumnChart, type AxisProps } from './AxisCharts.tsx';
 import { ColumnTable } from './ColumnTable.tsx';
+import { HeatmapChart } from './HeatmapChart.tsx';
+import { heatmapLabel, heatmapMatrix, RISK_HEATMAP_COLUMNS, RISK_HEATMAP_ROWS } from './heatmap.ts';
 import { LineChart } from './LineChart.tsx';
 import { MapVisual } from './MapVisual.tsx';
 import { RISK_COUNT_FIELD } from './riskFields.ts';
+import { RiskMatrixVisual } from './RiskMatrixVisual.tsx';
 import { useDesignRiskMatrix } from './riskMatrixContext.ts';
 import { hasColumns } from './tableColumns.ts';
 import { Coverage } from '../insights/figures.tsx';
@@ -387,6 +390,64 @@ export function VisualBody({
           format={(value, index) => (series[index] ?? first).format(value)}
         />
       );
+    case 'HEATMAP': {
+      // Rows by the group field, columns by the columns field, a cell per pair (heatmap.ts).
+      const rowsField = groupField;
+      const columnsField = visual.columnField ?? null;
+      if (rowsField === null || columnsField === null) {
+        return <p className="state">{t('dashboards.noData')}</p>;
+      }
+      // Risks by probability and impact (either way round) are the risk matrix: drawn as the Risk register draws it, each cell in its rating's
+      // colour and words with its number of risks, probability rising up the rows (22 Nov 2026, "coloured as the risk matrix").
+      const pair = [rowsField, columnsField];
+      if (
+        onRisks &&
+        riskMatrix !== null &&
+        pair.includes(RISK_HEATMAP_ROWS) &&
+        pair.includes(RISK_HEATMAP_COLUMNS)
+      ) {
+        const cells = heatmapMatrix(groups);
+        const byProbability = rowsField === RISK_HEATMAP_ROWS;
+        return (
+          <div className="visual__risk-matrix">
+            <RiskMatrixVisual
+              matrix={riskMatrix}
+              caption={visual.title[language]}
+              countAt={(probability, impact) =>
+                (byProbability
+                  ? cells.cell(String(probability), String(impact))
+                  : cells.cell(String(impact), String(probability))
+                )?.values[0] ?? 0
+              }
+              probabilityName={(level) =>
+                heatmapLabel(visual, byProbability ? 'rows' : 'columns', String(level))
+              }
+              impactName={(level) =>
+                heatmapLabel(visual, byProbability ? 'columns' : 'rows', String(level))
+              }
+            />
+          </div>
+        );
+      }
+      return (
+        <HeatmapChart
+          caption={visual.title[language]}
+          groups={groups}
+          rowsHeading={fieldName(rowsField, language)}
+          columnsHeading={fieldName(columnsField, language)}
+          rowText={(group) =>
+            heatmapLabel(visual, 'rows', group.key)?.[language] ??
+            fieldGroupText(rowsField, null, group, t, language, riskMatrix)
+          }
+          columnText={(group) =>
+            heatmapLabel(visual, 'columns', group.key)?.[language] ??
+            fieldGroupText(columnsField, null, group, t, language, riskMatrix)
+          }
+          format={first.format}
+          cellHint={(group) => projectsHint(group.projects)}
+        />
+      );
+    }
     case 'MAP':
       return (
         <MapVisual

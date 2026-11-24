@@ -39,6 +39,7 @@ import {
   NO_FIELD_DATA,
   valuesFor,
 } from './fields.ts';
+import { asHeatmap, heatmapTitle, heatmapVisual } from './heatmap.ts';
 import { MAP_PLACES, mapVisual } from './mapVisual.ts';
 import { isRiskField, riskFigures, riskMissingText } from './riskFields.ts';
 import { textBoxVisual } from './textBox.ts';
@@ -66,6 +67,7 @@ export const VISUAL_TYPES: readonly VisualType[] = [
   'DONUT',
   'TABLE',
   'GAUGE',
+  'HEATMAP',
 ];
 
 /** The Follow-up list's main reason each follow-up figure counts. */
@@ -140,6 +142,8 @@ export const MAX_MEASURES: Record<VisualType, number> = {
   CONTAINER: 0,
   TEXT: 0,
   MAP: 1,
+  // A heatmap draws one field value (heatmap.ts).
+  HEATMAP: 0,
 };
 
 /** The size a new visual of a type takes, in columns of twelve and rows. */
@@ -156,6 +160,7 @@ export const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }>
   CONTAINER: { width: 6, height: 6 },
   TEXT: { width: 6, height: 2 },
   MAP: { width: 12, height: 7 },
+  HEATMAP: { width: 6, height: 6 },
 };
 
 export const COLUMNS = 12;
@@ -173,7 +178,8 @@ export function groupBysFor(type: VisualType): readonly GroupBy[] {
     type === 'LINE' ||
     type === 'SECTION' ||
     type === 'CONTAINER' ||
-    type === 'TEXT'
+    type === 'TEXT' ||
+    type === 'HEATMAP'
   ) {
     return ['NONE'];
   }
@@ -193,7 +199,13 @@ const ADDITIVE_MEASURES: readonly Measure[] = [
 
 /** The measures a type may draw: a gauge a percentage, a pie, donut or map a total that adds up; a line draws fields only. */
 export function measuresFor(type: VisualType): readonly Measure[] {
-  if (type === 'SECTION' || type === 'LINE' || type === 'CONTAINER' || type === 'TEXT') {
+  if (
+    type === 'SECTION' ||
+    type === 'LINE' ||
+    type === 'CONTAINER' ||
+    type === 'TEXT' ||
+    type === 'HEATMAP'
+  ) {
     return [];
   }
   if (type === 'GAUGE') {
@@ -278,7 +290,11 @@ function withTypeOnProjects(
   if (type === 'TABLE') {
     return asColumnTable(before, columnsOf(before, fields), fields);
   }
-  const visual = withoutColumns(before);
+  // A heatmap's columns field goes with any other type (heatmap.ts).
+  const visual = { ...withoutColumns(before), columnField: null };
+  if (type === 'HEATMAP') {
+    return asHeatmap(before, fields) ?? before;
+  }
   if (type === 'LINE') {
     return asLine(visual, fields) ?? visual;
   }
@@ -335,7 +351,10 @@ function mapTitle(visual: Pick<Visual, 'measures' | 'values'>, language: Languag
  * and its grouping until someone writes another.
  */
 export function autoTitle(
-  visual: Pick<Visual, 'measures' | 'groupBy' | 'values' | 'groupField' | 'columns'> & {
+  visual: Pick<
+    Visual,
+    'measures' | 'groupBy' | 'values' | 'groupField' | 'columns' | 'columnField'
+  > & {
     visualType?: VisualType;
     source?: Visual['source'];
   },
@@ -343,6 +362,9 @@ export function autoTitle(
 ): string {
   if (visual.visualType === 'MAP') {
     return mapTitle(visual, language);
+  }
+  if (visual.visualType === 'HEATMAP') {
+    return heatmapTitle(visual, language);
   }
   if ((visual.columns?.length ?? 0) > 0) {
     // A column table: its first calculated column by its first grouping one, "Projects by Sector".
@@ -420,6 +442,9 @@ export function newVisual(
   }
   if (type === 'MAP') {
     return mapVisual(place, width, height);
+  }
+  if (type === 'HEATMAP') {
+    return heatmapVisual(place, width, height);
   }
   if (type === 'LINE') {
     const line = asLine(

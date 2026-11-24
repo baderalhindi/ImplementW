@@ -1131,12 +1131,6 @@ h3 {
   letter-spacing: normal;
 }
 
-.page-header__description {
-  margin: var(--space-1) 0 0;
-  color: var(--color-text-muted);
-  max-inline-size: 60ch;
-}
-
 .page-header__actions {
   display: flex;
   flex-wrap: wrap;
@@ -5786,7 +5780,10 @@ path.trend__line--ACTUAL_PERCENT {
   font-weight: 600;
 }
 
-/* The Home's map of the platform: a card per menu. Cards share each row's width, so no row ends in an empty column. */
+/*
+ * The administrator's map of the platform (21 Nov 2026): Administration as one panel with a card per heading of its menu, each heading's
+ * screens as rows with an arrow; the other menus below, smaller, their screens as chips.
+ */
 .home__menus {
   display: grid;
   gap: var(--space-4);
@@ -5796,9 +5793,169 @@ path.trend__line--ACTUAL_PERCENT {
   margin: 0;
 }
 
-.home__menu-cards {
+.admin-map {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 7%, transparent),
+      transparent 55%
+    ),
+    var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+.admin-map__header {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.admin-map__badge {
+  display: inline-flex;
+  flex: none;
+  padding: var(--space-2);
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.admin-map__badge .shell-icon {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.admin-map__title {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.admin-map__lead,
+.admin-map__group-lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.admin-map__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-map__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-map__group:hover,
+.admin-map__group:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border-subtle));
+  box-shadow: var(--shadow-card);
+}
+
+.admin-map__group-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.admin-map__icon {
+  display: inline-flex;
+  padding: var(--space-2);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+.admin-map__group-title {
+  margin: 0 0 var(--space-1);
+  font-size: 1rem;
+}
+
+.admin-map__group-lead {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.admin-map__count {
+  min-inline-size: 1.75rem;
+  padding: 0.1rem var(--space-2);
+  border-radius: 999px;
+  background: var(--color-neutral-surface);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.admin-map__links {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-block-start: 1px solid var(--color-border-subtle);
+  list-style: none;
+}
+
+.admin-map__links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+  border-block-end: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.admin-map__links li:last-child a {
+  border-block-end: 0;
+}
+
+.admin-map__links a:hover,
+.admin-map__links a:focus-visible {
+  color: var(--color-primary);
+}
+
+.admin-map__chevron {
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--color-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.admin-map__links a:hover .admin-map__chevron {
+  color: var(--color-primary);
+  transform: translateX(2px);
+}
+
+[dir='rtl'] .admin-map__chevron {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .admin-map__links a:hover .admin-map__chevron {
+  transform: scaleX(-1) translateX(2px);
+}
+
+/* The other menus: side by side, their screens as chips. */
+.home__menu-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: var(--space-3);
   margin: 0;
   padding: 0;
@@ -5806,7 +5963,6 @@ path.trend__line--ACTUAL_PERCENT {
 }
 
 .home__menu-card {
-  flex: 1 1 min(100%, 16rem);
   min-inline-size: 0;
   padding: var(--space-4);
   border: 1px solid var(--color-border-subtle);
@@ -5814,15 +5970,11 @@ path.trend__line--ACTUAL_PERCENT {
   background: var(--color-background);
 }
 
-.home__menu-card--wide {
-  flex-basis: 100%;
-}
-
 .home__menu-title {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-3);
   font-size: 1rem;
 }
 
@@ -5835,29 +5987,36 @@ path.trend__line--ACTUAL_PERCENT {
   color: var(--color-primary);
 }
 
-/* Links take as many columns as the card's width holds, so a wide card reads as a short block. */
-.home__menu-links {
+.home__menu-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
-  columns: 13rem;
-  column-gap: var(--space-3);
 }
 
-.home__menu-links li {
-  break-inside: avoid;
-}
-
-.home__menu-links a {
-  display: block;
-  padding: var(--space-1) var(--space-2);
-  border-radius: 6px;
+.home__menu-chips a {
+  display: inline-block;
+  padding: 0.3rem var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  color: var(--color-text);
+  font-size: 0.9rem;
   text-decoration: none;
 }
 
-.home__menu-links a:hover {
-  background: var(--color-neutral-surface);
-  text-decoration: underline;
+.home__menu-chips a:hover,
+.home__menu-chips a:focus-visible {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-map__group,
+  .admin-map__chevron {
+    transition: none;
+  }
 }
 
 /* The portfolio snapshot: headline figures as tiles, health tiles marked by their tone on the start edge. */
@@ -7558,7 +7717,7 @@ tr[data-flagged='true'] {
 .chip-toggle[aria-pressed='true'] {
   border-color: var(--color-primary, var(--color-border));
   background: var(--color-primary, var(--color-surface));
-  color: var(--color-on-primary, #fff);
+  color: var(--color-on-primary);
 }
 
 .chip-toggle__count {
@@ -9005,6 +9164,18 @@ tr[data-flagged='true'] {
   inset-block: max(0px, min(15%, calc(50% - 0.375rem)), calc(50% - 1rem));
   block-size: auto;
   min-inline-size: 0;
+  /* As a column's (22 Nov 2026): 4px on the end the figure reaches, square on the axis; the reading end in Arabic too. */
+  border-radius: 0;
+  border-start-end-radius: 4px;
+  border-end-end-radius: 4px;
+}
+
+/* A bar below the axis's base reaches back: its rounded end is the other one, as a column below the axis. */
+.axis-chart__bar.widget__bar.is-below {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  border-start-start-radius: 4px;
+  border-end-start-radius: 4px;
 }
 
 [dir='rtl'] .axis-chart__bar.widget__bar {
@@ -9948,4 +10119,355 @@ tr[data-flagged='true'] {
     );
     block-size: 1px;
   }
+}
+
+/*
+ * The heatmap visual (22 Nov 2026): a table of cells, each shaded from the neutral surface towards the danger colour as its figure grows (--heat,
+ * 0 to 1); the number is always written, so the colour only repeats it. The row field's name sits on the corner's lower edge, the column field's on its upper.
+ */
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.heatmap__scroll {
+  flex: 1;
+  min-block-size: 0;
+  overflow: auto;
+}
+
+.heatmap__table {
+  inline-size: 100%;
+  block-size: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.heatmap__corner {
+  position: relative;
+  inline-size: 7rem;
+  min-block-size: 2.5rem;
+  padding: 0;
+  font-weight: 400;
+}
+
+.heatmap__axis {
+  position: absolute;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.heatmap__axis--columns {
+  inset-block-start: 0;
+  inset-inline-end: var(--space-1);
+}
+
+.heatmap__axis--rows {
+  inset-block-end: 0;
+  inset-inline-start: var(--space-1);
+}
+
+.heatmap__column,
+.heatmap__row {
+  padding: var(--space-1);
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.heatmap__column {
+  text-align: center;
+}
+
+.heatmap__row {
+  text-align: start;
+}
+
+.heatmap__cell {
+  min-inline-size: 2.5rem;
+  padding: var(--space-2) var(--space-1);
+  border-radius: 6px;
+  background: color-mix(
+    in oklab,
+    var(--color-danger) calc(var(--heat, 0) * 85%),
+    var(--color-neutral-surface)
+  );
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.heatmap__cell--strong {
+  /* The page's own colour: white on the light theme's strong red, dark on the dark theme's light one. */
+  color: var(--color-background);
+}
+
+.heatmap__legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.heatmap__ramp {
+  inline-size: 6rem;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-neutral-surface),
+    color-mix(in oklab, var(--color-danger) 85%, var(--color-neutral-surface))
+  );
+}
+
+[dir='rtl'] .heatmap__ramp {
+  transform: scaleX(-1);
+}
+
+/*
+ * A heatmap of risks by probability and impact (RiskMatrixVisual, 24 Nov 2026, as the risk methodology guide draws its matrix): each cell its
+ * rating's colour with only its number; "(5) Likely" down the side with the word Probability on its side, "(1) Negligible" along the bottom with
+ * the word Impact under it; the ratings' legend last. It fills its visual whatever size it is given: the table takes the room left by the axes'
+ * words, and its words, numbers and gaps scale with the box (container units).
+ */
+.visual__risk-matrix {
+  container-type: size;
+  block-size: 100%;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: clamp(2px, 1cqmin, 8px);
+  block-size: 100%;
+  margin: 0;
+}
+
+.risk-grid__body {
+  display: flex;
+  gap: clamp(2px, 1cqmin, 8px);
+  min-block-size: 0;
+}
+
+.risk-grid__axis {
+  margin: 0;
+  border-radius: var(--radius-card);
+  background: var(--color-neutral-surface);
+  color: var(--color-text);
+  font-size: clamp(0.6rem, 3cqmin, 1.1rem);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Probability reads up the side, as the guide's. */
+.risk-grid__axis--probability {
+  display: grid;
+  place-items: center;
+  padding: clamp(2px, 1cqmin, 8px) clamp(2px, 0.8cqmin, 6px);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* Impact under the cells, from the end of the row names' column. */
+.risk-grid__axis--impact {
+  margin-inline-start: calc(22% + 1.5rem);
+  padding: clamp(1px, 0.8cqmin, 6px);
+}
+
+.risk-grid__table {
+  flex: 1;
+  inline-size: 100%;
+  block-size: 100%;
+  border-collapse: separate;
+  border-spacing: clamp(1px, 0.6cqmin, 4px);
+  table-layout: fixed;
+}
+
+.risk-grid__level {
+  padding: clamp(1px, 0.8cqmin, 6px);
+  color: var(--color-text);
+  font-size: clamp(0.55rem, 2.8cqmin, 0.95rem);
+  font-weight: 700;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+tbody .risk-grid__level {
+  inline-size: 22%;
+}
+
+.risk-grid__level--impact {
+  text-align: center;
+}
+
+.risk-grid__cell {
+  padding: 0;
+  border-radius: var(--radius);
+  font-size: clamp(0.7rem, 4.5cqmin, 1.6rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.risk-grid__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(2px, 1cqmin, 8px);
+  margin: 0;
+  padding: 0;
+  font-size: clamp(0.55rem, 2.4cqmin, 0.85rem);
+  list-style: none;
+}
+
+.risk-grid__legend .badge {
+  font-size: 1em;
+}
+
+/* A small one keeps its cells whole: the legend goes first, then the axes' words (each level still names its axis by its place). */
+@container (max-block-size: 18rem) {
+  .risk-grid__legend {
+    display: none;
+  }
+}
+
+@container (max-block-size: 12rem) {
+  .risk-grid__axis {
+    display: none;
+  }
+}
+
+/* The shaded heatmap fills its box the same way: its words and gaps scale with it. */
+.heatmap {
+  container-type: size;
+}
+
+.heatmap__table {
+  border-spacing: clamp(1px, 0.6cqmin, 4px);
+  font-size: clamp(0.55rem, 3.2cqmin, 1.05rem);
+}
+
+.heatmap__scroll {
+  overflow: hidden;
+}
+
+.heatmap__column,
+.heatmap__row,
+.heatmap__cell {
+  padding: clamp(1px, 1cqmin, 8px);
+  font-size: 0.9em;
+}
+
+.heatmap__cell {
+  min-inline-size: 0;
+}
+
+.heatmap__corner {
+  inline-size: 18%;
+}
+
+/*
+ * A note behind a "?" (HelpTip, 24 Nov 2026): a small round button beside a heading; pressed, the note opens below it in a bubble, never wider
+ * than the screen.
+ */
+.page-header__heading,
+.designer__heading-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.help-tip {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.help-tip__button {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-background);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.help-tip__button:hover,
+.help-tip__button[aria-expanded='true'] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.help-tip__button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.help-tip__note {
+  position: absolute;
+  z-index: 50;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-start: calc(-1 * var(--space-2));
+  inline-size: max-content;
+  max-inline-size: min(22rem, calc(100vw - 2rem));
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.help-tip__note--end {
+  inset-inline-start: auto;
+  inset-inline-end: calc(-1 * var(--space-2));
+}
+
+.help-tip__note[hidden] {
+  display: none;
+}
+
+/* A heatmap's level names (24 Nov 2026): a value's key, then its Arabic and English name, on one line where the pane is wide enough. */
+.heatmap-names__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.heatmap-names__value {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.heatmap-names__key {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }

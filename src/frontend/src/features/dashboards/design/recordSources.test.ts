@@ -33,7 +33,7 @@ function placed(type: VisualType): Visual {
   return visual;
 }
 
-const ALLOWED: VisualType[] = ['CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'LINE', 'TABLE'];
+const ALLOWED: VisualType[] = ['CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'LINE', 'TABLE', 'HEATMAP'];
 const PROJECTS_ONLY: VisualType[] = ['GAUGE', 'MAP', 'TEXT', 'CONTAINER', 'SECTION'];
 
 describe('the record sources', () => {

@@ -162,6 +162,7 @@ export const MAX_VALUES: Record<VisualType, number> = {
   CONTAINER: 0,
   TEXT: 0,
   MAP: 1,
+  HEATMAP: 1,
 };
 
 const GAUGE_AGGREGATIONS: readonly FieldAggregation[] = ['AVERAGE', 'MIN', 'MAX'];
@@ -226,13 +227,19 @@ export function groupFieldsFor(
   fields: readonly FieldDescriptor[],
 ): FieldDescriptor[] {
   return groupsByField(type)
-    ? fields.filter((field) => field.grain === grain && groups(field))
+    ? fields.filter(
+        (field) =>
+          field.grain === grain &&
+          groups(field) &&
+          // A heatmap's axes have no date (heatmap.ts).
+          (type !== 'HEATMAP' || !isDateType(field.type)),
+      )
     : [];
 }
 
 /** Whether a visual groups by its fields only, never by a project attribute: a line, and any visual over time. */
 export function groupsByFieldOnly(type: VisualType, grain: FieldGrain): boolean {
-  return type === 'LINE' || grain === 'SNAPSHOT';
+  return type === 'LINE' || type === 'HEATMAP' || grain === 'SNAPSHOT';
 }
 
 /** The grouping a visual of this grain and type starts with when it must group by a field: a date (by month), else a status. */
@@ -364,6 +371,8 @@ export function normalized<T extends Visual>(visual: T): T {
     source,
     values,
     groupField,
+    columnField,
+    labels,
     groupDateUnit,
     filters,
     axes: _axes,
@@ -393,6 +402,17 @@ export function normalized<T extends Visual>(visual: T): T {
     ...(widgetCode === undefined || widgetCode === null ? {} : { widgetCode }),
     ...(values === undefined || values === null || values.length === 0 ? {} : { values }),
     ...(groupField === undefined || groupField === null ? {} : { groupField }),
+    // Only on a heatmap, its names for its values where it names any (heatmap.ts).
+    ...(visual.visualType !== 'HEATMAP' ||
+    labels === undefined ||
+    labels === null ||
+    labels.rows.length + labels.columns.length === 0
+      ? {}
+      : { labels }),
+    // Only on a heatmap, its columns (heatmap.ts).
+    ...(visual.visualType !== 'HEATMAP' || columnField === undefined || columnField === null
+      ? {}
+      : { columnField }),
     ...(groupDateUnit === undefined || groupDateUnit === null ? {} : { groupDateUnit }),
     ...(filters === undefined || filters === null || filters.length === 0 ? {} : { filters }),
     // Only on a table section, null when every column is shown.

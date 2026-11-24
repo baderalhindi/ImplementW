@@ -333,7 +333,7 @@ function markers(visual: HTMLElement): { name: string; figure: string }[] {
 }
 
 describe('the Map tile adds a new map', () => {
-  test('Map sits after Gauge and before Text box and Container', async () => {
+  test('Map sits after Gauge and the Heatmap (22 Nov 2026), and before Text box and Container', async () => {
     api();
     await openDesigner();
     const names = within(screen.getByRole('region', { name: en('dashboards.designer.gallery') }))
@@ -341,7 +341,8 @@ describe('the Map tile adds a new map', () => {
       .map((button) => plain(button.textContent).trim());
     const at = (key: string) => names.indexOf(en(`dashboards.designer.type.${key}`));
     expect(at('GAUGE')).toBeGreaterThanOrEqual(0);
-    expect(at('MAP')).toBe(at('GAUGE') + 1);
+    expect(at('HEATMAP')).toBe(at('GAUGE') + 1);
+    expect(at('MAP')).toBe(at('HEATMAP') + 1);
     expect(at('TEXT')).toBe(at('MAP') + 1);
     expect(at('CONTAINER')).toBe(at('TEXT') + 1);
   });

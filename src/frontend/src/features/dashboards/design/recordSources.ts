@@ -6,6 +6,7 @@ import {
   type VisualType,
 } from './designApi.ts';
 import { NO_FIELD_DATA } from './fields.ts';
+import { asHeatmap } from './heatmap.ts';
 import { RISK_PROJECT_DIMENSIONS, RISK_TABLE_COLUMNS, riskFigures } from './riskFields.ts';
 import { NEW_TABLE_COLUMNS } from './tableColumns.ts';
 import { asLine, firstGrouping, groupBysFor, newVisual, VISUAL_TYPES } from './visuals.ts';
@@ -26,6 +27,7 @@ export const SOURCE_TYPES: readonly VisualType[] = [
   'DONUT',
   'LINE',
   'TABLE',
+  'HEATMAP',
 ];
 
 /** Whether a visual of `type` offers the Source select. */
@@ -84,6 +86,12 @@ export function withSource(
       columns: [...(source === 'RISKS' ? RISK_TABLE_COLUMNS : NEW_TABLE_COLUMNS)],
       showTotals: true,
     };
+  }
+  if (type === 'HEATMAP') {
+    // A heatmap starts again on the new source's first two axis fields, the risk matrix on Risks (heatmap.ts).
+    return source === 'RISKS'
+      ? { ...cleared, ...riskFigures(type) }
+      : (asHeatmap({ ...cleared, measures: [], groupBy: 'NONE' }, projectFields) ?? cleared);
   }
   if (source === 'RISKS') {
     return { ...cleared, ...riskFigures(type) };

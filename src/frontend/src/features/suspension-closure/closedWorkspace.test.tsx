@@ -131,8 +131,9 @@ function writeControls(container: HTMLElement): string[] {
     .filter(
       (element) =>
         !openers.has(element) &&
-        element.closest('.filters, .filter-bar__toggle, .filter-bar__body, .pagination, nav') ===
-          null &&
+        element.closest(
+          '.filters, .filter-bar__toggle, .filter-bar__body, .pagination, nav, .help-tip',
+        ) === null &&
         !DISMISS.has(element.textContent.trim()) &&
         !READS.has(element.textContent.trim()) &&
         !(element instanceof HTMLButtonElement && element.disabled),

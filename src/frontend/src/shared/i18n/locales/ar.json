@@ -18,7 +18,8 @@
     "retry": "إعادة المحاولة",
     "search": "بحث",
     "close": "إغلاق",
-    "more": "المزيد"
+    "more": "المزيد",
+    "helpAbout": "مساعدة: {subject}"
   },
   "globalSearch": {
     "label": "البحث في المنصة",

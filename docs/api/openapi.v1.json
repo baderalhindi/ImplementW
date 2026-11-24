@@ -38530,6 +38530,98 @@
         },
         "description": "RPMO's six headline cards (the 5 Nov 2026 review §3 row 1). A value is null when the caller may not see amounts; an average is null when nothing is measured."
       },
+      "PortfolioHeatmapLabel": {
+        "required": [
+          "key",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          }
+        },
+        "description": "A heatmap's own name for one value of its rows' or columns' field (24 Nov 2026: \"(5) مُرجّح\", as the risk methodology guide names its levels): the value's\nkey as the cells carry it (a level `5`, a code, `TRUE`, an item's id) and its name in both languages."
+      },
+      "PortfolioHeatmapLabelRequest": {
+        "required": [
+          "key",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          }
+        },
+        "description": "One value's name on a heatmap's axis: the value's key and its name in both languages."
+      },
+      "PortfolioHeatmapLabels": {
+        "required": [
+          "rows",
+          "columns"
+        ],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHeatmapLabel"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHeatmapLabel"
+            }
+          }
+        },
+        "description": "A heatmap's names for its rows' and columns' values; a value it does not name keeps the field's own."
+      },
+      "PortfolioHeatmapLabelsRequest": {
+        "required": [
+          "rows",
+          "columns"
+        ],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHeatmapLabelRequest"
+            }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioHeatmapLabelRequest"
+            }
+          }
+        },
+        "description": "A heatmap's names for its rows' and columns' values (24 Nov 2026); either list may be empty. Their count, keys and length are checked by the service."
+      },
       "PortfolioInsights": {
         "required": [
           "headline",
@@ -39466,6 +39558,22 @@
                 "$ref": "#/components/schemas/OnPlanStatus"
               }
             ]
+          },
+          "columnKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "columnLabel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
           }
         },
         "description": "One group of a visual: its key (an item, department or entity id, a status, stage or on-plan code; null for the projects with none, and for the one group of an\nungrouped visual), the stage's name when it is a stage, and one value per measure in the visual's order. A value is null when it cannot be calculated (an average\nwith nothing measured) or the caller may not see it (an amount). int PortfolioVisualGroup.Measured and int PortfolioVisualGroup.ValueEntered say how many projects the averages and the\nvalue cover."
@@ -39678,6 +39786,22 @@
               },
               {
                 "$ref": "#/components/schemas/PortfolioRecordSource"
+              }
+            ]
+          },
+          "columnField": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "labels": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioHeatmapLabelsRequest"
               }
             ]
           }
@@ -39894,6 +40018,22 @@
                 "$ref": "#/components/schemas/PortfolioRecordSource"
               }
             ]
+          },
+          "columnField": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "labels": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioHeatmapLabels"
+              }
+            ]
           }
         },
         "description": "A visual with its figures; IReadOnlyList&lt;PortfolioVisualGroup&gt;? PortfolioVisualResult.Groups is null when the caller holds no permission for its grouping, and the dashboard leaves it out."
@@ -39911,7 +40051,8 @@
           "LINE",
           "CONTAINER",
           "TEXT",
-          "MAP"
+          "MAP",
+          "HEATMAP"
         ],
         "description": "How a visual of the Portfolio dashboard is drawn (the 17 Nov 2026 dashboard designer)."
       },

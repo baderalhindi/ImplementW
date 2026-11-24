@@ -3,6 +3,7 @@ import { type ReactElement, type ReactNode, useId, useLayoutEffect, useRef } fro
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { exportCheckedRows } from './exportTableRows.ts';
+import { HelpTip } from './HelpTip.tsx';
 import { SelectionBar } from './rowSelection.tsx';
 import { type RowSelection } from './useRowSelection.ts';
 
@@ -10,6 +11,7 @@ interface PageHeaderProps {
   title: string;
   /** The title's own language when it is stored narrative (a project title), which may differ from the interface's. */
   titleLanguage?: string | undefined;
+  /** The page's guide text, behind a "?" beside the title (HelpTip; 24 Nov 2026: every guide text behind a question mark). */
   description?: string | undefined;
   actions?: ReactNode;
 }
@@ -31,14 +33,17 @@ export function PageHeader({
   return (
     <div className="page-header">
       <div>
-        <h1
-          className="page-header__title"
-          lang={titleLanguage}
-          dir={titleLanguage === undefined ? undefined : 'auto'}
-        >
-          {title}
-        </h1>
-        {description !== undefined && <p className="page-header__description">{description}</p>}
+        <div className="page-header__heading">
+          <h1
+            className="page-header__title"
+            lang={titleLanguage}
+            dir={titleLanguage === undefined ? undefined : 'auto'}
+          >
+            {title}
+          </h1>
+          {/* Beside the heading, not in it, so the heading's name stays the title. */}
+          {description !== undefined && <HelpTip label={title}>{description}</HelpTip>}
+        </div>
       </div>
       {actions !== undefined && <div className="page-header__actions">{actions}</div>}
     </div>

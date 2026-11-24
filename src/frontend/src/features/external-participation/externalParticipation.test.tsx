@@ -251,7 +251,10 @@ function controls(): string[] {
   return main === null
     ? []
     : [
-        ...within(main).queryAllByRole('button'),
+        // A guide text's "?" only reads its note.
+        ...within(main)
+          .queryAllByRole('button')
+          .filter((button) => !button.classList.contains('help-tip__button')),
         ...main.querySelectorAll<HTMLElement>('a.button'),
       ].map((element) => plain(element.textContent).trim());
 }

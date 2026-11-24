@@ -26,7 +26,8 @@ export type VisualType =
   | 'SECTION'
   | 'CONTAINER'
   | 'TEXT'
-  | 'MAP';
+  | 'MAP'
+  | 'HEATMAP';
 
 /** A map visual's options: the list of regions and cities beside the map, and the figure on each marker. */
 export interface MapOptions {
@@ -296,6 +297,10 @@ export interface Visual {
    * all.
    */
   groupField?: string | null | undefined;
+  /** A HEATMAP's columns: a CODE, yes/no or item field other than its rows' `groupField` (22 Nov 2026); absent or null on any other visual. */
+  columnField?: string | null | undefined;
+  /** A HEATMAP's own names for its rows' and columns' values (24 Nov 2026); absent or null when it names none, and on any other visual. */
+  labels?: HeatmapLabels | null | undefined;
   /** How a date `groupField` groups: required with a date field, null otherwise. */
   groupDateUnit?: DateUnit | null | undefined;
   /** The visual's own filters, applied after the dashboard's; absent or null when it has none. */
@@ -319,6 +324,17 @@ export interface Visual {
   map?: MapOptions | null | undefined;
 }
 
+/** A heatmap's name for one value of its rows' or columns' field: the value's key as its cells carry it, and its name in both languages. */
+export interface HeatmapLabel {
+  key: string;
+  label: BilingualLabel;
+}
+
+export interface HeatmapLabels {
+  rows: HeatmapLabel[];
+  columns: HeatmapLabel[];
+}
+
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */
 export interface VisualGroup {
   key: string | null;
@@ -328,6 +344,9 @@ export interface VisualGroup {
   valueEntered: number;
   values: (number | null)[];
   onPlan: OnPlanStatus | null;
+  /** A HEATMAP's cell: `key` and `label` name its row, these its column; absent on any other visual. */
+  columnKey?: string | null;
+  columnLabel?: BilingualLabel | null;
 }
 
 export interface VisualResult extends Visual {

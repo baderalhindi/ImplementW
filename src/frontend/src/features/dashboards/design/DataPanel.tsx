@@ -421,6 +421,9 @@ export function DataPanel({
         )}
       </fieldset>
       {wells === null && groupBy}
+      {type === 'HEATMAP' && (
+        <ColumnFieldSelect visual={visual} catalogue={catalogue} onChange={onChange} />
+      )}
       {onFields || type === 'MAP' ? (
         // A map filters its figures whatever they are (docs/architecture/dashboard-designer-map-visual.md).
         <FiltersEditor visual={visual} catalogue={catalogue} onChange={onChange} />
@@ -466,6 +469,46 @@ function FieldOptions({ fields }: { fields: readonly FieldDescriptor[] }): React
   );
 }
 
+/** A heatmap's columns (22 Nov 2026): a status, yes/no or item field; the rows' field taken swaps the two. */
+function ColumnFieldSelect({
+  visual,
+  catalogue,
+  onChange,
+}: {
+  visual: Visual;
+  catalogue: readonly FieldDescriptor[];
+  onChange: (next: Visual) => void;
+}): ReactElement {
+  const { t } = useI18n();
+  const id = useId();
+  const axes = groupFieldsFor(grainOf(visual, catalogue), 'HEATMAP', catalogue);
+  return (
+    <div className="field">
+      <label className="field__label" htmlFor={`${id}-columns`}>
+        {t('dashboards.designer.heatmapColumns')}
+      </label>
+      <select
+        id={`${id}-columns`}
+        className="field__input"
+        value={visual.columnField ?? ''}
+        disabled={axes.length <= 1}
+        onChange={(event) => {
+          const chosen = event.target.value;
+          onChange({
+            ...visual,
+            columnField: chosen,
+            ...(chosen === visual.groupField ? { groupField: visual.columnField ?? null } : {}),
+            // Its names name the old fields' values.
+            labels: null,
+          });
+        }}
+      >
+        <FieldOptions fields={axes} />
+      </select>
+    </div>
+  );
+}
+
 const DATE_UNITS: readonly DateUnit[] = ['YEAR', 'MONTH'];
 
 /**
@@ -504,7 +547,9 @@ function GroupBySelect({
         {t(
           visual.visualType === 'MAP'
             ? 'dashboards.designer.mapPlaces'
-            : 'dashboards.designer.groupByLabel',
+            : visual.visualType === 'HEATMAP'
+              ? 'dashboards.designer.heatmapRows'
+              : 'dashboards.designer.groupByLabel',
         )}
       </label>
       <div className={dateField ? 'designer-data__group-by' : undefined}>
@@ -523,7 +568,16 @@ function GroupBySelect({
                     groupField: null,
                     groupDateUnit: null,
                   }
-                : { ...visual, groupBy: 'NONE', ...groupedBy(visual, chosen, catalogue) },
+                : {
+                    ...visual,
+                    groupBy: 'NONE',
+                    ...groupedBy(visual, chosen, catalogue),
+                    // A heatmap's rows taking its columns' field swap the two; its names, of the old fields' values, go.
+                    ...(visual.visualType === 'HEATMAP' && chosen === visual.columnField
+                      ? { columnField: visual.groupField ?? null }
+                      : {}),
+                    ...(visual.visualType === 'HEATMAP' ? { labels: null } : {}),
+                  },
             );
           }}
         >

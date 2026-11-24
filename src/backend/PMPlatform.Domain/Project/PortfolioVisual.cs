@@ -47,6 +47,12 @@ public enum PortfolioVisualType
     /// filters; placed as often as the designer likes, and may be a container's child.
     /// </summary>
     Map = 12,
+
+    /// <summary>
+    /// A matrix of one figure per pair of two field values, each cell coloured by its figure (the 22 Nov 2026 heatmap): risks by probability and impact, or
+    /// projects by any two codes.
+    /// </summary>
+    Heatmap = 13,
 }
 
 /// <summary>

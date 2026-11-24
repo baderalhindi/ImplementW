@@ -311,7 +311,7 @@ export function AxisBarChart({
               <span className="axis-chart__bar-track">
                 {bar !== null && (
                   <span
-                    className="widget__bar axis-chart__bar"
+                    className={`widget__bar axis-chart__bar${bar.below ? ' is-below' : ''}`}
                     style={
                       {
                         insetInlineStart: bar.start,

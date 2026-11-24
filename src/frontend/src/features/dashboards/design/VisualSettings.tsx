@@ -16,6 +16,14 @@ import {
   sectionTables,
   withColumnShown,
 } from './sectionColumns.ts';
+import {
+  axisField,
+  axisValues,
+  type HeatmapAxis,
+  heatmapLabel,
+  withHeatmapLabel,
+} from './heatmap.ts';
+import { fieldName } from './fields.ts';
 import { mapOptionsOf } from './mapVisual.ts';
 import { isEditableSection, madeEditable } from './tableColumns.ts';
 import { TextBoxSettings } from './TextBoxSettings.tsx';
@@ -173,6 +181,100 @@ function MapOptionsChoice({
         {t('dashboards.designer.mapShowCounts')}
       </label>
     </fieldset>
+  );
+}
+
+/**
+ * A heatmap's names for its rows' and columns' values (24 Nov 2026, as the risk methodology guide names its levels: "(5) مُرجّح", "(1) ضئيل"): each value
+ * of each axis's field with its Arabic and English name, as the visual shows it now (its own, else the guide's). A value both of whose names are
+ * cleared goes back to its default. An item field lists no values, so it has none to name.
+ */
+function HeatmapNames({
+  visual,
+  fields,
+  onChange,
+}: {
+  visual: Visual;
+  fields: readonly FieldDescriptor[];
+  onChange: (next: Visual) => void;
+}): ReactElement {
+  const { t, language } = useI18n();
+  const axes: HeatmapAxis[] = ['rows', 'columns'];
+  return (
+    <>
+      {axes.map((axis) => {
+        const key = axisField(visual, axis);
+        const field = fields.find((candidate) => candidate.key === key);
+        const values = axisValues(field);
+        const fieldTitle = key === null ? '' : fieldName(key, language);
+        const heading = t(
+          axis === 'rows'
+            ? 'dashboards.designer.heatmapRowNames'
+            : 'dashboards.designer.heatmapColumnNames',
+          { field: fieldTitle },
+        );
+        return (
+          <fieldset key={axis} className="field field--group designer-well heatmap-names">
+            <legend className="field__label designer-well__label">{heading}</legend>
+            {values.length === 0 ? (
+              <p className="field__hint">{t('dashboards.designer.heatmapNamesNone')}</p>
+            ) : (
+              <ul className="heatmap-names__list">
+                {values.map((value) => {
+                  const shown = heatmapLabel(visual, axis, value) ?? { ar: '', en: '' };
+                  const set = (next: { ar: string; en: string }) => {
+                    if (next.ar.trim() === '' && next.en.trim() === '') {
+                      onChange({
+                        ...visual,
+                        labels: visual.labels
+                          ? {
+                              ...visual.labels,
+                              [axis]: visual.labels[axis].filter((entry) => entry.key !== value),
+                            }
+                          : null,
+                      });
+                      return;
+                    }
+                    onChange(withHeatmapLabel(visual, axis, value, next));
+                  };
+                  return (
+                    <li key={value} className="heatmap-names__value">
+                      <span className="heatmap-names__key">({value})</span>
+                      <input
+                        className="field__input"
+                        dir="rtl"
+                        lang="ar"
+                        aria-label={t('dashboards.designer.heatmapNameAr', {
+                          field: fieldTitle,
+                          value,
+                        })}
+                        value={shown.ar}
+                        onChange={(event) => {
+                          set({ ...shown, ar: event.target.value });
+                        }}
+                      />
+                      <input
+                        className="field__input"
+                        dir="ltr"
+                        lang="en"
+                        aria-label={t('dashboards.designer.heatmapNameEn', {
+                          field: fieldTitle,
+                          value,
+                        })}
+                        value={shown.en}
+                        onChange={(event) => {
+                          set({ ...shown, en: event.target.value });
+                        }}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </fieldset>
+        );
+      })}
+    </>
   );
 }
 
@@ -369,6 +471,9 @@ export function VisualSettings({
             onChange={change}
           />
           {isMap && <MapOptionsChoice visual={visual} onChange={onChange} />}
+          {visual.visualType === 'HEATMAP' && (
+            <HeatmapNames visual={visual} fields={fields.data ?? []} onChange={onChange} />
+          )}
           {takesAxes(visual.visualType) && <AxesFormat visual={visual} onChange={onChange} />}
         </>
       )}

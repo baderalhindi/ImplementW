@@ -830,6 +830,7 @@ describe('the gallery without the sections list (19 Nov 2026)', () => {
       'DONUT',
       'TABLE',
       'GAUGE',
+      'HEATMAP',
       'MAP',
       'TEXT',
       'CONTAINER',
@@ -842,7 +843,10 @@ describe('the gallery without the sections list (19 Nov 2026)', () => {
     expect(
       within(gallery)
         .getAllByRole('button')
-        .filter((button) => !widgets.contains(button))
+        // The gallery's "?" (its note, 24 Nov 2026) is not a tile.
+        .filter(
+          (button) => !widgets.contains(button) && !button.classList.contains('help-tip__button'),
+        )
         .map((button) => plain(button.textContent)),
     ).toEqual(types.map((type) => en(`dashboards.designer.type.${type}`)));
     expect(within(gallery).queryByRole('button', { name: new RegExp(sectionTitle) })).toBeNull();

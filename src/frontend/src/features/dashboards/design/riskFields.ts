@@ -65,13 +65,25 @@ export const RISK_PROJECT_DIMENSIONS: readonly Exclude<GroupBy, 'NONE'>[] = [
  */
 export function riskFigures(
   type: VisualType,
-): Pick<Visual, 'measures' | 'values' | 'groupBy' | 'groupField' | 'groupDateUnit'> {
+): Pick<
+  Visual,
+  'measures' | 'values' | 'groupBy' | 'groupField' | 'groupDateUnit' | 'columnField'
+> {
   const grouped = type === 'BAR' || type === 'COLUMN' || type === 'PIE' || type === 'DONUT';
   return {
     measures: [],
     values: [RISK_COUNT],
     groupBy: 'NONE',
-    groupField: type === 'LINE' ? RISK_LINE_GROUP_FIELD : grouped ? RISK_GROUP_FIELD : null,
+    // A heatmap is the risk matrix: probability by impact.
+    groupField:
+      type === 'HEATMAP'
+        ? 'RISK.PROBABILITY'
+        : type === 'LINE'
+          ? RISK_LINE_GROUP_FIELD
+          : grouped
+            ? RISK_GROUP_FIELD
+            : null,
+    columnField: type === 'HEATMAP' ? 'RISK.IMPACT' : null,
     groupDateUnit: type === 'LINE' ? 'MONTH' : null,
   };
 }
