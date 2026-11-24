@@ -33,7 +33,11 @@ public sealed class PostgreSqlHealthCheckTests
         Assert.Equal(1, database.Connections);
     }
 
-    /// <summary>A caller that disconnects stops waiting; the probe it shared runs on, and the others get its real result.</summary>
+    /// <summary>
+    /// A caller that disconnects stops waiting; the probe it shared runs on, and the others get its real result. The time is measured from
+    /// the probe's start, not from the leaver's exit: on a slow runner the leaver can take over a second to observe its cancellation, which
+    /// left less than the timeout on a later-started stopwatch (dev run 45476318625, 1.57 s) although the probe ran its full course.
+    /// </summary>
     [Fact]
     public async Task ACallerThatGivesUpDoesNotCancelTheProbeOthersAreWaitingFor()
     {
@@ -41,12 +45,12 @@ public sealed class PostgreSqlHealthCheckTests
         PostgreSqlHealthCheck check = new(database.Configuration);
         using CancellationTokenSource leaving = new();
 
+        Stopwatch elapsed = Stopwatch.StartNew();
         Task<HealthCheckResult> left = check.CheckHealthAsync(Context, leaving.Token);
         Task<HealthCheckResult> stayed = check.CheckHealthAsync(Context);
         await leaving.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => left);
-        Stopwatch elapsed = Stopwatch.StartNew();
         HealthCheckResult result = await stayed;
         Assert.Equal("PostgreSQL unreachable.", result.Description);
         Assert.True(elapsed.Elapsed > Timeout - TimeSpan.FromSeconds(1), $"The shared probe ended after {elapsed.Elapsed}, with the caller who left.");
