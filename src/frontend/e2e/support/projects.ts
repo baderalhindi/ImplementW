@@ -24,6 +24,8 @@ export interface ProjectDetail {
   departmentId: string;
   externalEntityId: string | null;
   projectManagerUserId: string | null;
+  plannedStartDate: string | null;
+  plannedEndDate: string | null;
   status: ProjectStatus;
   revisionNo: number;
   activatedAt: string | null;
@@ -77,6 +79,43 @@ export async function registration(
 
 export function project(api: PlatformApi, projectId: string): Promise<ProjectDetail> {
   return api.get<ProjectDetail>(`/projects/${projectId}`);
+}
+
+interface ProjectStagePlan {
+  stages: { stageCode: string }[];
+}
+
+/**
+ * Review round 7's submission rule: a registration measured by stages is submitted only with a complete stage plan. Plans
+ * every stage of the version in force as applying over the project's own planned dates, as the registration's `writer`.
+ * The plan's ETag is the project's, so a page holding the draft must reload before it writes again.
+ */
+export async function planEveryStage(writer: PlatformApi, projectId: string): Promise<void> {
+  const { plannedStartDate, plannedEndDate } = await project(writer, projectId);
+  const plan = await writer.ok<ProjectStagePlan>('GET', `/project-stage-plans/${projectId}`);
+  await writer.ok(
+    'PUT',
+    `/project-stage-plans/${projectId}`,
+    {
+      stages: plan.body.stages.map((stage) => ({
+        stageCode: stage.stageCode,
+        applies: true,
+        plannedStartDate,
+        plannedEndDate,
+      })),
+    },
+    { ifMatch: plan.etag },
+  );
+}
+
+/** WF-01's submission of a draft naming its Project Manager, its stage plan completed first. */
+export async function submitRegistration(
+  creator: PlatformApi,
+  projectId: string,
+  projectManagerUserId: string,
+): Promise<void> {
+  await planEveryStage(creator, projectId);
+  await creator.post(`/projects/${projectId}/submit`, { projectManagerUserId });
 }
 
 export function untilStatus(
@@ -164,9 +203,7 @@ export async function activeProject(
     '/projects',
     await registration(crew.approver, options),
   );
-  await crew.creator.post(`/projects/${draft.id}/submit`, {
-    projectManagerUserId: crew.manager.userId,
-  });
+  await submitRegistration(crew.creator, draft.id, crew.manager.userId);
   await crew.reviewer.post(`/projects/${draft.id}/start-review`);
   await approveTaskOn(crew.approver, draft.id, 'PROJECT_REGISTRATION');
   await untilStatus(crew.approver, draft.id, 'APPROVED_PLANNED');

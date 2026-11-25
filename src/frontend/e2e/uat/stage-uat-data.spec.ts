@@ -13,6 +13,7 @@ import {
   activeBaseline,
   approveTaskOn,
   registration,
+  submitRegistration,
   untilStatus,
   type ProjectCrew,
   type ProjectDetail,
@@ -120,9 +121,7 @@ async function body(crew: ProjectCrew, fixture: Fixture): Promise<Record<string,
 async function staged(crew: ProjectCrew, fixture: Fixture): Promise<ProjectDetail> {
   const draft = await crew.creator.post<ProjectDetail>('/projects', await body(crew, fixture));
   if (fixture.kind === 'draft') return draft;
-  await crew.creator.post(`/projects/${draft.id}/submit`, {
-    projectManagerUserId: crew.manager.userId,
-  });
+  await submitRegistration(crew.creator, draft.id, crew.manager.userId);
   if (fixture.kind === 'submitted') return draft;
   await crew.reviewer.post(`/projects/${draft.id}/start-review`);
   if (fixture.kind === 'underReview') return draft;
