@@ -2,8 +2,8 @@ import { type ReactElement, useCallback } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { Percent } from '@/features/dashboards/insights/figures.tsx';
+import { RestrictedFlag } from '@/features/financial-kpi/components/Figures.tsx';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
-import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
@@ -15,11 +15,12 @@ import { Detail } from '../components/Detail.tsx';
 import { GapValue, OnPlanBadge } from '../components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { languageTag } from '../presentation.ts';
+import { budgetWithheld } from '../registration.ts';
 import { projectProblemMessage } from '../problems.ts';
 import { useProjectLookups } from '../useProjectLookups.ts';
 import { sarWhole } from '@/shared/format/money.ts';
 
-/** One printable page of a project (the 5 Nov 2026 review §3 row 11), for whoever can read it; amounts only with FINANCIAL_VIEW_SENSITIVE. */
+/** One printable page of a project (the 5 Nov 2026 review §3 row 11), for whoever can read it; the budget restricted without FINANCIAL_VIEW_SENSITIVE. */
 export function ProjectCardPage(): ReactElement {
   const { t } = useI18n();
   const { projectId = '' } = useParams();
@@ -48,7 +49,6 @@ export function ProjectCardPage(): ReactElement {
 function CardView({ project }: { project: ProjectDetail }): ReactElement {
   const { t } = useI18n();
   const lookups = useProjectLookups();
-  const seesAmounts = useCan('FINANCIAL_VIEW_SENSITIVE');
   const managerName = usePersonNames([project.projectManagerUserId]);
   const notAvailable = t('projects.followUp.notAvailable');
   const followUp = project.followUp;
@@ -111,17 +111,17 @@ function CardView({ project }: { project: ProjectDetail }): ReactElement {
             {project.plannedStartDate ?? '—'} – {project.plannedEndDate ?? '—'}
           </span>
         </Detail>
-        {seesAmounts && (
-          <Detail term={t('projects.fields.registrationBudget')}>
-            {project.registrationBudgetSar === null ? (
-              notAvailable
-            ) : (
-              <span dir="ltr">
-                {t('projects.money.sar', { amount: sarWhole(project.registrationBudgetSar) })}
-              </span>
-            )}
-          </Detail>
-        )}
+        <Detail term={t('projects.fields.registrationBudget')}>
+          {budgetWithheld(project) ? (
+            <RestrictedFlag />
+          ) : project.registrationBudgetSar == null ? (
+            notAvailable
+          ) : (
+            <span dir="ltr">
+              {t('projects.money.sar', { amount: sarWhole(project.registrationBudgetSar) })}
+            </span>
+          )}
+        </Detail>
         <Detail term={t('dashboards.insights.planned')}>
           <Percent value={followUp?.declaredPlannedPercent} />
         </Detail>

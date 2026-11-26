@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Models.DocumentManagement;
+using PMPlatform.Api.Models.FinancialKpi;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Api.Models.Project;
 using PMPlatform.Application.Common.Authorization;
@@ -16,9 +17,11 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>
 /// WF-01 Project Creation and Registration (TASK-041): SCR-025 Project Register, SCR-026 Project Detail and MOD-001. Each
 /// lifecycle edge is its own command (R-4); nothing changes a project's state implicitly. Each call is decided on the
-/// project's own anchors; a project outside the caller's scope is 404 (R-47).
+/// project's own anchors; a project outside the caller's scope is 404 (R-47). The registration budget of a project the caller holds no
+/// FINANCIAL_VIEW_SENSITIVE on is omitted and named in <c>maskedFields</c> (shipped-permission-matrix.md D-4, R-20).
 /// </summary>
 [Route(Collection)]
+[OmitMaskedFields]
 [Tags("Project")]
 public sealed class ProjectsController(IProjectService projects, IProjectFollowUpService followUps, IDataImportService imports) : AdministrationControllerBase
 {

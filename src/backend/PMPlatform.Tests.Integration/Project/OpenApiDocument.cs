@@ -299,7 +299,9 @@ internal sealed class OpenApiDocument(JsonObject root)
 
         if (value is JsonObject body)
         {
-            violations.AddRange(schema.Required.Where(name => !body.ContainsKey(name)).Select(name => $"{at}.{name}: required, absent"));
+            // R-20(b): a field withheld from the caller is omitted and named in the object's maskedFields, so its absence is the documented answer.
+            HashSet<string> masked = body["maskedFields"] is JsonArray withheld ? [.. withheld.Select(f => f!.GetValue<string>())] : [];
+            violations.AddRange(schema.Required.Where(name => !body.ContainsKey(name) && !masked.Contains(name)).Select(name => $"{at}.{name}: required, absent"));
             foreach ((string name, JsonNode? property) in body)
             {
                 violations.AddRange(schema.Properties.ContainsKey(name)

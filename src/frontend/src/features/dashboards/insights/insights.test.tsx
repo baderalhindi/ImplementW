@@ -359,18 +359,26 @@ describe('the printable cards', () => {
     expect(api.requestsTo('GET', /^\/portfolio-insights\/cards$/)).toHaveLength(0);
   });
 
-  test('a project card shows amounts only with FINANCIAL_VIEW_SENSITIVE', async () => {
+  test('a project card shows the budget only when the API reveals it (FINANCIAL_VIEW_SENSITIVE, D-4)', async () => {
     const api = mockApi();
     withProjectLookups(api);
     withProject(api, projectDetail({ id: PROJECT_ID, registrationBudgetSar: '1500000.00' }));
     const seen = renderApp({ path: `/projects/${PROJECT_ID}/card`, session: session() });
     await screen.findByRole('heading', { name: 'Coastal road upgrade' });
-    expect(await screen.findByText(en('projects.fields.registrationBudget'))).toBeTruthy();
+    const shown = await screen.findByText(en('projects.fields.registrationBudget'));
+    expect(shown.parentElement?.querySelector('[data-value-state="RESTRICTED"]')).toBeNull();
     seen.unmount();
 
+    // The API omits the budget and names it in maskedFields for a caller without the permission on the project.
+    const { registrationBudgetSar: _omitted, ...withheld } = projectDetail({ id: PROJECT_ID });
+    const masked = mockApi();
+    withProjectLookups(masked);
+    withProject(masked, { ...withheld, maskedFields: ['registrationBudgetSar'] });
     renderApp({ path: `/projects/${PROJECT_ID}/card`, session: entitySession() });
     await screen.findByRole('heading', { name: 'Coastal road upgrade' });
-    expect(screen.queryByText(en('projects.fields.registrationBudget'))).toBeNull();
+    const restricted = await screen.findByText(en('projects.fields.registrationBudget'));
+    expect(restricted.parentElement?.querySelector('[data-value-state="RESTRICTED"]')).toBeTruthy();
+    expect(restricted.parentElement?.textContent).not.toContain('1,500,000');
   });
 });
 

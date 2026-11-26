@@ -85,7 +85,7 @@ internal sealed class ProjectService(
         ProjectEntity? project = await repository.FindAsync(projectId, null, cancellationToken).ConfigureAwait(false);
         return project is null ? AdministrationError.NotFound
             : await access.CheckAsync(callerId, PermissionCatalogue.ProjectView, project, cancellationToken).ConfigureAwait(false) is { } refused ? refused
-            : await VersionedAsync(project, cancellationToken).ConfigureAwait(false);
+            : await VersionedAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> CreateAsync(Guid callerId, ProjectDraft draft, CancellationToken cancellationToken)
@@ -134,7 +134,7 @@ internal sealed class ProjectService(
         // A new row with a new id: no conflict is expected, so any is a fault.
         ProjectSaveOutcome outcome = await repository.SaveAsync(cancellationToken).ConfigureAwait(false);
         return outcome == ProjectSaveOutcome.Saved
-            ? await VersionedAsync(project, cancellationToken).ConfigureAwait(false)
+            ? await VersionedAsync(callerId, project, cancellationToken).ConfigureAwait(false)
             : throw new InvalidOperationException($"Saving a new project failed: {outcome}.");
     }
 
@@ -177,6 +177,13 @@ internal sealed class ProjectService(
             return moveRefused;
         }
 
+        // A caller the budget is withheld from (an entity editing its draft, D-4) is never sent it, so the form sends none back: no budget
+        // keeps the one held rather than clearing it. A budget they do send is written.
+        if (draft.RegistrationBudgetSar is null && !await access.RevealsAmountsAsync(callerId, project, cancellationToken).ConfigureAwait(false))
+        {
+            draft = draft with { RegistrationBudgetSar = project.RegistrationBudgetSar };
+        }
+
         ProjectDraft before = ProjectMapping.ToDraft(project);
         ProjectMapping.Apply(draft, project);
         if (draft.ProposedProjectManagerUserId != before.ProposedProjectManagerUserId
@@ -187,7 +194,7 @@ internal sealed class ProjectService(
 
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Changed(callerId, before, project));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>A proposed Project Manager holds R04 over the project's anchors, as the one a submission names must (review round 7, item 2).</summary>
@@ -302,7 +309,7 @@ internal sealed class ProjectService(
         project.SubmittedByUserId = callerId;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Submitted(callerId, project, from, fromRevisionNo, fromManagerId));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> EditRegistrationAsync(
@@ -369,7 +376,7 @@ internal sealed class ProjectService(
         ProjectMapping.Apply(draft with { ProposedProjectManagerUserId = before.ProposedProjectManagerUserId }, project);
         Touch(project, callerId);
         audit.Stage(ProjectAudit.RegistrationEdited(callerId, before, project, reason));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> SetProgressMethodAsync(
@@ -413,7 +420,7 @@ internal sealed class ProjectService(
         project.ProgressMethod = method;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.ProgressMethodChanged(callerId, project, from, reason));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> ChangeManagerAsync(
@@ -472,7 +479,7 @@ internal sealed class ProjectService(
         outbox.Stage(ProjectManagerNotifications.Changed(project, callerId, to, "INCOMING", now));
         Touch(project, callerId);
         audit.Stage(ProjectAudit.ManagerChanged(callerId, project, from, change.Reason, moved));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> WithdrawAsync(Guid callerId, Guid projectId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -500,7 +507,7 @@ internal sealed class ProjectService(
         project.SubmittedByUserId = null;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Withdrawn(callerId, project, fromManagerId));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> StartReviewAsync(Guid callerId, Guid projectId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -542,7 +549,7 @@ internal sealed class ProjectService(
         project.LifecycleState = ProjectLifecycleState.UnderReview;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.ReviewStarted(callerId, project, run.Value.Id));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> ActivateAsync(Guid callerId, Guid projectId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -577,7 +584,7 @@ internal sealed class ProjectService(
         project.ActivatedAt = timeProvider.GetUtcNow();
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Activated(callerId, project));
-        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(callerId, project, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<AdministrationError?> LegacyReferenceTakenAsync(ProjectDraft draft, Guid? projectId, CancellationToken cancellationToken) =>
@@ -616,13 +623,19 @@ internal sealed class ProjectService(
     private static AdministrationError NotEditable(ProjectEntity project) =>
         project.LifecycleState == ProjectLifecycleState.Closed ? AdministrationError.TerminalState : AdministrationError.Conflict(ProjectErrorCodes.NotEditable);
 
-    private async Task<AdministrationResult<Versioned<ProjectDetail>>> SaveAsync(ProjectEntity project, CancellationToken cancellationToken) =>
+    private async Task<AdministrationResult<Versioned<ProjectDetail>>> SaveAsync(Guid callerId, ProjectEntity project, CancellationToken cancellationToken) =>
         await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == ProjectSaveOutcome.Saved
-            ? await VersionedAsync(project, cancellationToken).ConfigureAwait(false)
+            ? await VersionedAsync(callerId, project, cancellationToken).ConfigureAwait(false)
             : AdministrationError.PreconditionFailed;
 
-    private async Task<Versioned<ProjectDetail>> VersionedAsync(ProjectEntity project, CancellationToken cancellationToken) =>
-        new(ProjectMapping.ToDetail(project, await indicators.OfAsync(project, cancellationToken).ConfigureAwait(false)), repository.RowVersionOf(project));
+    /// <summary>The project as the caller may see it (<see cref="ProjectMapping.ToDetail"/>), with its version.</summary>
+    private async Task<Versioned<ProjectDetail>> VersionedAsync(Guid callerId, ProjectEntity project, CancellationToken cancellationToken) =>
+        new(
+            ProjectMapping.ToDetail(
+                project,
+                await indicators.OfAsync(project, cancellationToken).ConfigureAwait(false),
+                await access.RevealsAmountsAsync(callerId, project, cancellationToken).ConfigureAwait(false)),
+            repository.RowVersionOf(project));
 
     private void Touch(ProjectEntity project, Guid by)
     {

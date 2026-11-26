@@ -21,6 +21,10 @@ internal sealed class ProjectAccess(IAuthorizationEngine engine, IAuditTrail aud
     public async Task<bool> HoldsAsync(Guid callerId, string permissionCode, ProjectEntity project, CancellationToken cancellationToken) =>
         (await engine.EvaluateAsync(callerId, new AuthorizationRequest(permissionCode, SubjectOf(project)), cancellationToken).ConfigureAwait(false)).IsAllowed;
 
+    /// <summary>Whether the caller sees the project's SAR amounts (its registration budget): FINANCIAL_VIEW_SENSITIVE on it (shipped-permission-matrix.md D-4).</summary>
+    public Task<bool> RevealsAmountsAsync(Guid callerId, ProjectEntity project, CancellationToken cancellationToken) =>
+        HoldsAsync(callerId, PermissionCatalogue.FinancialViewSensitive, project, cancellationToken);
+
     /// <summary>
     /// For a project that does not exist yet, or anchors it is about to take: there is nothing to hide, so any refusal is
     /// Forbidden, whatever the engine's R-47 answer.

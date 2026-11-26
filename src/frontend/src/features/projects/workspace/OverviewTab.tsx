@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { type ReactElement, useState } from 'react';
 
 import { ProjectDashboard } from '@/features/dashboards/ProjectDashboard.tsx';
+import { RestrictedFlag } from '@/features/financial-kpi/components/Figures.tsx';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -11,10 +12,10 @@ import { Detail } from '../components/Detail.tsx';
 import { ChangeManagerDialog } from '../dialogs/ChangeManagerDialog.tsx';
 import { profileMandatoryFields } from '../governance.ts';
 import {
+  budgetWithheld,
   FIELD_LABELS,
-  missingFields,
+  missingProjectFields,
   SUBMISSION_REQUIRED_FIELDS,
-  valuesOf,
 } from '../registration.ts';
 
 import { OverallProgressPanel } from '../stagePlan/OverallProgressPanel.tsx';
@@ -53,7 +54,7 @@ export function OverviewTab(): ReactElement {
   const managerName = usePersonNames([project.projectManagerUserId]);
   const missing =
     access.reached && (project.status === 'DRAFT' || project.status === 'RETURNED')
-      ? missingFields(valuesOf(project), [
+      ? missingProjectFields(project, [
           ...SUBMISSION_REQUIRED_FIELDS,
           ...profileMandatoryFields(lookups.profiles, project.governanceProfileItemId),
         ])
@@ -137,7 +138,9 @@ export function OverviewTab(): ReactElement {
               {lookups.itemLabel(project.governanceProfileItemId)}
             </Detail>
             <Detail term={t('projects.fields.registrationBudget')}>
-              {project.registrationBudgetSar === null ? (
+              {budgetWithheld(project) ? (
+                <RestrictedFlag />
+              ) : project.registrationBudgetSar == null ? (
                 none
               ) : (
                 <SarAmount amount={project.registrationBudgetSar} />

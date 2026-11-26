@@ -31,7 +31,9 @@ public sealed class RegistrationLifecycleTests(ProjectTestHost host)
 
         JsonObject draft = await client.CreateOrFailAsync(sessions.Entity, host.Registration());
         Guid projectId = AdministrationApi.IdOf(draft);
-        Assert.Equal(("DRAFT", null, 1, "12500000.00"), (draft.Status(), draft.FormalProjectId(), draft["revisionNo"]!.GetValue<int>(), draft["registrationBudgetSar"]!.GetValue<string>()));
+        // An external user holds no FINANCIAL_VIEW_SENSITIVE (shipped-permission-matrix.md D-2, D-4): the budget they entered is withheld from them.
+        Assert.Equal(("DRAFT", null, 1), (draft.Status(), draft.FormalProjectId(), draft["revisionNo"]!.GetValue<int>()));
+        Assert.Equal((false, "registrationBudgetSar"), (draft.ContainsKey("registrationBudgetSar"), draft["maskedFields"]!.AsArray().Single()!.GetValue<string>()));
         Assert.Null(draft["projectManagerUserId"]);
 
         JsonObject submitted = await client.CommandOrFailAsync(sessions.Entity, projectId, "submit", new { projectManagerUserId = ProjectDriver.Person(8) });
@@ -121,7 +123,7 @@ public sealed class RegistrationLifecycleTests(ProjectTestHost host)
         Assert.Equal(runs[0].Id, runs[1].PreviousInstanceId);
 
         await host.DecideAndDeliverAsync(projectId, ApprovalTaskDecision.Approve);
-        JsonObject approved = await GetAsync(client, sessions.Entity, projectId);
+        JsonObject approved = await GetAsync(client, sessions.Approver, projectId);
         Assert.Equal(("APPROVED_PLANNED", "13000000.00"), (approved.Status(), approved["registrationBudgetSar"]!.GetValue<string>()));
     }
 
