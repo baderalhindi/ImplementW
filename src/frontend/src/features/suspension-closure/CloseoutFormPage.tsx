@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { useOptionalProject } from '@/features/change-requests/useChangeRequestData.ts';
 import { useSaveAction } from '@/features/identity-access/forms.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
@@ -27,7 +28,7 @@ import {
   toClosureRequest,
   toCompletionRequest,
 } from './closeoutRules.ts';
-import { isEditable } from './governedRequest.ts';
+import { isEditable, raisesCloseout } from './governedRequest.ts';
 import { closeoutCasePath, projectCloseoutPath } from './paths.ts';
 import {
   isForbidden,
@@ -152,6 +153,7 @@ interface CloseoutFormProps {
 function CloseoutForm({ stage, project, projectId, existing }: CloseoutFormProps): ReactElement {
   const { t, language } = useI18n();
   const { session } = useSession();
+  const permissions = usePermissions();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(suspensionClosureProblemMessage);
@@ -221,8 +223,11 @@ function CloseoutForm({ stage, project, projectId, existing }: CloseoutFormProps
     (existing === null
       ? project?.status === 'SUSPENDED'
       : (existing.data as ClosureCaseDetail).outcome === 'TERMINATED_WITHOUT_COMPLETION');
-  // Navigation, not protection: a new case is the project's Project Manager's (CLOSEOUT_RAISE at OWN).
-  const raiser = editing || project === null || project.projectManagerUserId === session?.user.id;
+  // Navigation, not protection: a new case is a CLOSEOUT_RAISE holder's on the project.
+  const raiser =
+    editing ||
+    project === null ||
+    (session !== null && raisesCloseout(session.user, permissions, project));
   const stageNumber = stage === 'completion' ? 1 : 2;
 
   return (

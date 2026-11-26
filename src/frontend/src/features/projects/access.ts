@@ -70,14 +70,18 @@ function scopeReaches(scope: DataScope, user: SessionUser, project: ScopedProjec
  * ENTITY those of an assignment's entity; OWN the project the person manages; ASSIGNED, for an internal person, a project
  * an assignment names; READ_ONLY takes no write. An external person never reaches outside their own entity (ADR-013).
  * GET /sessions/current/permissions does not say which assignment a scope came from, so a person holding two roles may be
- * offered an action the API then refuses; the API decides every command again.
+ * offered an action the API then refuses; the API decides every command again. A project the person cannot read (null) is
+ * decided on holding the permission at all.
  */
 export function holdsOnProject(
   permissions: Permissions,
   user: SessionUser,
-  project: ScopedProject,
+  project: ScopedProject | null,
   ...codes: readonly PermissionCode[]
 ): boolean {
+  if (project === null) {
+    return permissions.can(...codes);
+  }
   if (
     !isInternal(user) &&
     (project.externalEntityId === null || ownEntityId(user) !== project.externalEntityId)

@@ -186,7 +186,7 @@ export function SuspensionDetailPage(): ReactElement | null {
       danger: true,
     });
   }
-  if (canStartReview(user, request, project)) {
+  if (canStartReview(user, permissions, request, project, 'SUSPENSION_REVIEW')) {
     command('start-review', true);
   }
   if (canDecide(user, request, task)) {

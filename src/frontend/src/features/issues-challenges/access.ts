@@ -1,5 +1,6 @@
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { assignmentsReaching, isInternal } from '@/features/projects/access.ts';
+import { holdsOnProject, isInternal } from '@/features/projects/access.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 
 import { type ConcernDetail, type ConcernEscalationDetail } from './api/types.ts';
@@ -34,12 +35,16 @@ function manages(user: SessionUser, project: ProjectFacts): boolean {
   return project.projectManagerUserId === user.id;
 }
 
-/** MOD-036 Create Issue and MOD-038 Create Challenge: the Project Manager, or the entity the project reaches. */
-export function canRaiseConcerns(user: SessionUser, project: ProjectFacts): boolean {
-  return (
-    raisesConcerns(project) &&
-    (manages(user, project) || (!isInternal(user) && assignmentsReaching(user, project).length > 0))
-  );
+/**
+ * MOD-036 Create Issue and MOD-038 Create Challenge: a holder of CONCERN_RAISE on the project (R02 ALL, R03 DEPT, the
+ * Project Manager at OWN, the delivering entity at ENTITY).
+ */
+export function canRaiseConcerns(
+  user: SessionUser,
+  permissions: Permissions,
+  project: ProjectFacts,
+): boolean {
+  return raisesConcerns(project) && holdsOnProject(permissions, user, project, 'CONCERN_RAISE');
 }
 
 /** CONCERN_MANAGE: the internal Project Manager, on a concern that is not closed. */

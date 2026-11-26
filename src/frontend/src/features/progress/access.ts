@@ -1,4 +1,5 @@
-import { assignmentsReaching, isClosed, isInternal } from '@/features/projects/access.ts';
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
+import { holdsOnProject, isClosed, isInternal } from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 
@@ -16,11 +17,12 @@ export function canReport(user: SessionUser, project: ProjectDetail): boolean {
 }
 
 /**
- * Review is AHDA's gate (ADR-013): never offered to an external user, nor to the person who submitted the revision,
- * since no one publishes their own progress (TASK-044 D-9).
+ * Review is AHDA's gate (ADR-013): offered to an internal holder of PROGRESS_REVIEW on the project (R02 ALL, R03 DEPT),
+ * never to the person who submitted the revision, since no one publishes their own progress (TASK-044 D-9).
  */
 export function canReview(
   user: SessionUser,
+  permissions: Permissions,
   project: ProjectDetail,
   submission: ProgressSubmissionDetail,
 ): boolean {
@@ -28,7 +30,7 @@ export function canReview(
     !isClosed(project.status) &&
     (submission.status === 'SUBMITTED' || submission.status === 'UNDER_REVIEW') &&
     isInternal(user) &&
-    assignmentsReaching(user, project).length > 0 &&
+    holdsOnProject(permissions, user, project, 'PROGRESS_REVIEW') &&
     submission.submittedByUserId !== user.id
   );
 }

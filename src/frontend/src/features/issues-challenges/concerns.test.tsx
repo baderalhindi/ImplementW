@@ -27,6 +27,7 @@ import {
   entitySession,
   PROJECT_ID,
   reviewerSession,
+  viewerSession,
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
@@ -36,6 +37,7 @@ import {
   openFilters,
   renderApp,
 } from '@/test/renderApp.tsx';
+import { menuLink } from '@/test/shell.ts';
 import { COST_DIMENSION_ID, SCHEDULE_DIMENSION_ID } from '@/test/riskFixtures.ts';
 import { day } from '@/test/taskFixtures.ts';
 
@@ -303,9 +305,20 @@ describe('SCR-083 Issue Register and SCR-085 Challenge Register', () => {
     ).toBe('CHALLENGE');
   });
 
-  test('the department manager reads the register but is offered no raise', async () => {
+  test('the department manager, who holds CONCERN_RAISE there, is offered raising', async () => {
     open(ISSUES_PATH, {}, { session: reviewerSession() });
+    expect(
+      await screen.findByRole('button', { name: en('issuesChallenges.actions.createIssue') }),
+    ).toBeTruthy();
+  });
+
+  test('a Viewer (R06) reads the register but is offered no raise', async () => {
+    open(ISSUES_PATH, {}, { session: viewerSession() });
     await screen.findByRole('region', { name: en('issuesChallenges.issues.projectCaption') });
+    // The shell's Risks menu shows R06's permissions are read: the missing button is the decision, not a wait.
+    await waitFor(() => {
+      expect(menuLink('common.menu.risksIssues')).not.toBeNull();
+    });
     expect(
       screen.queryByRole('button', { name: en('issuesChallenges.actions.createIssue') }),
     ).toBeNull();

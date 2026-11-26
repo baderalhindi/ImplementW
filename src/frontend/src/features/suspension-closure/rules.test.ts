@@ -37,6 +37,7 @@ import {
   canActivate,
   canEditRecord,
   canStartReview,
+  canWaiveChecks,
   canWithdrawRecord,
   GOVERNED_STATUSES,
 } from './governedRequest.ts';
@@ -69,8 +70,8 @@ describe('the closeout is two sequential stages (acceptance criterion 1)', () =>
     const stages = closeoutStagesOf('ACTIVE', [], []);
     expect(stages.completion.state).toBe('READY');
     expect(stages.closure.state).toBe('LOCKED');
-    expect(canRaiseCase(nora, concernProject(), stages, 'completion')).toBe(true);
-    expect(canRaiseCase(nora, concernProject(), stages, 'closure')).toBe(false);
+    expect(canRaiseCase(nora, held(nora), concernProject(), stages, 'completion')).toBe(true);
+    expect(canRaiseCase(nora, held(nora), concernProject(), stages, 'closure')).toBe(false);
   });
 
   test('while a completion case is open, neither stage can be raised again', () => {
@@ -78,7 +79,7 @@ describe('the closeout is two sequential stages (acceptance criterion 1)', () =>
     expect(stages.completion.state).toBe('IN_PROGRESS');
     expect(stages.closure.state).toBe('LOCKED');
     for (const stage of ['completion', 'closure'] as const) {
-      expect(canRaiseCase(nora, concernProject(), stages, stage)).toBe(false);
+      expect(canRaiseCase(nora, held(nora), concernProject(), stages, stage)).toBe(false);
     }
   });
 
@@ -89,9 +90,9 @@ describe('the closeout is two sequential stages (acceptance criterion 1)', () =>
     const completed = closeoutStagesOf('COMPLETED', [completionEffected()], []);
     expect(completed.completion.state).toBe('DONE');
     expect(completed.closure.state).toBe('READY');
-    expect(canRaiseCase(nora, concernProject({ status: 'COMPLETED' }), completed, 'closure')).toBe(
-      true,
-    );
+    expect(
+      canRaiseCase(nora, held(nora), concernProject({ status: 'COMPLETED' }), completed, 'closure'),
+    ).toBe(true);
   });
 
   test('a rejected or withdrawn completion leaves Stage 1 ready to raise again', () => {
@@ -129,7 +130,7 @@ describe('the closeout is two sequential stages (acceptance criterion 1)', () =>
       [closureCase({ status: 'EFFECTED' })],
     );
     expect([stages.completion.state, stages.closure.state]).toEqual(['DONE', 'DONE']);
-    expect(canRaiseCase(nora, project, stages, 'closure')).toBe(false);
+    expect(canRaiseCase(nora, held(nora), project, stages, 'closure')).toBe(false);
   });
 
   test.each<ProjectStatus>(['DRAFT', 'SUBMITTED', 'APPROVED_PLANNED'])(
@@ -165,18 +166,31 @@ describe('readiness and obligations', () => {
     });
   });
 
-  test('the Project Manager moves an obligation; AHDA waives it; a settled one or a closed project offers nothing', () => {
+  test('a CLOSEOUT_RAISE holder moves an obligation; a CLOSEOUT_WAIVE holder waives it; a settled one or a closed project offers nothing', () => {
     const project = concernProject();
-    expect(obligationCommands(nora, project, obligation())).toEqual(['start', 'satisfy', 'cancel']);
-    expect(obligationCommands(nora, project, obligation({ status: 'IN_PROGRESS' }))).toEqual([
+    expect(obligationCommands(nora, held(nora), project, obligation())).toEqual([
+      'start',
       'satisfy',
       'cancel',
     ]);
-    expect(obligationCommands(faisal, project, obligation())).toEqual(['waive']);
-    expect(obligationCommands(nora, project, obligation({ status: 'SATISFIED' }))).toEqual([]);
-    expect(obligationCommands(faisal, concernProject({ status: 'CLOSED' }), obligation())).toEqual(
-      [],
-    );
+    expect(
+      obligationCommands(nora, held(nora), project, obligation({ status: 'IN_PROGRESS' })),
+    ).toEqual(['satisfy', 'cancel']);
+    // R03 holds CLOSEOUT_RAISE there too, so it also moves the obligation; R06 holds neither.
+    expect(obligationCommands(faisal, held(faisal), project, obligation())).toEqual([
+      'start',
+      'satisfy',
+      'cancel',
+      'waive',
+    ]);
+    const viewer = viewerSession().user;
+    expect(obligationCommands(viewer, held(viewer), project, obligation())).toEqual([]);
+    expect(
+      obligationCommands(nora, held(nora), project, obligation({ status: 'SATISFIED' })),
+    ).toEqual([]);
+    expect(
+      obligationCommands(faisal, held(faisal), concernProject({ status: 'CLOSED' }), obligation()),
+    ).toEqual([]);
   });
 
   test('the completion date is never after today; the narrative and date are sent as typed, never computed', () => {
@@ -289,8 +303,10 @@ describe('who is offered what (navigation only; the API decides)', () => {
     expect(canWithdrawRecord(nora, suspensionRequest(), project, SUSPENSION_WITHDRAWABLE)).toBe(
       false,
     );
-    expect(canStartReview(faisal, submitted, project)).toBe(true);
-    expect(canStartReview(nora, submitted, project)).toBe(false);
+    expect(canStartReview(faisal, held(faisal), submitted, project, 'SUSPENSION_REVIEW')).toBe(
+      true,
+    );
+    expect(canStartReview(nora, held(nora), submitted, project, 'SUSPENSION_REVIEW')).toBe(false);
     expect(canActivate(faisal, suspensionRequest({ status: 'APPROVED' }), project)).toBe(true);
     expect(canActivate(nora, suspensionRequest({ status: 'APPROVED' }), project)).toBe(false);
   });
@@ -298,7 +314,15 @@ describe('who is offered what (navigation only; the API decides)', () => {
   test('nothing is offered on a CLOSED project (TASK-063 D-8)', () => {
     const closed = concernProject({ status: 'CLOSED' });
     expect(canEditRecord(nora, completionCase(), closed)).toBe(false);
-    expect(canStartReview(faisal, completionCase({ status: 'SUBMITTED' }), closed)).toBe(false);
+    expect(
+      canStartReview(
+        faisal,
+        held(faisal),
+        completionCase({ status: 'SUBMITTED' }),
+        closed,
+        'CLOSEOUT_REVIEW',
+      ),
+    ).toBe(false);
     expect(canActivate(faisal, completionCase({ status: 'APPROVED' }), closed)).toBe(false);
   });
 
@@ -307,8 +331,10 @@ describe('who is offered what (navigation only; the API decides)', () => {
       status: 'SUBMITTED',
       submittedByUserId: nora.id,
     } as ProgressSubmissionDetail;
-    expect(canReview(faisal, concernProject(), submission)).toBe(true);
-    expect(canReview(faisal, concernProject({ status: 'CLOSED' }), submission)).toBe(false);
+    expect(canReview(faisal, held(faisal), concernProject(), submission)).toBe(true);
+    expect(canReview(faisal, held(faisal), concernProject({ status: 'CLOSED' }), submission)).toBe(
+      false,
+    );
     const update = {
       status: 'SUBMITTED',
       submittedByUserId: nora.id,
@@ -317,5 +343,51 @@ describe('who is offered what (navigation only; the API decides)', () => {
     expect(
       canReviewFinancials(faisal, held(faisal), concernProject({ status: 'CLOSED' }), update),
     ).toBe(false);
+  });
+});
+
+describe('closeout and review actions follow the permission their endpoint requires', () => {
+  const r02 = sessionFor(['R02']).user;
+  const lacking = [
+    viewerSession().user,
+    ...['R04', 'R05', 'R07'].map((code) => sessionFor([code]).user),
+  ];
+
+  test('raising a closeout case: CLOSEOUT_RAISE (R02, R03, the PM), not R04 elsewhere, R05, R06 or R07', () => {
+    const stages = closeoutStagesOf('ACTIVE', [], []);
+    for (const user of [nora, faisal, r02]) {
+      expect(canRaiseCase(user, held(user), concernProject(), stages, 'completion')).toBe(true);
+    }
+    for (const user of lacking) {
+      expect(canRaiseCase(user, held(user), concernProject(), stages, 'completion')).toBe(false);
+    }
+  });
+
+  test('waiving readiness checks: CLOSEOUT_WAIVE (R02, R03), never the raiser', () => {
+    const draft = completionCase({ requestedByUserId: nora.id });
+    expect(canWaiveChecks(faisal, held(faisal), draft, concernProject())).toBe(true);
+    expect(canWaiveChecks(r02, held(r02), draft, concernProject())).toBe(true);
+    expect(canWaiveChecks(nora, held(nora), draft, concernProject())).toBe(false);
+    for (const user of lacking) {
+      expect(canWaiveChecks(user, held(user), draft, concernProject())).toBe(false);
+    }
+  });
+
+  test.each([
+    ['SUSPENSION_REVIEW', suspensionRequest({ status: 'SUBMITTED', requestedByUserId: nora.id })],
+    ['CLOSEOUT_REVIEW', completionCase({ status: 'SUBMITTED', requestedByUserId: nora.id })],
+  ] as const)('starting the review: %s (R02, R03), not R04–R07', (code, record) => {
+    expect(canStartReview(faisal, held(faisal), record, concernProject(), code)).toBe(true);
+    expect(canStartReview(r02, held(r02), record, concernProject(), code)).toBe(true);
+    for (const user of lacking) {
+      expect(canStartReview(user, held(user), record, concernProject(), code)).toBe(false);
+    }
+  });
+
+  test('a project the person cannot read is decided on holding the permission at all', () => {
+    const record = suspensionRequest({ status: 'SUBMITTED', requestedByUserId: nora.id });
+    expect(canStartReview(faisal, held(faisal), record, null, 'SUSPENSION_REVIEW')).toBe(true);
+    const viewer = viewerSession().user;
+    expect(canStartReview(viewer, held(viewer), record, null, 'SUSPENSION_REVIEW')).toBe(false);
   });
 });

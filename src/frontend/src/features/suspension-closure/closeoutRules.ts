@@ -1,6 +1,7 @@
 import { checkText } from '@/features/identity-access/forms.ts';
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { assignmentsReaching, isClosed, isInternal } from '@/features/projects/access.ts';
+import { holdsOnProject, isClosed, isInternal } from '@/features/projects/access.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { type ProjectStatus } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
@@ -21,7 +22,7 @@ import {
   type ReadinessCheckCode,
   type ReadinessCheckDetail,
 } from './api/types.ts';
-import { isOpen, managesProject, type ProjectFacts } from './governedRequest.ts';
+import { isOpen, raisesCloseout, type ProjectFacts } from './governedRequest.ts';
 
 // WF-10's rules as the screens apply them (TASK-063 closure.md). Completion and Closure are two cases, raised, reviewed
 // and activated one after the other (D-3, D-4): the screens never offer them as one action. The server is the
@@ -106,14 +107,15 @@ export function closeoutStagesOf(
   };
 }
 
-/** SCR-112 is offered to the project's Project Manager for the stage that may be raised now (TASK-063 §3). */
+/** SCR-112 is offered to a holder of CLOSEOUT_RAISE on the project for the stage that may be raised now (TASK-063 §3). */
 export function canRaiseCase(
   user: SessionUser,
+  permissions: Permissions,
   project: ProjectFacts,
   stages: CloseoutStages,
   stage: CloseoutStage,
 ): boolean {
-  return managesProject(user, project) && stages[stage].state === 'READY';
+  return raisesCloseout(user, permissions, project) && stages[stage].state === 'READY';
 }
 
 /** WF-10 withdraws a case from DRAFT, SUBMITTED or RETURNED (TASK-063 D-3). */
@@ -343,9 +345,13 @@ export function toObligationRequest(
   };
 }
 
-/** What the person is offered on an obligation: the Project Manager moves it along; AHDA waives it (CLOSEOUT_WAIVE). */
+/**
+ * What the person is offered on an obligation: a holder of CLOSEOUT_RAISE moves it along; AHDA waives it (CLOSEOUT_WAIVE,
+ * internal, never the project's Project Manager).
+ */
 export function obligationCommands(
   user: SessionUser,
+  permissions: Permissions,
   project: ProjectFacts,
   obligation: Pick<PostProjectObligationDetail, 'status'>,
 ): ObligationCommand[] {
@@ -353,13 +359,13 @@ export function obligationCommands(
     return [];
   }
   const commands: ObligationCommand[] = [];
-  if (managesProject(user, project)) {
+  if (raisesCloseout(user, permissions, project)) {
     commands.push(...(obligation.status === 'OPEN' ? ['start' as const] : []), 'satisfy', 'cancel');
   }
   if (
     isInternal(user) &&
     project.projectManagerUserId !== user.id &&
-    assignmentsReaching(user, project).length > 0
+    holdsOnProject(permissions, user, project, 'CLOSEOUT_WAIVE')
   ) {
     commands.push('waive');
   }

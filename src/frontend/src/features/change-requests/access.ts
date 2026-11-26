@@ -5,7 +5,7 @@ import {
 } from '@/features/approvals/api/types.ts';
 import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { assignmentsReaching, holdsOnProject, isInternal } from '@/features/projects/access.ts';
+import { holdsOnProject, isInternal } from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 
 import { type ChangeRequestDetail } from './api/types.ts';
@@ -81,11 +81,12 @@ export function canWithdrawChangeRequest(
 }
 
 /**
- * Starting the review is AHDA's (ADR-013): offered to an internal person who did not raise it and whose assignments
- * reach the project — or anyone internal but the raiser when the project cannot be read; the API decides.
+ * Starting the review is AHDA's (ADR-013): offered to an internal holder of CHANGE_REQUEST_REVIEW on the project (R02
+ * ALL, R03 DEPT) who did not raise it — or on holding it at all when the project cannot be read; the API decides.
  */
 export function canStartReview(
   user: SessionUser,
+  permissions: Permissions,
   request: ChangeRequestDetail,
   project: ProjectFacts | null,
 ): boolean {
@@ -93,7 +94,7 @@ export function canStartReview(
     request.status === 'SUBMITTED' &&
     isInternal(user) &&
     !isRaiser(user, request, project) &&
-    (project === null || assignmentsReaching(user, project).length > 0)
+    holdsOnProject(permissions, user, project, 'CHANGE_REQUEST_REVIEW')
   );
 }
 
