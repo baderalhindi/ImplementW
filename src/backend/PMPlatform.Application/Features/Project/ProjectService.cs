@@ -204,9 +204,14 @@ internal sealed class ProjectService(
             return AdministrationError.NotFound;
         }
 
-        // Client review, item 4: any state, and everything stays in the database.
+        // Client review, item 4: any state but CLOSED, which is terminal and read-only (BR-CLO-020), and everything stays in the database.
         if (await access.HoldsAsync(callerId, PermissionCatalogue.ProjectDelete, project, cancellationToken).ConfigureAwait(false))
         {
+            if (project.LifecycleState == ProjectLifecycleState.Closed)
+            {
+                return AdministrationError.TerminalState;
+            }
+
             DateTimeOffset now = timeProvider.GetUtcNow();
             project.DeletedAt = now;
             project.DeletedBy = callerId;

@@ -122,21 +122,19 @@ export function canEscalateConcern(
 }
 
 /**
- * Resolving an escalation is for whoever holds CONCERN_ESCALATION_RESOLVE through the role it is addressed to (D-8).
- * The session names its roles by code and the escalation its role by id; `roleCode` is that id's code when the roles
- * can be read (ROLE_VIEW), else null, and then any internal person but the escalator is offered it and the API decides.
+ * Resolving an escalation is for whoever holds CONCERN_ESCALATION_RESOLVE through the role it is addressed to (D-8): the
+ * escalation names that role by code, as the session names the person's roles.
  */
 export function canResolveEscalation(
   user: SessionUser,
-  escalation: Pick<ConcernEscalationDetail, 'status' | 'escalatedByUserId'>,
-  roleCode: string | null,
+  escalation: Pick<ConcernEscalationDetail, 'status' | 'escalatedToRoleCode'>,
 ): boolean {
   return (
     escalation.status === 'OPEN' &&
     isInternal(user) &&
-    (roleCode === null
-      ? escalation.escalatedByUserId !== user.id
-      : user.roleAssignments.some((assignment) => assignment.roleCode === roleCode))
+    user.roleAssignments.some(
+      (assignment) => assignment.roleCode === escalation.escalatedToRoleCode,
+    )
   );
 }
 

@@ -271,9 +271,6 @@
     "wasOpenFor": "ظل مفتوحًا أيامًا: {days}",
     "ended": "انتهى {date} بواسطة {name}"
   },
-  "escalation": {
-    "unknownRole": "الدور {id}"
-  },
   "escalationDetail": {
     "title": "التصعيد {number}: {concern}",
     "age": "المدة",

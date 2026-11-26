@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 
-import { rolesApi } from '@/features/identity-access/api/identityAccessApi.ts';
 import { projectsApi } from '@/features/projects/api/projectsApi.ts';
 import { type ProjectDetail, type ProjectSummary } from '@/features/projects/api/types.ts';
 import { shortId } from '@/features/projects/presentation.ts';
@@ -147,38 +146,6 @@ export function useConcernLookups(): ConcernLookups {
         : item.label[language];
     },
     readable: catalogues.data !== undefined,
-  };
-}
-
-/** Module-level, so useApiResource reads the roles once per mount. Without ROLE_VIEW (R01 only) there are none. */
-async function readRoles(signal: AbortSignal) {
-  try {
-    return await rolesApi.list(signal);
-  } catch {
-    return [];
-  }
-}
-
-export interface RoleNames {
-  /** "Department Manager (R03)", or "Role 1a2b3c4d" when the roles cannot be read. */
-  name: (id: string) => string;
-  /** The role's code, or null when the roles cannot be read. */
-  code: (id: string) => string | null;
-}
-
-/** An escalation names the role it is addressed to by id (TASK-057 D-6). */
-export function useRoleNames(): RoleNames {
-  const { t, language } = useI18n();
-  const roles = useApiResource(readRoles).data ?? [];
-  const find = (id: string) => roles.find((candidate) => candidate.id === id);
-  return {
-    name: (id) => {
-      const role = find(id);
-      return role === undefined
-        ? t('issuesChallenges.escalation.unknownRole', { id: shortId(id) })
-        : `${role.name[language]} (${role.code})`;
-    },
-    code: (id) => find(id)?.code ?? null,
   };
 }
 

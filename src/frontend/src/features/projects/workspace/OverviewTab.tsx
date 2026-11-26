@@ -40,9 +40,21 @@ const NEXT_STEPS: Partial<Record<ProjectStatus, TranslationKey>> = {
 };
 
 /**
+ * A registration not yet approved has no delivery to show: every Project Dashboard widget but the lifecycle state (the badge above) reads a
+ * schedule, a period, a risk or a figure the project only has once approved, and for its registrant no widget reaches it, so the API answers
+ * 404 (`dashboards.md` §5, R-47). The dashboard is not asked for until then (QA D1-05).
+ */
+const REGISTRATION_STATES: ReadonlySet<ProjectStatus> = new Set([
+  'DRAFT',
+  'SUBMITTED',
+  'UNDER_REVIEW',
+  'RETURNED',
+]);
+
+/**
  * SCR-040 Overview: where the project stands, what comes next, and — while the registrant holds it — what is still
- * missing before it can be submitted. Below them, the Project Dashboard (DSH-009; DSH-008 for an entity's person) is
- * composed into this tab, its only place (TASK-070).
+ * missing before it can be submitted. Below them, once the registration is approved, the Project Dashboard (DSH-009; DSH-008 for an
+ * entity's person) is composed into this tab, its only place (TASK-070).
  */
 export function OverviewTab(): ReactElement {
   const { t, formatDateTime } = useI18n();
@@ -168,7 +180,9 @@ export function OverviewTab(): ReactElement {
         </section>
       </div>
       <FollowUpPanel />
-      <ProjectDashboard key={project.id} projectId={project.id} user={user} />
+      {!REGISTRATION_STATES.has(project.status) && (
+        <ProjectDashboard key={project.id} projectId={project.id} user={user} />
+      )}
       <ChangeManagerDialog
         open={changingManager}
         project={project}
