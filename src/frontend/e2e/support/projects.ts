@@ -48,6 +48,11 @@ export interface RegistrationOptions {
   departmentCode?: string;
   startsInDays?: number;
   budgetSar?: string;
+  /**
+   * How overall progress is calculated (review round 8, point 02). STAGES (default, as a new registration starts) submits with
+   * every stage planned; SCHEDULE reads the schedule's task progress and needs no stage plan.
+   */
+  progressMethod?: 'STAGES' | 'SCHEDULE';
 }
 
 /** A complete registration body; reference ids are read with `lookup`, a session that may read master data and organisations. */
@@ -108,13 +113,26 @@ export async function planEveryStage(writer: PlatformApi, projectId: string): Pr
   );
 }
 
-/** WF-01's submission of a draft naming its Project Manager, its stage plan completed first. */
+/**
+ * WF-01's submission of a draft naming its Project Manager: on the stage method its stage plan is completed first; on the
+ * schedule method the draft is switched to it instead, and no plan is needed.
+ */
 export async function submitRegistration(
   creator: PlatformApi,
   projectId: string,
   projectManagerUserId: string,
+  progressMethod: 'STAGES' | 'SCHEDULE' = 'STAGES',
 ): Promise<void> {
-  await planEveryStage(creator, projectId);
+  if (progressMethod === 'SCHEDULE') {
+    const draft = await creator.ok('GET', `/projects/${projectId}`);
+    await creator.post(
+      `/projects/${projectId}/set-progress-method`,
+      { progressMethod: 'SCHEDULE' },
+      { ifMatch: draft.etag },
+    );
+  } else {
+    await planEveryStage(creator, projectId);
+  }
   await creator.post(`/projects/${projectId}/submit`, { projectManagerUserId });
 }
 
@@ -203,7 +221,7 @@ export async function activeProject(
     '/projects',
     await registration(crew.approver, options),
   );
-  await submitRegistration(crew.creator, draft.id, crew.manager.userId);
+  await submitRegistration(crew.creator, draft.id, crew.manager.userId, options.progressMethod);
   await crew.reviewer.post(`/projects/${draft.id}/start-review`);
   await approveTaskOn(crew.approver, draft.id, 'PROJECT_REGISTRATION');
   await untilStatus(crew.approver, draft.id, 'APPROVED_PLANNED');

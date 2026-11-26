@@ -205,10 +205,20 @@ test('UJ-014 formal audit, activity and operational evidence stay distinct, corr
     const trail = administrator.page;
     await trail.goto('/admin/audit-trail');
     await expectText(trail.getByRole('main'), 'You may read: Administration.');
-    const rows = trail.getByRole('table', { name: 'Audit trail' }).getByRole('row');
+    const table = trail.getByRole('table', { name: 'Audit trail' });
+    const rows = table.getByRole('row');
     await expect(rows.nth(1)).toBeVisible();
-    const categories = await rows.evaluateAll((all) =>
-      all.slice(1).map((row) => row.querySelectorAll('td')[1]?.textContent ?? ''),
+    // The column is found by its header, so the selection box before it does not shift what is read.
+    const column = (await table.getByRole('columnheader').allTextContents())
+      .map(plain)
+      .indexOf('Audit category');
+    expect(column).toBeGreaterThanOrEqual(0);
+    const categories = await rows.evaluateAll(
+      (all, index) =>
+        all
+          .slice(1)
+          .map((row) => row.querySelectorAll(':scope > td, :scope > th')[index]?.textContent ?? ''),
+      column,
     );
     expect(new Set(categories)).toEqual(new Set(['Administration']));
     // The business record's own correlation id finds nothing for the administrator.

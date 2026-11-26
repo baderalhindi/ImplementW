@@ -94,7 +94,7 @@ test('UJ-003 schedule and achievement keep split authority over one shared miles
   const beforeReforecast = (await planner.api.ok('GET', `/project-milestones/${milestoneId}`)).etag;
 
   await test.step('the schedule planner reforecasts the milestone five days later; the baseline keeps its date', async () => {
-    await row(page).getByRole('button', { name: title }).click();
+    await row(page).getByRole('button', { name: title, exact: true }).click();
     const drawer = page.getByRole('dialog', { name: title });
     await drawer.getByRole('button', { name: 'Edit milestone' }).click();
     const form = page.getByRole('dialog', { name: 'Edit milestone' });
@@ -120,7 +120,7 @@ test('UJ-003 schedule and achievement keep split authority over one shared miles
 
   await test.step('the Project Manager claims the achievement in WF-05 and submits it for review', async () => {
     await page.goto(`/projects/${project.id}/milestones`);
-    await row(page).getByRole('button', { name: title }).click();
+    await row(page).getByRole('button', { name: title, exact: true }).click();
     const drawer = page.getByRole('dialog', { name: title });
     await drawer.getByRole('button', { name: 'Claim the achievement' }).click();
     await drawer.getByLabel('Date achieved').fill(today);
@@ -185,7 +185,7 @@ test('UJ-003 schedule and achievement keep split authority over one shared miles
     await expect(registered).toHaveCount(1);
     await expect(registered.getByRole('link', { name: project.title.text })).toBeVisible();
     await expectText(registered, `Achieved on ${today}`);
-    await registered.getByRole('button', { name: title }).click();
+    await registered.getByRole('button', { name: title, exact: true }).click();
     const drawer = portfolio.page.getByRole('dialog', { name: title });
     await expectText(drawer, `Achieved on ${today} (revision 1), accepted by`);
   });
@@ -207,7 +207,7 @@ test('UJ-003 schedule and achievement keep split authority over one shared miles
   });
 
   await test.step('cross-owner change: the schedule planner cannot re-date or cancel what WF-05 decided', async () => {
-    await row(page).getByRole('button', { name: title }).click();
+    await row(page).getByRole('button', { name: title, exact: true }).click();
     const drawer = page.getByRole('dialog', { name: title });
     await expect(drawer.getByRole('button', { name: 'Edit milestone' })).toHaveCount(0);
     await expect(drawer.getByRole('button', { name: 'Cancel milestone' })).toHaveCount(0);
