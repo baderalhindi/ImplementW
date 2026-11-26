@@ -27,7 +27,7 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 | SR-10 Refresh tokens cannot be revoked | Rotation with reuse detection, plus server-side sign-out (a fix PR); or RA-01 signed | Engagement Architect; AHDA Cybersecurity for RA-01 |
 | SR-13 R01 enrols a second factor at first sign-in | `Identity:Mfa:AllowEnrolmentAtSignIn=false` in SIT, UAT and PROD, with out-of-band enrolment (a configuration PR); or RA-02 signed | AHDA Cybersecurity (PTBC-027) |
 | SR-26 No field is classified, so nothing is masked by audience | AHDA publishes the DATA_CLASSIFICATION items and a FIELD_CLASSIFICATION version (UGV-01); the model is then updated to MITIGATED on PR #34 | AHDA Cybersecurity |
-| SR-38 Uploads trusted by declared type | Signature check, extension allowlist, declared-against-sniffed comparison (a fix PR) | Backend lead (TASK-037 follow-up) |
+| SR-38 Uploads trusted by declared type | The PR that merges `fix/task-112-upload-signature-check` (controls and tests on the branch) | Backend lead |
 | SR-41 No malware scanner selected | Provider selected (in-Kingdom, no retention) and its adapter merged | Security Lead |
 | SR-53 Nafath does not bind the person to the account | An expected identity captured at onboarding and compared with `sub` (a fix PR, after OQ-007); or RA-03 signed | AHDA Cybersecurity, FG-03 owner |
 | SR-74, SR-75 SMS receipt callback | TASK-103 merges with requirements R-1 to R-10 of its model; or the callback is out of the UAT release and the models say so | TASK-103 owner |
@@ -85,7 +85,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-35 | RBAC-T26 | Medium | Any RAISE holder edits or submits another person's request and can then approve it | Backend lead | Open | Edit and submit by the requester only, or record the submitter as the requester for SoD |
 | SR-36 | RBAC-T27 | Medium | One person may approve several stages of one run | PMO (WF-11) | Open | Confirm WF-11's rule; if distinct approvers are required, enforce it in `ApprovalAuthority` |
 | SR-37 | RBAC-T28, RBAC-T29 | Low | Owner fields accept any user; small existence oracles | Backend lead | Open | Restrict owners to the project's eligible people; answer 404 for an out-of-scope project on upload |
-| SR-38 | DOC-T01 | High | Uploads are trusted by declared type: no signature check or extension allowlist | Backend lead | Open | Sniff the content signature, allowlist extensions per type, refuse a mismatch, keep archives out (WF-12 §5.1, DOC-CC-05); tests |
+| SR-38 | DOC-T01 | High | Uploads are trusted by declared type: no signature check or extension allowlist | Backend lead | Open | Controls built and tested on `fix/task-112-upload-signature-check` (extension per type, leading-byte signature, text without NUL or binary signature, 415 on a mismatch; `DocumentContentRulesTests`, `DocumentEndpointTests`); closed as Mitigated by the PR that merges it |
 | SR-39 | DOC-T04, DOC-T05 | High | Stored XSS through served content; non-CLEAN bytes served | Backend lead | Mitigated | PR #42 (one CLEAN gate, attachment, `nosniff`), PR #43 (Blob save), PR #88 (CSP), PR #94 (the proving tests run in CI) |
 | SR-40 | DOC-T08 | High | The scanner fails open | Security Lead | Mitigated | PR #42 (the port fails closed). The provider adapter must map every provider answer the same way (SR-41) |
 | SR-41 | DOC-T07, DOC-T21, DOC-T24 | High | No malware scanner selected: residency, transport, verdict integrity and bomb limits unknown | Security Lead | Open | Select an in-Kingdom provider with no retention (CS-019, CS-031, CTL-50); adapter with TLS and authenticated verdicts; SCAN_FAILED on bombs |
@@ -161,3 +161,4 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | 2026-11-13 | Sign-in without a password: SMS codes (AUTH-T35) and passkeys (AUTH-T36), and the SMS stand-in (AUTH-T37); SR-87 to SR-89. Two more open High |
 | 2026-11-06 | A project's registers in the import (DI-T12, DI-T13), both mitigated; no new finding |
 | 2026-11-06 | Every business role may prepare a project import batch (DI-T14), mitigated by R02's approval; no new finding |
+| 2026-11-25 | SR-38: extension and signature checks on upload built and tested on `fix/task-112-upload-signature-check`; DOC-T01 MITIGATED (residual Medium). SR-38 stays Open until the PR merges |

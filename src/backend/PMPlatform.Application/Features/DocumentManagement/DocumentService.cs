@@ -48,9 +48,10 @@ internal sealed class DocumentService(
     {
         ArgumentNullException.ThrowIfNull(draft);
 
-        if (uploads.Check(file) is { } unacceptable)
+        AdministrationResult<DocumentFile> accepted = await uploads.CheckAsync(file, cancellationToken).ConfigureAwait(false);
+        if (!accepted.Succeeded)
         {
-            return unacceptable;
+            return accepted.Error;
         }
 
         if (await references.MetadataIssueAsync(draft.DocumentTypeItemId, draft.DataClassificationItemId, cancellationToken).ConfigureAwait(false) is { } issue)
@@ -92,7 +93,7 @@ internal sealed class DocumentService(
             UpdatedAt = now,
             UpdatedBy = callerId,
         };
-        DocumentVersion version = await uploads.StoreAsync(document.Id, 1, file, callerId, now, cancellationToken).ConfigureAwait(false);
+        DocumentVersion version = await uploads.StoreAsync(document.Id, 1, accepted.Value, callerId, now, cancellationToken).ConfigureAwait(false);
         repository.Add(document);
         repository.Add(version);
         audit.Stage(DocumentAudit.Uploaded(callerId, document, await access.AnchorsOfAsync(document, cancellationToken).ConfigureAwait(false), version));
@@ -222,16 +223,17 @@ internal sealed class DocumentService(
             return AdministrationError.TerminalState;
         }
 
-        if (uploads.Check(file) is { } unacceptable)
+        AdministrationResult<DocumentFile> accepted = await uploads.CheckAsync(file, cancellationToken).ConfigureAwait(false);
+        if (!accepted.Succeeded)
         {
-            return unacceptable;
+            return accepted.Error;
         }
 
         // The document's own row changes too, so two versions added at once cannot both commit: its row version guards
         // the number, and the unique (document, number) key backs it.
         DateTimeOffset now = timeProvider.GetUtcNow();
         int versionNo = await repository.GetLatestVersionNoAsync(documentId, cancellationToken).ConfigureAwait(false) + 1;
-        DocumentVersion version = await uploads.StoreAsync(documentId, versionNo, file, callerId, now, cancellationToken).ConfigureAwait(false);
+        DocumentVersion version = await uploads.StoreAsync(documentId, versionNo, accepted.Value, callerId, now, cancellationToken).ConfigureAwait(false);
         repository.Add(version);
         Touch(document, callerId);
         audit.Stage(DocumentAudit.VersionAdded(callerId, document, await access.AnchorsOfAsync(document, cancellationToken).ConfigureAwait(false), version));
