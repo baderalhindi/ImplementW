@@ -1156,6 +1156,7 @@ export function DashboardDesignerPage(): ReactElement {
         {renderBar(visual, 'designer__visual-bar', 'widget__title')}
         <VisualBodyBox
           visual={visual}
+          label={visual.title[language]}
           className={
             isTextBox(visual)
               ? 'visual__body visual__body--text'

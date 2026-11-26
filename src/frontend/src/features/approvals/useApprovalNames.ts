@@ -1,6 +1,6 @@
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { namesApi } from '@/features/identity-access/names/namesApi.ts';
-import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { useScopedResource } from '@/shared/api/resourceScope.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 export interface ApprovalNames {
@@ -10,15 +10,6 @@ export interface ApprovalNames {
 
 const SHORT_ID_LENGTH = 8;
 
-/** Module-level, so useApiResource reads the roles once per mount. An approver without ROLE_VIEW gets none. */
-async function readRoleNames(signal: AbortSignal) {
-  try {
-    return (await namesApi.units(signal)).roles ?? [];
-  } catch {
-    return [];
-  }
-}
-
 /**
  * Names for the people and roles a WF-11 screen shows. The approval representations carry ids only (TASK-036 F-1), and
  * reading a user or a role needs USER_VIEW or ROLE_VIEW, which an approver may not hold; an id that cannot be read is
@@ -27,7 +18,8 @@ async function readRoleNames(signal: AbortSignal) {
 export function useApprovalNames(userIds: (string | null)[]): ApprovalNames {
   const { t, language } = useI18n();
   const user = usePersonNames(userIds);
-  const roles = useApiResource(readRoleNames).data ?? [];
+  // The units' read, shared with the screen's other readers (stage QA F-05); a failed read names no role.
+  const roles = useScopedResource(namesApi.units).data?.roles ?? [];
 
   return {
     user,
