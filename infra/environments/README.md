@@ -14,7 +14,8 @@ Full record, topology diagram and promotion path: [`docs/architecture/environmen
 | `environments.json` | The source of truth. Four environments, their projects, networks, database instances, secret-store namespaces, state buckets, service accounts and the variables each environment holds. The secret entries are derived from the Environment and Secrets sheet by `infra/secrets/inventory.py` (TASK-019). Holds **no value of any kind** for a secret. |
 | `apply-org-policy.sh` | Creates the two folders and binds `constraints/gcp.resourceLocations` and the default log-bucket location to them. Run **first**: both are fixed for every project created afterwards. |
 | `provision-environment.sh` | Creates one environment: project, state bucket, secret containers, service accounts, per-project IAM. |
-| `verify-separation.sh` | The separation drills: a DEV credential against the SIT database, PROD secrets from non-PROD principals, cross-environment IAM, and resource locality. |
+| `verify-separation.sh` | The separation drills: a DEV credential against the SIT database, PROD secrets from non-PROD principals, cross-environment IAM, and resource locality. Only the provider's refusal passes; any other failed call is ERROR. |
+| `tests/verify-separation-test.sh`, `tests/stub/` | Runs `verify-separation.sh` against stand-in `gcloud` and `psql` (separated platform, no credentials, failed impersonation, API error, leaked secret, unreachable database, early stop). `repo-checks` CI job. |
 | `github/environments.json`, `github/apply.sh` | The four GitHub deployment environments and their approval gates. TASK-018's pipeline deploys through them. |
 | `lib/common.sh` | Manifest loader and the guards every script shares. |
 
