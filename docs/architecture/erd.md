@@ -159,6 +159,13 @@ erDiagram
         uuid user_id FK
         varchar style
     }
+    UserSession {
+        uuid id PK
+        uuid user_id FK
+        varchar status
+        uuid refresh_token_id
+    }
+    User ||--o{ UserSession : "user_id"
     User ||--o{ UserPasswordHistory : "user_id"
     User ||--o{ UserPasskey : "user_id"
     User ||--o{ SmsCode : "user_id"

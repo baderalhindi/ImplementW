@@ -3047,7 +3047,7 @@ Table identity_access.user_session {
   updated_at timestamptz [not null, note: 'Audit column (D-2)']
   updated_by uuid [not null, note: 'Audit column (D-2)']
 
-  Indexes {
+  indexes {
     (user_id, status)
   }
 
