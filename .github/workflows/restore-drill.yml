@@ -1,0 +1,64 @@
+# Restore drill, local form (TASK-023 runbook §8; QA PHASE-E-03). docs/operations/run-restore-drill.sh builds the
+# release image from the commit, migrates and seeds a source PostgreSQL 17 with the drill fixture, quiesces its API,
+# backs it up, restores into an --internal network and requires every table, sequence and the audit chain to match,
+# the restored API healthy and one active user per role. It broke unnoticed once (the fixture collided with a
+# migration), so it runs whenever what it depends on changes, and weekly. Containers only: no host psql needed.
+# The same image then has to fail its start cleanly (rollback-validation.md F-4).
+name: restore-drill
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+  pull_request:
+    branches: [main, dev, stage]
+    paths:
+      - docs/operations/run-restore-drill.sh
+      - docs/operations/drill-fixture.sql
+      - docs/operations/verify-restore.sh
+      - docs/operations/database-fingerprint.sql
+      - src/backend/PMPlatform.Infrastructure/Persistence/Migrations/**
+      - db/seed/**
+      - infra/docker/api.Dockerfile
+      - infra/docker/postgres/**
+      - infra/docker/startup-failure-test.sh
+      - .github/workflows/restore-drill.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restore-drill-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  drill:
+    name: restore-drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore drill (runbook §8, local)
+        run: docs/operations/run-restore-drill.sh artifacts/restore-drill
+
+      - name: Start-up failure exits (rollback-validation.md F-4)
+        run: infra/docker/startup-failure-test.sh pmplatform-api:task-023-drill
+
+      - name: Summarise
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f artifacts/restore-drill/summary.md ]; then
+            cat artifacts/restore-drill/summary.md >>"$GITHUB_STEP_SUMMARY"
+          else
+            echo "The drill wrote no summary." >>"$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Attach the evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-drill
+          path: artifacts/restore-drill/
+          retention-days: 30
+          if-no-files-found: warn

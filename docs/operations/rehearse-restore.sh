@@ -5,7 +5,8 @@
 #
 # What it does. It starts a SOURCE PostgreSQL 17, applies the EF Core migrations with the API image's
 # `migrate` and `seed` commands, loads the local users (infra/docker/postgres/seed), adds a fixture
-# (a hash-chained audit_activity.audit_event, a 200,000-row table with a sequence and an index), and
+# (1,000 events chained by audit_activity.audit_event's own trigger, a 200,000-row table with a sequence and an
+# index), and
 # fingerprints it. It then takes the two kinds of backup the runbook restores from and restores each
 # into its own isolated server, timing both:
 #
@@ -175,8 +176,10 @@ fault F4 1 "a sequence behind the data it numbers" \
   "SELECT setval('drill_fixture.load_id_seq', 1)"
 fault F5 1 "an index missing" \
   "DROP INDEX drill_fixture.load_recorded_at"
+# F6 and F9 rewrite an event the database refuses to change (TASK-033's append_only trigger): the fault is corruption
+# that bypassed it, so the session skips triggers (session_replication_role, superuser in these local servers).
 fault F6 1 "one audit event's link rewritten" \
-  "UPDATE audit_activity.audit_event SET previous_event_hash = repeat('0', 64) WHERE recorded_at = timestamptz '2026-09-25 00:08:20+00'"
+  "SET session_replication_role = replica; UPDATE audit_activity.audit_event SET previous_event_hash = repeat('0', 64) WHERE id = md5('event500')::uuid"
 
 # F7: the import stopped part-way — the first 60% of the export, errors ignored, as a careless
 # operator would run it.
@@ -201,7 +204,7 @@ record F8 2 "$status" "nothing listening — the comparison never reached a serv
 # F9: the chain was already broken at the source, so the restore is a faithful copy of a broken
 # chain. The two fingerprints are identical and the comparison must still fail.
 sql "$export_container" "CREATE DATABASE fault_f9 TEMPLATE pmplatform"
-sql "$export_container" "UPDATE audit_activity.audit_event SET previous_event_hash = repeat('f', 64) WHERE recorded_at = timestamptz '2026-09-25 00:08:20+00'" fault_f9
+sql "$export_container" "SET session_replication_role = replica; UPDATE audit_activity.audit_event SET previous_event_hash = repeat('f', 64) WHERE id = md5('event500')::uuid" fault_f9
 "$verify" fingerprint "$(connection "$export_container" fault_f9)" >"$work/f9.fingerprint"
 set +e
 "$verify" compare "$work/f9.fingerprint" "$(connection "$export_container" fault_f9)" >"$work/F9.out" 2>&1

@@ -1,0 +1,38 @@
+2026-11-26T22:46:54Z == release artifact: building pmplatform-api:task-023-drill from this tree (before the incident, as a deployed digest would be)
+2026-11-26T22:46:55Z    sha256:139b1adb41394f2a4e4599706554efd83dea8ff3de4d18e067702802f1b5ce9d
+2026-11-26T22:46:55Z == source environment
+2026-11-26T22:47:10Z    source database and API up; /health 200
+2026-11-26T22:47:10Z == DS-2 quiesce the source (stop its API), fingerprint it, then back it up
+2026-11-26T22:47:10Z    source API stopped in 0s (exit 0); nothing writes to the source until DS-3 has passed
+2026-11-26T22:47:13Z    backups taken at 2026-11-26T22:47:13Z: physical  13M, export 5.3M
+2026-11-26T22:47:13Z == DS-3 fingerprint again; the source must not have changed across the backup
+2026-11-26T22:47:13Z    identical: source.fingerprint is the source as backed up
+2026-11-26T22:47:15Z    source API back in service; /health 200
+2026-11-26T22:47:15Z    one row written to the source after the backup
+2026-11-26T22:47:15Z == DS-4 incident declared: CLOCK STARTED
+2026-11-26T22:47:20Z    backup restored onto a new server in the isolated environment
+2026-11-26T22:47:20Z == isolation: the operations host in the isolated environment must reach nothing outside it
+2026-11-26T22:47:21Z    source database at 172.21.0.2: reachable from the source network (control), unreachable from the isolated one. Internet: unreachable
+2026-11-26T22:47:21Z == DS-5 compare with the source as backed up
+MATCH: 142 tables, 201934 rows, 2 sequences, identical counts and checksums
+AUDIT CHAIN: events=1000|genesis=1|broken=0|forks=0
+2026-11-26T22:47:22Z == DS-8 the service, on the restored database
+2026-11-26T22:47:24Z    /health 200 from the restored API; one active local user for each of R01-R08
+2026-11-26T22:47:24Z == CLOCK STOPPED: time-to-restore 9s
+2026-11-26T22:47:24Z == DS-6 the export, into a second database on the restored server
+MATCH: 142 tables, 201934 rows, 2 sequences, identical counts and checksums
+AUDIT CHAIN: events=1000|genesis=1|broken=0|forks=0
+2026-11-26T22:47:27Z == summary
+| Field | Value |
+| --- | --- |
+| Release artifact | `pmplatform-api:task-023-drill` `sha256:139b1adb41394f2a4e4599706554efd83dea8ff3de4d18e067702802f1b5ce9d` |
+| Backup taken | 2026-11-26T22:47:13Z |
+| DS-4 clock start | 2026-11-26T22:47:15Z |
+| Backup restored, server accepting connections | 2026-11-26T22:47:20Z |
+| DS-5 comparison finished | 2026-11-26T22:47:22Z |
+| DS-8 service verified, clock stop | 2026-11-26T22:47:24Z |
+| **Time-to-restore** | **9 s** |
+| P-5 against RTO 4–6 h | PASS (<= 4 h) |
+| P-1 database, from the backup | MATCH |
+| P-2 database, from the export | MATCH |
+| P-3 audit chain | events=1000, genesis=1, broken=0, forks=0 |

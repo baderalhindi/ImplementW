@@ -16,10 +16,14 @@
 #             drill host runs inside the VPC (BR-1)
 #
 # The steps, by runbook number:
-#   DS-2  fingerprint the source                         -> before.fingerprint
+#   DS-2  quiesce the source: stop its API, whose polling workers write on a timer (the FG-05 integration
+#         check rewrites integration_monitoring.integration_instance on every pass), so a running API
+#         is never quiet and DS-3 could never pass (QA PHASE-E-03; runbook §8 DS-2, BR-9)
+#         fingerprint the source                         -> before.fingerprint
 #         back it up: pg_basebackup (the local counterpart of an automated backup) and a SQL export
 #   DS-3  fingerprint again; must equal DS-2             -> source.fingerprint
-#         then write to the source, so a restore that read the live source rather than the backup fails
+#         start the source API again, then write to the source, so a restore that read the live
+#         source rather than the backup fails
 #   DS-4  START THE CLOCK. Create the isolated environment and restore the backup into it
 #   DS-5  compare the restored database with source.fingerprint; audit chain
 #   DS-8  bring the API up on the restored database; /health 200 and one active user per role.
@@ -129,7 +133,11 @@ start_api "$source_api" "$source_network" "$source_db"
 api_healthy "$source_api"
 log "   source database and API up; /health 200"
 
-log "== DS-2 fingerprint the source, then back it up"
+log "== DS-2 quiesce the source (stop its API), fingerprint it, then back it up"
+stop_started=$(date +%s)
+docker stop --timeout 30 "$source_api" >/dev/null
+api_exit=$(docker inspect --format '{{.State.ExitCode}}' "$source_api")
+log "   source API stopped in $(( $(date +%s) - stop_started ))s (exit $api_exit); nothing writes to the source until DS-3 has passed"
 ops "$source_network" /ops/verify-restore.sh fingerprint "$(connection "$source_db")" >"$evidence/before.fingerprint"
 docker exec "$source_db" pg_basebackup -h 127.0.0.1 -U pmplatform -D /tmp/base -Ft -z -X fetch -c fast
 docker cp -q "$source_db:/tmp/base/base.tar.gz" "$work/base.tar.gz"
@@ -146,6 +154,9 @@ else
   log "FAIL the source changed across the backup; the drill is not valid (runbook DS-3)"
   exit 1
 fi
+docker start "$source_api" >/dev/null
+api_healthy "$source_api"
+log "   source API back in service; /health 200"
 docker exec "$source_db" psql -h 127.0.0.1 -U pmplatform -d pmplatform -X -q -v ON_ERROR_STOP=1 \
   -c "INSERT INTO drill_fixture.load (payload, recorded_at) VALUES ('written after the backup', now())" >/dev/null
 log "   one row written to the source after the backup"
