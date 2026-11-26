@@ -39,7 +39,10 @@ expect_failed_start() {
   done
   elapsed=$(( $(date +%s) - started ))
   exit_code=$(docker inspect --format '{{.State.ExitCode}}' "$name")
-  if ! docker logs "$name" 2>&1 | grep -q "$pattern"; then
+  # Read the whole log before matching: `docker logs | grep -q` fails under pipefail when grep stops reading first.
+  local log
+  log=$(docker logs "$name" 2>&1)
+  if ! grep -q "$pattern" <<<"$log"; then
     echo "FAIL $case: exited $exit_code, but the log does not show $pattern:"
     docker logs "$name" 2>&1 | tail -n 10
     failures=$((failures + 1))
