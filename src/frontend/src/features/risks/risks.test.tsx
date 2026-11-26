@@ -5,15 +5,17 @@ import { describe, expect, test } from 'vitest';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type Language, translate } from '@/shared/i18n/i18n.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { pickPerson } from '@/test/personPicker.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import {
   ENTITY_USER_ID,
-  entitySession,
+  entityManagerSession,
   OTHER_PERSON_ID,
   projectDetail,
   PROJECT_ID,
   reviewerSession,
+  viewerSession,
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
@@ -23,6 +25,7 @@ import {
   openFilters,
   renderApp,
 } from '@/test/renderApp.tsx';
+import { menuLink } from '@/test/shell.ts';
 import {
   ACTION_ETAG,
   BARRIER_ACTION_ID,
@@ -52,7 +55,7 @@ const en = (key: string, params?: Record<string, string | number>) => translate(
 const RISKS_PATH = `/projects/${PROJECT_ID}/risks`;
 const FLOODING_PATH = `${RISKS_PATH}/${FLOODING_ID}`;
 
-/** The Coastal road upgrade, ACTIVE, managed by the entity's user, Huda (ADR-013). */
+/** The Coastal road upgrade, ACTIVE, managed by the entity's user, Huda (ADR-013), who holds R04 on it. */
 function activeProject(overrides: Partial<ProjectDetail> = {}): ProjectDetail {
   return projectDetail({
     status: 'ACTIVE',
@@ -66,7 +69,7 @@ function open(
   path: string,
   state: RiskState = {},
   {
-    session = entitySession(),
+    session = entityManagerSession(),
     project = activeProject(),
     language = 'en',
   }: { session?: Session; project?: ProjectDetail; language?: Language } = {},
@@ -499,11 +502,41 @@ describe('MOD-030 to MOD-034', () => {
     });
   });
 
-  test('MOD-030 is not offered to a person who does not manage the project', async () => {
+  test('MOD-030 is offered to the department manager, who holds RISK_MANAGE there (D1-02)', async () => {
     open(RISKS_PATH, {}, { session: reviewerSession() });
+    expect(await screen.findByRole('button', { name: en('risks.actions.create') })).toBeTruthy();
+  });
+
+  test('MOD-030 is not offered to a person without RISK_MANAGE (R06)', async () => {
+    open(RISKS_PATH, {}, { session: viewerSession() });
     await screen.findByRole('region', { name: en('risks.project.caption') });
+    // The shell's Risks menu shows R06's permissions are read: the missing button is the decision, not a wait.
+    await waitFor(() => {
+      expect(menuLink('common.menu.risksIssues')).not.toBeNull();
+    });
     expect(screen.queryByRole('button', { name: en('risks.actions.create') })).toBeNull();
   });
+
+  test.each([
+    ['R06', viewerSession],
+    ['R07', () => sessionFor(['R07'])],
+  ])(
+    '%s, without RISK_ASSESS or RISK_ACCEPT, is offered no assessment or acceptance (C-03)',
+    async (_role, session) => {
+      open(FLOODING_PATH, {}, { session: session() });
+      await screen.findByRole('heading', { level: 2, name: 'Flooding of the works' });
+      await waitFor(() => {
+        expect(menuLink('common.menu.risksIssues')).not.toBeNull();
+      });
+      for (const key of [
+        'risks.actions.assess',
+        'risks.actions.reassess',
+        'risks.actions.accept',
+      ]) {
+        expect(screen.queryByRole('button', { name: en(key) })).toBeNull();
+      }
+    },
+  );
 
   test('MOD-031 re-sends the register fields with the ETag', async () => {
     const api = open(FLOODING_PATH);

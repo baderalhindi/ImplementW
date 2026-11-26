@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 
 import { type PermissionCode } from './permissionCodes.ts';
-import { type EffectivePermissions } from './permissionsApi.ts';
+import { type DataScope, type EffectivePermissions } from './permissionsApi.ts';
 
 /**
  * What the signed-in person holds, as the shell offers menus, tabs and buttons on it (the 24 Oct 2026 review, C3: "menu items
@@ -12,6 +12,8 @@ export interface Permissions {
   loaded: boolean;
   /** Whether any of `codes` is held, at any scope; with no code, true. */
   can: (...codes: readonly PermissionCode[]) => boolean;
+  /** The scopes `code` is held at; none when it is not held. */
+  scopesOf: (code: PermissionCode) => readonly DataScope[];
   /** Whether a role the person holds keeps Create in the top bar. The menu offers Create regardless. */
   showCreateInHeader: boolean;
 }
@@ -19,6 +21,7 @@ export interface Permissions {
 export const NO_PERMISSIONS: Permissions = {
   loaded: false,
   can: (...codes) => codes.length === 0,
+  scopesOf: () => [],
   showCreateInHeader: false,
 };
 
@@ -26,10 +29,13 @@ export function permissionsOf(effective: EffectivePermissions | null | undefined
   if (effective === null || effective === undefined) {
     return NO_PERMISSIONS;
   }
-  const held = new Set(effective.permissions.map((permission) => permission.code));
+  const held = new Map(
+    effective.permissions.map((permission) => [permission.code, permission.scopes]),
+  );
   return {
     loaded: true,
     can: (...codes) => codes.length === 0 || codes.some((code) => held.has(code)),
+    scopesOf: (code) => held.get(code) ?? [],
     showCreateInHeader: effective.showCreateInHeader !== false,
   };
 }

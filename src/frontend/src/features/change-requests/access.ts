@@ -3,8 +3,9 @@ import {
   type ApprovalInstanceSummary,
   type ApprovalSubject,
 } from '@/features/approvals/api/types.ts';
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { assignmentsReaching, isInternal } from '@/features/projects/access.ts';
+import { assignmentsReaching, holdsOnProject, isInternal } from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 
 import { type ChangeRequestDetail } from './api/types.ts';
@@ -15,8 +16,9 @@ import {
 } from './changeRequestRules.ts';
 
 // What the WF-08 screens offer a person. This is navigation, not protection: every command is decided again by the API
-// (TASK-060 D-11), and a refusal is shown as it comes. Shipped grants: the project's Project Manager (R04 at OWN, internal
-// or entity, ADR-013) raises, and, if internal, implements; the department's manager (R03 at DEPT) reviews; WF-11 decides.
+// (TASK-060 D-11), and a refusal is shown as it comes. Shipped grants: CHANGE_REQUEST_RAISE's holders raise (R02 ALL, R03
+// DEPT, R04 OWN, internal or entity, ADR-013); the Project Manager, if internal, implements; the department's manager (R03
+// at DEPT) reviews; WF-11 decides.
 // The project may be unreadable to a reviewer (no PROJECT_VIEW), so `project` is null when it could not be read.
 
 type ProjectFacts = Pick<
@@ -24,9 +26,19 @@ type ProjectFacts = Pick<
   'id' | 'status' | 'departmentId' | 'externalEntityId' | 'projectManagerUserId'
 >;
 
-/** SCR-106 is offered to the project's Project Manager while the project is APPROVED_PLANNED, ACTIVE or SUSPENDED. */
-export function canRaiseChangeRequests(user: SessionUser, project: ProjectFacts): boolean {
-  return project.projectManagerUserId === user.id && isRaisableProjectStatus(project.status);
+/**
+ * SCR-106 is offered to a holder of CHANGE_REQUEST_RAISE on the project (R02 ALL, R03 DEPT, R04 OWN) while the project is
+ * APPROVED_PLANNED, ACTIVE or SUSPENDED.
+ */
+export function canRaiseChangeRequests(
+  user: SessionUser,
+  permissions: Permissions,
+  project: ProjectFacts,
+): boolean {
+  return (
+    isRaisableProjectStatus(project.status) &&
+    holdsOnProject(permissions, user, project, 'CHANGE_REQUEST_RAISE')
+  );
 }
 
 /** Whoever raised it, or the project's Project Manager: CHANGE_REQUEST_RAISE is held at OWN. */

@@ -30,8 +30,8 @@ const PEOPLE: Record<string, string> = {
 };
 
 /** An entity Project Manager (R04), the one role holding DOCUMENT_VIEW and DOCUMENT_UPLOAD (TASK-037 D-7). */
-export function documentSession(userId = SELF_ID): Session {
-  const session = sessionFor(['R04']);
+export function documentSession(userId = SELF_ID, roleCodes: string[] = ['R04']): Session {
+  const session = sessionFor(roleCodes);
   return {
     ...session,
     user: { ...session.user, id: userId, displayName: PEOPLE[userId] ?? 'Test Manager' },

@@ -4,9 +4,14 @@ import { canReviewFinancials } from '@/features/financial-kpi/access.ts';
 import { type FinancialProgressUpdateDetail } from '@/features/financial-kpi/api/types.ts';
 import { canReview } from '@/features/progress/access.ts';
 import { type ProgressSubmissionDetail } from '@/features/progress/api/types.ts';
-import { type ProjectStatus } from '@/features/projects/api/types.ts';
+import { type ProjectDetail, type ProjectStatus } from '@/features/projects/api/types.ts';
 import { concernProject, managerSession } from '@/test/concernFixtures.ts';
-import { reviewerSession } from '@/test/projectFixtures.ts';
+import { type SuspensionRequestDetail, type SuspensionRequestType } from './api/types.ts';
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
+import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
+import { shippedPermissions } from '@/test/permissionFixtures.ts';
+import { OTHER_DEPARTMENT_ID, reviewerSession, viewerSession } from '@/test/projectFixtures.ts';
 import {
   check,
   closureCase,
@@ -45,6 +50,7 @@ import {
 
 const nora = managerSession().user;
 const faisal = reviewerSession().user;
+const held = (user: SessionUser) => permissionsOf(shippedPermissions(user));
 
 describe('approval and activation are two dimensions (TASK-062 D-5, TASK-063 D-4)', () => {
   test('only an effected record is in effect; an approved one is approved and pending', () => {
@@ -217,19 +223,31 @@ describe('suspension and resumption (WF-09)', () => {
   test('a suspension is of an ACTIVE project, a resumption of a SUSPENDED one, one open request of each type', () => {
     const active = concernProject();
     const suspended = concernProject({ status: 'SUSPENDED' });
-    expect(canRaiseSuspensionRequest(nora, active, [], 'SUSPEND')).toBe(true);
-    expect(canRaiseSuspensionRequest(nora, active, [], 'RESUME')).toBe(false);
-    expect(canRaiseSuspensionRequest(nora, active, [suspensionRequest()], 'SUSPEND')).toBe(false);
-    expect(
-      canRaiseSuspensionRequest(
-        nora,
-        active,
-        [suspensionRequest({ status: 'APPROVED' })],
-        'SUSPEND',
-      ),
-    ).toBe(false);
-    expect(canRaiseSuspensionRequest(nora, suspended, [suspensionInEffect()], 'RESUME')).toBe(true);
-    expect(canRaiseSuspensionRequest(faisal, suspended, [], 'RESUME')).toBe(false);
+    const raise = (
+      user: SessionUser,
+      project: ProjectDetail,
+      requests: SuspensionRequestDetail[],
+      type: SuspensionRequestType,
+    ) => canRaiseSuspensionRequest(user, held(user), project, requests, type);
+    expect(raise(nora, active, [], 'SUSPEND')).toBe(true);
+    expect(raise(nora, active, [], 'RESUME')).toBe(false);
+    expect(raise(nora, active, [suspensionRequest()], 'SUSPEND')).toBe(false);
+    expect(raise(nora, active, [suspensionRequest({ status: 'APPROVED' })], 'SUSPEND')).toBe(false);
+    expect(raise(nora, suspended, [suspensionInEffect()], 'RESUME')).toBe(true);
+  });
+
+  test('SUSPENSION_RAISE on the project is what offers it, not managing the project (D1-02)', () => {
+    const active = concernProject();
+    const raise = (user: SessionUser) =>
+      canRaiseSuspensionRequest(user, held(user), active, [], 'SUSPEND');
+    // R03 over the project's department and R02 hold it; the API accepts their POST /suspension-requests.
+    expect(raise(faisal)).toBe(true);
+    expect(raise(sessionFor(['R02']).user)).toBe(true);
+    expect(raise(reviewerSession(OTHER_DEPARTMENT_ID).user)).toBe(false);
+    // R04 at OWN reaches only its own project; R06 and R07 do not hold it.
+    expect(raise(sessionFor(['R04']).user)).toBe(false);
+    expect(raise(viewerSession().user)).toBe(false);
+    expect(raise(sessionFor(['R07']).user)).toBe(false);
   });
 
   test('submission needs an effective date from today (UTC); a resumption carries no planned resumption', () => {
@@ -295,7 +313,9 @@ describe('who is offered what (navigation only; the API decides)', () => {
       status: 'SUBMITTED',
       submittedByUserId: nora.id,
     } as FinancialProgressUpdateDetail;
-    expect(canReviewFinancials(faisal, concernProject(), update)).toBe(true);
-    expect(canReviewFinancials(faisal, concernProject({ status: 'CLOSED' }), update)).toBe(false);
+    expect(canReviewFinancials(faisal, held(faisal), concernProject(), update)).toBe(true);
+    expect(
+      canReviewFinancials(faisal, held(faisal), concernProject({ status: 'CLOSED' }), update),
+    ).toBe(false);
   });
 });

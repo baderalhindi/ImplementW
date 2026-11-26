@@ -2,12 +2,13 @@ import { canReadActivity, canReadProjectAudit } from '@/features/audit-activity/
 import { type AuditAccessView } from '@/features/audit-activity/api/types.ts';
 import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
 import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
+import { type DataScope } from '@/features/identity-access/permissions/permissionsApi.ts';
 import {
   type SessionRoleAssignment,
   type SessionUser,
 } from '@/features/identity-access/session/sessionApi.ts';
 
-import { type ProjectDetail, type ProjectStatus } from './api/types.ts';
+import { type ProjectDetail, type ProjectStatus, type ProjectSummary } from './api/types.ts';
 
 // What the workspace offers a person, from the session's role assignments (TASK-030 scope anchors), user type and the
 // permissions the API reports they hold (GET /sessions/current/permissions). This is navigation, not protection: every
@@ -28,6 +29,63 @@ export function assignmentsReaching(
       (assignment.departmentId === null || assignment.departmentId === project.departmentId) &&
       (assignment.externalEntityId === null ||
         assignment.externalEntityId === project.externalEntityId),
+  );
+}
+
+type ScopedProject = Pick<
+  ProjectSummary,
+  'id' | 'departmentId' | 'externalEntityId' | 'projectManagerUserId'
+>;
+
+function scopeReaches(scope: DataScope, user: SessionUser, project: ScopedProject): boolean {
+  switch (scope) {
+    case 'ALL':
+      return true;
+    case 'DEPT':
+      return user.roleAssignments.some(
+        (assignment) => assignment.departmentId === project.departmentId,
+      );
+    case 'ENTITY':
+      return (
+        project.externalEntityId !== null &&
+        user.roleAssignments.some(
+          (assignment) => assignment.externalEntityId === project.externalEntityId,
+        )
+      );
+    case 'OWN':
+      return project.projectManagerUserId === user.id;
+    case 'ASSIGNED':
+      return (
+        isInternal(user) &&
+        user.roleAssignments.some((assignment) => assignment.projectId === project.id)
+      );
+    case 'READ_ONLY':
+      return false;
+  }
+}
+
+/**
+ * Whether the person holds one of `codes` for a write on this project, as the API's engine decides it
+ * (AuthorizationEngine.Covers): ALL reaches every project; DEPT the projects of a department an assignment is anchored to;
+ * ENTITY those of an assignment's entity; OWN the project the person manages; ASSIGNED, for an internal person, a project
+ * an assignment names; READ_ONLY takes no write. An external person never reaches outside their own entity (ADR-013).
+ * GET /sessions/current/permissions does not say which assignment a scope came from, so a person holding two roles may be
+ * offered an action the API then refuses; the API decides every command again.
+ */
+export function holdsOnProject(
+  permissions: Permissions,
+  user: SessionUser,
+  project: ScopedProject,
+  ...codes: readonly PermissionCode[]
+): boolean {
+  if (
+    !isInternal(user) &&
+    (project.externalEntityId === null || ownEntityId(user) !== project.externalEntityId)
+  ) {
+    return false;
+  }
+  return codes.some((code) =>
+    permissions.scopesOf(code).some((scope) => scopeReaches(scope, user, project)),
   );
 }
 

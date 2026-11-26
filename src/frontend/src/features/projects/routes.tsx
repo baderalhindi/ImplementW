@@ -7,6 +7,8 @@ import {
   ProjectAuditTab,
 } from '@/features/audit-activity/workspace/ProjectAuditTab.tsx';
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
+import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
+import { RequirePermission } from '@/features/identity-access/session/RequirePermission.tsx';
 
 import { FollowUpListPage } from './followUp/FollowUpListPage.tsx';
 import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx';
@@ -34,19 +36,74 @@ import { SuspensionTab } from './workspace/SuspensionTab.tsx';
 import { TasksTab } from './workspace/TasksTab.tsx';
 
 /**
- * WF-01, mounted under /projects for any signed-in person. No role is checked here: which projects a person sees and
- * what they may change is the API's answer (PROJECT_VIEW, PROJECT_REGISTER, PROJECT_REVIEW, PROJECT_ACTIVATE; TASK-041
- * D-10). The workspace tabs follow the person's scope (access.ts). SCR-033 is open to external entity users too: the
+ * WF-01, mounted under /projects for any signed-in person. The registers, the form and the import open for the
+ * permission their menu item names ("Access denied" otherwise, QA D1-04, D2-03); which projects a person sees and what
+ * they may change is the API's answer (PROJECT_VIEW, PROJECT_REGISTER, PROJECT_REVIEW, PROJECT_ACTIVATE; TASK-041 D-10). The workspace tabs follow the person's scope (access.ts). SCR-033 is open to external entity users too: the
  * gate decision against it was changed by ADR-013's amendment (D-1).
  */
+/** What opens the project import: preparing a batch, or approving one. */
+const PROJECT_IMPORT_PERMISSIONS: readonly PermissionCode[] = [
+  'PROJECT_IMPORT',
+  'PROJECT_IMPORT_APPROVE',
+];
+
 export const projectRoutes: RouteObject[] = [
-  { index: true, element: <ProjectRegisterPage /> }, // SCR-025
-  { path: 'mine', element: <MyProjectsPage /> }, // SCR-026
-  { path: 'new', element: <CreateProjectPage /> }, // SCR-033
-  { path: 'follow-up', element: <FollowUpListPage /> }, // the 2 Nov 2026 review, R3-5: قائمة المتابعة
-  { path: 'import', element: <ProjectImportPage /> }, // R3-4: Projects → Import and the batches
-  { path: 'import/validations/:validationId', element: <ProjectImportPage /> }, // a background validation, from its notification
-  { path: 'import/:batchId', element: <ImportBatchPage /> }, // R3-4: one batch, its approval and rollback
+  {
+    index: true, // SCR-025
+    element: (
+      <RequirePermission codes={['PROJECT_VIEW']}>
+        <ProjectRegisterPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'mine', // SCR-026
+    element: (
+      <RequirePermission codes={['PROJECT_VIEW']}>
+        <MyProjectsPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'new', // SCR-033
+    element: (
+      <RequirePermission codes={['PROJECT_REGISTER']}>
+        <CreateProjectPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'follow-up', // the 2 Nov 2026 review, R3-5: قائمة المتابعة
+    element: (
+      <RequirePermission codes={['PROJECT_VIEW']}>
+        <FollowUpListPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'import', // R3-4: Projects → Import and the batches
+    element: (
+      <RequirePermission codes={PROJECT_IMPORT_PERMISSIONS}>
+        <ProjectImportPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'import/validations/:validationId', // a background validation, from its notification
+    element: (
+      <RequirePermission codes={PROJECT_IMPORT_PERMISSIONS}>
+        <ProjectImportPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'import/:batchId', // R3-4: one batch, its approval and rollback
+    element: (
+      <RequirePermission codes={PROJECT_IMPORT_PERMISSIONS}>
+        <ImportBatchPage />
+      </RequirePermission>
+    ),
+  },
   { path: ':projectId/edit', element: <EditProjectPage /> }, // SCR-034
   { path: ':projectId/card', element: <ProjectCardPage /> }, // the 5 Nov 2026 review §3 row 11: one printable page
   {
@@ -268,6 +325,6 @@ export const projectNavigation: NavigationItem[] = [
   {
     to: '/projects/import',
     label: 'projects.import.nav',
-    permissions: ['PROJECT_IMPORT', 'PROJECT_IMPORT_APPROVE'],
+    permissions: PROJECT_IMPORT_PERMISSIONS,
   },
 ];

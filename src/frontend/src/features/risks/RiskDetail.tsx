@@ -3,6 +3,7 @@ import { Link, useLocation, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { keepChosen, runForEach } from '@/features/identity-access/components/RowActions.tsx';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
@@ -73,6 +74,7 @@ interface RiskDetailProps {
 export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactElement {
   const { t, formatDateTime } = useI18n();
   const location = useLocation();
+  const permissions = usePermissions();
   const record = useRiskRecord(riskId);
   const matrixState = useRiskMatrix();
   const lookups = useRiskLookups();
@@ -117,7 +119,9 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   const loadedRisk = data?.risk.data;
   const dialog: RiskDialog | null =
     chosenDialog ??
-    (addRequested && loadedRisk !== undefined && canManageRisk(user, project, loadedRisk)
+    (addRequested &&
+    loadedRisk !== undefined &&
+    canManageRisk(user, permissions, project, loadedRisk)
       ? { kind: 'action', actionId: null }
       : null);
   const setDialog = (next: RiskDialog | null): void => {
@@ -157,7 +161,7 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   const matrix = matrixState.data?.kind === 'ready' ? matrixState.data.matrix : null;
   const assessment = risk.currentAssessment;
   const liveActions = data.actions.filter(isLiveAction);
-  const manager = canManageRisk(user, project, risk);
+  const manager = canManageRisk(user, permissions, project, risk);
   const isOpenRisk = risk.status !== 'CLOSED';
   const command = (name: RiskCommand) => ({
     label: t(`risks.command.${name}.title`),
@@ -173,7 +177,7 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   if (manager) {
     commands.push({ label: t('risks.actions.edit'), dialog: { kind: 'edit' } });
   }
-  if (canAssessRisk(user, project, risk)) {
+  if (canAssessRisk(user, permissions, project, risk)) {
     commands.push({
       label: t(assessment === null ? 'risks.actions.assess' : 'risks.actions.reassess'),
       dialog: { kind: 'assess' },
@@ -186,22 +190,22 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
       { label: t('risks.actions.assignOwner'), dialog: { kind: 'owner' } },
     );
   }
-  if (canStartTreatment(user, project, risk, liveActions.length > 0)) {
+  if (canStartTreatment(user, permissions, project, risk, liveActions.length > 0)) {
     commands.push(command('start-treatment'));
   }
-  if (canMonitorRisk(user, project, risk)) {
+  if (canMonitorRisk(user, permissions, project, risk)) {
     commands.push(command('monitor'));
   }
-  if (canAcceptRisk(user, project, risk)) {
+  if (canAcceptRisk(user, permissions, project, risk)) {
     commands.push({ label: t('risks.actions.accept'), dialog: { kind: 'accept' } });
   }
-  if (canRevokeAcceptance(user, project, risk)) {
+  if (canRevokeAcceptance(user, permissions, project, risk)) {
     commands.push(command('revoke-acceptance'));
   }
   if (manager) {
     commands.push({ label: t('risks.actions.close'), dialog: { kind: 'close' } });
   }
-  if (canReopenRisk(user, project, risk)) {
+  if (canReopenRisk(user, permissions, project, risk)) {
     commands.push(command('reopen'));
   }
 

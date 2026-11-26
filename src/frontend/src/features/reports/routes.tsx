@@ -20,8 +20,22 @@ import { SavedViewsPage } from './SavedViewsPage.tsx';
  */
 export const reportRoutes: RouteObject[] = [
   { index: true, element: <ReportsCenterPage /> }, // SCR-130
-  { path: 'explorer', element: <ExplorerPage /> }, // SCR-138, MOD-060, MOD-061, MOD-062
-  { path: 'saved-views', element: <SavedViewsPage /> }, // SCR-139, MOD-062
+  {
+    path: 'explorer', // SCR-138, MOD-060, MOD-061, MOD-062
+    element: (
+      <RequirePermission codes={['REPORT_COMPOSE']}>
+        <ExplorerPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'saved-views', // SCR-139, MOD-062
+    element: (
+      <RequirePermission codes={['REPORT_COMPOSE']}>
+        <SavedViewsPage />
+      </RequirePermission>
+    ),
+  },
   { path: 'exports', element: <ExportHistoryPage /> }, // SCR-140
   {
     path: 'cards/:dimension/:itemId', // the 5 Nov 2026 review §3 row 11

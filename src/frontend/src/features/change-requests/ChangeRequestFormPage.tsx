@@ -2,6 +2,7 @@ import { type ReactElement, type SyntheticEvent, useEffect, useId, useRef, useSt
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { useSaveAction } from '@/features/identity-access/forms.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
@@ -155,6 +156,7 @@ interface ChangeRequestFormProps {
 function ChangeRequestForm({ project, projectId, existing }: ChangeRequestFormProps): ReactElement {
   const { t, language } = useI18n();
   const { session } = useSession();
+  const permissions = usePermissions();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const readyNoteId = useId();
@@ -290,11 +292,11 @@ function ChangeRequestForm({ project, projectId, existing }: ChangeRequestFormPr
     .filter((option) => option.value !== project?.governanceProfileItemId);
   const profilesUnreadable = lookups.catalogueError !== null;
   const editing = existing !== null;
-  // Navigation, not protection: a new request is the project's Project Manager's (CHANGE_REQUEST_RAISE at OWN).
+  // Navigation, not protection: a new request is a CHANGE_REQUEST_RAISE holder's on the project.
   const raiser =
     editing ||
     project === null ||
-    (session !== null && canRaiseChangeRequests(session.user, project));
+    (session !== null && canRaiseChangeRequests(session.user, permissions, project));
 
   return (
     <>
