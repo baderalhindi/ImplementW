@@ -145,7 +145,12 @@ export const sessionApi = {
     post<MultiFactorChallenge>('/sessions/mfa-challenge', { mfaToken }),
   completeMultiFactor: (mfaToken: string, challengeId: string, code: string) =>
     post<SignInResult>('/sessions/mfa', { mfaToken, challengeId, code }),
+  /** Each refresh token works once: the session answered carries its successor, which must replace it (SR-10). */
   refresh: (refreshToken: string) => post<Session>('/sessions/current/refresh', { refreshToken }),
+  /** Ends the session on the server (SR-10), as the signed-in person: its refresh token stops working at once. */
+  signOut: async () => {
+    await apiRequest<undefined>('/sessions/current/sign-out', { method: 'POST' });
+  },
   beginStepUp: (refreshToken: string) =>
     post<MultiFactorChallenge>('/sessions/current/step-up-challenge', { refreshToken }),
   completeStepUp: (refreshToken: string, challengeId: string, code: string) =>

@@ -19681,12 +19681,26 @@
         }
       }
     },
+    "/api/v1/sessions/current/sign-out": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Signs out (SR-10): ends the session the access token belongs to, so its refresh token is refused from now on. The\naccess token itself is not checked against the session and works until it expires, at most 15 minutes. Answers 204\nalso when the session had already ended.",
+        "operationId": "IdentityAccess_SignOut",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/sessions/current/refresh": {
       "post": {
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Exchanges a refresh token for a new token pair. Anonymous because the access token has usually expired by then;\nthe refresh token is the credential. The user's status and assignments are read afresh.",
+        "summary": "Exchanges a refresh token for a new token pair. Anonymous because the access token has usually expired by then;\nthe refresh token is the credential, and it works once: the pair carries its successor, and presenting a replaced\nrefresh token again ends the session (SR-10). The user's status and assignments are read afresh.",
         "operationId": "IdentityAccess_RefreshSession",
         "requestBody": {
           "content": {

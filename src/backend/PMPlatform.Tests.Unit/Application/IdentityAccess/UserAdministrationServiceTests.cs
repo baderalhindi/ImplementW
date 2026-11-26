@@ -35,6 +35,20 @@ public sealed class UserAdministrationServiceTests
             Copy(user));
     }
 
+    /// <summary>SR-10: disabling ends the user's sessions, so none resumes if the user is activated again.</summary>
+    [Fact]
+    public async Task DisablingAUserEndsTheirSessions()
+    {
+        _fixture.Users.Put(Internal(UserId));
+        Guid sessionId = Guid.NewGuid();
+        await _fixture.Sessions.StartAsync(sessionId, UserId, Guid.NewGuid(), Now.AddHours(8), CancellationToken.None);
+
+        await _fixture.UserService().DisableAsync(AdministratorId, UserId, expectedVersion: null, CancellationToken.None);
+
+        UserSession session = _fixture.Sessions.Sessions[sessionId];
+        Assert.Equal((UserSessionStatus.Revoked, UserSessionEndReason.UserDisabled, AdministratorId), (session.Status, session.EndReason, session.UpdatedBy));
+    }
+
     [Fact]
     public async Task ActivatingRestoresTheUserAndClearsTheDisabledTime()
     {

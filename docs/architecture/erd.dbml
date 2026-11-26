@@ -3033,3 +3033,23 @@ Table identity_access.sms_code {
 
   Note: 'One-time codes sent by SMS for sign-in and mobile verification (13 Nov 2026 review). Delete policy: RETAIN.'
 }
+
+Table identity_access.user_session {
+  id uuid [pk, not null, note: 'Primary key (D-1); the tokens\' sid']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  status varchar(50) [not null, note: 'ACTIVE | SIGNED_OUT | REVOKED']
+  refresh_token_id uuid [not null, note: 'The jti of the one refresh token that may continue the session; replaced at every refresh']
+  expires_at timestamptz [not null, note: 'Absolute expiry from sign-in (session_exp); no refresh extends it']
+  ended_at timestamptz
+  end_reason varchar(50) [note: 'SIGNED_OUT | REFRESH_TOKEN_REUSED | USER_DISABLED | USER_DELETED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Indexes {
+    (user_id, status)
+  }
+
+  Note: 'A signed-in session (SR-10): refresh-token rotation with reuse detection, and server-side sign-out. Delete policy: RETAIN.'
+}
