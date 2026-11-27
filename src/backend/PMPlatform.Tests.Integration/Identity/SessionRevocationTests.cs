@@ -70,6 +70,31 @@ public sealed class SessionRevocationTests(IdentityTestHost host)
         Assert.Contains(events, e => e.Contains("IdentityAccess.SessionRefreshFailed|FAILED|", StringComparison.Ordinal) && e.Contains("failure_reason=>SESSION_ENDED", StringComparison.Ordinal));
     }
 
+    /// <summary>DEV-C-01: signing out a session that has already ended still answers 204 but records nothing, since nothing ended.</summary>
+    [Fact]
+    public async Task SigningOutAnEndedSessionAgainIsA204WithNoSecondSignedOutEvent()
+    {
+        Guid correlationId = Guid.NewGuid();
+        Guid revokedCorrelationId = Guid.NewGuid();
+        using HttpClient client = host.Api.CreateClient().WithCorrelationId(correlationId);
+        Session signIn = await client.SignInOrFailAsync(2);
+        Session revoked = await client.SignInOrFailAsync(2);
+        (await client.RefreshAsync(revoked.RefreshToken)).Dispose();
+        (await client.RefreshAsync(revoked.RefreshToken)).Dispose();
+        using HttpClient revokedClient = host.Api.CreateClient().WithCorrelationId(revokedCorrelationId);
+
+        using HttpResponseMessage signOut = await client.PostWithTokenAsync(SessionApi.SignOut, signIn.AccessToken);
+        using HttpResponseMessage signOutAgain = await client.PostWithTokenAsync(SessionApi.SignOut, signIn.AccessToken);
+        using HttpResponseMessage signOutRevoked = await revokedClient.PostWithTokenAsync(SessionApi.SignOut, revoked.AccessToken);
+
+        Assert.Equal(HttpStatusCode.NoContent, signOut.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, signOutAgain.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, signOutRevoked.StatusCode);
+        Assert.Single(await host.Database.EventsAsync(correlationId), e => e.Contains("|IdentityAccess.SignedOut|", StringComparison.Ordinal));
+        Assert.DoesNotContain(await host.Database.EventsAsync(revokedCorrelationId), e => e.Contains("|IdentityAccess.SignedOut|", StringComparison.Ordinal));
+        Assert.Equal(SessionStatus.RevokedForReuse, await SessionStatusAsync(revoked.AccessToken));
+    }
+
     /// <summary>Signing out ends this session only: the person's session in another browser goes on.</summary>
     [Fact]
     public async Task SigningOutLeavesThePersonsOtherSessions()

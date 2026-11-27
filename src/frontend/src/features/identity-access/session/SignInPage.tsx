@@ -195,7 +195,7 @@ function NafathPanel({ passwordless }: { passwordless: ReactNode }): ReactElemen
  */
 export function SignInPage(): ReactElement {
   const { t } = useI18n();
-  const { session } = useSession();
+  const { session, endReason } = useSession();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [passwordChange, setPasswordChange] = useState<PasswordChangePending | null>(null);
@@ -390,6 +390,15 @@ export function SignInPage(): ReactElement {
                 : undefined
             }
           />
+          {endReason !== null && secondFactor === null && passwordChange === null && (
+            <p className="notice notice--warning" role="status">
+              {t(
+                endReason === 'SIGNED_OUT_ELSEWHERE'
+                  ? 'identityAccess.signIn.signedOutElsewhere'
+                  : 'identityAccess.signIn.sessionEnded',
+              )}
+            </p>
+          )}
           {passwordChange !== null ? (
             <form
               ref={formRef}

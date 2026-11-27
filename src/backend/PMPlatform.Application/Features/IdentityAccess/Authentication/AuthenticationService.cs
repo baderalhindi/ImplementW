@@ -253,7 +253,12 @@ internal sealed partial class AuthenticationService(
 
     public async Task SignOutAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken)
     {
-        await sessions.SignOutAsync(userId, sessionId, cancellationToken).ConfigureAwait(false);
+        // DEV-C-01: signing out a session that has already ended changes nothing, so it is not audited again.
+        if (!await sessions.SignOutAsync(userId, sessionId, cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
         await audit.RecordAsync(new AuditEntry(AuditEventClass.Authentication, IdentityAccessAuditEvents.SignedOut, AuditOutcome.Success)
         {
             ActorUserId = userId,

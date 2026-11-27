@@ -117,7 +117,8 @@ describe('apiRequest', () => {
     );
 
     await expect(apiRequest('/roles')).resolves.toMatchObject({ data: [] });
-    expect(handlers.refresh).toHaveBeenCalledOnce();
+    // Named, so a session another tab has already refreshed is not refreshed again (DEV-D1-01).
+    expect(handlers.refresh).toHaveBeenCalledExactlyOnceWith('expired');
     expect(api.requests).toHaveLength(2);
   });
 

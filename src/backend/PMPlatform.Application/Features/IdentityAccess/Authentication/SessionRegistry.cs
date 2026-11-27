@@ -46,7 +46,8 @@ internal sealed partial class SessionRegistry(IUserSessionRepository sessions, I
         return await CheckAsync(continuation, cancellationToken).ConfigureAwait(false) ?? AuthenticationFailureReason.SessionEnded;
     }
 
-    public Task SignOutAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken) =>
+    /// <summary>True if this call ended the session; false if it had already ended (signed out, revoked or expired).</summary>
+    public Task<bool> SignOutAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken) =>
         sessions.EndAsync(sessionId, UserSessionStatus.SignedOut, UserSessionEndReason.SignedOut, userId, cancellationToken);
 
     private async Task<AuthenticationFailureReason> EndReusedAsync(SessionContinuation continuation, CancellationToken cancellationToken)

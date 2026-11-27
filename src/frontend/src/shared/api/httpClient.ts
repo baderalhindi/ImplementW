@@ -51,8 +51,11 @@ export interface ApiResponse<T> {
  */
 export interface AuthenticationHandlers {
   accessToken: () => string | null;
-  /** Exchanges the refresh token after a 401; true when a new access token is available. */
-  refresh: () => Promise<boolean>;
+  /**
+   * Exchanges the refresh token after a 401 to the access token named; true when a new access token is available.
+   * Another tab of the session may already have replaced that one, so the session layer can skip the exchange.
+   */
+  refresh: (refusedAccessToken: string | null) => Promise<boolean>;
   /** Collects a fresh second factor after 403 STEP_UP_REQUIRED (ADR-010); true when the session was stepped up. */
   stepUp: () => Promise<boolean>;
 }
@@ -184,10 +187,11 @@ async function exchange(
       : (options.idempotencyKey ?? crypto.randomUUID());
   const attempt = () => transport(requestHeaders(options, idempotencyKey, accept));
 
+  const sentAccessToken = authentication?.accessToken() ?? null;
   let response = await attempt();
 
   if (options.anonymous !== true && options.accessToken === undefined && authentication !== null) {
-    if (response.status === 401 && (await authentication.refresh())) {
+    if (response.status === 401 && (await authentication.refresh(sentAccessToken))) {
       response = await attempt();
     }
     if (
