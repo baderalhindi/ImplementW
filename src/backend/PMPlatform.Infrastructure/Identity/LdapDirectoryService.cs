@@ -44,9 +44,9 @@ internal sealed partial class LdapDirectoryService(
 
         try
         {
-            using LdapConnection ldap = await OpenAsync(connection, cancellationToken).ConfigureAwait(false);
-            (string Dn, DirectoryEntry Entry)? found = await FindAsync(
-                ldap, connection, LdapFilter.Equality(Options.UsernameAttribute, username), cancellationToken).ConfigureAwait(false);
+            (LdapConnection opened, (string Dn, DirectoryEntry Entry)? found) = await OpenAndFindAsync(
+                connection, LdapFilter.Equality(Options.UsernameAttribute, username), "sign-in", cancellationToken).ConfigureAwait(false);
+            using LdapConnection ldap = opened;
             if (found is null)
             {
                 return DirectoryResult.Failed(AuthenticationFailure.Rejected);
@@ -86,8 +86,8 @@ internal sealed partial class LdapDirectoryService(
 
         try
         {
-            using LdapConnection ldap = await OpenAsync(connection, cancellationToken).ConfigureAwait(false);
-            (string Dn, DirectoryEntry Entry)? found = await FindAsync(ldap, connection, filter, cancellationToken).ConfigureAwait(false);
+            (LdapConnection opened, (string Dn, DirectoryEntry Entry)? found) = await OpenAndFindAsync(connection, filter, "lookup", cancellationToken).ConfigureAwait(false);
+            using LdapConnection ldap = opened;
             return found is null ? DirectoryResult.Failed(AuthenticationFailure.Rejected) : DirectoryResult.Found(found.Value.Entry);
         }
         catch (Exception exception) when (IsUnavailable(exception))
@@ -163,8 +163,8 @@ internal sealed partial class LdapDirectoryService(
 
         try
         {
-            using LdapConnection ldap = await OpenAsync(connection, cancellationToken).ConfigureAwait(false);
-            (string Dn, DirectoryEntry Entry)? found = await FindAsync(ldap, connection, filter, cancellationToken).ConfigureAwait(false);
+            (LdapConnection opened, (string Dn, DirectoryEntry Entry)? found) = await OpenAndFindAsync(connection, filter, operation, cancellationToken).ConfigureAwait(false);
+            using LdapConnection ldap = opened;
             return found is null ? DirectoryPasswordChange.NotPermitted : await write(ldap, found.Value.Dn).ConfigureAwait(false);
         }
         catch (LdapException exception) when (exception.ResultCode == LdapException.ConstraintViolation)
@@ -236,6 +236,41 @@ internal sealed partial class LdapDirectoryService(
         DirectoryConnection.Read(configuration) is { } connection && (connection.UseTransportSecurity || Options.AllowUnencryptedConnection)
             ? connection
             : null;
+
+    /// <summary>
+    /// Connects as the service account and finds the single entry matching <paramref name="filter"/>, on a connection the caller then owns.
+    /// A connection the network loses before any answer — refused, reset or closed while the service account binds or searches — is opened
+    /// once more: nothing of the person's has been sent yet, so the second attempt repeats only the service account's read. One stray lost
+    /// connection then no longer answers a sign-in with 503. A second loss, a timeout or a refused service account is the directory's answer.
+    /// </summary>
+    private async Task<(LdapConnection Ldap, (string Dn, DirectoryEntry Entry)? Found)> OpenAndFindAsync(
+        DirectoryConnection connection, string filter, string operation, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await TryOpenAndFindAsync(connection, filter, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (IsConnectionLost(exception))
+        {
+            LogConnectionLost(logger, operation, Describe(exception));
+            return await TryOpenAndFindAsync(connection, filter, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<(LdapConnection Ldap, (string Dn, DirectoryEntry Entry)? Found)> TryOpenAndFindAsync(
+        DirectoryConnection connection, string filter, CancellationToken cancellationToken)
+    {
+        LdapConnection ldap = await OpenAsync(connection, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return (ldap, await FindAsync(ldap, connection, filter, cancellationToken).ConfigureAwait(false));
+        }
+        catch
+        {
+            ldap.Dispose();
+            throw;
+        }
+    }
 
     /// <summary>Connects and binds as the service account.</summary>
     private async Task<LdapConnection> OpenAsync(DirectoryConnection connection, CancellationToken cancellationToken)
@@ -376,15 +411,34 @@ internal sealed partial class LdapDirectoryService(
         exception is LdapException or SocketException or IOException or TimeoutException or OperationCanceledException;
 
     /// <summary>
-    /// The exception's type and LDAP result code only. A directory's own message can carry a DN, and so a username;
+    /// The connection itself failed: refused, reset, or closed by the other end (Novell's ConnectError, also raised when the connection drops
+    /// while an answer is awaited, and ServerDown). Not a timeout, which a second attempt would only repeat, nor any answer of the directory's.
+    /// </summary>
+    private static bool IsConnectionLost(Exception exception) =>
+        exception is LdapException { ResultCode: LdapException.ConnectError or LdapException.ServerDown } or SocketException or IOException;
+
+    /// <summary>
+    /// The exception's type and LDAP result code, and the type of what lies under it, only. A directory's own message can carry a DN, and so a username;
     /// it is not logged (CTL-27).
     /// </summary>
     private static string Describe(Exception exception) => exception is LdapException ldap
-        ? $"{nameof(LdapException)} {ldap.ResultCode} ({LdapException.ResultCodeToString(ldap.ResultCode, CultureInfo.InvariantCulture)})"
+        ? $"{nameof(LdapException)} {ldap.ResultCode} ({LdapException.ResultCodeToString(ldap.ResultCode, CultureInfo.InvariantCulture)}){Cause(ldap.InnerException)}"
         : exception.GetType().Name;
+
+    /// <summary>What lies under a connection error, by type and socket error code only: the inner message names the host.</summary>
+    private static string Cause(Exception? inner) => inner switch
+    {
+        null => string.Empty,
+        SocketException socket => $" <- {nameof(SocketException)} {socket.SocketErrorCode}",
+        { InnerException: SocketException socket } => $" <- {inner.GetType().Name} <- {nameof(SocketException)} {socket.SocketErrorCode}",
+        _ => $" <- {inner.GetType().Name}",
+    };
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Directory unavailable during {Operation}: {Reason}.")]
     private static partial void LogUnavailable(ILogger logger, string operation, string reason);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Directory connection lost during {Operation}: {Reason}; connecting once more.")]
+    private static partial void LogConnectionLost(ILogger logger, string operation, string reason);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The directory refused a {Operation}: {Reason}.")]
     private static partial void LogPasswordWriteRefused(ILogger logger, string operation, string reason);
