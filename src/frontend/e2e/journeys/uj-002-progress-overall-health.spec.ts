@@ -1,7 +1,14 @@
 import { type Locator, type Page } from '@playwright/test';
 
 import { activeProject } from '../support/projects.ts';
-import { expect, expectText, test, unique, utcDate } from '../support/journey.ts';
+import {
+  expect,
+  expectText,
+  openProjectOverview,
+  test,
+  unique,
+  utcDate,
+} from '../support/journey.ts';
 
 // UJ-002 — Progress and overall health (Step 18; WF-02; BPK-022; ICD-03).
 // Participants: the Project Manager (reports WF-04 task progress, WF-03's forecast and WF-02's update) and the progress
@@ -39,7 +46,12 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
     approver: reviewer.api,
     manager: manager.api,
   };
-  const project = await activeProject(crew, { title: unique('UJ-002 Desalination works') });
+  // WF-02 derives the period's progress from the schedule's task progress (ADR-009): the project is measured by its
+  // schedule (review round 8, point 02), so no stage weighting stands between the task's 40% and the update.
+  const project = await activeProject(crew, {
+    title: unique('UJ-002 Desalination works'),
+    progressMethod: 'SCHEDULE',
+  });
   const taskTitle = unique('Pour foundations');
   const activity = (
     await manager.api.get<{ items: { id: string }[] }>(
@@ -77,7 +89,7 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
   await test.step('the Project Manager reports 40% on the task that carries out the schedule activity (WF-04)', async () => {
     const page = manager.page;
     await page.goto(`/projects/${project.id}/tasks`);
-    await page.getByRole('button', { name: taskTitle }).click();
+    await page.getByRole('button', { name: taskTitle, exact: true }).click();
     await page.getByRole('button', { name: 'Report progress' }).click();
     await page.getByLabel('Percentage complete').fill('40');
     await page.getByRole('button', { name: 'Save progress' }).click();
@@ -90,7 +102,7 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
   });
 
   await test.step('before any publication: WF-03 rates the schedule Green, and Overall Health is no data — not zero, not Green', async () => {
-    await dashboard.goto(`/projects/${project.id}`);
+    await openProjectOverview(dashboard, project.id);
     await expect(widget('Current schedule health')).toContainText('On track');
     for (const title of ['Current Overall Project Health', 'Published Overall Project Health']) {
       await expect(widget(title)).toContainText('No data');
@@ -118,7 +130,7 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
   });
 
   await test.step('a domain indicator does not overwrite Overall Health: schedule Red beside Overall still no data', async () => {
-    await dashboard.goto(`/projects/${project.id}`);
+    await openProjectOverview(dashboard, project.id);
     await expect(widget('Current schedule health')).toContainText('Off track');
     for (const title of ['Current Overall Project Health', 'Published Overall Project Health']) {
       await expect(widget(title)).toContainText('No data');
@@ -220,7 +232,7 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
     await expect(official).not.toContainText('On track');
 
     // The dashboard shows WF-02's published value beside WF-03's indicator: Red schedule health has not become Overall Health.
-    await dashboard.goto(`/projects/${project.id}`);
+    await openProjectOverview(dashboard, project.id);
     await expect(widget('Current schedule health')).toContainText('Off track');
     await expect(widget('Published Overall Project Health')).not.toContainText('On track');
     await expect(widget('Published Overall Project Health')).not.toContainText('Off track');

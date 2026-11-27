@@ -175,7 +175,7 @@ test('UJ-006 submitted evidence keeps its exact immutable CLEAN version', async 
     await reviewer.page
       .getByRole('row')
       .filter({ hasText: title })
-      .getByRole('button', { name: title })
+      .getByRole('button', { name: title, exact: true })
       .click();
     const reviewed = reviewer.page.getByRole('dialog', { name: title });
     await expectText(reviewed, 'version 1');
@@ -337,7 +337,7 @@ async function openMilestone(page: Page, projectId: string, title: string): Prom
   await page
     .getByRole('row')
     .filter({ hasText: title })
-    .getByRole('button', { name: title })
+    .getByRole('button', { name: title, exact: true })
     .click();
 }
 
