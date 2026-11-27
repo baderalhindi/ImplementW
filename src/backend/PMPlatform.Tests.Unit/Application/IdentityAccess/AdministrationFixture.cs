@@ -70,6 +70,8 @@ internal sealed class AdministrationFixture
 
     public FakeMobileNumberVerifier Verifier { get; } = new();
 
+    public FakeUserSessionRepository Sessions { get; } = new();
+
     public FixedTimeProvider Clock { get; } = new(Now);
 
     public RecordingAuditTrail Audit { get; } = new();
@@ -113,7 +115,7 @@ internal sealed class AdministrationFixture
     };
 
     public UserAdministrationService UserService() =>
-        new(Users, Entities, AssignmentService(), new FakeNationalIdProtector(), Access(), new LocalAccountPolicy(), Audit, Clock, NullLogger<UserAdministrationService>.Instance);
+        new(Users, Entities, AssignmentService(), new FakeNationalIdProtector(), Sessions, Access(), new LocalAccountPolicy(), Audit, Clock, NullLogger<UserAdministrationService>.Instance);
 
     public AccessRelationshipService AssignmentService() =>
         new(Assignments, Users, Departments, Entities, Access(), Audit, Clock, NullLogger<AccessRelationshipService>.Instance);

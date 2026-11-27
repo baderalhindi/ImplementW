@@ -24,7 +24,7 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 
 | Finding | What closes it | Owner |
 | --- | --- | --- |
-| SR-10 Refresh tokens cannot be revoked | Rotation with reuse detection, plus server-side sign-out (a fix PR); or RA-01 signed | Engagement Architect; AHDA Cybersecurity for RA-01 |
+| SR-10 Refresh tokens cannot be revoked | The PR that merges `fix/task-112-refresh-token-rotation` (rotation with reuse detection, server-side sign-out; built 2026-11-25); or RA-01 signed | Engagement Architect; AHDA Cybersecurity for RA-01 |
 | SR-13 R01 enrols a second factor at first sign-in | `Identity:Mfa:AllowEnrolmentAtSignIn=false` in SIT, UAT and PROD, with out-of-band enrolment (a configuration PR); or RA-02 signed | AHDA Cybersecurity (PTBC-027) |
 | SR-26 No field is classified, so nothing is masked by audience | AHDA publishes the DATA_CLASSIFICATION items and a FIELD_CLASSIFICATION version (UGV-01); the model is then updated to MITIGATED on PR #34 | AHDA Cybersecurity |
 | SR-38 Uploads trusted by declared type | The PR that merges `fix/task-112-upload-signature-check` (controls and tests on the branch) | Backend lead |
@@ -57,7 +57,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-07 | AUTH-T04 | Medium | Deliberate AD lockout of named accounts | AHDA IT | Open | Confirm AD's lockout threshold and window against the platform's 30 a minute per address (CS-011) |
 | SR-08 | AUTH-T08, NAF-T05 | High | ID-token validation has no algorithm pin and no negative tests for issuer, audience, signature or expiry | Backend lead | Mitigated | PR #32, PR #78 (library validation of each). Follow-ups: pin `ValidAlgorithms` to the IdP's and Nafath's algorithm; add the four negative tests to `SingleSignOnTests` and the Nafath suite |
 | SR-09 | AUTH-T09 | High | The SSO subject claim must be immutable and equal the directory subject | AHDA IT (Identity) | Mitigated | PR #32 (exact match on a configured claim; no role claims). Follow-up: AHDA IT confirms the claim at environment setup (`sso-directory-integration.md` F-2) |
-| SR-10 | AUTH-T13 | High | A stolen refresh token keeps a session for up to 8 h; tokens are not rotated, reuse is not detected, sign-out is client-only | Engagement Architect | Open | Fix: rotate refresh tokens with reuse detection and add a server-side session revocation list (also ends sessions on disable). Or AHDA signs RA-01 |
+| SR-10 | AUTH-T13 | High | A stolen refresh token keeps a session for up to 8 h; tokens are not rotated, reuse is not detected, sign-out is client-only | Engagement Architect | Open | Fixed on branch `fix/task-112-refresh-token-rotation` (2026-11-25): refresh tokens rotate, a replaced one presented again revokes the session, `POST /sessions/current/sign-out` and disabling a user end it on the server (AUTH-T13 MITIGATED, residual Low). Becomes Mitigated, citing its PR, when that PR opens (FL-3 needs a PR number); RA-01 is then no longer needed. Access tokens still live out their ≤ 15 min |
 | SR-11 | AUTH-T14 | High | Script on the SPA's origin reads the tokens from `sessionStorage` | Frontend lead, DevOps | Mitigated | PR #87 (sink lint, `isAppPath`), PR #88 (CSP on API responses). Follow-up: the SPA's serving sends `script-src 'self'` (`endpoint-hardening.md` F-3) |
 | SR-12 | AUTH-T16 | High | Second-factor code guessing, or another person's challenge | Security Lead; AHDA Cybersecurity | Mitigated | PR #33 (1 s floor, shared limit, subject sent, explicit verdict). Follow-up: the selected provider limits attempts per user and binds the challenge to the user (`mfa-privileged-access.md` F-1, F-4) |
 | SR-13 | AUTH-T17 | High | Whoever holds an unenrolled R01's password enrols their own factor at sign-in | AHDA Cybersecurity | Open | Set `Identity:Mfa:AllowEnrolmentAtSignIn=false` in SIT, UAT and PROD and enrol R01 out of band (`mfa-privileged-access.md` F-2). Or AHDA signs RA-02 |
@@ -159,6 +159,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | 2026-11-07 | Directory accounts change their own password from the platform (AUTH-T33); SR-84 |
 | 2026-11-07 | Directory accounts reset a forgotten password by e-mail, off by default (AUTH-T34); SR-85. One more open High |
 | 2026-11-13 | Sign-in without a password: SMS codes (AUTH-T35) and passkeys (AUTH-T36), and the SMS stand-in (AUTH-T37); SR-87 to SR-89. Two more open High |
+| 2026-11-25 | SR-10 fixed on `fix/task-112-refresh-token-rotation`: refresh-token rotation with reuse detection, server-side sign-out, sessions ended on disable (AUTH-T13 MITIGATED). It stays Open until its PR is opened and cited |
 | 2026-11-06 | A project's registers in the import (DI-T12, DI-T13), both mitigated; no new finding |
 | 2026-11-06 | Every business role may prepare a project import batch (DI-T14), mitigated by R02's approval; no new finding |
 | 2026-11-25 | SR-38: extension and signature checks on upload built and tested on `fix/task-112-upload-signature-check`; DOC-T01 MITIGATED (residual Medium). SR-38 stays Open until the PR merges |

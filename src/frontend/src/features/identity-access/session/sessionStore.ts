@@ -65,6 +65,22 @@ export const sessionStore = {
     update({ session });
   },
 
+  /**
+   * The person signs out: the API ends the session (SR-10), then this tab forgets it. Best effort: if the API cannot be
+   * reached or refuses, the tab still forgets the session, which then ends on the server at its idle timeout.
+   */
+  endSession: async (): Promise<void> => {
+    if (snapshot.session !== null) {
+      try {
+        await sessionApi.signOut();
+      } catch {
+        // Signed out here regardless.
+      }
+    }
+    sessionStore.signOut();
+  },
+
+  /** Forgets the session in this tab only: after a refused refresh, or once the API has already ended it. */
   signOut: (): void => {
     resolveStepUp?.(false);
     resolveStepUp = null;

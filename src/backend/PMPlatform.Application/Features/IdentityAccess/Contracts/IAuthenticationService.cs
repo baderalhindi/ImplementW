@@ -65,9 +65,17 @@ public interface IAuthenticationService
 
     /// <summary>
     /// Issues a new session token pair from a refresh token, re-reading the user's status and assignments. Refused if the
-    /// user now requires MFA and the session never passed it.
+    /// user now requires MFA and the session never passed it. The refresh token works once: the pair carries its successor,
+    /// and presenting it again ends the session (SR-10).
     /// </summary>
     public Task<AuthenticationResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Ends the session <paramref name="sessionId"/> of <paramref name="userId"/> on the server (SR-10): its refresh token stops
+    /// working at once. Its access token is not checked against the session and lives out its remaining minutes (at most 15).
+    /// Ending a session that has already ended changes nothing.
+    /// </summary>
+    public Task SignOutAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken);
 
     /// <summary>Starts the second factor of a sign-in: an enrolment if the person has no factor yet, else a verification.</summary>
     public Task<MultiFactorChallengeResult> BeginMultiFactorSignInAsync(string mfaToken, CancellationToken cancellationToken);
