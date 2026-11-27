@@ -31,8 +31,22 @@ public sealed class PortfolioInsightsController(IPortfolioInsightsService insigh
     [RequirePermission(Application.Common.Authorization.PermissionCatalogue.PortfolioBreakdownView)]
     [ProducesResponseType<PortfolioCard>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("Project_GetPortfolioCard")]
-    public async Task<IActionResult> GetCard([FromQuery] PortfolioCardDimension dimension, [FromQuery] Guid itemId, CancellationToken cancellationToken) =>
-        Respond(await insights.GetCardAsync(CallerId, dimension, itemId, cancellationToken));
+    public async Task<IActionResult> GetCard([FromQuery] PortfolioCardDimension dimension, [FromQuery] Guid itemId, CancellationToken cancellationToken)
+    {
+        // An absent query value binds as the type's default (0, Guid.Empty): refuse it as a missing field instead of failing inside the service.
+        List<Errors.FieldError> errors = [];
+        if (!Enum.IsDefined(dimension))
+        {
+            errors.Add(new Errors.FieldError("dimension", Errors.FieldError.Required));
+        }
+
+        if (itemId == Guid.Empty)
+        {
+            errors.Add(new Errors.FieldError("itemId", Errors.FieldError.Required));
+        }
+
+        return errors.Count > 0 ? ValidationFailed(errors) : Respond(await insights.GetCardAsync(CallerId, dimension, itemId, cancellationToken));
+    }
 
     /// <summary>
     /// The Portfolio dashboard's design with the caller's figures, under the same filters as the insights (the 17 Nov 2026 designer): the saved design, or the
