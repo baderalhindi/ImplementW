@@ -9,7 +9,8 @@ Without arguments (repo-checks, every PR):
   FL-2  A finding's rating is the highest inherent rating among its threats.
   FL-3  A Mitigated finding cites a PR, and none of its threats is GAP or NOT BUILT or has a residual rating above Medium;
         a Risk accepted finding cites an RA record that exists and covers it.
-  RA-1  A Signed acceptance names who accepted it, when, and where the signed copy is.
+  RA-1  A Signed acceptance names who accepted it, when, and where the signed copy is. A Withdrawn one, a request
+        no longer before AHDA because its finding was mitigated, says why and covers no Risk accepted finding.
 
 --gate (the Release Checklist's "Security Review & Threat Modeling Signed Off"):
   G-1   Every High or Critical finding is Mitigated, or Risk accepted under a Signed RA record. Exit 1 lists the rest.
@@ -30,6 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 RATINGS = ["Low", "Medium", "High", "Critical"]
 STATUSES = {"MITIGATED", "PARTIAL", "GAP", "DEPENDS", "NOT BUILT"}
+ACCEPTANCE_STATUSES = {"Pending AHDA signature", "Signed", "Withdrawn"}
 DISPOSITIONS = {"Mitigated", "Risk accepted", "Open"}
 NONE = {"—", "-", ""}
 
@@ -173,8 +175,10 @@ def read_acceptances(errors: list[str]) -> dict[str, Acceptance]:
             if key == "Findings":
                 current.covers = ids(value, "SR")
     for acceptance in acceptances.values():
-        if acceptance.status not in {"Pending AHDA signature", "Signed"}:
-            errors.append(f"RA-1: {acceptance.id}: status '{acceptance.status}' is neither 'Pending AHDA signature' nor 'Signed'")
+        if acceptance.status not in ACCEPTANCE_STATUSES:
+            errors.append(f"RA-1: {acceptance.id}: status '{acceptance.status}' is not one of {sorted(ACCEPTANCE_STATUSES)}")
+        if acceptance.status == "Withdrawn" and acceptance.fields.get("Withdrawn", "").strip() in NONE:
+            errors.append(f"RA-1: {acceptance.id} is Withdrawn but its 'Withdrawn' row does not say when and why")
         if acceptance.status == "Signed":
             for key in ("Accepted by", "Date signed", "Signed copy"):
                 if acceptance.fields.get(key, "").strip() in NONE:
@@ -220,6 +224,8 @@ def cross_check(threats, findings, acceptances, errors: list[str]) -> None:
                     errors.append(f"FL-3: {finding.id} cites {raid}, which is not in risk-acceptances.md")
                 elif finding.id not in acceptances[raid].covers:
                     errors.append(f"FL-3: {finding.id} cites {raid}, whose Findings row does not name it")
+                elif acceptances[raid].status == "Withdrawn":
+                    errors.append(f"FL-3: {finding.id} cites {raid}, which is Withdrawn")
     for acceptance in acceptances.values():
         for fid in acceptance.covers:
             if fid not in findings:

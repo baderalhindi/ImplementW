@@ -16,18 +16,16 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 | --- | --- |
 | Findings | 89 |
 | High or Critical | 43 |
-| — closed by merged PRs (`Mitigated`) | 27 |
-| — **open** | **16**: SR-10, SR-13, SR-26, SR-38, SR-41, SR-53, SR-74, SR-75, SR-78, SR-80, SR-81, SR-83, SR-85, SR-86, SR-87, SR-88 |
-| Risk acceptances signed by AHDA | 0 of 3 requested (`risk-acceptances.md`) |
+| — closed by merged PRs (`Mitigated`) | 29 |
+| — **open** | **14**: SR-13, SR-26, SR-41, SR-53, SR-74, SR-75, SR-78, SR-80, SR-81, SR-83, SR-85, SR-86, SR-87, SR-88 |
+| Risk acceptances signed by AHDA | 0 of 2 requested (`risk-acceptances.md`; RA-01 withdrawn 2026-11-27, SR-10 mitigated) |
 
 **The gate is not green.** Each open High needs one of the following:
 
 | Finding | What closes it | Owner |
 | --- | --- | --- |
-| SR-10 Refresh tokens cannot be revoked | The PR that merges `fix/task-112-refresh-token-rotation` (rotation with reuse detection, server-side sign-out; built 2026-11-25); or RA-01 signed | Engagement Architect; AHDA Cybersecurity for RA-01 |
 | SR-13 R01 enrols a second factor at first sign-in | `Identity:Mfa:AllowEnrolmentAtSignIn=false` in SIT, UAT and PROD, with out-of-band enrolment (a configuration PR); or RA-02 signed | AHDA Cybersecurity (PTBC-027) |
 | SR-26 No field is classified, so nothing is masked by audience | AHDA publishes the DATA_CLASSIFICATION items and a FIELD_CLASSIFICATION version (UGV-01); the model is then updated to MITIGATED on PR #34 | AHDA Cybersecurity |
-| SR-38 Uploads trusted by declared type | The PR that merges `fix/task-112-upload-signature-check` (controls and tests on the branch) | Backend lead |
 | SR-41 No malware scanner selected | Provider selected (in-Kingdom, no retention) and its adapter merged | Security Lead |
 | SR-53 Nafath does not bind the person to the account | An expected identity captured at onboarding and compared with `sub` (a fix PR, after OQ-007); or RA-03 signed | AHDA Cybersecurity, FG-03 owner |
 | SR-74, SR-75 SMS receipt callback | TASK-103 merges with requirements R-1 to R-10 of its model; or the callback is out of the UAT release and the models say so | TASK-103 owner |
@@ -57,7 +55,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-07 | AUTH-T04 | Medium | Deliberate AD lockout of named accounts | AHDA IT | Open | Confirm AD's lockout threshold and window against the platform's 30 a minute per address (CS-011) |
 | SR-08 | AUTH-T08, NAF-T05 | High | ID-token validation has no algorithm pin and no negative tests for issuer, audience, signature or expiry | Backend lead | Mitigated | PR #32, PR #78 (library validation of each). Follow-ups: pin `ValidAlgorithms` to the IdP's and Nafath's algorithm; add the four negative tests to `SingleSignOnTests` and the Nafath suite |
 | SR-09 | AUTH-T09 | High | The SSO subject claim must be immutable and equal the directory subject | AHDA IT (Identity) | Mitigated | PR #32 (exact match on a configured claim; no role claims). Follow-up: AHDA IT confirms the claim at environment setup (`sso-directory-integration.md` F-2) |
-| SR-10 | AUTH-T13 | High | A stolen refresh token keeps a session for up to 8 h; tokens are not rotated, reuse is not detected, sign-out is client-only | Engagement Architect | Open | Fixed on branch `fix/task-112-refresh-token-rotation` (2026-11-25): refresh tokens rotate, a replaced one presented again revokes the session, `POST /sessions/current/sign-out` and disabling a user end it on the server (AUTH-T13 MITIGATED, residual Low). Becomes Mitigated, citing its PR, when that PR opens (FL-3 needs a PR number); RA-01 is then no longer needed. Access tokens still live out their ≤ 15 min |
+| SR-10 | AUTH-T13 | High | A stolen refresh token keeps a session for up to 8 h; tokens are not rotated, reuse is not detected, sign-out is client-only | Engagement Architect | Mitigated | PR #146 (the stage QA fixes, carrying `fix/task-112-refresh-token-rotation`): refresh tokens rotate, a replaced one presented again revokes the session, `POST /sessions/current/sign-out` and disabling a user end it on the server (AUTH-T13 MITIGATED, residual Low). Re-tested PASS on `dev` 2026-11-27 (dev QA, `dev-phase-c.md` SR-10 / D-004). RA-01 withdrawn. Residual: access tokens still live out their ≤ 15 min. Follow-ups: `fix/task-112-session-follow-ups` (tabs of one session share a refresh token without tripping reuse detection, DEV-D1-01; one sign-out audit row per ended session, DEV-C-01) |
 | SR-11 | AUTH-T14 | High | Script on the SPA's origin reads the tokens from `sessionStorage` | Frontend lead, DevOps | Mitigated | PR #87 (sink lint, `isAppPath`), PR #88 (CSP on API responses). Follow-up: the SPA's serving sends `script-src 'self'` (`endpoint-hardening.md` F-3) |
 | SR-12 | AUTH-T16 | High | Second-factor code guessing, or another person's challenge | Security Lead; AHDA Cybersecurity | Mitigated | PR #33 (1 s floor, shared limit, subject sent, explicit verdict). Follow-up: the selected provider limits attempts per user and binds the challenge to the user (`mfa-privileged-access.md` F-1, F-4) |
 | SR-13 | AUTH-T17 | High | Whoever holds an unenrolled R01's password enrols their own factor at sign-in | AHDA Cybersecurity | Open | Set `Identity:Mfa:AllowEnrolmentAtSignIn=false` in SIT, UAT and PROD and enrol R01 out of band (`mfa-privileged-access.md` F-2). Or AHDA signs RA-02 |
@@ -85,7 +83,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-35 | RBAC-T26 | Medium | Any RAISE holder edits or submits another person's request and can then approve it | Backend lead | Open | Edit and submit by the requester only, or record the submitter as the requester for SoD |
 | SR-36 | RBAC-T27 | Medium | One person may approve several stages of one run | PMO (WF-11) | Open | Confirm WF-11's rule; if distinct approvers are required, enforce it in `ApprovalAuthority` |
 | SR-37 | RBAC-T28, RBAC-T29 | Low | Owner fields accept any user; small existence oracles | Backend lead | Open | Restrict owners to the project's eligible people; answer 404 for an out-of-scope project on upload |
-| SR-38 | DOC-T01 | High | Uploads are trusted by declared type: no signature check or extension allowlist | Backend lead | Open | Controls built and tested on `fix/task-112-upload-signature-check` (extension per type, leading-byte signature, text without NUL or binary signature, 415 on a mismatch; `DocumentContentRulesTests`, `DocumentEndpointTests`); closed as Mitigated by the PR that merges it |
+| SR-38 | DOC-T01 | High | Uploads are trusted by declared type: no signature check or extension allowlist | Backend lead | Mitigated | PR #146 (the stage QA fixes, carrying `fix/task-112-upload-signature-check`): extension per type, leading-byte signature, text without NUL or binary signature, 415 on a mismatch; `DocumentContentRulesTests`, `DocumentEndpointTests` (DOC-T01 MITIGATED, residual Medium). Re-tested PASS on `dev` 2026-11-27 (dev QA, `dev-phase-c.md` SR-38: 39 uploads). Residual: polyglots and markup saved as `.txt` pass the check and stay undownloadable until a CLEAN scan (SR-41) |
 | SR-39 | DOC-T04, DOC-T05 | High | Stored XSS through served content; non-CLEAN bytes served | Backend lead | Mitigated | PR #42 (one CLEAN gate, attachment, `nosniff`), PR #43 (Blob save), PR #88 (CSP), PR #94 (the proving tests run in CI) |
 | SR-40 | DOC-T08 | High | The scanner fails open | Security Lead | Mitigated | PR #42 (the port fails closed). The provider adapter must map every provider answer the same way (SR-41) |
 | SR-41 | DOC-T07, DOC-T21, DOC-T24 | High | No malware scanner selected: residency, transport, verdict integrity and bomb limits unknown | Security Lead | Open | Select an in-Kingdom provider with no retention (CS-019, CS-031, CTL-50); adapter with TLS and authenticated verdicts; SCAN_FAILED on bombs |
@@ -163,4 +161,5 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | 2026-11-06 | A project's registers in the import (DI-T12, DI-T13), both mitigated; no new finding |
 | 2026-11-06 | Every business role may prepare a project import batch (DI-T14), mitigated by R02's approval; no new finding |
 | 2026-11-25 | SR-38: extension and signature checks on upload built and tested on `fix/task-112-upload-signature-check`; DOC-T01 MITIGATED (residual Medium). SR-38 stays Open until the PR merges |
+| 2026-11-27 | SR-10 and SR-38 Open → Mitigated: both merged in PR #146 and re-tested PASS on `dev` (dev QA DEV-C-02, `dev-phase-c.md`). RA-01 withdrawn (`risk-acceptances.md` now allows `Withdrawn`). Open High 16 → 14 |
 | 2026-11-27 | Stage QA PHASE-C-01: `GET /projects/{id}` (and every project response) returned the registration budget to R06 and R08, who hold no `FINANCIAL_VIEW_SENSITIVE`. D-4's rule now covers it: the budget is omitted and named in `maskedFields`, an entity's draft save keeps a budget it was not shown, and the import preview does not compare a withheld budget. SR-26 stays open: it waits for AHDA's field classification (UGV-01) |

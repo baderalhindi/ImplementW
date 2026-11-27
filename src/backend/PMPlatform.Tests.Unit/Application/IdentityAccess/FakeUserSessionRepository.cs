@@ -31,15 +31,8 @@ internal sealed class FakeUserSessionRepository : IUserSessionRepository
         return Task.FromResult(false);
     }
 
-    public Task EndAsync(Guid sessionId, UserSessionStatus status, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken)
-    {
-        if (Sessions.TryGetValue(sessionId, out UserSession? session))
-        {
-            End(session, status, reason, actorId);
-        }
-
-        return Task.CompletedTask;
-    }
+    public Task<bool> EndAsync(Guid sessionId, UserSessionStatus status, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken) =>
+        Task.FromResult(Sessions.TryGetValue(sessionId, out UserSession? session) && End(session, status, reason, actorId));
 
     public Task EndAllOfUserAsync(Guid userId, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken)
     {
@@ -51,13 +44,16 @@ internal sealed class FakeUserSessionRepository : IUserSessionRepository
         return Task.CompletedTask;
     }
 
-    private static void End(UserSession session, UserSessionStatus status, UserSessionEndReason reason, Guid actorId)
+    private static bool End(UserSession session, UserSessionStatus status, UserSessionEndReason reason, Guid actorId)
     {
-        if (session.Status == UserSessionStatus.Active)
+        if (session.Status != UserSessionStatus.Active)
         {
-            session.Status = status;
-            session.EndReason = reason;
-            session.UpdatedBy = actorId;
+            return false;
         }
+
+        session.Status = status;
+        session.EndReason = reason;
+        session.UpdatedBy = actorId;
+        return true;
     }
 }

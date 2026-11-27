@@ -45,17 +45,17 @@ internal sealed class UserSessionRepository(PMPlatformDbContext context, TimePro
             .ConfigureAwait(false) == 1;
     }
 
-    public Task EndAsync(Guid sessionId, UserSessionStatus status, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken) =>
-        EndWhereAsync(context.Set<UserSession>().Where(s => s.Id == sessionId), status, reason, actorId, cancellationToken);
+    public async Task<bool> EndAsync(Guid sessionId, UserSessionStatus status, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken) =>
+        await EndWhereAsync(context.Set<UserSession>().Where(s => s.Id == sessionId), status, reason, actorId, cancellationToken).ConfigureAwait(false) == 1;
 
     public Task EndAllOfUserAsync(Guid userId, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken) =>
         EndWhereAsync(context.Set<UserSession>().Where(s => s.UserId == userId), UserSessionStatus.Revoked, reason, actorId, cancellationToken);
 
-    private async Task EndWhereAsync(
+    private async Task<int> EndWhereAsync(
         IQueryable<UserSession> sessions, UserSessionStatus status, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken)
     {
         DateTimeOffset now = timeProvider.GetUtcNow();
-        await sessions.Where(s => s.Status == UserSessionStatus.Active).ExecuteUpdateAsync(
+        return await sessions.Where(s => s.Status == UserSessionStatus.Active).ExecuteUpdateAsync(
             set => set
                 .SetProperty(s => s.Status, status)
                 .SetProperty(s => s.EndReason, reason)

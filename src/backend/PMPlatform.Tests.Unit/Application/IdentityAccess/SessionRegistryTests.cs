@@ -75,8 +75,12 @@ public sealed class SessionRegistryTests
     {
         SessionTokens signIn = await SignInAsync();
 
-        await _registry.SignOutAsync(UserId, signIn.SessionId, CancellationToken.None);
+        bool ended = await _registry.SignOutAsync(UserId, signIn.SessionId, CancellationToken.None);
+        bool endedAgain = await _registry.SignOutAsync(UserId, signIn.SessionId, CancellationToken.None);
 
+        // DEV-C-01: only the call that ended the session says so; the sign-out audit rests on it.
+        Assert.True(ended);
+        Assert.False(endedAgain);
         UserSession session = _repository.Sessions[signIn.SessionId];
         Assert.Equal((UserSessionStatus.SignedOut, UserSessionEndReason.SignedOut), (session.Status, session.EndReason));
         Assert.Equal(AuthenticationFailureReason.SessionEnded, await _registry.CheckAsync(Continuation(signIn), CancellationToken.None));

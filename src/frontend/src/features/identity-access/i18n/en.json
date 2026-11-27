@@ -476,6 +476,8 @@
   },
   "signIn": {
     "title": "Sign in to the platform",
+    "sessionEnded": "Your session has ended. Sign in again to continue.",
+    "signedOutElsewhere": "You signed out in another tab. Sign in again to continue.",
     "username": "Username",
     "usernameOrEmail": "Username or email address",
     "password": "Password",
