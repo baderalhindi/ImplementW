@@ -19,6 +19,7 @@ Entries are appended, never edited. A correction is a new entry that names the o
 | E-2 | 2026-09-25 | Local, stubbed `gcloud` | Two bucket listings | **PASS** — 5 of 5 cases as expected, after one defect fix | No — the document comparison's logic only |
 | E-3 | 2026-09-25 | Local: an isolated Docker environment, with the application | Physical base backup; SQL export | **PASS** — 11 of 11 tables match on rows and checksum; time-to-restore 4 s against 4 h | **No** — same two gaps as E-1. It is the validation cell, executed as far as anything can be without an environment |
 | E-4 | — | SIT | Cloud SQL automated backup, export, document backup bucket | **NOT RUN** — blocked on UGV-07 and BR-1 | This is the entry that will |
+| E-5 | 2026-11-27 | Local: an isolated Docker environment, with the application | Physical base backup; SQL export | **PASS** — 142 of 142 tables match on rows and checksum, 1,000 chained events intact; time-to-restore 9 s against 4 h; rehearsal: control and 9 faults as expected | **No** — same two gaps as E-1. Corrects nothing in E-3; re-runs it after QA PHASE-E-03 |
 
 ## E-1 — Local rehearsal of the database restore and its verification
 
@@ -170,6 +171,32 @@ restore-from-backup into an isolated environment, row counts and checksums of ev
 source's, and time-to-restore recorded against the 4-hour target. **The acceptance criterion is not
 met**: the backup was `pg_basebackup`, not a Cloud SQL automated backup, and the environment was Docker,
 not SIT.
+
+## E-5 — Full restore drill and rehearsal, local, after QA PHASE-E-03
+
+Stage QA (Phase E, 26 Nov 2026) found both local scripts broken on the current tree: `drill-fixture.sql`
+created a stand-in `audit_activity.audit_event` the migrations now create, so both stopped at the fixture
+(exit 3), and with that removed DS-3 failed every time because the source API's FG-05 worker rewrote
+`integration_monitoring.integration_instance` during the backup. Fixed: the fixture writes into the
+migrated table (the table's trigger chains the events), and DS-2 stops the source API until DS-3 has
+passed (runbook §8 DS-2, BR-9). Both scripts were then run on their own containers. Raw evidence of the
+drill: [`evidence/2026-11-27-local-drill/`](evidence/2026-11-27-local-drill/).
+
+| Field | Value |
+| --- | --- |
+| Date | 2026-11-26, 22:46–22:50 UTC |
+| Operator | Infrastructure (TASK-112) |
+| Commands | `docs/operations/run-restore-drill.sh docs/operations/evidence/2026-11-27-local-drill` (exit 0); `docs/operations/rehearse-restore.sh` (exit 0) |
+| Release artifact | `pmplatform-api:task-023-drill` built from the tree, `sha256:139b1adb41394f2a4e4599706554efd83dea8ff3de4d18e067702802f1b5ce9d` (runs under `tini`, rollback-validation.md F-4) |
+| DS-2 / DS-3 | Source API stopped in 0 s (exit 0); fingerprint before and after the backup identical; API back in service, `/health` 200; one row written after the backup |
+| P-1 database, from the backup | MATCH — 142 tables, 201,934 rows, 2 sequences |
+| P-2 database, from the export | MATCH — same |
+| P-3 audit chain | events=1000, genesis=1, broken=0, forks=0 |
+| Isolation | Source unreachable from the isolated network (reachable from its own: control); internet unreachable |
+| DS-8 | `/health` 200 from the restored API; one active local user for each of R01–R08 |
+| **Time-to-restore** | **9 s** — P-5 PASS (≤ 4 h) |
+| Rehearsal (`rehearse-restore.sh`) | Physical restore MATCH in 3 s, export MATCH in 2 s; control F0 and faults F1–F9: 10 of 10 reported with the expected exit status (F6/F9 now bypass the table's append-only trigger to inject the broken link) |
+| Not run | DS-7 documents and DS-9 RPO: no object store or Cloud SQL locally, as in E-3 |
 
 ## E-4 — SIT drill from a Cloud SQL automated backup
 

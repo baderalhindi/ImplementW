@@ -1,0 +1,59 @@
+#!/usr/bin/env sh
+# Stand-in gcloud for verify-separation-test.sh: answers the reads verify-separation.sh makes the way
+# a provisioned, correctly separated platform would, unless a STUB_* variable says otherwise.
+#   STUB_OFFLINE=1          every call fails as gcloud does with no active account
+#   STUB_IMPERSONATION=fail minting a token as any service account fails
+#   STUB_LEAK=<secret_id>   that PROD secret is readable
+#   STUB_SECRET_ERROR=1     every secret read fails with an API error, not a refusal
+#   STUB_FOLDER_POLICY=fail the folder IAM policies cannot be read
+# Never reaches the network.
+set -eu
+command=$(printf '%s ' "$@")
+
+if [ "${STUB_OFFLINE:-}" = 1 ]; then
+  echo "ERROR: (gcloud.$1.$2) You do not currently have an active account selected." >&2
+  exit 1
+fi
+
+case "$command" in
+  "auth print-access-token "*)
+    if [ "${STUB_IMPERSONATION:-}" = fail ]; then
+      echo "ERROR: (gcloud.auth.print-access-token) Failed to impersonate [${3#--impersonate-service-account=}]. Make sure the account that's trying to impersonate it has access to the service account itself and the \"roles/iam.serviceAccountTokenCreator\" role." >&2
+      exit 1
+    fi
+    echo "stub-token" ;;
+  "secrets versions access "*)
+    secret=$(printf '%s\n' "$@" | sed -n 's/^--secret=//p')
+    if [ -n "${STUB_LEAK:-}" ] && [ "$secret" = "$STUB_LEAK" ]; then
+      echo "leaked-value"
+    elif [ "${STUB_SECRET_ERROR:-}" = 1 ]; then
+      echo "ERROR: (gcloud.secrets.versions.access) FAILED_PRECONDITION: Secret Manager API has not been used in project before or it is disabled. SERVICE_DISABLED" >&2
+      exit 1
+    else
+      echo "ERROR: (gcloud.secrets.versions.access) PERMISSION_DENIED: Permission 'secretmanager.versions.access' denied for resource 'projects/p/secrets/$secret/versions/latest' (or it may not exist)." >&2
+      exit 1
+    fi ;;
+  "projects get-iam-policy "*"--flatten"*)
+    # The artifacts project: no environment principal at project level.
+    echo "roles/owner,user:platform-admin@example.com" ;;
+  "projects get-iam-policy "*)
+    project=$3
+    echo "serviceAccount:deploy@$project.iam.gserviceaccount.com;user:admin@example.com" ;;
+  "resource-manager folders list "*)
+    echo "folders/100" ;;
+  "resource-manager folders get-iam-policy "*)
+    if [ "${STUB_FOLDER_POLICY:-}" = fail ]; then
+      echo "ERROR: (gcloud.resource-manager.folders.get-iam-policy) PERMISSION_DENIED: The caller does not have permission" >&2
+      exit 1
+    fi
+    echo "user:admin@example.com" ;;
+  "artifacts repositories get-iam-policy "*)
+    jq -r '.environments[].service_accounts | to_entries[] | "roles/artifactregistry.reader,serviceAccount:\(.value)"' "$MANIFEST" ;;
+  "storage buckets describe "*)
+    echo "ME-CENTRAL2" ;;
+  "secrets describe "*)
+    echo "me-central2" ;;
+  *)
+    echo "stub gcloud: unexpected call: gcloud $command" >&2
+    exit 2 ;;
+esac

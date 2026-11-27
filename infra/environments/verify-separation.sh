@@ -17,6 +17,13 @@
 # A check that cannot be executed is reported SKIP and the run exits non-zero: an unexecuted drill
 # is not a passed drill. Exit 0 only when every check is PASS.
 #
+# A refusal counts as PASS only when the provider itself refused the access the check attempts
+# (Secret Manager's PERMISSION_DENIED on secretmanager.versions.access; the SIT database rejecting
+# the login). Any other failure of a provider call (no credentials, an impersonation that did not
+# work, no network, an API not enabled, a project that does not exist) proves nothing and is
+# reported ERROR with the provider's message. Every run ends with the summary, also when it stops
+# early.
+#
 # Requires: gcloud (authenticated as a principal that can read IAM policies in all four projects),
 # jq; psql for D-1. Record: docs/architecture/environment-separation.md
 set -eu
@@ -24,13 +31,40 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 . "$here/lib/common.sh"
 
+failures=0
+finished=0
+provider_errors=""
+report() { # report <PASS|FAIL|SKIP|ERROR> <id> <text>
+  printf '%-5s %-4s %s\n' "$1" "$2" "$3"
+  [ "$1" = "PASS" ] || failures=$((failures + 1))
+}
+
+# The summary is printed on every exit. A run that stops before its last check says so and exits
+# non-zero, whatever the status of the command that stopped it.
+on_exit() {
+  status=$?
+  [ -n "$provider_errors" ] && rm -f "$provider_errors"
+  [ "$finished" -eq 1 ] && return
+  echo
+  echo "ABORTED: the run stopped (exit $status) before its last check; $failures check(s) above did not pass and the rest were not run. The drill is still owed."
+  [ "$status" -ne 0 ] || exit 1
+}
+trap on_exit EXIT
+
 require_tools gcloud jq
 region=$(require_region)
+provider_errors=$(mktemp)
 
-failures=0
-report() { # report <PASS|FAIL|SKIP> <id> <text>
-  printf '%-4s %-4s %s\n' "$1" "$2" "$3"
-  [ "$1" = "PASS" ] || failures=$((failures + 1))
+# provider <gcloud args...> — runs one read; stdout is the answer, gcloud's message is kept for
+# provider_error. Its status is gcloud's.
+provider() {
+  gcloud "$@" 2>"$provider_errors"
+}
+
+# provider_error — the last failed call's message, on one line, for an ERROR report.
+provider_error() {
+  message=$(grep -v '^[[:space:]]*$' "$provider_errors" | head -n 3 | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+  echo "${message:-gcloud failed without a message}"
 }
 
 prod_project=$(env_get prod '.project_id')
@@ -38,26 +72,41 @@ dev_user=$(env_get dev '.database.user')
 
 # D-1 — a DEV database credential against the SIT database instance.
 if [ -n "${SIT_DB_HOST:-}" ] && [ -n "${DEV_DB_PASSWORD:-}" ] && command -v psql >/dev/null 2>&1; then
-  if PGPASSWORD="$DEV_DB_PASSWORD" PGCONNECT_TIMEOUT=10 \
+  if login_error=$(PGPASSWORD="$DEV_DB_PASSWORD" PGCONNECT_TIMEOUT=10 \
      psql "host=$SIT_DB_HOST user=$dev_user dbname=$(env_get sit '.database.database') sslmode=require" \
-     -c 'select 1' >/dev/null 2>&1; then
+     -c 'select 1' 2>&1 >/dev/null); then
     report FAIL D-1 "the DEV credential $dev_user CONNECTED to the SIT database at $SIT_DB_HOST"
   else
-    report PASS D-1 "the DEV credential $dev_user is rejected by the SIT database"
+    # Only the server's answer to the login is a rejection; a connection that never reached it is not.
+    case "$login_error" in
+      *"password authentication failed"* | *"no pg_hba.conf entry"* | *"permission denied for database"* | *"role \"$dev_user\" does not exist"*)
+        report PASS D-1 "the DEV credential $dev_user is rejected by the SIT database" ;;
+      *)
+        report ERROR D-1 "the SIT database at $SIT_DB_HOST did not answer the login: $(echo "$login_error" | head -n 2 | tr '\n' ' ')" ;;
+    esac
   fi
 else
   report SKIP D-1 "set SIT_DB_HOST and DEV_DB_PASSWORD (and install psql) once TASK-020 has created the instances"
 fi
 
-# D-2 — PROD secrets from each non-PROD environment's principals.
+# D-2 — PROD secrets from each non-PROD environment's principals. The impersonation is proved
+#       first: a call that never acted as the principal says nothing about what the principal can
+#       read. Then only Secret Manager's own refusal of the read is a PASS.
+prod_secrets=$(env_get prod '.variables | to_entries[] | select(.value.kind == "secret") | .value.secret_id')
 for environment in dev sit uat; do
   for sa in $(env_get "$environment" '.service_accounts | to_entries[] | .value'); do
-    for secret_id in $(env_get prod '.variables | to_entries[] | select(.value.kind == "secret") | .value.secret_id'); do
-      if gcloud secrets versions access latest --secret="$secret_id" --project="$prod_project" \
-           --impersonate-service-account="$sa" >/dev/null 2>&1; then
+    if ! provider auth print-access-token --impersonate-service-account="$sa" >/dev/null; then
+      report ERROR D-2 "cannot act as $sa, so none of its $(echo "$prod_secrets" | wc -w | tr -d ' ') PROD secret reads was attempted: $(provider_error)"
+      continue
+    fi
+    for secret_id in $prod_secrets; do
+      if provider secrets versions access latest --secret="$secret_id" --project="$prod_project" \
+           --impersonate-service-account="$sa" >/dev/null; then
         report FAIL D-2 "$sa READ the PROD secret $secret_id"
+      elif grep -q "PERMISSION_DENIED" "$provider_errors" && grep -q "secretmanager.versions.access" "$provider_errors"; then
+        report PASS D-2 "$sa cannot read the PROD secret $secret_id (PERMISSION_DENIED)"
       else
-        report PASS D-2 "$sa cannot read the PROD secret $secret_id"
+        report ERROR D-2 "$sa reading the PROD secret $secret_id failed without a Secret Manager refusal: $(provider_error)"
       fi
     done
   done
@@ -67,8 +116,12 @@ done
 #       the PROD principals must appear in no other project's policy, and no others in PROD's.
 for environment in $(environment_names); do
   project=$(env_get "$environment" '.project_id')
-  members=$(gcloud projects get-iam-policy "$project" --format='value(bindings.members)' 2>/dev/null |
-    tr ';' '\n' | grep '^serviceAccount:.*iam.gserviceaccount.com$' | sed 's/^serviceAccount://' | sort -u)
+  if ! policy=$(provider projects get-iam-policy "$project" --format='value(bindings.members)'); then
+    report ERROR D-3 "the IAM policy of $project could not be read: $(provider_error)"
+    continue
+  fi
+  members=$(printf '%s\n' "$policy" |
+    tr ';' '\n' | grep '^serviceAccount:.*iam.gserviceaccount.com$' | sed 's/^serviceAccount://' | sort -u || true)
   foreign=""
   for member in $members; do
     case "$member" in
@@ -92,15 +145,26 @@ done
 # D-3b — folder IAM. A grant at the folder is inherited by every project underneath, so it is the
 #        one way to hold a role in an environment without appearing in that project's own policy.
 #        No service account belongs at this level.
+organization_id=$(manifest_get '.platform.organization_id')
 for folder in $(manifest_get '.platform.folders[].name'); do
-  folder_id=$(gcloud resource-manager folders list --organization="$(manifest_get '.platform.organization_id')" \
-    --filter="displayName=$folder" --format='value(name)' 2>/dev/null)
+  if [ -z "$organization_id" ]; then
+    report SKIP D-3b "folder $folder: platform.organization_id is empty (UGV-07), so the folders cannot be listed"
+    continue
+  fi
+  if ! folder_id=$(provider resource-manager folders list --organization="$organization_id" \
+      --filter="displayName=$folder" --format='value(name)'); then
+    report ERROR D-3b "the folders of organisation $organization_id could not be listed: $(provider_error)"
+    continue
+  fi
   if [ -z "$folder_id" ]; then
     report SKIP D-3b "folder $folder not found; the folders are created by apply-org-policy.sh"
     continue
   fi
-  accounts=$(gcloud resource-manager folders get-iam-policy "$folder_id" \
-    --format='value(bindings.members)' 2>/dev/null | tr ';' '\n' | grep '^serviceAccount:' || true)
+  if ! folder_policy=$(provider resource-manager folders get-iam-policy "$folder_id" --format='value(bindings.members)'); then
+    report ERROR D-3b "the IAM policy of folder $folder ($folder_id) could not be read: $(provider_error)"
+    continue
+  fi
+  accounts=$(printf '%s\n' "$folder_policy" | tr ';' '\n' | grep '^serviceAccount:' || true)
   if [ -n "$accounts" ]; then
     report FAIL D-3b "folder $folder grants roles to service accounts, inherited by every environment under it: $(echo "$accounts" | tr '\n' ' ')"
   else
@@ -137,10 +201,9 @@ else
     return 1
   }
 
-  project_policy=$(gcloud projects get-iam-policy "$artifacts" --flatten='bindings[].members' \
-    --format='csv[no-heading](bindings.role,bindings.members)' 2>/dev/null || true)
-  if [ -z "$project_policy" ]; then
-    report SKIP D-3c "$artifacts is not readable; the registry project is created with the platform"
+  if ! project_policy=$(provider projects get-iam-policy "$artifacts" --flatten='bindings[].members' \
+      --format='csv[no-heading](bindings.role,bindings.members)'); then
+    report ERROR D-3c "the IAM policy of $artifacts could not be read (the registry project is created with the platform): $(provider_error)"
   else
     at_project=""
     for entry in $project_policy; do
@@ -154,11 +217,10 @@ else
       report PASS D-3c "$artifacts grants no environment principal a project-wide role"
     fi
 
-    repository_policy=$(gcloud artifacts repositories get-iam-policy "$artifacts_repository" \
-      --project="$artifacts" --location="$region" --flatten='bindings[].members' \
-      --format='csv[no-heading](bindings.role,bindings.members)' 2>/dev/null || true)
-    if [ -z "$repository_policy" ]; then
-      report SKIP D-3c "repository $artifacts_repository is not readable in $artifacts"
+    if ! repository_policy=$(provider artifacts repositories get-iam-policy "$artifacts_repository" \
+        --project="$artifacts" --location="$region" --flatten='bindings[].members' \
+        --format='csv[no-heading](bindings.role,bindings.members)'); then
+      report ERROR D-3c "the IAM policy of repository $artifacts_repository in $artifacts could not be read: $(provider_error)"
     else
       wrong=""
       seen=""
@@ -193,28 +255,33 @@ fi
 for environment in $(environment_names); do
   project=$(env_get "$environment" '.project_id')
   bucket=$(env_get "$environment" '.state_bucket')
-  location=$(gcloud storage buckets describe "gs://$bucket" --format='value(location)' 2>/dev/null |
-    tr '[:upper:]' '[:lower:]')
-  if [ "$location" = "$region" ]; then
+  if ! location=$(provider storage buckets describe "gs://$bucket" --format='value(location)'); then
+    report ERROR D-4 "gs://$bucket could not be described: $(provider_error)"
+  elif [ "$(echo "$location" | tr '[:upper:]' '[:lower:]')" = "$region" ]; then
     report PASS D-4 "gs://$bucket is in $region"
   else
-    report FAIL D-4 "gs://$bucket reports location '${location:-unreadable}', expected $region"
+    report FAIL D-4 "gs://$bucket reports location '$location', expected $region"
   fi
   for secret_id in $(env_get "$environment" '.variables | to_entries[] | select(.value.kind == "secret") | .value.secret_id'); do
-    locations=$(gcloud secrets describe "$secret_id" --project="$project" \
-      --format='value(replication.userManaged.replicas[].location)' 2>/dev/null | tr ';' ' ' | tr -s ' ')
+    if ! locations=$(provider secrets describe "$secret_id" --project="$project" \
+        --format='value(replication.userManaged.replicas[].location)'); then
+      report ERROR D-4 "the secret $secret_id in $project could not be described: $(provider_error)"
+      continue
+    fi
+    locations=$(echo "$locations" | tr ';' ' ' | tr -s ' ')
     if [ "$(echo "$locations" | tr -d ' ')" = "$region" ]; then
       report PASS D-4 "$secret_id replicates to $region only"
     else
-      report FAIL D-4 "$secret_id replicates to '${locations:-unreadable}', expected $region only"
+      report FAIL D-4 "$secret_id replicates to '${locations:-nowhere it reports}', expected $region only"
     fi
   done
 done
 
+finished=1
 echo
 if [ "$failures" -eq 0 ]; then
   echo "OK: every separation drill passed against $region."
 else
-  echo "$failures check(s) did not pass. A SKIP counts as not passed — the drill is still owed."
+  echo "$failures check(s) did not pass. A SKIP or ERROR counts as not passed — the drill is still owed."
   exit 1
 fi
