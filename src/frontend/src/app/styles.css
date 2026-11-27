@@ -1047,26 +1047,35 @@ h3 {
   max-inline-size: none;
 }
 
-/* A narrow window: the rail becomes a drawer over the page, opened from the top bar; the Create and Language labels go. */
+/*
+ * A narrow window: the rail becomes a drawer over the page, opened from the top bar; the Create and Language labels go. The closed drawer
+ * is not displayed at all, rather than parked beside the window, so nothing of it lies past a 320 px viewport (WCAG 1.4.10). It slides in
+ * from its edge when opened (@starting-style) and goes at once when closed: a slide out would keep it displayed beside the window for the
+ * slide's length whenever the window narrows too.
+ */
 @media (max-width: 59.99rem) {
   .rail {
     position: fixed;
     inset-block: 0;
     inset-inline-start: 0;
     z-index: 25;
+    display: none;
     inline-size: 16rem;
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    visibility: hidden;
-  }
-
-  [dir='rtl'] .rail {
-    transform: translateX(100%);
   }
 
   .rail.rail--drawer-open {
-    transform: none;
-    visibility: visible;
+    display: flex;
+    transition: transform 0.25s ease;
+  }
+
+  @starting-style {
+    .rail.rail--drawer-open {
+      transform: translateX(-100%);
+    }
+
+    [dir='rtl'] .rail.rail--drawer-open {
+      transform: translateX(100%);
+    }
   }
 
   .rail__toggle {
@@ -1104,7 +1113,7 @@ h3 {
 }
 
 @media (max-width: 59.99rem) and (prefers-reduced-motion: reduce) {
-  .rail {
+  .rail.rail--drawer-open {
     transition: none;
   }
 }
@@ -4964,8 +4973,10 @@ path.trend__line--ACTUAL_PERCENT {
   color: var(--color-primary);
 }
 
+/* The whole card is ringed, and the focused title itself is underlined, as a link is, so the focus shows on the link too. */
 .report-list__link:focus-visible {
   outline: none;
+  text-decoration-line: underline;
 }
 
 .report-list__item:has(.report-list__link:focus-visible) {
@@ -5668,10 +5679,12 @@ path.trend__line--ACTUAL_PERCENT {
   gap: var(--space-6);
 }
 
+/* The gradient is drawn over the rail's own teal, so the light text has its ground even where the gradient is not painted (WCAG F24). */
 .home__hero {
   padding: var(--space-6);
   border-radius: var(--radius-card);
-  background: linear-gradient(120deg, var(--color-rail) 0%, var(--color-rail-hover) 100%);
+  background: linear-gradient(120deg, var(--color-rail) 0%, var(--color-rail-hover) 100%)
+    var(--color-rail);
   color: var(--color-rail-text);
 }
 
@@ -7184,8 +7197,10 @@ tr[data-flagged='true'] {
   outline-offset: 2px;
 }
 
+/* As on a report card: the tile is ringed and the focused label underlined. */
 .home__tile-link:focus-visible {
   outline: none;
+  text-decoration-line: underline;
 }
 
 /* Review round 8, point 02: the one overall figure at the top of the Overview, then where it comes from. */
@@ -8042,12 +8057,19 @@ tr[data-flagged='true'] {
 }
 
 .home__actions-bar .home__actions.home__actions--measure {
-  /* Fixed, so a row wider than the page does not make the page scroll sideways. */
+  /* Fixed, so a row wider than the page does not make the page scroll sideways; as wide as the window and clipping what is past it, so
+     nothing of the row lies past a 320 px window either (WCAG 1.4.10). Each item keeps its natural width, which is what is measured. */
   position: fixed;
   inset-block-start: 0;
   inset-inline-start: 0;
+  inline-size: 100%;
+  overflow: hidden;
   visibility: hidden;
   pointer-events: none;
+}
+
+.home__actions-bar .home__actions.home__actions--measure > li {
+  flex: none;
 }
 
 .home__actions-bar .home__actions-more {

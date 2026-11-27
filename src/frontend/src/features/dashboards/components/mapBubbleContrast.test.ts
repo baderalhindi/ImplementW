@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { APP_STYLES as styles } from '@/test/stylesheet.ts';
+import { ruleDeclarations } from '@/test/stylesheet.ts';
 
 import { contrastRatio } from '../design/textBox.ts';
 
@@ -9,16 +9,9 @@ import { contrastRatio } from '../design/textBox.ts';
 
 /** The declarations of the first rule whose selector is exactly `selector`. */
 function declarations(selector: string): Record<string, string> {
-  const start = styles.indexOf(`\n${selector} {`);
-  expect(start, selector).toBeGreaterThanOrEqual(0);
-  const body = styles.slice(styles.indexOf('{', start) + 1, styles.indexOf('}', start));
-  return Object.fromEntries(
-    body
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .split(';')
-      .map((line) => line.split(':').map((part) => part.trim()))
-      .filter((parts): parts is [string, string] => parts.length === 2 && parts[0] !== ''),
-  );
+  const rule = ruleDeclarations(selector);
+  expect(rule, selector).toBeDefined();
+  return rule ?? {};
 }
 
 const THEMES = { light: declarations(':root'), dark: declarations(":root[data-theme='dark']") };
