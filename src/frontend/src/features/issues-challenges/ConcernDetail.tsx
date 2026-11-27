@@ -34,7 +34,7 @@ import { EscalationTable } from './components/EscalationTable.tsx';
 import { isOverdue, isReturned, isReviewDue } from './concernRules.ts';
 import { type ConcernDialog, ConcernDialogs } from './dialogs/ConcernDialogs.tsx';
 import { concernProblemMessage, isStale } from './problems.ts';
-import { useConcernLookups, useConcernRecord, useRoleNames } from './useConcernData.ts';
+import { useConcernLookups, useConcernRecord } from './useConcernData.ts';
 
 /** The notice a screen hands over when it navigates here (MOD-036 and MOD-038 land on the new concern). */
 const ARRIVAL_NOTICES: Record<string, TranslationKey> = {
@@ -59,7 +59,6 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
   const record = useConcernRecord(concernId);
   const matrixState = useRiskMatrix();
   const lookups = useConcernLookups();
-  const roles = useRoleNames();
   const arrival = (location.state as { notice?: string } | null)?.notice;
   const arrivalKey = arrival === undefined ? undefined : ARRIVAL_NOTICES[arrival];
   const [notice, setNotice] = useState<Notice | null>(
@@ -366,7 +365,6 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
           <EscalationTable
             caption={t('issuesChallenges.detail.escalationsCaption')}
             entries={data.escalations.map((escalation) => ({ escalation }))}
-            roles={roles}
             itemLabel={lookups.itemLabel}
             personName={personName}
             selection={escalationSelection}
@@ -385,25 +383,20 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
             }
             actions={(escalation) => (
               <span className="figure-group">
-                {!closed &&
-                  canResolveEscalation(
-                    user,
-                    escalation,
-                    roles.code(escalation.escalatedToRoleId),
-                  ) && (
-                    <button
-                      type="button"
-                      className="button button--link"
-                      aria-label={t('issuesChallenges.resolveEscalation.named', {
-                        number: escalation.escalationNo,
-                      })}
-                      onClick={() => {
-                        setDialog({ kind: 'resolveEscalation', escalationId: escalation.id });
-                      }}
-                    >
-                      {t('issuesChallenges.resolveEscalation.confirm')}
-                    </button>
-                  )}
+                {!closed && canResolveEscalation(user, escalation) && (
+                  <button
+                    type="button"
+                    className="button button--link"
+                    aria-label={t('issuesChallenges.resolveEscalation.named', {
+                      number: escalation.escalationNo,
+                    })}
+                    onClick={() => {
+                      setDialog({ kind: 'resolveEscalation', escalationId: escalation.id });
+                    }}
+                  >
+                    {t('issuesChallenges.resolveEscalation.confirm')}
+                  </button>
+                )}
                 {!closed && canWithdrawEscalation(user, escalation) && (
                   <button
                     type="button"

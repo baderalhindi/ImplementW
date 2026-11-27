@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
+import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import {
   catalogueEntry,
@@ -64,9 +65,13 @@ function homeAs(session: Session, state: DashboardState = {}): MockApi {
   return api;
 }
 
-function overviewAs(session: Session, state: DashboardState = {}): MockApi {
+function overviewAs(
+  session: Session,
+  state: DashboardState = {},
+  project: Partial<ProjectDetail> = { status: 'ACTIVE', activatedAt: '2026-08-01T00:00:00Z' },
+): MockApi {
   const api = withDashboards(withProjectLookups(mockApi()), state);
-  withProject(api, projectDetail({ status: 'ACTIVE', activatedAt: '2026-08-01T00:00:00Z' }));
+  withProject(api, projectDetail(project));
   renderApp({ path: OVERVIEW_PATH, session });
   return api;
 }
@@ -253,6 +258,20 @@ describe('acceptance criterion 1: DSH-009 has no standalone route', () => {
     expect(read?.query.get('projectId')).toBe(PROJECT_ID);
     expect(read?.query.has('departmentId')).toBe(false);
   });
+
+  test.each(['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED'] as const)(
+    'a %s registration has no Project Dashboard yet, so it is not asked for (QA D1-05)',
+    async (status) => {
+      const api = overviewAs(pmSession(), projectState(), { status });
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' }),
+      ).toBeTruthy();
+      expect(await screen.findByText(en(`projects.overview.next.${status}`))).toBeTruthy();
+      expect(screen.queryByRole('region', { name: 'Project Dashboard' })).toBeNull();
+      expect(api.requestsTo('GET', /^\/dashboards\/PROJECT$/)).toHaveLength(0);
+    },
+  );
 
   test('a Project Dashboard the API does not open for the person says so, and discloses nothing', async () => {
     overviewAs(pmSession(), { views: { PROJECT: problem(404, 'NOT_FOUND') } });

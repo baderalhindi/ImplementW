@@ -407,7 +407,7 @@ describe('SCR-107 reuses the WF-11 approval modals', () => {
   });
 
   test('the originator is never offered a decision on their own change', async () => {
-    open(PAVING_PATH, {
+    const api = open(PAVING_PATH, {
       requests: [pavingAt('UNDER_REVIEW')],
       inbox: [changeInboxItem()],
       runs: [changeRun()],
@@ -420,6 +420,8 @@ describe('SCR-107 reuses the WF-11 approval modals', () => {
     expect(
       screen.queryByRole('button', { name: en('approvals.decision.approve.action') }),
     ).toBeNull();
+    // R04 decides no approval (APPROVAL_DECIDE), so the inbox, which would refuse it, is not read (QA D1-06).
+    expect(api.requestsTo('GET', /^\/approval-tasks$/)).toHaveLength(0);
   });
 
   test('the originator withdraws a review in progress through MOD-044, which ends the run', async () => {

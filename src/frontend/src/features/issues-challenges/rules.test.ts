@@ -248,15 +248,11 @@ describe('what is offered (access.ts)', () => {
 
   test('the addressed role resolves; its escalator withdraws', () => {
     const open = escalation();
-    expect(canResolveEscalation(departmentManager, open, 'R03')).toBe(true);
-    expect(canResolveEscalation(manager, open, 'R03')).toBe(false);
-    // Roles unreadable: any internal person but the escalator, and the API decides.
-    expect(canResolveEscalation(departmentManager, open, null)).toBe(true);
-    expect(canResolveEscalation(manager, open, null)).toBe(false);
-    expect(canResolveEscalation(entity, open, null)).toBe(false);
-    expect(canResolveEscalation(departmentManager, escalation({ status: 'RESOLVED' }), 'R03')).toBe(
-      false,
-    );
+    expect(open.escalatedToRoleCode).toBe('R03');
+    expect(canResolveEscalation(departmentManager, open)).toBe(true);
+    expect(canResolveEscalation(manager, open)).toBe(false);
+    expect(canResolveEscalation(entity, open)).toBe(false);
+    expect(canResolveEscalation(departmentManager, escalation({ status: 'RESOLVED' }))).toBe(false);
     expect(canWithdrawEscalation(manager, open)).toBe(true);
     expect(canWithdrawEscalation(departmentManager, open)).toBe(false);
   });

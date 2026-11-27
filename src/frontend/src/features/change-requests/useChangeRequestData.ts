@@ -4,7 +4,8 @@ import {
   type ApprovalInboxItem,
   type ApprovalInstanceSummary,
 } from '@/features/approvals/api/types.ts';
-import { findInboxTask, unlessForbidden } from '@/features/approvals/sourceReview.ts';
+import { inboxTaskFor, unlessForbidden } from '@/features/approvals/sourceReview.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { projectsApi } from '@/features/projects/api/projectsApi.ts';
 import { type ProjectDetail, type ProjectSummary } from '@/features/projects/api/types.ts';
 import { ApiError, type ApiResponse } from '@/shared/api/httpClient.ts';
@@ -116,6 +117,7 @@ export function useChangeRequestReview(
   const id = request?.id ?? null;
   const status = request?.status ?? 'DRAFT';
   const revisionNo = request?.revisionNo ?? 1;
+  const canDecide = useCan('APPROVAL_DECIDE');
   const load = useCallback(
     async (signal: AbortSignal): Promise<ChangeRequestReview> => {
       if (id === null || !hasRuns({ status, revisionNo })) {
@@ -123,13 +125,13 @@ export function useChangeRequestReview(
       }
       const [task, runs] = await Promise.all([
         status === 'UNDER_REVIEW'
-          ? unlessForbidden(findInboxTask(changeRequestSubject({ id, revisionNo }), signal))
+          ? inboxTaskFor(canDecide, changeRequestSubject({ id, revisionNo }), signal)
           : Promise.resolve(null),
         unlessForbidden(changeRequestsApi.approvalRuns(id, signal)),
       ]);
       return { task, runs };
     },
-    [id, status, revisionNo],
+    [id, status, revisionNo, canDecide],
   );
   return useApiResource(load);
 }

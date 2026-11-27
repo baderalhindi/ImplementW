@@ -1,3 +1,4 @@
+import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
 import { type NarrativeText, type NarrativeTextRequest } from '@/features/projects/api/types.ts';
 
 // WF-07's representations as the TASK-057 API serves them (management-concern.md §4; openapi.v1.json, tag
@@ -24,8 +25,10 @@ export interface ConcernEscalationDetail {
   escalationNo: number;
   escalatedByUserId: string;
   escalatedAt: string;
-  /** The role WORKFLOW_POLICY's CONCERN_ESCALATION_ROLE named when it was raised. */
+  /** The role WORKFLOW_POLICY's CONCERN_ESCALATION_ROLE named when it was raised, with its code and name. */
   escalatedToRoleId: string;
+  escalatedToRoleCode: string;
+  escalatedToRoleName: BilingualLabel;
   reason: NarrativeText;
   status: ConcernEscalationStatus;
   resolvedAt: string | null;

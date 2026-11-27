@@ -148,6 +148,14 @@ public sealed class ConcernEscalationTests(ConcernTestHost host)
             SELECT r.code FROM management_concern.concern_escalation e JOIN identity_access.role r ON r.id = e.escalated_to_role_id WHERE e.id = '{escalationId}'
             """));
 
+        // QA C-05: the escalation names its role, so its readers need not read the role catalogue, which is ROLE_VIEW's (R01).
+        JsonObject open = concern["openEscalation"]!.AsObject();
+        Assert.Equal(
+            await host.Database.QueryAsync($"SELECT id || '|' || code || '|' || name_en || '|' || name_ar FROM identity_access.role WHERE code = 'R03'"),
+            [$"{open.Text("escalatedToRoleId")}|{open.Text("escalatedToRoleCode")}|{open["escalatedToRoleName"]!.Text("en")}|{open["escalatedToRoleName"]!.Text("ar")}"]);
+        JsonObject read = await client.GetOrFailAsync(sessions.DepartmentManager, $"{ConcernDriver.Escalations}/{escalationId}");
+        Assert.Equal("R03", read.Text("escalatedToRoleCode"));
+
         // local.r02 holds CONCERN_ESCALATION_RESOLVE at ALL, through R02; the escalation is addressed to R03.
         using (HttpResponseMessage otherRole = await client.PostAsync($"{ConcernDriver.Escalations}/{escalationId}/resolve", sessions.Officer, ConcernDriver.Resolution("Not mine.")))
         {

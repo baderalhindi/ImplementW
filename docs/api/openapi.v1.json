@@ -11869,7 +11869,7 @@
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Active people matching `q`. Filters: `userType`; `externalEntityId`; `projectId`, whose anchors they must hold a role over.\n403 to someone with no write permission.",
+        "summary": "Active people matching `q`. Filters: `userType`; `externalEntityId`; `projectId`, whose anchors they must hold a role over.\n403 to someone with no write permission. A project the caller may not view is answered as one that does not exist: 400 `projectId` Malformed.",
         "operationId": "IdentityAccess_ListPersonLookups",
         "parameters": [
           {
@@ -14928,7 +14928,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "A holder of PROJECT_DELETE deletes a project in any state, keeping its data (client review, item 4). Otherwise HARD_DRAFT: a DRAFT,\nby the person who created it. R-40: a project that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "summary": "A holder of PROJECT_DELETE deletes a project in any state but CLOSED (409 TERMINAL_STATE), keeping its data (client review, item 4).\nOtherwise HARD_DRAFT: a DRAFT, by the person who created it. R-40: a project that is not there — deleted already, or never the caller's\nto see — is 204 as well.",
         "operationId": "Project_DeleteProject",
         "parameters": [
           {
@@ -25684,6 +25684,8 @@
           "escalatedByUserId",
           "escalatedAt",
           "escalatedToRoleId",
+          "escalatedToRoleCode",
+          "escalatedToRoleName",
           "reason",
           "status",
           "resolvedAt",
@@ -25721,6 +25723,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "escalatedToRoleCode": {
+            "type": "string"
+          },
+          "escalatedToRoleName": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
           "reason": {
             "$ref": "#/components/schemas/NarrativeText"
           },
@@ -25755,7 +25763,8 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "description": "A concern's escalation. The role it is addressed to is named by its code and name as well as its id, so the people who read it see\nwhom it waits on without reading the role catalogue, which is the administrators' (ROLE_VIEW; QA C-05, D1-06)."
       },
       "ConcernEscalationPage": {
         "required": [

@@ -874,7 +874,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
   });
 
   test('MOD-018 is never offered to the person who submitted the baseline (ADR-013)', async () => {
-    open(
+    const api = open(
       entityManagerSession(),
       { baselines: [candidate({ status: 'SUBMITTED' }), baseline()], runs: [scheduleRun()] },
       { path: BASELINES_PATH },
@@ -885,6 +885,8 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
     expect(
       screen.queryByRole('button', { name: en('schedule.actions.decideBaseline') }),
     ).toBeNull();
+    // R04 decides no approval (APPROVAL_DECIDE), so the inbox, which would refuse it, is not read (QA D1-06).
+    expect(api.requestsTo('GET', /^\/approval-tasks$/)).toHaveLength(0);
   });
 
   test('MOD-018 is not offered to a person without approval permissions, and nothing fails', async () => {

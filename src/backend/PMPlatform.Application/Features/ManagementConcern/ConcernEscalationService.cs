@@ -27,7 +27,7 @@ namespace PMPlatform.Application.Features.ManagementConcern;
 /// </list>
 /// </summary>
 internal sealed class ConcernEscalationService(
-    IManagementConcernRepository repository, ConcernGate gate, ConcernAccess access, IProjectFactsReader projects, IConfigurationResolver configuration,
+    IManagementConcernRepository repository, ConcernGate gate, ConcernAccess access, ConcernViews views, IProjectFactsReader projects, IConfigurationResolver configuration,
     IMasterDataResolver masterData, IRoleDirectory roles, IOutbox outbox, IAuditTrail audit, IAuditRequestContext request, TimeProvider timeProvider)
     : IConcernEscalationService
 {
@@ -97,7 +97,7 @@ internal sealed class ConcernEscalationService(
         // A unique key taken meanwhile: the same request, retried while the first was saving, finds what the first raised; anything
         // else is another escalation that is now OPEN. Either way nothing more is published.
         return saved == ConcernSaveOutcome.Saved
-            ? new EscalationOutcome(ConcernViews.ToDetail(escalation), Replayed: false)
+            ? new EscalationOutcome(await views.EscalationAsync(escalation, cancellationToken).ConfigureAwait(false), Replayed: false)
             : await ReplayAsync(callerId, draft, cancellationToken).ConfigureAwait(false) ?? AdministrationError.Conflict(ConcernErrorCodes.EscalationOpen);
     }
 
@@ -112,7 +112,7 @@ internal sealed class ConcernEscalationService(
 
     public async Task<AdministrationResult<ConcernEscalationDetail>> GetAsync(Guid callerId, Guid escalationId, CancellationToken cancellationToken) =>
         await FindViewableAsync(callerId, escalationId, cancellationToken).ConfigureAwait(false) is var (escalation, _, _)
-            ? ConcernViews.ToDetail(escalation)
+            ? await views.EscalationAsync(escalation, cancellationToken).ConfigureAwait(false)
             : AdministrationError.NotFound;
 
     public async Task<ConcernEscalationPage> ListAsync(Guid callerId, Guid concernId, PageRequest page, CancellationToken cancellationToken)
@@ -124,7 +124,7 @@ internal sealed class ConcernEscalationService(
         }
 
         (IReadOnlyList<ConcernEscalation> items, int total) = await repository.PageEscalationsAsync(concernId, page, cancellationToken).ConfigureAwait(false);
-        return new ConcernEscalationPage([.. items.Select(ConcernViews.ToDetail)], page.Page, page.PageSize, total);
+        return new ConcernEscalationPage(await views.EscalationsAsync(items, cancellationToken).ConfigureAwait(false), page.Page, page.PageSize, total);
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ internal sealed class ConcernEscalationService(
         return earlier is null ? null
             : earlier.ManagementConcernId != draft.ManagementConcernId || earlier.Reason != draft.Reason ? AdministrationError.Rule(ConcernErrorCodes.IdempotencyKeyReused)
             : await gate.ViewableConcernAsync(callerId, earlier.ManagementConcernId, cancellationToken).ConfigureAwait(false) is null ? AdministrationError.NotFound
-            : new EscalationOutcome(ConcernViews.ToDetail(earlier), Replayed: true);
+            : new EscalationOutcome(await views.EscalationAsync(earlier, cancellationToken).ConfigureAwait(false), Replayed: true);
     }
 
     /// <summary>The role WORKFLOW_POLICY in force addresses escalations to; a missing value or an unknown role fails closed (422 CONFIGURATION_MISSING).</summary>
@@ -228,7 +228,7 @@ internal sealed class ConcernEscalationService(
 
         // A concurrent resolution or withdrawal changed the row first: this one ended nothing.
         return await gate.SaveAsync(work, cancellationToken).ConfigureAwait(false) == ConcernSaveOutcome.Saved
-            ? ConcernViews.ToDetail(escalation)
+            ? await views.EscalationAsync(escalation, cancellationToken).ConfigureAwait(false)
             : AdministrationError.Conflict(ConcernErrorCodes.EscalationNotOpen);
     }
 
