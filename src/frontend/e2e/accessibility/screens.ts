@@ -252,10 +252,13 @@ export const SCREENS: Screen[] = [
     state: {
       enter: async (page) => {
         const credential = credentialOf('administrator');
-        await page.getByRole('tab', { name: 'Regular account' }).click();
-        await page.locator('input[name="username"]').fill(credential.username);
-        await page.locator('input[name="password"]').fill(credential.password);
-        await page.locator('form button[type="submit"]').click();
+        // The Regular account tab (the second; Microsoft is first) holds the credentials form; the Nafath panel beside it is a
+        // form of its own, with its own submit button, so the submit is the tab panel's.
+        await page.locator('[role="tab"]').nth(1).click();
+        const credentials = page.locator('[role="tabpanel"] form');
+        await credentials.locator('input[name="username"]').fill(credential.username);
+        await credentials.locator('input[name="password"]').fill(credential.password);
+        await credentials.locator('button[type="submit"]').click();
         await page.locator('input[name="code"]').waitFor();
       },
     },
@@ -284,12 +287,13 @@ export const SCREENS: Screen[] = [
     topTen: false,
     persona: 'departmentManager',
     path: () => '/projects/new',
-    // The WF-01 form keeps its submit disabled while a required field is empty and flags a malformed value as it is typed.
+    // The WF-01 form flags a value of the wrong shape as it is typed (an end before the start) and, once Save is pressed, every
+    // required field still empty (review round 8, point 16). The amount field keeps only the number typed, so it cannot be malformed.
     state: {
       enter: async (page) => {
-        await page.locator('input[name="registrationBudgetSar"]').fill('12,5 million');
         await page.locator('input[name="plannedStartDate"]').fill('2027-06-01');
         await page.locator('input[name="plannedEndDate"]').fill('2027-01-01');
+        await page.locator('form button[type="submit"]').click();
         await page.locator('[aria-invalid="true"]').nth(1).waitFor();
       },
     },
