@@ -118,7 +118,7 @@
   },
   "forbidden": {
     "title": "Access denied",
-    "description": "This page is available to system administrators only."
+    "description": "You don't have access to this page. Choose another screen from the menu."
   },
   "notFound": {
     "title": "Page not found",

@@ -2,7 +2,9 @@ import { type RouteObject } from 'react-router';
 
 import { PortfolioCardPage } from '@/features/dashboards/insights/PortfolioCardPage.tsx';
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
+import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
 import { RequirePermission } from '@/features/identity-access/session/RequirePermission.tsx';
+import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 
 import { isInternal } from '@/features/projects/access.ts';
@@ -11,7 +13,14 @@ import { ExportHistoryPage } from './ExportHistoryPage.tsx';
 import { ReportFamilyPage } from './ReportFamilyPage.tsx';
 import { ReportPage } from './ReportPage.tsx';
 import { ReportsCenterPage } from './ReportsCenterPage.tsx';
+import { RequireInternal } from './RequireInternal.tsx';
 import { SavedViewsPage } from './SavedViewsPage.tsx';
+
+/**
+ * What opens the centre and a report: a report's rows are projects, so PROJECT_VIEW, as the menu offers it; an external user is
+ * shown Access denied besides (ADR-019; QA INT-05).
+ */
+const REPORT_PERMISSIONS: readonly PermissionCode[] = ['PROJECT_VIEW'];
 
 /**
  * FG-02's screens under /reports (Step 16 proposes /views/scr-13n/…; the application's routes are named for what
@@ -19,7 +28,16 @@ import { SavedViewsPage } from './SavedViewsPage.tsx';
  * saved views list, with no route of their own (Step 16: "authorized host binding required").
  */
 export const reportRoutes: RouteObject[] = [
-  { index: true, element: <ReportsCenterPage /> }, // SCR-130
+  {
+    index: true, // SCR-130
+    element: (
+      <RequirePermission codes={REPORT_PERMISSIONS}>
+        <RequireInternal>
+          <ReportsCenterPage />
+        </RequireInternal>
+      </RequirePermission>
+    ),
+  },
   {
     path: 'explorer', // SCR-138, MOD-060, MOD-061, MOD-062
     element: (
@@ -36,7 +54,16 @@ export const reportRoutes: RouteObject[] = [
       </RequirePermission>
     ),
   },
-  { path: 'exports', element: <ExportHistoryPage /> }, // SCR-140
+  {
+    path: 'exports', // SCR-140: the caller's own jobs, read by any internal person
+    element: (
+      <RequireSession>
+        <RequireInternal>
+          <ExportHistoryPage />
+        </RequireInternal>
+      </RequireSession>
+    ),
+  },
   {
     path: 'cards/:dimension/:itemId', // the 5 Nov 2026 review §3 row 11
     element: (
@@ -45,8 +72,26 @@ export const reportRoutes: RouteObject[] = [
       </RequirePermission>
     ),
   },
-  { path: ':family', element: <ReportFamilyPage /> }, // SCR-131 to SCR-137
-  { path: ':family/:reportCode', element: <ReportPage /> }, // SCR-131 to SCR-137, MOD-060, MOD-061, MOD-062
+  {
+    path: ':family', // SCR-131 to SCR-137
+    element: (
+      <RequirePermission codes={REPORT_PERMISSIONS}>
+        <RequireInternal>
+          <ReportFamilyPage />
+        </RequireInternal>
+      </RequirePermission>
+    ),
+  },
+  {
+    path: ':family/:reportCode', // SCR-131 to SCR-137, MOD-060, MOD-061, MOD-062
+    element: (
+      <RequirePermission codes={REPORT_PERMISSIONS}>
+        <RequireInternal>
+          <ReportPage />
+        </RequireInternal>
+      </RequirePermission>
+    ),
+  },
 ];
 
 /**

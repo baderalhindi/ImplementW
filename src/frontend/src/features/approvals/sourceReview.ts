@@ -62,3 +62,12 @@ export function inboxTaskFor(
 ): Promise<ApprovalInboxItem | null> {
   return canDecide ? unlessForbidden(findInboxTask(subject, signal)) : Promise.resolve(null);
 }
+
+/**
+ * The runs that reviewed the subject, read only when the person holds APPROVAL_VIEW (`canView`): GET /approval-instances refuses
+ * anyone else 403, an audited access denial, so a reader without it (the Viewer, R06) is not sent there (QA INT-04). Null when not
+ * read or refused.
+ */
+export function runsFor<T>(canView: boolean, read: () => Promise<T>): Promise<T | null> {
+  return canView ? unlessForbidden(read()) : Promise.resolve(null);
+}

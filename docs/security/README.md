@@ -85,7 +85,7 @@ Each row names its threat ids, its ratings, its owner, and one disposition:
 | `Risk accepted` | The row names an `RA-nn` in [`risk-acceptances.md`](risk-acceptances.md), and that record is signed by AHDA |
 | `Open` | Neither, yet. The row says what closes it |
 
-The delivery team cannot accept a risk on AHDA's behalf. `risk-acceptances.md` holds the acceptance requests this review prepared, each with its risk statement, compensating controls, conditions and review date. Each stays `Pending AHDA signature` until AHDA Cybersecurity signs it. The signer's name, role, date and a reference to the signed copy are then entered in the record, in a PR the Security Lead reviews.
+The delivery team cannot accept a risk on AHDA's behalf. `risk-acceptances.md` holds the acceptance requests this review prepared, each with its risk statement, compensating controls, conditions and review date. Each stays `Pending AHDA signature` until AHDA Cybersecurity signs it. A request whose finding a merged PR mitigates first is set to `Withdrawn`, with the date and the PR, and is no longer before AHDA. The signer's name, role, date and a reference to the signed copy are then entered in the record, in a PR the Security Lead reviews.
 
 ## 5. The UAT gate
 

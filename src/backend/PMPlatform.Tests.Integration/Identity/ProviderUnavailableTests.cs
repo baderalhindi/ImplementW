@@ -26,6 +26,41 @@ public sealed class ProviderUnavailableTests(IdentityTestHost host)
         Assert.Equal("UNAVAILABLE", (await response.ReadAsync<Problem>()).Code);
     }
 
+    /// <summary>
+    /// One lost connection is not an outage (CI, 27 Nov 2026: LdapException 91 answered a sign-in with 503). The directory is connected to
+    /// once more before the person's password is sent, and the sign-in goes on.
+    /// </summary>
+    [Fact]
+    public async Task ADirectoryConnectionLostOnceStillSignsThePersonIn()
+    {
+        await using DroppingDirectoryProxy directory = new(drops: 1);
+        await using IdentityApiFactory api = host.CreateApi(new Dictionary<string, string?> { ["AD_LDAP_URL"] = directory.Url });
+        using HttpClient client = api.CreateClient();
+
+        Session session = await client.SignInOrFailAsync(2);
+
+        Assert.Equal(Guid.Parse(IdentityDatabase.UserId(2)), session.User.Id);
+        Assert.Equal(2, directory.Accepted);
+    }
+
+    /// <summary>Only once: a directory that loses the second connection too is unavailable, and is not asked a third time.</summary>
+    [Fact]
+    public async Task ADirectoryThatLosesTheConnectionAgainIsA503()
+    {
+        await using DroppingDirectoryProxy directory = new(drops: 2);
+        await using IdentityApiFactory api = host.CreateApi(new Dictionary<string, string?> { ["AD_LDAP_URL"] = directory.Url });
+        using HttpClient client = api.CreateClient();
+
+        using HttpResponseMessage response = await client.SignInAsync("local.r02", TestDirectory.PersonPassword);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal("UNAVAILABLE", (await response.ReadAsync<Problem>()).Code);
+        Assert.Equal(2, directory.Accepted);
+
+        // The CI failure's signature: Novell reports a connection lost while an answer is awaited as ConnectError.
+        Assert.Contains("Directory unavailable during sign-in: LdapException 91 (Connect Error)", host.Logs.Text, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AnUnreachableDirectoryFailsTheConnectionTest()
     {

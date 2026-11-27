@@ -449,7 +449,7 @@ describe('SCR-130 and SCR-131 to SCR-137', () => {
   });
 
   test('an empty catalogue says no report is published for the person’s roles', async () => {
-    at('/reports', sessionFor(['R01']), { catalogue: [] });
+    at('/reports', sessionFor(['R06']), { catalogue: [] });
     expect(await screen.findByText(en('reports.center.none'))).toBeTruthy();
   });
 

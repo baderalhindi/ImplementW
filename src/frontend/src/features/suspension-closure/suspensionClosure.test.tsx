@@ -11,6 +11,7 @@ import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import {
   PROJECT_ID,
   reviewerSession,
+  viewerSession,
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
@@ -560,6 +561,27 @@ describe('SCR-108–110 suspension and resumption', () => {
       screen.getByText(en('suspensionClosure.suspension.explain.SUSPEND.APPROVED')),
     ).toBeTruthy();
     expect(await screen.findByText(en('projects.status.ACTIVE'))).toBeTruthy();
+  });
+
+  test.each([
+    ['the Viewer (R06), who holds no APPROVAL_VIEW, does not read', viewerSession, 0],
+    ['the department manager (R03), who holds APPROVAL_VIEW, reads', reviewerSession, 1],
+  ])('SCR-110 under review: %s its approval runs (QA INT-04)', async (_who, session, reads) => {
+    const api = open(
+      `/suspension-requests/${SUSPENSION_ID}`,
+      {
+        requests: [
+          suspensionRequest({ status: 'UNDER_REVIEW', submittedAt: '2026-10-05T10:00:00Z' }),
+        ],
+      },
+      { session: session() },
+    );
+
+    await screen.findByRole('heading', { name: en('suspensionClosure.state.title') });
+    expect(await screen.findByText(en('projects.status.ACTIVE'))).toBeTruthy();
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/approval-instances$/)).toHaveLength(reads);
+    });
   });
 
   test('SCR-110 of a suspension in effect shows its period and starts the resumption from it', async () => {

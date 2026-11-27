@@ -140,20 +140,20 @@ export const appRoutes: RouteObject[] = [
         children: taskRoutes,
       },
       {
-        path: 'milestones',
+        path: 'milestones', // the register reads achievements under MILESTONE_VIEW (QA INT-05)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['MILESTONE_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: milestoneRoutes,
       },
       {
-        path: 'kpis',
+        path: 'kpis', // the register reads under KPI_VIEW (QA INT-05)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['KPI_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: kpiRoutes,
       },
@@ -167,38 +167,38 @@ export const appRoutes: RouteObject[] = [
         children: riskRoutes,
       },
       {
-        path: 'issues-challenges',
+        path: 'issues-challenges', // the registers and escalations read under CONCERN_VIEW (QA INT-05)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['CONCERN_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: issuesChallengesRoutes,
       },
       {
-        path: 'change-requests',
+        path: 'change-requests', // every WF-08 screen reads under CHANGE_REQUEST_VIEW (QA INT-05)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['CHANGE_REQUEST_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: changeRequestRoutes,
       },
       {
-        path: 'suspension-requests',
+        path: 'suspension-requests', // every WF-09 screen reads under SUSPENSION_VIEW (QA INT-05)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['SUSPENSION_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: suspensionRoutes,
       },
       {
-        path: 'closure-requests',
+        path: 'closure-requests', // every WF-10 screen reads under CLOSEOUT_VIEW (QA INT-05)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['CLOSEOUT_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: closeoutRoutes,
       },

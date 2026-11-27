@@ -104,8 +104,9 @@ test('ADR-013 entity Project Manager journey: the entity drafts and manages its 
       reason: null,
     });
     await expectStatus('UNDER_REVIEW');
+    // The inbox needs APPROVAL_DECIDE, which no entity user holds: the screen is denied before it asks the API (QA INT-05).
     await page.goto('/approvals/inbox');
-    await expectText(page.getByRole('main'), 'You do not have approval authority for this.');
+    await expectText(page.getByRole('main'), "You don't have access to this page.");
     await approveTaskOn(portfolio.api, projectId, 'PROJECT_REGISTRATION');
     const approved = await untilStatus(portfolio.api, projectId, 'APPROVED_PLANNED');
     expect(approved.formalProjectId).toMatch(/^PRJ-[0-9]{6,}$/);

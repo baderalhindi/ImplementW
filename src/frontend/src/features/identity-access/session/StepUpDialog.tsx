@@ -25,7 +25,7 @@ export function StepUpDialog(): ReactElement {
       open={stepUpPending}
       title={t('identityAccess.stepUp.title')}
       onClose={() => {
-        sessionStore.completeStepUp(null);
+        sessionStore.finishStepUp(false);
       }}
     >
       <StepUpForm />
@@ -40,28 +40,28 @@ function StepUpForm(): ReactElement {
   useFocusFirstError(formRef, save.fieldErrors);
   const [code, setCode] = useState('');
 
-  const begin = useCallback((_signal: AbortSignal) => {
-    const refreshToken = sessionStore.getSnapshot().session?.refreshToken ?? '';
-    return sessionApi.beginStepUp(refreshToken);
-  }, []);
+  const begin = useCallback(
+    (_signal: AbortSignal) => sessionStore.beginStepUp(sessionApi.beginStepUp),
+    [],
+  );
   const challenge = useApiResource(begin);
 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
-    const refreshToken = sessionStore.getSnapshot().session?.refreshToken;
     if (
       challenge.data === undefined ||
-      refreshToken === undefined ||
       !save.validate({ code: code.trim() === '' ? 'REQUIRED' : null })
     ) {
       return;
     }
     const challengeId = challenge.data.challengeId;
     const result = await save.run(() =>
-      sessionApi.completeStepUp(refreshToken, challengeId, code.trim()),
+      sessionStore.completeStepUp((refreshToken) =>
+        sessionApi.completeStepUp(refreshToken, challengeId, code.trim()),
+      ),
     );
     if (result.ok) {
-      sessionStore.completeStepUp(result.value);
+      sessionStore.finishStepUp(true);
     }
   };
 
@@ -71,7 +71,7 @@ function StepUpForm(): ReactElement {
       className="button"
       disabled={save.saving}
       onClick={() => {
-        sessionStore.completeStepUp(null);
+        sessionStore.finishStepUp(false);
       }}
     >
       {t('common.actions.cancel')}

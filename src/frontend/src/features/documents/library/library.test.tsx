@@ -33,7 +33,11 @@ const DOCUMENTS = STATES.map((state, index) =>
   }),
 );
 
-function openList(path: string, items = DOCUMENTS, { lookupsReadable = true } = {}): MockApi {
+function openList(
+  path: string,
+  items = DOCUMENTS,
+  { lookupsReadable = true, roles = ['R04'] } = {},
+): MockApi {
   const api = withDocumentLookups(mockApi(), { readable: lookupsReadable }).on(
     'GET',
     /^\/documents$/,
@@ -44,7 +48,7 @@ function openList(path: string, items = DOCUMENTS, { lookupsReadable = true } = 
       };
     },
   );
-  renderApp({ path, session: documentSession() });
+  renderApp({ path, session: documentSession(undefined, roles) });
   return api;
 }
 
@@ -66,6 +70,32 @@ describe('SCR-120 Document Library', () => {
     expect(quarantinedRow?.className).toBe('row--flagged');
     expect(await within(table).findAllByText('Meeting minutes')).toHaveLength(DOCUMENTS.length);
     expect(describeViolations(await accessibilityViolations())).toBe('');
+  });
+
+  test('an archived document’s row offers no Edit to a manager (QA DEV-D2-02)', async () => {
+    openList(
+      '/documents',
+      [
+        documentSummary({
+          id: '8d8d8d8d-0000-4000-8000-000000000201',
+          title: { text: 'Current plan', language: 'EN' },
+        }),
+        documentSummary({
+          id: '8d8d8d8d-0000-4000-8000-000000000202',
+          title: { text: 'Old plan', language: 'EN' },
+          status: 'ARCHIVED',
+        }),
+      ],
+      { roles: ['R03'] },
+    );
+    const table = await screen.findByRole('table', { name: en('documents.library.title') });
+    const edit = (title: string) =>
+      within(table).queryByRole('link', { name: `${en('common.actions.edit')} ${title}` });
+
+    expect(edit('Current plan')?.getAttribute('href')).toBe(
+      '/documents/8d8d8d8d-0000-4000-8000-000000000201?edit=1',
+    );
+    expect(edit('Old plan')).toBeNull();
   });
 
   test('each document links to its page and its project’s documents', async () => {

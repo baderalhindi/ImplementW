@@ -23067,9 +23067,19 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "project": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApprovalProjectName"
+              }
+            ]
           }
         },
-        "description": "A row of SCR-101 My Requests, and the run an inbox item belongs to."
+        "description": "A row of SCR-101 My Requests, and the run an inbox item belongs to. ApprovalProjectName? ApprovalInstanceSummary.Project names the project the run is scoped to on a My\nRequests row, the caller's own request (stage QA DEV-D1-03); null when the run has no project scope, and on every other listing."
       },
       "ApprovalProjectName": {
         "required": [
@@ -23093,7 +23103,7 @@
             "$ref": "#/components/schemas/NarrativeText"
           }
         },
-        "description": "The project a run is scoped to, named for an approver's inbox row (stage QA D1-01): its title as entered (ADR-012) and its Formal Project\nID once it has one."
+        "description": "The project a run is scoped to, named for an approver's inbox row (stage QA D1-01) and a requester's My Requests row (DEV-D1-03): its title\nas entered (ADR-012) and its Formal Project ID once it has one."
       },
       "ApprovalSubject": {
         "required": [

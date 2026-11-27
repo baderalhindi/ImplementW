@@ -38,6 +38,15 @@ function openDetail(
   return api;
 }
 
+/** The page at `path` (a query included) for a department manager (R03). */
+function openDetailAt(path: string, document: DocumentDetail): MockApi {
+  const api = withDocumentLookups(mockApi())
+    .on('GET', /^\/documents\/[^/]+$/, { body: document, headers: { ETag: '"7"' } })
+    .on('GET', /^\/documents\/[^/]+\/links$/, { body: [link()] });
+  renderApp({ path, session: documentSession(undefined, ['R03']) });
+  return api;
+}
+
 function actionButton(key: string) {
   return screen.queryByRole('button', { name: en(key) });
 }
@@ -301,9 +310,22 @@ describe('MOD-053 Archive', () => {
     expect(await screen.findByText(en('documents.done.archived'))).toBeTruthy();
     expect(api.requestsTo('POST', /\/archive$/)[0]?.headers.get('If-Match')).toBe('"7"');
     expect(await screen.findByText(en('documents.detail.archived'))).toBeTruthy();
-    for (const name of ['documents.replace.action', 'documents.edit.action']) {
-      expect(screen.getByRole('button', { name: en(name) })).toHaveProperty('disabled', true);
+    // The API refuses any change to it (409 TERMINAL_STATE), so none is offered (QA DEV-D2-02).
+    for (const name of [
+      'documents.replace.action',
+      'documents.edit.action',
+      'documents.archive.action',
+    ]) {
+      expect(screen.queryByRole('button', { name: en(name) })).toBeNull();
     }
-    expect(screen.queryByRole('button', { name: en('documents.archive.action') })).toBeNull();
+  });
+
+  test('the library’s Edit link opens no form on an archived document (QA DEV-D2-02)', async () => {
+    openDetailAt(`/documents/${DOCUMENT_ID}?edit=1`, documentDetail({ status: 'ARCHIVED' }));
+
+    expect(await screen.findByText(en('documents.detail.archived'))).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: en('documents.edit.title') })).toBeNull();
+    expect(actionButton('documents.edit.action')).toBeNull();
+    expect(actionButton('documents.replace.action')).toBeNull();
   });
 });

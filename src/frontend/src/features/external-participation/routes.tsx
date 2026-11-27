@@ -98,12 +98,21 @@ export const externalRequestRoutes: RouteObject[] = [
       </RequirePermission>
     ),
   },
-  { path: ':requestId', element: <ExternalRequestDetailPage /> }, // SCR-162, both audiences
+  {
+    path: ':requestId', // SCR-162, both audiences; read under EXTERNAL_REQUEST_VIEW (QA INT-05)
+    element: (
+      <RequirePermission codes={['EXTERNAL_REQUEST_VIEW']}>
+        <ExternalRequestDetailPage />
+      </RequirePermission>
+    ),
+  },
   {
     path: ':requestId/edit', // SCR-161 for a DRAFT
     element: (
       <InternalOnly>
-        <EditExternalRequestPage />
+        <RequirePermission codes={['EXTERNAL_REQUEST_MANAGE']}>
+          <EditExternalRequestPage />
+        </RequirePermission>
       </InternalOnly>
     ),
   },
@@ -115,7 +124,9 @@ export const externalContributionRoutes: RouteObject[] = [
     path: ':contributionId',
     element: (
       <InternalOnly>
-        <ContributionReviewPage />
+        <RequirePermission codes={['EXTERNAL_REQUEST_VIEW']}>
+          <ContributionReviewPage />
+        </RequirePermission>
       </InternalOnly>
     ),
   },

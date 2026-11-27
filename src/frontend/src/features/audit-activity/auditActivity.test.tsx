@@ -39,7 +39,6 @@ import {
   renderApp,
 } from '@/test/renderApp.tsx';
 import { adminMenuTargets, findMainMenu, menuLink } from '@/test/shell.ts';
-import { offeredTabs } from '@/test/workspaceTabs.ts';
 
 // TASK-074, the FG-06 Audit & Activity UI over TASK-073's API. Acceptance criteria: (1) SCR-057 Activity and SCR-058
 // Audit are visually and navigationally distinct, never one tab; (2) SCR-058 is reachable only with the explicit audit
@@ -167,22 +166,30 @@ describe('acceptance criterion 1: Activity and Audit are two distinct tabs', () 
 });
 
 describe('acceptance criterion 2: SCR-058 needs the explicit audit permission, not R01', () => {
-  test('R01 as shipped is offered no Audit tab', async () => {
+  // R01 as shipped holds no business permission, PROJECT_VIEW included (shipped matrix D-2): the API refuses it the project, so
+  // the workspace, and with it every Audit and Activity tab, is denied before anything is read (QA INT-05).
+  const projectReads = (api: MockApi) => api.requestsTo('GET', /^\/projects\//);
+
+  test('R01 as shipped is offered no Audit tab: the workspace itself is denied', async () => {
     const api = open(workspace(), r01(), { access: SYSTEM_ADMINISTRATOR_ACCESS });
 
-    await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
-    await auditAccessLanded(api);
-    const names = await offeredTabs(userEvent.setup());
-    expect(names).not.toContain(en('projects.workspace.tabs.audit'));
-    expect(names).not.toContain(en('projects.workspace.tabs.activity'));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: en('common.forbidden.title') }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('heading', { level: 1, name: 'Coastal road upgrade' })).toBeNull();
+    expect(screen.queryByRole('link', { name: en('projects.workspace.tabs.audit') })).toBeNull();
+    expect(projectReads(api)).toEqual([]);
+    expect(auditReads(api)).toEqual([]);
   });
 
   test('validation check: R01 reaching SCR-058 by its address is denied and nothing is read', async () => {
     const api = open(workspace('audit-history'), r01(), { access: SYSTEM_ADMINISTRATOR_ACCESS });
 
-    expect(await screen.findByText(en('auditActivity.projectAudit.deniedTitle'))).toBeTruthy();
-    expect(screen.getByText(en('auditActivity.denied.projectAudit'))).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: en('common.forbidden.title') }),
+    ).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
+    expect(projectReads(api)).toEqual([]);
     expect(auditReads(api)).toEqual([]);
     await expectAccessible();
   });
@@ -192,7 +199,9 @@ describe('acceptance criterion 2: SCR-058 needs the explicit audit permission, n
       access: SYSTEM_ADMINISTRATOR_ACCESS,
     });
 
-    expect(await screen.findByText(en('auditActivity.projectAudit.deniedTitle'))).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: en('common.forbidden.title') }),
+    ).toBeTruthy();
     expect(auditReads(api)).toEqual([]);
   });
 

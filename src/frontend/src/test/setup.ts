@@ -11,6 +11,10 @@ if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
   };
 }
 
+// Node's BroadcastChannel reaches every store in the worker, so a session left by one test file would answer another's.
+// The app's store therefore works as a lone tab here; sessionStore.test.ts gives its simulated tabs their own channel.
+Reflect.deleteProperty(globalThis, 'BroadcastChannel');
+
 afterEach(() => {
   cleanup();
   sessionStorage.clear();
