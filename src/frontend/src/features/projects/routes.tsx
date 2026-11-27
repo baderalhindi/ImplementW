@@ -47,6 +47,12 @@ const PROJECT_IMPORT_PERMISSIONS: readonly PermissionCode[] = [
   'PROJECT_IMPORT_APPROVE',
 ];
 
+/** What opens the edit form: a draft's registrant, or RPMO's edit of a registered project. */
+const PROJECT_EDIT_PERMISSIONS: readonly PermissionCode[] = [
+  'PROJECT_REGISTER',
+  'PROJECT_REGISTRATION_EDIT',
+];
+
 export const projectRoutes: RouteObject[] = [
   {
     index: true, // SCR-025
@@ -104,11 +110,29 @@ export const projectRoutes: RouteObject[] = [
       </RequirePermission>
     ),
   },
-  { path: ':projectId/edit', element: <EditProjectPage /> }, // SCR-034
-  { path: ':projectId/card', element: <ProjectCardPage /> }, // the 5 Nov 2026 review §3 row 11: one printable page
   {
-    path: ':projectId',
-    element: <ProjectWorkspace />, // SCR-040 shell, MOD-001, MOD-002, MOD-003
+    path: ':projectId/edit', // SCR-034
+    element: (
+      <RequirePermission codes={PROJECT_EDIT_PERMISSIONS}>
+        <EditProjectPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: ':projectId/card', // the 5 Nov 2026 review §3 row 11: one printable page
+    element: (
+      <RequirePermission codes={['PROJECT_VIEW']}>
+        <ProjectCardPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: ':projectId', // SCR-040 shell, MOD-001, MOD-002, MOD-003: every tab reads the project (PROJECT_VIEW, QA INT-05)
+    element: (
+      <RequirePermission codes={['PROJECT_VIEW']}>
+        <ProjectWorkspace />
+      </RequirePermission>
+    ),
     children: [
       { index: true, element: <OverviewTab /> }, // SCR-040 Overview
       { path: 'registration', element: <RegistrationTab /> }, // SCR-041

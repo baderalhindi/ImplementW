@@ -316,6 +316,42 @@ describe('SCR-107: Approved and Implemented are distinct, non-interchangeable ba
     ).toBeNull();
   });
 
+  test('a raiser without CHANGE_REQUEST_IMPLEMENT is not offered the implementation (QA DEV-D1-02)', async () => {
+    // R02 raises at ALL but implements nothing: the API refuses it 403. Only the internal Project Manager (R04 OWN) implements.
+    open(
+      PAVING_PATH,
+      {
+        requests: [{ ...pavingAt('APPROVED'), requestedByUserId: APPROVER_ID }],
+        runs: [changeRun({ status: 'APPROVED' })],
+      },
+      { session: sessionAs(APPROVER_ID, ['R02']) },
+    );
+
+    await screen.findByRole('heading', { level: 1, name: 'Extend the paving season' });
+    expect(badgeOf('approval').textContent).toBe(en('changeRequests.approvalState.APPROVED'));
+    expect(
+      screen.queryByRole('button', {
+        name: en('changeRequests.command.startImplementation.title'),
+      }),
+    ).toBeNull();
+  });
+
+  test.each([
+    ['the Viewer (R06), who holds no APPROVAL_VIEW, does not read', viewerSession, 0],
+    ['the department manager (R03), who holds APPROVAL_VIEW, reads', reviewerSession, 1],
+  ])('under review, %s its approval runs (QA INT-04)', async (_who, session, reads) => {
+    const api = open(
+      PAVING_PATH,
+      { requests: [pavingAt('UNDER_REVIEW')], runs: [changeRun()] },
+      { session: session() },
+    );
+
+    await screen.findByRole('heading', { level: 1, name: 'Extend the paving season' });
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/approval-instances$/)).toHaveLength(reads);
+    });
+  });
+
   test('an implemented request shows Approved and Implemented in two different styles and words', async () => {
     open(PAVING_PATH, { requests: [pavingAt('IMPLEMENTED')] });
 

@@ -4,7 +4,7 @@ import {
   type ApprovalInboxItem,
   type ApprovalInstanceSummary,
 } from '@/features/approvals/api/types.ts';
-import { inboxTaskFor, unlessForbidden } from '@/features/approvals/sourceReview.ts';
+import { inboxTaskFor, runsFor } from '@/features/approvals/sourceReview.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { projectsApi } from '@/features/projects/api/projectsApi.ts';
 import { type ProjectDetail, type ProjectSummary } from '@/features/projects/api/types.ts';
@@ -118,6 +118,7 @@ export function useChangeRequestReview(
   const status = request?.status ?? 'DRAFT';
   const revisionNo = request?.revisionNo ?? 1;
   const canDecide = useCan('APPROVAL_DECIDE');
+  const canView = useCan('APPROVAL_VIEW');
   const load = useCallback(
     async (signal: AbortSignal): Promise<ChangeRequestReview> => {
       if (id === null || !hasRuns({ status, revisionNo })) {
@@ -127,11 +128,11 @@ export function useChangeRequestReview(
         status === 'UNDER_REVIEW'
           ? inboxTaskFor(canDecide, changeRequestSubject({ id, revisionNo }), signal)
           : Promise.resolve(null),
-        unlessForbidden(changeRequestsApi.approvalRuns(id, signal)),
+        runsFor(canView, () => changeRequestsApi.approvalRuns(id, signal)),
       ]);
       return { task, runs };
     },
-    [id, status, revisionNo, canDecide],
+    [id, status, revisionNo, canDecide, canView],
   );
   return useApiResource(load);
 }

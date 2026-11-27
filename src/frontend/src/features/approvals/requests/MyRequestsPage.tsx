@@ -43,11 +43,15 @@ export function MyRequestsPage(): ReactElement {
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const selection = useRowSelection();
 
-  /** A request as its subject reads: the kind of request and its revision. */
+  /** A request as its subject reads: the kind of request, its project as the inbox names it (QA DEV-D1-03), and its revision. */
   const requestName = (request: ApprovalInstanceSummary) => {
     const key = `approvals.routing.${request.routingKey}`;
     const kind = isTranslationKey(key) ? t(key) : request.routingKey;
-    return `${kind} (${t('approvals.subject.revision', { revision: request.subject.revisionNo })})`;
+    const project =
+      request.project == null
+        ? ''
+        : ` ${[request.project.formalProjectId, request.project.title.text].filter((part) => part !== null).join(' ')}`;
+    return `${kind}${project} (${t('approvals.subject.revision', { revision: request.subject.revisionNo })})`;
   };
 
   /** The chosen requests on this page still PENDING, the only ones Withdraw applies to. */
@@ -164,7 +168,11 @@ export function MyRequestsPage(): ReactElement {
                         selection={selection}
                       />
                       <td id={subjectId}>
-                        <SubjectSummary subject={request.subject} routingKey={request.routingKey} />
+                        <SubjectSummary
+                          subject={request.subject}
+                          routingKey={request.routingKey}
+                          project={request.project}
+                        />
                       </td>
                       <td>{formatDateTime(request.requestedAt)}</td>
                       <td>
