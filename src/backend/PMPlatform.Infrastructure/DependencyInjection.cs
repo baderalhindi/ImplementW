@@ -342,8 +342,8 @@ public static class DependencyInjection
 
         services.AddOptions<DocumentUploadPolicy>()
             .Bind(configuration.GetSection(DocumentUploadPolicy.Section))
-            .Validate(policy => policy.MaxFileSizeBytes > 0 && policy.AllowedContentTypes.Count > 0,
-                $"{DocumentUploadPolicy.Section}: MaxFileSizeBytes must be positive and AllowedContentTypes must name at least one media type.")
+            .Validate(policy => policy.MaxFileSizeBytes > 0 && policy.AllowedContentTypes.Count > 0 && policy.EveryTypeIsVerifiable,
+                $"{DocumentUploadPolicy.Section}: MaxFileSizeBytes must be positive and AllowedContentTypes must name at least one media type, each one the platform verifies by extension and signature.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<DocumentUploadPolicy>>().Value);
 

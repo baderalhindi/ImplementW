@@ -21,6 +21,12 @@ public sealed class DocumentEndpointTests(DocumentTestHost host)
         await AssertAnswerAsync(HttpStatusCode.UnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE",
             client.SendMultipartAsync(DocumentDriver.Documents, token, JsonContent.Create(new { title = "not a form" }), idempotencyKey: null));
         await AssertAnswerAsync(HttpStatusCode.UnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", client.UploadAsync(token, bytes, contentType: "application/x-msdownload"));
+        // SR-38: the declared type must agree with the file's leading bytes and its name's extension.
+        byte[] executable = [0x4D, 0x5A, 0x90, 0x00, 0x03, 0x00];
+        await AssertAnswerAsync(HttpStatusCode.UnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE",
+            client.UploadAsync(token, executable, fileName: "invoice.pdf", contentType: "application/pdf"));
+        await AssertAnswerAsync(HttpStatusCode.UnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", client.UploadAsync(token, executable, fileName: "notes.txt"));
+        await AssertAnswerAsync(HttpStatusCode.UnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", client.UploadAsync(token, bytes, fileName: "evidence.txt.exe"));
         await AssertAnswerAsync(HttpStatusCode.RequestEntityTooLarge, "PAYLOAD_TOO_LARGE", client.UploadAsync(token, new byte[DocumentTestHost.MaxFileSizeBytes + 1]));
 
         using (HttpResponseMessage empty = await client.SendMultipartAsync(DocumentDriver.Documents, token, new MultipartFormDataContent { { new StringContent("x"), "unrelated" } }, null))
@@ -55,6 +61,10 @@ public sealed class DocumentEndpointTests(DocumentTestHost host)
             (version["fileName"]!.GetValue<string>(), version["checksumSha256"]!.GetValue<string>(), version["sizeBytes"]!.GetValue<long>(),
              version["scanState"]!.GetValue<string>(), version["versionNo"]!.GetValue<int>()));
         Assert.Null(version["storageObjectKey"]);
+
+        // A new version is held to the same rules: an executable named as text is refused.
+        await AssertAnswerAsync(HttpStatusCode.UnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE",
+            client.AddVersionAsync(token, AdministrationApi.IdOf(body), executable));
     }
 
     [Fact]
