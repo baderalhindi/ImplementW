@@ -557,7 +557,7 @@ public sealed class ShippedGrantTests
         [PermissionCatalogue.AuditIntegrationView] = "",
         [PermissionCatalogue.AuditFinancialView] = "",
         [PermissionCatalogue.AuditExternalView] = "",
-        [PermissionCatalogue.AuditBusinessView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R07:ALL",
+        [PermissionCatalogue.AuditBusinessView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL",
         [PermissionCatalogue.AuditContextView] = "",
         [PermissionCatalogue.AuditOperationsManage] = "R01:ALL",
         [PermissionCatalogue.IntegrationView] = "R01:ALL",

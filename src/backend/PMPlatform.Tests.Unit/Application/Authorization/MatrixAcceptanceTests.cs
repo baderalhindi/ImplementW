@@ -49,6 +49,17 @@ public sealed class MatrixAcceptanceTests
         Assert.DoesNotContain(PermissionCatalogue.ShippedDefaultGrants, g => g.RoleCode == "R06" && g.PermissionCode == PermissionCatalogue.FinancialViewSensitive);
     }
 
+    /// <summary>Review H4 (shipped-permission-matrix.md §4): the Viewer reads the business audit of its own department, not another's.</summary>
+    [Fact]
+    public async Task TheViewerReadsTheBusinessAuditOfItsDepartmentOnly()
+    {
+        AuthorizationScenario viewer = new AuthorizationScenario(PermissionCatalogue.Platform).WithUser(UserType.Internal, Shipped("R06", departmentId: DepartmentId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await viewer.AuthorizeAsync(PermissionCatalogue.AuditBusinessView, Project(DepartmentId)));
+        Assert.Equal(AuthorizationOutcome.NotFound, (await viewer.AuthorizeAsync(PermissionCatalogue.AuditBusinessView, Project(OtherDepartmentId))).Outcome);
+        Assert.Equal(AuthorizationDecision.Forbidden(AuthorizationDenial.NotGranted), await viewer.AuthorizeAsync(PermissionCatalogue.ActivityView));
+    }
+
     /// <summary>§A item 4: a Department Manager opens no other department's project — 404 by id, and absent from every list it reads.</summary>
     [Fact]
     public async Task ADepartmentManagerReachesItsOwnDepartmentOnly()

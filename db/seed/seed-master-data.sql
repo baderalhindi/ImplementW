@@ -489,6 +489,7 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R06', 'FINANCIAL_VIEW',                'DEPT'),
     ('R06', 'KPI_VIEW',                      'DEPT'),
     ('R06', 'DOCUMENT_VIEW',                 'DEPT'),
+    ('R06', 'AUDIT_BUSINESS_VIEW',           'DEPT'),
     ('R07', 'MASTER_DATA_VIEW',              'ALL'),
     ('R07', 'CONFIGURATION_VIEW',            'ALL'),
     ('R07', 'LAYOUT_PERSONALIZE',            'OWN'),
