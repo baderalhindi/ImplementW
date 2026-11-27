@@ -35,7 +35,7 @@ flowchart LR
 
 | ID | STRIDE | Threat | L | I | Inherent | Control and evidence | Residual | Status | Finding |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| DOC-T01 | S | An uploader declares an allowed type (`application/pdf`) for an executable, HTA, HTML, SVG, macro-enabled Office file, archive or polyglot. It is stored under its real name (`report.pdf.exe`) and later run by AHDA staff who download it | 2 | 3 | High | Only the client's declared type is checked (`Application/Features/DocumentManagement/DocumentUploads.cs:19`, `DocumentUploadPolicy.cs:18-23`): no signature check, no extension allowlist, no declared-against-sniffed comparison (WF-12 §5.1, DOC-CC-05). Served as an attachment; only CLEAN is served; the scanner fails closed. Inert today only because nothing becomes CLEAN | High | GAP | SR-38 |
+| DOC-T01 | S | An uploader declares an allowed type (`application/pdf`) for an executable, HTA, HTML, SVG, macro-enabled Office file, archive or polyglot. It is stored under its real name (`report.pdf.exe`) and later run by AHDA staff who download it | 2 | 3 | High | The declared type must be on the policy, the file name's extension one of that type's, and the first bytes that type's signature (PDF, ZIP for OOXML, OLE for legacy Office, PNG, JPEG); text may hold no NUL in its first 8 KiB and may not start with a binary or executable signature (`DocumentContentRules`, `DocumentUploads.CheckAsync`); a mismatch is 415. A policy type without a rule stops the API at start-up. `DocumentContentRulesTests`; `DocumentEndpointTests.AnUploadIsValidatedLimitedAndTypedBeforeAnythingIsStored` (an executable as PDF, as text, an `.exe` name, a spoofed new version). Served as an attachment; only CLEAN is served; the scanner fails closed. Remaining: the signature is the container's, so a macro-enabled or otherwise hostile OOXML file renamed `.docx`, a ZIP declared as `.xlsx`, or a polyglot PDF passes; those are the scanner's (SR-41) | Medium | MITIGATED | SR-38 |
 | DOC-T02 | S | A file name with bidi or format characters (U+202E and the like) or a double extension shows `invoice‮fdp.exe` as `invoiceexe.pdf` in the library and the save dialog | 2 | 2 | Medium | `DocumentFileNames.Clean` removes control characters (category Cc) and path segments only (`DocumentFileNames.cs:12-13`); format characters (Cf) pass | Medium | GAP | SR-43 |
 | DOC-T03 | T | A file name carries a path, CR/LF or quotes to traverse the store or inject into `Content-Disposition` | 2 | 2 | Medium | The object key is two platform GUIDs, never the name (`DocumentUploads.cs:29-30`); the name is cut to its last segment; the local store refuses keys leaving its root; `Content-Disposition` is RFC 6266-encoded. `DocumentUploadTests.AFileNameKeepsItsLastSegmentWithoutControlCharacters`; `DocumentStorageTests.AKeyThatLeavesTheStoreIsRefused`; `UploadFormTextValidationTests.AnUploadFormFieldOrFileNameHoldingAControlCharacterIsRefused` | Low | MITIGATED | — |
 | DOC-T04 | I | Stored XSS: HTML, SVG or script-bearing PDF content rendered inline on the platform's origin | 2 | 3 | High | Always `application/octet-stream`, `attachment`, `nosniff`, `no-store` (`PMPlatform.Api/Controllers/AdministrationControllerBase.cs:97-101`); API CSP `default-src 'none'` and CORP `same-origin` (`PMPlatform.Api/Middleware/SecurityHeaders.cs:17-29`); the SPA saves a Blob (`src/frontend/src/shared/api/saveFile.ts:4-13`). `DocumentEndpointTests.ContentIsServedAsAnAttachmentThatIsNeverSniffedNorCached` (an HTML payload), in CI from this PR | Low | MITIGATED | SR-39 |
@@ -80,7 +80,7 @@ Until this PR no CI step ran `PMPlatform.Tests.Integration.DocumentManagement` (
 | WF-12 control | Evidence | Gap |
 | --- | --- | --- |
 | Unsafe file quarantined, never served or evidence (DOC-CC-07/08) | DOC-T05 | A real provider (SR-41) |
-| Content signature and extension, not the declared type alone (DOC-CC-04/05, §5.1) | — | SR-38 |
+| Content signature and extension, not the declared type alone (DOC-CC-04/05, §5.1) | DOC-T01 | OOXML parts not inspected (the scanner's, SR-41) |
 | Hash verified on retrieval (§5.3) | — | SR-44 |
 | External isolation, not enumerable (DOC-CC-20/22) | DOC-T11 | Prior versions and links (SR-45) |
 | Version pinning (DOC-CC-10 to -13) | DOC-T09 | — |
@@ -96,7 +96,7 @@ Until this PR no CI step ran `PMPlatform.Tests.Integration.DocumentManagement` (
 | --- | --- | --- |
 | `document-management.md` F-14 | A link for a CLOSED project's records is refused | Link, unlink, designate and withdraw authorize `DOCUMENT_VIEW` (read), so DocumentManagement never refuses them; only the consuming module's state check does |
 | `document-management.md` F-8 | No module links or pins | Milestone and FinancialKpi both do |
-| `document-management.md` F-5 | Archives are excluded | A ZIP declared as PDF is accepted (DOC-T01) |
+| `document-management.md` F-5 | Archives are excluded | A ZIP declared as PDF was accepted (DOC-T01); since 2026-11-25 it is refused, though a ZIP declared as an OOXML type still passes |
 | `document-management.md` D-10 | The store never replaces or deletes | True of the code; the runtime's bucket role can do both (DOC-T06) |
 | `document-management.md` §6 | The integration tests verify the acceptance criteria | They ran in no CI step until this PR |
 
@@ -105,3 +105,4 @@ Until this PR no CI step ran `PMPlatform.Tests.Integration.DocumentManagement` (
 | Date | Change |
 | --- | --- |
 | 2026-10-16 | First review (TASK-081); the module's integration tests added to CI |
+| 2026-11-25 | DOC-T01 MITIGATED (residual Medium): extension and signature checks on upload (SR-38, `fix/task-112-upload-signature-check`) |

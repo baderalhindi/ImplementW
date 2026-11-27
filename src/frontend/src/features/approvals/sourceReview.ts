@@ -35,7 +35,7 @@ export function decidesSubject(
 }
 
 /** The person's inbox task for the subject, reading the inbox page after page until it is found or ends. */
-export async function findInboxTask(
+async function findInboxTask(
   subject: ApprovalSubject,
   signal: AbortSignal,
 ): Promise<ApprovalInboxItem | null> {
@@ -49,4 +49,16 @@ export async function findInboxTask(
       return null;
     }
   }
+}
+
+/**
+ * The person's inbox task for the subject, read only when they hold APPROVAL_DECIDE (`canDecide`): the inbox refuses anyone else, and each
+ * refusal is an audited access denial (QA D1-06), so a person who decides nothing is not sent there.
+ */
+export function inboxTaskFor(
+  canDecide: boolean,
+  subject: ApprovalSubject,
+  signal: AbortSignal,
+): Promise<ApprovalInboxItem | null> {
+  return canDecide ? unlessForbidden(findInboxTask(subject, signal)) : Promise.resolve(null);
 }

@@ -1,10 +1,12 @@
 import { type ReactElement } from 'react';
 
+import { RestrictedFlag } from '@/features/financial-kpi/components/Figures.tsx';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { Detail } from '../components/Detail.tsx';
 import { languageTag } from '../presentation.ts';
+import { budgetWithheld } from '../registration.ts';
 
 import { useWorkspace } from './workspaceContext.ts';
 import { sarWhole } from '@/shared/format/money.ts';
@@ -55,7 +57,9 @@ export function RegistrationTab(): ReactElement {
         {lookups.entityName(project.externalEntityId) ?? none}
       </Detail>
       <Detail term={t('projects.fields.registrationBudget')}>
-        {project.registrationBudgetSar === null ? (
+        {budgetWithheld(project) ? (
+          <RestrictedFlag />
+        ) : project.registrationBudgetSar == null ? (
           none
         ) : (
           <span dir="ltr">

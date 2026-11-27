@@ -12,8 +12,14 @@ public sealed class DocumentUploadPolicy
     /// <summary>The largest file accepted, in bytes; larger is 413 <c>PAYLOAD_TOO_LARGE</c>.</summary>
     public long MaxFileSizeBytes { get; set; }
 
-    /// <summary>The declared media types accepted, compared without parameters and ignoring case; any other is 415.</summary>
+    /// <summary>
+    /// The declared media types accepted, compared without parameters and ignoring case; any other is 415. Each must be one
+    /// <see cref="DocumentContentRules"/> can verify by extension and signature (SR-38).
+    /// </summary>
     public IList<string> AllowedContentTypes { get; } = [];
+
+    /// <summary>Whether every listed media type has a content rule; the start-up check refuses a policy where one has none.</summary>
+    public bool EveryTypeIsVerifiable => AllowedContentTypes.All(DocumentContentRules.IsKnown);
 
     public bool Allows(string contentType)
     {

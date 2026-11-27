@@ -95,6 +95,7 @@ function VisualFrame({
       </h3>
       <VisualBodyBox
         visual={visual}
+        label={title}
         // A map visual is laid out as the map section is.
         className={
           visual.visualType === 'MAP' ? 'visual__body visual__body--section' : 'visual__body'
@@ -142,7 +143,11 @@ function SectionFrame({
       <h3 id={titleId} className="widget__title">
         {visual.title[language]}
       </h3>
-      <VisualBodyBox visual={visual} className="visual__body visual__body--section">
+      <VisualBodyBox
+        visual={visual}
+        label={visual.title[language]}
+        className="visual__body visual__body--section"
+      >
         <SectionBody
           section={visual.section}
           widgetCode={visual.widgetCode}
@@ -174,9 +179,13 @@ function TextFrame({
       aria-label={visual.title[language]}
       data-visual="TEXT"
     >
-      <div className="visual__body visual__body--text">
+      <VisualBodyBox
+        visual={visual}
+        label={visual.title[language]}
+        className="visual__body visual__body--text"
+      >
         <TextBoxBody text={visual.text} />
-      </div>
+      </VisualBodyBox>
     </section>
   );
 }

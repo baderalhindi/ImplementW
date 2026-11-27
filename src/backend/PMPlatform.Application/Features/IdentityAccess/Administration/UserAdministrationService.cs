@@ -13,7 +13,8 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 /// <summary>
 /// ADM-002–005 and MOD-080 (TASK-031). Disabling writes the user's status and time and nothing else: no assignment is
 /// ended and no record that names the user is touched, so ownership, assignments and decisions keep their author
-/// (Appendix A.1, CTL-09). Access stops anyway, because sign-in and the engine both refuse a disabled user. Every change
+/// (Appendix A.1, CTL-09). Access stops anyway, because sign-in and the engine both refuse a disabled user; the user's
+/// sessions are ended too (SR-10), so none resumes if the user is activated again. Every change
 /// is saved with its PRIVILEGED_ACTION audit event (TASK-033); email and mobile number are recorded as changed, never
 /// copied.
 /// </summary>
@@ -22,6 +23,7 @@ internal sealed partial class UserAdministrationService(
     IExternalEntityRepository entities,
     AccessRelationshipService assignments,
     INationalIdProtector nationalIds,
+    IUserSessionRepository sessions,
     AdministrationAccess access,
     LocalAccountPolicy localAccounts,
     IAuditTrail audit,
@@ -281,9 +283,15 @@ internal sealed partial class UserAdministrationService(
 
         user.Status = UserStatus.Disabled;
         user.DisabledAt = timeProvider.GetUtcNow();
-        return await SaveAsync(actorId, user, "disabled", IdentityAccessAuditEvents.UserDisabled,
+        AdministrationResult<Versioned<UserDetail>> saved = await SaveAsync(actorId, user, "disabled", IdentityAccessAuditEvents.UserDisabled,
                 [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, UserStatus.Active, UserStatus.Disabled)], cancellationToken)
             .ConfigureAwait(false);
+        if (saved.Error is null)
+        {
+            await sessions.EndAllOfUserAsync(user.Id, UserSessionEndReason.UserDisabled, actorId, cancellationToken).ConfigureAwait(false);
+        }
+
+        return saved;
     }
 
     public async Task<AdministrationError?> DeleteAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -314,6 +322,7 @@ internal sealed partial class UserAdministrationService(
             return saveError;
         }
 
+        await sessions.EndAllOfUserAsync(user.Id, UserSessionEndReason.UserDeleted, actorId, cancellationToken).ConfigureAwait(false);
         LogUserChanged(logger, actorId, "deleted", user.Id);
         return null;
     }

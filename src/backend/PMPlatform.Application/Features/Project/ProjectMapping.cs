@@ -5,14 +5,19 @@ namespace PMPlatform.Application.Features.Project;
 
 internal static class ProjectMapping
 {
-    public static ProjectDetail ToDetail(ProjectEntity p, ProjectIndicators indicators) => new(
+    /// <summary>
+    /// The project as the caller may see it: the registration budget is withheld, null and named in <see cref="ProjectDetail.MaskedFields"/>,
+    /// unless <paramref name="revealsAmounts"/> (FINANCIAL_VIEW_SENSITIVE on the project, shipped-permission-matrix.md D-4).
+    /// </summary>
+    public static ProjectDetail ToDetail(ProjectEntity p, ProjectIndicators indicators, bool revealsAmounts) => new(
         p.Id, p.FormalProjectId, p.Title, p.Description, p.ClassificationItemId, p.DepartmentId, p.ExternalEntityId, p.ProjectManagerUserId,
-        p.LifecycleState, p.RevisionNo, p.GovernanceProfileItemId, p.ParticipationMode, p.RegistrationBudgetSar, p.PlannedStartDate, p.PlannedEndDate,
+        p.LifecycleState, p.RevisionNo, p.GovernanceProfileItemId, p.ParticipationMode, revealsAmounts ? p.RegistrationBudgetSar : null, p.PlannedStartDate, p.PlannedEndDate,
         p.RegionItemId, p.CityItemId, p.Latitude, p.Longitude, p.LegacyIntakeDate, p.ActivatedAt, p.ClosedAt, p.CreatedAt, p.CreatedBy, p.UpdatedAt, p.UpdatedBy,
         p.StrategicPortfolioItemId, p.StrategicInitiativeItemId, p.PriorityItemId, p.FundingSource, p.LegacyReference, p.FollowUpOwnerUserId,
         p.ProjectImportBatchId, ToFollowUp(p), indicators, p.TitleEn, p.IsStrategic, p.EntityContactUserId, p.IsCanceled)
     {
         ProposedProjectManagerUserId = p.ProposedProjectManagerUserId,
+        MaskedFields = revealsAmounts ? [] : [ProjectDetail.RegistrationBudgetSarField],
     };
 
     public static ProjectSummary ToSummary(ProjectEntity p, ProjectIndicators indicators) => new(

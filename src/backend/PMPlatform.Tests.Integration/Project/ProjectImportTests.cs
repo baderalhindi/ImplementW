@@ -76,6 +76,39 @@ public sealed class ProjectImportTests(ProjectTestHost host)
             $"SELECT event_type FROM audit_activity.audit_event WHERE subject_id = '{batchId}'"));
     }
 
+    /// <summary>
+    /// shipped-permission-matrix.md D-4 (stage QA PHASE-C-01): the preview of an importer the budget is withheld from never compares the row's budget
+    /// with the held one, or its warning would confirm a guess. local.r08 (R08, no FINANCIAL_VIEW_SENSITIVE on a project local.r05 manages) is told
+    /// the budget is not updated whatever the row says; local.r03 (DEPT) is told so only when the row differs.
+    /// </summary>
+    [Fact]
+    public async Task ThePreviewNeverComparesABudgetWithheldFromTheImporter()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        string reference = $"AHP-{Guid.NewGuid():N}"[..20];
+        byte[] workbook = await WorkbookAsync([await RowAsync(reference, status: "نشط")]);
+        using (HttpResponseMessage submitted = await SubmitAsync(client, sessions.Reviewer, workbook, "{\"mappings\":[],\"skippedRows\":[]}"))
+        {
+            Assert.Equal(HttpStatusCode.Created, submitted.StatusCode);
+            Guid batchId = AdministrationApi.IdOf(JsonNode.Parse(await submitted.Content.ReadAsStringAsync())!.AsObject());
+            using HttpResponseMessage approved = await PostAsync(client, sessions.Approver, $"{Batches}/{batchId}/approve");
+            Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        }
+
+        string?[] guessed = await RowAsync(reference, status: "نشط");
+        guessed[Array.IndexOf(Keys, "budget_sar")] = "300000000";
+        byte[] guess = await WorkbookAsync([guessed]);
+
+        static bool BudgetNotUpdated(JsonObject preview) => preview["rows"]![0]!["issues"]!.AsArray()
+            .Any(i => i!["column"]!.GetValue<string>() == "budget_sar" && i["code"]!.GetValue<string>() == ProjectImportIssueCodes.GovernedFieldNotUpdated);
+
+        Assert.True(BudgetNotUpdated(await ValidateAsync(client, sessions.Entity, workbook)));
+        Assert.True(BudgetNotUpdated(await ValidateAsync(client, sessions.Entity, guess)));
+        Assert.False(BudgetNotUpdated(await ValidateAsync(client, sessions.Reviewer, workbook)));
+        Assert.True(BudgetNotUpdated(await ValidateAsync(client, sessions.Reviewer, guess)));
+    }
+
     [Fact]
     public async Task AStatusToChooseBlocksTheRowUntilTheImporterMapsIt()
     {

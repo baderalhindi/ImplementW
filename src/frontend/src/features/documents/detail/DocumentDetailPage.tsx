@@ -2,6 +2,7 @@ import { type ReactElement, useCallback, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
@@ -28,7 +29,8 @@ type OpenDialog = 'edit' | 'replace' | 'archive' | null;
 /**
  * SCR-123 Document Detail: the metadata, the latest version with its scan state, and where the document is used.
  * A version that is not CLEAN is flagged above everything else and its download is disabled (TASK-038 D-4); replacing
- * it with a new version stays possible, since that is the remedy. An ARCHIVED document takes no change.
+ * it with a new version stays possible, since that is the remedy. An ARCHIVED document takes no change. A new version is
+ * offered to a holder of DOCUMENT_UPLOAD, editing and archiving to a holder of DOCUMENT_MANAGE, as the API decides them.
  */
 export function DocumentDetailPage(): ReactElement {
   const { t } = useI18n();
@@ -38,6 +40,8 @@ export function DocumentDetailPage(): ReactElement {
     [documentId],
   );
   const resource = useApiResource(load);
+  const mayUpload = useCan('DOCUMENT_UPLOAD');
+  const mayManage = useCan('DOCUMENT_MANAGE');
   const [params] = useSearchParams();
   // The library's Edit lands here with ?edit=1: the details form opens on arrival.
   const [dialog, setDialog] = useState<OpenDialog>(() =>
@@ -93,13 +97,22 @@ export function DocumentDetailPage(): ReactElement {
             <Link className="button" to={`/documents/${document.id}/versions`}>
               {t('documents.versions.action')}
             </Link>
-            <button type="button" className="button" disabled={archived} onClick={open('replace')}>
-              {t('documents.replace.action')}
-            </button>
-            <button type="button" className="button" disabled={archived} onClick={open('edit')}>
-              {t('documents.edit.action')}
-            </button>
-            {!archived && (
+            {mayUpload && (
+              <button
+                type="button"
+                className="button"
+                disabled={archived}
+                onClick={open('replace')}
+              >
+                {t('documents.replace.action')}
+              </button>
+            )}
+            {mayManage && (
+              <button type="button" className="button" disabled={archived} onClick={open('edit')}>
+                {t('documents.edit.action')}
+              </button>
+            )}
+            {mayManage && !archived && (
               <button type="button" className="button button--danger" onClick={open('archive')}>
                 {t('documents.archive.action')}
               </button>
@@ -113,21 +126,21 @@ export function DocumentDetailPage(): ReactElement {
       <DocumentBody document={document} />
 
       <ReplaceVersionDialog
-        documentId={dialog === 'replace' ? document.id : null}
+        documentId={mayUpload && dialog === 'replace' ? document.id : null}
         onClose={closeDialog}
         onUploaded={() => {
           setVersionAdded(true);
         }}
       />
       <EditMetadataDialog
-        target={dialog === 'edit' ? target : null}
+        target={mayManage && dialog === 'edit' ? target : null}
         onClose={closeDialog}
         onDone={() => {
           done(t('documents.done.edited'));
         }}
       />
       <ArchiveDocumentDialog
-        target={dialog === 'archive' ? target : null}
+        target={mayManage && dialog === 'archive' ? target : null}
         onClose={closeDialog}
         onDone={() => {
           done(t('documents.done.archived'));

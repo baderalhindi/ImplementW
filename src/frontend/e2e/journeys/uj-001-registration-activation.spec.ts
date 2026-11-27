@@ -8,7 +8,7 @@ import {
   unique,
   utcDate,
 } from '../support/journey.ts';
-import { activeBaseline, project, untilStatus } from '../support/projects.ts';
+import { activeBaseline, planEveryStage, project, untilStatus } from '../support/projects.ts';
 
 // UJ-001 — Registration and activation (Step 18; WF-01; ICD-02).
 // Procedure: create and approve a registration; inspect Project lifecycle before and after the governed Project-master
@@ -49,9 +49,13 @@ test('UJ-001 registration and activation follow Project-master governance', asyn
 
   const projectId = /\/projects\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
   expect(projectId).not.toBe('');
+  // Review round 7: submission needs a complete stage plan. It is planned through the API, and the page reloaded onto the
+  // draft's new version; this journey is about the registration's governance, not the stage-plan form.
+  await planEveryStage(department.api, projectId);
   const draftVersion = (await department.api.ok('GET', `/projects/${projectId}`)).etag;
 
   await test.step('the draft is submitted naming its Project Manager', async () => {
+    await page.reload();
     await page.getByRole('button', { name: 'Submit for review' }).click();
     const dialog = page.getByRole('dialog', { name: 'Submit for review' });
     await dialog.getByRole('radio', { name: 'Someone else' }).check();

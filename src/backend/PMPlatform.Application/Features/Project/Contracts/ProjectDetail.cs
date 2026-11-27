@@ -50,6 +50,15 @@ public sealed record ProjectDetail(
     Guid? EntityContactUserId = null,
     bool IsCanceled = false)
 {
+    /// <summary>The name of <see cref="RegistrationBudgetSar"/> in <see cref="MaskedFields"/>.</summary>
+    public const string RegistrationBudgetSarField = "registrationBudgetSar";
+
     /// <summary>The Project Manager the registration form names (review round 7, item 2); the submission proposes them.</summary>
     public Guid? ProposedProjectManagerUserId { get; init; }
+
+    /// <summary>
+    /// The fields withheld from the caller (ADR-010, R-20): null here, omitted by the API. The registration budget is a SAR amount, so a caller
+    /// without FINANCIAL_VIEW_SENSITIVE on the project gets it withheld, as the financial screens and dashboards withhold theirs (D-4).
+    /// </summary>
+    public IReadOnlyList<string> MaskedFields { get; init; } = [];
 }

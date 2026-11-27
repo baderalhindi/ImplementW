@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { Link } from 'react-router';
 
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -131,6 +132,7 @@ export function RiskTable({
 }: RiskTableProps): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
+  const permissions = usePermissions();
   const selection = useRowSelection();
   return (
     <>
@@ -163,7 +165,8 @@ export function RiskTable({
             const due = isReviewDue(risk, today);
             const assessment = risk.currentAssessment;
             const detailPath = `/projects/${project.id}/risks/${risk.id}`;
-            const mayAdd = session !== null && canManageRisk(session.user, project, risk);
+            const mayAdd =
+              session !== null && canManageRisk(session.user, permissions, project, risk);
             return (
               <tr
                 key={risk.id}

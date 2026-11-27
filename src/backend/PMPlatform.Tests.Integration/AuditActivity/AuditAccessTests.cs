@@ -115,24 +115,39 @@ public sealed class AuditAccessTests(AuditActivityTestHost host)
 
     /// <summary>
     /// The Viewer reads business audit in its department (shipped-permission-matrix.md, review H4) and nothing else of the store: no
-    /// administration event, no Activity timeline, no operations.
+    /// other department's project, no administration event, no Activity timeline, no operations.
     /// </summary>
     [Fact]
-    public async Task TheViewerSeesBusinessAuditOnlyAndNoActivityOrOperations()
+    public async Task TheViewerSeesBusinessAuditOfItsDepartmentOnlyAndNoActivityOrOperations()
     {
         (Guid administration, _, _) = await OneOfEachAsync();
+        Guid inScope = Guid.NewGuid(), outOfScope = Guid.NewGuid();
+        await host.StageAsync(
+            AuditActivityTestHost.Business("Risk.RiskAssessed", AuditActivityTestHost.ProjectA, inScope, 2),
+            AuditActivityTestHost.Business("Risk.RiskAssessed", AuditActivityTestHost.ProjectB, outOfScope, 2));
+        Guid inScopeEvent = await host.EventIdAsync(inScope), outOfScopeEvent = await host.EventIdAsync(outOfScope);
         using HttpClient viewer = await host.ClientAsync(6);
 
+        JsonObject access = await (await viewer.GetAsync(AuditActivityApi.Access)).OkAsync();
         JsonObject page = await (await viewer.GetAsync($"{AuditActivityApi.Events}?pageSize=200")).OkAsync();
+        JsonObject own = await (await viewer.GetAsync($"{AuditActivityApi.Events}?category=BUSINESS&subjectId={inScope}")).OkAsync();
+        JsonObject other = await (await viewer.GetAsync($"{AuditActivityApi.Events}?category=BUSINESS&projectId={AuditActivityTestHost.ProjectB}")).OkAsync();
+        using HttpResponseMessage ownEvent = await viewer.GetAsync($"{AuditActivityApi.Events}/{inScopeEvent}");
+        using HttpResponseMessage otherEvent = await viewer.GetAsync($"{AuditActivityApi.Events}/{outOfScopeEvent}");
         using HttpResponseMessage administrationEvent = await viewer.GetAsync($"{AuditActivityApi.Events}/{administration}");
         using HttpResponseMessage activity = await viewer.GetAsync(AuditActivityApi.Activity);
         using HttpResponseMessage operations = await viewer.GetAsync(AuditActivityApi.Status);
 
+        Assert.Equal("""{"categories":["BUSINESS"],"requestContextVisible":false,"activityVisible":false,"operationsPermitted":false}""", access.ToJsonString());
         Assert.All(page["items"]!.AsArray(), item => Assert.Equal("BUSINESS", item!["category"]!.GetValue<string>()));
+        Assert.Contains(inScopeEvent, page.Ids());
+        Assert.DoesNotContain(outOfScopeEvent, page.Ids());
         Assert.DoesNotContain(administration, page.Ids());
+        Assert.Equal([inScopeEvent], own.Ids());
+        Assert.Equal(0, other["totalCount"]!.GetValue<int>());
         Assert.Equal(
-            [HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden],
-            [administrationEvent.StatusCode, activity.StatusCode, operations.StatusCode]);
+            [HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden],
+            [ownEvent.StatusCode, otherEvent.StatusCode, administrationEvent.StatusCode, activity.StatusCode, operations.StatusCode]);
     }
 
     /// <summary>

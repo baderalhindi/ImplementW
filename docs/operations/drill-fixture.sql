@@ -1,31 +1,25 @@
 -- drill-fixture.sql — data added to a local source database before a restore rehearsal or drill (TASK-023).
 --
 -- Used by rehearse-restore.sh and run-restore-drill.sh, on top of the migrated schema and the local seed. Never
--- run against a real environment: it creates a stand-in for a table in the audit_activity schema, which TASK-073 owns.
+-- run against a real environment: it writes synthetic events into the real audit store.
+--
+-- It creates no table a migration owns (QA PHASE-E-03: the stand-in audit_activity.audit_event it used to create
+-- collided with TASK-033's table once the migrations created it). The audit events go into the migrated
+-- audit_activity.audit_event, and the table's own trigger (chain_audit_event, TASK-033) sets recorded_at,
+-- previous_event_hash and event_hash, so the chain the restore must preserve is the product's, not a copy of it.
 
--- A stand-in for TASK-073's table, reduced to the columns the chain check reads.
--- The schema itself exists once the TASK-024 baseline migration has run.
-CREATE SCHEMA IF NOT EXISTS audit_activity;
-CREATE TABLE audit_activity.audit_event (
-    id                  uuid PRIMARY KEY,
-    recorded_at         timestamptz NOT NULL,
-    event_class         varchar(50) NOT NULL,
-    previous_event_hash char(64),
-    event_hash          char(64) NOT NULL UNIQUE
-);
-DO $$
-DECLARE
-    previous char(64);
-    current  char(64);
-BEGIN
-    FOR i IN 1..1000 LOOP
-        current := encode(sha256(convert_to(coalesce(previous, '') || i::text, 'UTF8')), 'hex');
-        INSERT INTO audit_activity.audit_event
-        VALUES (md5('event' || i)::uuid, timestamptz '2026-09-25 00:00:00+00' + i * interval '1 second',
-                'DATA_CHANGE', previous, current);
-        previous := current;
-    END LOOP;
-END $$;
+-- 1,000 chained events, one statement: each row's trigger sees the rows before it. Their ids are md5('event' || i),
+-- so a rehearsal can name one (rehearse-restore.sh F6, F9).
+INSERT INTO audit_activity.audit_event
+    (id, occurred_at, event_class, event_type, actor_type, correlation_id, outcome,
+     created_at, created_by, updated_at, updated_by)
+SELECT md5('event' || i)::uuid,
+       timestamptz '2026-09-25 00:00:00+00' + i * interval '1 second',
+       'CONFIGURATION_CHANGE', 'DRILL_FIXTURE', 'SERVICE', md5('correlation' || i)::uuid, 'SUCCESS',
+       timestamptz '2026-09-25 00:00:00+00' + i * interval '1 second', md5('drill-fixture')::uuid,
+       timestamptz '2026-09-25 00:00:00+00' + i * interval '1 second', md5('drill-fixture')::uuid
+FROM generate_series(1, 1000) AS i
+ORDER BY i;
 
 -- Volume, a sequence and an index: what a restore can silently get wrong beyond row content.
 CREATE SCHEMA drill_fixture;

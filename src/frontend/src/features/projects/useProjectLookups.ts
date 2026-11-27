@@ -4,7 +4,7 @@ import {
   type MasterDataItemSummary,
   readCatalogueItems,
 } from '@/shared/api/masterData.ts';
-import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { useScopedResource } from '@/shared/api/resourceScope.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { type SelectOption } from '@/shared/ui/FormFields.tsx';
 
@@ -32,17 +32,11 @@ const CATALOGUE_CODES: ProjectCatalogueCode[] = [
   'PRIORITY',
 ];
 
-// Module-level loaders, so each is read once per mount. They are separate resources: a caller without one permission
-// still gets the others.
+// Module-level loaders, so each is read once per mount, or once per screen inside a ResourceScope (stage QA F-05). They are
+// separate resources: a caller without one permission still gets the others.
 
 function readCatalogues(signal: AbortSignal) {
   return readCatalogueItems(CATALOGUE_CODES, signal);
-}
-
-/** Every signed-in person may read the units a project names (GET /organization-units; the 24 Oct 2026 review, H1). */
-async function readOrganization(signal: AbortSignal) {
-  const units = await namesApi.units(signal);
-  return { departments: units.departments, entities: units.externalEntities };
 }
 
 async function readProfiles(signal: AbortSignal): Promise<GovernanceProfileSettings[]> {
@@ -79,9 +73,10 @@ export interface ProjectLookups {
  */
 export function useProjectLookups(): ProjectLookups {
   const { t, language } = useI18n();
-  const catalogues = useApiResource(readCatalogues);
-  const organization = useApiResource(readOrganization);
-  const profiles = useApiResource(readProfiles);
+  const catalogues = useScopedResource(readCatalogues);
+  // Every signed-in person may read the units a project names (GET /organization-units; the 24 Oct 2026 review, H1).
+  const organization = useScopedResource(namesApi.units);
+  const profiles = useScopedResource(readProfiles);
 
   const items: MasterDataItemSummary[] =
     catalogues.data === undefined ? [] : Object.values(catalogues.data).flat();
@@ -118,13 +113,13 @@ export function useProjectLookups(): ProjectLookups {
       if (id === null) {
         return null;
       }
-      const entity = organization.data?.entities.find((candidate) => candidate.id === id);
+      const entity = organization.data?.externalEntities.find((candidate) => candidate.id === id);
       return entity === undefined ? unknown(id) : entity.name[language];
     },
     departmentOptions: (organization.data?.departments ?? [])
       .filter((department) => department.isActive)
       .map((department) => ({ value: department.id, label: department.name[language] })),
-    entityOptions: (organization.data?.entities ?? [])
+    entityOptions: (organization.data?.externalEntities ?? [])
       .filter((entity) => entity.isActive)
       .map((entity) => ({ value: entity.id, label: entity.name[language] })),
     profiles: profiles.data,

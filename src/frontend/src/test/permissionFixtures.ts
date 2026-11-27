@@ -243,6 +243,7 @@ export const SHIPPED_MATRIX: Record<string, Partial<Record<PermissionCode, DataS
     FINANCIAL_VIEW: 'DEPT',
     KPI_VIEW: 'DEPT',
     DOCUMENT_VIEW: 'DEPT',
+    AUDIT_BUSINESS_VIEW: 'DEPT',
   },
   R07: {
     PORTFOLIO_SUMMARY_VIEW: 'ALL',

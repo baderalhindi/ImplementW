@@ -89,7 +89,8 @@ export function ProjectProgress({
   user: SessionUser;
 }): ReactElement {
   const { t } = useI18n();
-  const { can } = usePermissions();
+  const permissions = usePermissions();
+  const { can } = permissions;
   const health = useHealthView(project.id);
   const load = useCallback((signal: AbortSignal) => loadCurrent(project.id, signal), [project.id]);
   const current = useApiResource(load);
@@ -151,7 +152,7 @@ export function ProjectProgress({
   const update = current.data;
   // The Project Manager of an entity's own project (ADR-013) holds no PROGRESS_SUBMIT (shipped-permission-matrix.md F-7).
   const reporter = canReport(user, project) && can('PROGRESS_SUBMIT');
-  const reviewer = update !== null && canReview(user, project, update.submission);
+  const reviewer = update !== null && canReview(user, permissions, project, update.submission);
   const label =
     update === null
       ? ''

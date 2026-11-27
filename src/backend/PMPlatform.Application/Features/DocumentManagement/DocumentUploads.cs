@@ -5,19 +5,40 @@ using PMPlatform.Domain.DocumentManagement;
 namespace PMPlatform.Application.Features.DocumentManagement;
 
 /// <summary>
-/// Secure upload (CTL-20): the file is checked against the upload policy, stored under a key the platform chooses, hashed
+/// Secure upload (CTL-20): the file is checked against the upload policy and its content rules, stored under a key the platform chooses, hashed
 /// as it is stored, and recorded as a version that is SCAN_PENDING until the scanner decides.
 /// </summary>
 internal sealed class DocumentUploads(IDocumentStorage storage, DocumentUploadPolicy policy)
 {
-    /// <summary>Null when the file may be stored.</summary>
-    public AdministrationError? Check(DocumentFile file)
+    /// <summary>
+    /// The file to store when it may be stored: its size, declared media type, file-name extension and leading bytes all
+    /// agree with the policy and <see cref="DocumentContentRules"/> (SR-38). The leading bytes are read here, so the file
+    /// returned replays them before the rest of the original stream; store that one, not the original.
+    /// </summary>
+    public async Task<AdministrationResult<DocumentFile>> CheckAsync(DocumentFile file, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
-        return !storage.IsConfigured ? AdministrationError.Unavailable
-            : file.Length > policy.MaxFileSizeBytes ? AdministrationError.PayloadTooLarge
-            : !policy.Allows(file.ContentType) ? AdministrationError.UnsupportedMediaType
-            : null;
+        if (!storage.IsConfigured)
+        {
+            return AdministrationError.Unavailable;
+        }
+
+        if (file.Length > policy.MaxFileSizeBytes)
+        {
+            return AdministrationError.PayloadTooLarge;
+        }
+
+        string mediaType = MediaTypeOf(file.ContentType);
+        if (!policy.Allows(mediaType) || !DocumentContentRules.ExtensionMatches(mediaType, DocumentFileNames.Clean(file.FileName)))
+        {
+            return AdministrationError.UnsupportedMediaType;
+        }
+
+        byte[] header = new byte[DocumentContentRules.HeaderLength];
+        int read = await file.Content.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+        return DocumentContentRules.ContentMatches(mediaType, header.AsSpan(0, read))
+            ? file with { Content = new PrefixedReadStream(header.AsMemory(0, read), file.Content) }
+            : AdministrationError.UnsupportedMediaType;
     }
 
     /// <summary>
@@ -28,7 +49,7 @@ internal sealed class DocumentUploads(IDocumentStorage storage, DocumentUploadPo
     {
         Guid versionId = Guid.CreateVersion7(now);
         string objectKey = $"documents/{documentId:N}/{versionId:N}";
-        string mediaType = file.ContentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        string mediaType = MediaTypeOf(file.ContentType);
 
         await using HashingReadStream hashing = new(file.Content);
         await storage.WriteAsync(objectKey, hashing, mediaType, cancellationToken).ConfigureAwait(false);
@@ -52,4 +73,7 @@ internal sealed class DocumentUploads(IDocumentStorage storage, DocumentUploadPo
             UpdatedBy = uploaderId,
         };
     }
+
+    /// <summary>The declared media type without parameters, in lower case.</summary>
+    private static string MediaTypeOf(string contentType) => contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
 }

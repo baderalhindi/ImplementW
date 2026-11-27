@@ -231,6 +231,8 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         await responses.CheckAsync("GET", "/api/v1/portfolio-insights", insights);
         using HttpResponseMessage card = await client.GetAsync($"/api/v1/portfolio-insights/cards?dimension=PORTFOLIO&itemId={Guid.NewGuid()}", manager);
         await responses.CheckAsync("GET", "/api/v1/portfolio-insights/cards", card);
+        using HttpResponseMessage cardWithoutQuery = await client.GetAsync("/api/v1/portfolio-insights/cards", manager);
+        Assert.Equal(HttpStatusCode.BadRequest, cardWithoutQuery.StatusCode);
 
         // The 17 Nov 2026 designer: the design read, its data catalogue, a preview, a save and a reset, as local.r02 (DASHBOARD_DESIGN) calls them.
         const string design = "/api/v1/portfolio-insights/design";

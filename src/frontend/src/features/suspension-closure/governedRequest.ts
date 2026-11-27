@@ -2,8 +2,15 @@ import {
   type ApprovalInboxItem,
   type ApprovalInstanceSummary,
 } from '@/features/approvals/api/types.ts';
+import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { assignmentsReaching, isClosed, isInternal } from '@/features/projects/access.ts';
+import {
+  assignmentsReaching,
+  holdsOnProject,
+  isClosed,
+  isInternal,
+} from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 
 import { type CloseoutCaseStatus, type SuspensionRequestStatus } from './api/types.ts';
@@ -90,9 +97,11 @@ export function activationStateOf(status: GovernedStatus): ActivationState {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Who is offered what. Shipped grants: the project's Project Manager (R04 at OWN, internal or entity, ADR-013) raises;
-// the department's manager (R03 at DEPT) reviews and waives; WF-11 decides; the worker activates. A CLOSED project
-// takes no write at all (409 PROJECT_CLOSED, TASK-063 D-8), so nothing is offered on one.
+// Who is offered what: each command to a holder of the permission its endpoint requires, at a scope reaching the
+// project (SuspensionRequestsController, ClosureCasesController, PostProjectObligationsController). Shipped grants:
+// …_RAISE to R02 (ALL), R03 (DEPT) and the Project Manager (R04 at OWN, internal or entity, ADR-013); …_REVIEW and
+// CLOSEOUT_WAIVE to R02 and R03; WF-11 decides; the worker activates. A CLOSED project takes no write at all (409
+// PROJECT_CLOSED, TASK-063 D-8), so nothing is offered on one.
 
 function writable(project: ProjectFacts | null): boolean {
   return project === null || !isClosed(project.status);
@@ -107,9 +116,13 @@ export function isRaiser(
   return record.requestedByUserId === user.id || project?.projectManagerUserId === user.id;
 }
 
-/** The project's Project Manager raises new records of it. */
-export function managesProject(user: SessionUser, project: ProjectFacts): boolean {
-  return !isClosed(project.status) && project.projectManagerUserId === user.id;
+/** A holder of CLOSEOUT_RAISE on the project raises its closeout cases and moves its obligations along. */
+export function raisesCloseout(
+  user: SessionUser,
+  permissions: Permissions,
+  project: ProjectFacts,
+): boolean {
+  return !isClosed(project.status) && holdsOnProject(permissions, user, project, 'CLOSEOUT_RAISE');
 }
 
 /**
@@ -161,12 +174,33 @@ export function canWithdrawRecord(
   );
 }
 
+/** Start the review: `review` is SUSPENSION_REVIEW or CLOSEOUT_REVIEW, held on the project. */
 export function canStartReview(
   user: SessionUser,
+  permissions: Permissions,
+  record: GovernedRecord,
+  project: ProjectFacts | null,
+  review: PermissionCode,
+): boolean {
+  return (
+    record.status === 'SUBMITTED' &&
+    isAhdaGatekeeper(user, record, project) &&
+    holdsOnProject(permissions, user, project, review)
+  );
+}
+
+/** Waive a readiness check of a case still being prepared: CLOSEOUT_WAIVE on the project, never the raiser. */
+export function canWaiveChecks(
+  user: SessionUser,
+  permissions: Permissions,
   record: GovernedRecord,
   project: ProjectFacts | null,
 ): boolean {
-  return record.status === 'SUBMITTED' && isAhdaGatekeeper(user, record, project);
+  return (
+    isEditable(record.status) &&
+    isAhdaGatekeeper(user, record, project) &&
+    holdsOnProject(permissions, user, project, 'CLOSEOUT_WAIVE')
+  );
 }
 
 /**

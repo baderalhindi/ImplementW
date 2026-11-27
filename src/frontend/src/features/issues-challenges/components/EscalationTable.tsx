@@ -10,7 +10,7 @@ import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.
 import { type ConcernEscalationDetail } from '../api/types.ts';
 import { escalationAgeDays, type EscalationEntry } from '../concernRules.ts';
 import { concernPath, escalationPath } from '../paths.ts';
-import { type RoleNames } from '../useConcernData.ts';
+import { escalatedToRole } from '../presentation.ts';
 
 import { EscalationStatusBadge, SeverityBadge } from './ConcernBadges.tsx';
 
@@ -18,7 +18,6 @@ interface EscalationTableProps {
   caption: string;
   /** SCR-087 names each escalation's concern and project; a concern's own list does not. */
   entries: (Pick<EscalationEntry, 'escalation'> & Partial<EscalationEntry>)[];
-  roles: RoleNames;
   itemLabel: (id: string) => string;
   personName: (id: string | null) => string;
   /** The commands offered on a row (a concern's own list); none on SCR-087, where SCR-088 offers them. */
@@ -38,14 +37,13 @@ interface EscalationTableProps {
 export function EscalationTable({
   caption,
   entries,
-  roles,
   itemLabel,
   personName,
   actions,
   selection: givenSelection,
   bulkActions,
 }: EscalationTableProps): ReactElement {
-  const { t, formatDateTime } = useI18n();
+  const { t, language, formatDateTime } = useI18n();
   const ownSelection = useRowSelection();
   const selection = givenSelection ?? ownSelection;
   const showSource = entries.some((entry) => entry.concern !== undefined);
@@ -128,7 +126,7 @@ export function EscalationTable({
                   </td>
                 </>
               )}
-              <td>{roles.name(escalation.escalatedToRoleId)}</td>
+              <td>{escalatedToRole(escalation, language)}</td>
               <td>
                 {formatDateTime(escalation.escalatedAt)}
                 <span className="cell__aside">{personName(escalation.escalatedByUserId)}</span>

@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'vitest';
 
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
+import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
+import { concernProject } from '@/test/concernFixtures.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
+import { shippedPermissions } from '@/test/permissionFixtures.ts';
+import { reviewerSession, viewerSession } from '@/test/projectFixtures.ts';
 import {
   financialPosition,
   financialUpdate,
@@ -9,6 +15,7 @@ import {
   monthBefore,
 } from '@/test/financialKpiFixtures.ts';
 
+import { canPublishKpi, canReviewFinancials } from './access.ts';
 import {
   checkFinancialUpdate,
   checkKpiValue,
@@ -198,5 +205,29 @@ describe('MOD-023 and MOD-024 send no figure for an Unknown status', () => {
     );
     expect(codes.periodEnd).toBe('BEFORE_START');
     expect(codes.measuredValue).toBeNull();
+  });
+});
+
+describe('who is offered a review (access.ts: navigation, not protection)', () => {
+  const held = (user: SessionUser) => permissionsOf(shippedPermissions(user));
+  const project = concernProject();
+  const update = financialUpdate({ status: 'SUBMITTED' });
+  const submitted = measurement({ status: 'SUBMITTED' });
+
+  test('FINANCIAL_REVIEW and KPI_REVIEW holders on the project review: R02 and R03 (D1-03)', () => {
+    for (const user of [reviewerSession().user, sessionFor(['R02']).user]) {
+      expect(canReviewFinancials(user, held(user), project, update)).toBe(true);
+      expect(canPublishKpi(user, held(user), project, submitted)).toBe(true);
+    }
+  });
+
+  test('R04, R05, R06 and R07 hold neither, so they are offered no review', () => {
+    for (const roleCode of ['R04', 'R05', 'R06', 'R07']) {
+      const user = sessionFor([roleCode]).user;
+      expect(canReviewFinancials(user, held(user), project, update)).toBe(false);
+      expect(canPublishKpi(user, held(user), project, submitted)).toBe(false);
+    }
+    const viewer = viewerSession().user;
+    expect(canReviewFinancials(viewer, held(viewer), project, update)).toBe(false);
   });
 });

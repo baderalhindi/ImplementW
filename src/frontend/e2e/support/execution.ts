@@ -6,6 +6,7 @@ import { expectText, utcDate } from './journey.ts';
 import {
   approveTaskOn,
   registration,
+  submitRegistration,
   untilStatus,
   type ProjectCrew,
   type ProjectDetail,
@@ -20,9 +21,7 @@ export async function plannedProject(crew: ProjectCrew, title: string): Promise<
     '/projects',
     await registration(crew.approver, { title }),
   );
-  await crew.creator.post(`/projects/${draft.id}/submit`, {
-    projectManagerUserId: crew.manager.userId,
-  });
+  await submitRegistration(crew.creator, draft.id, crew.manager.userId);
   await crew.reviewer.post(`/projects/${draft.id}/start-review`);
   await approveTaskOn(crew.approver, draft.id, 'PROJECT_REGISTRATION');
   return untilStatus(crew.approver, draft.id, 'APPROVED_PLANNED');

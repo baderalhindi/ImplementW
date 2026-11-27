@@ -14,13 +14,15 @@ namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
 /// TASK-028. The directory or identity provider proves who the person is; the platform decides whether they may hold a
 /// session and with which roles (ADR-007: roles are assigned in the platform, never inherited from directory groups).
 /// TASK-029. A person who requires MFA gets an MFA token instead of a session, and a session only once the MFA provider
-/// has verified their second factor. Every session is issued by <see cref="Issue"/>, and every path into it for a
+/// has verified their second factor. Every session is issued by <see cref="SucceedAsync"/>, and every path into it for a
 /// person who requires MFA passes <see cref="VerifySecondFactorAsync"/> first, or carries a verified factor forward.
 /// TASK-033. Every attempt ends in <see cref="SucceedAsync"/> or <see cref="FailAsync"/>, which record its audit event
 /// (CTL-25) before the caller is answered; the event says why an attempt failed, the caller never learns it.
 /// TASK-068. The last gate before a new session is <see cref="AdmitAsync"/>: an external user whose identity Nafath has
 /// not verified gets a verification token instead (ADR-007, ADR-013). Nafath is called only from
 /// <see cref="BeginIdentityVerificationAsync"/> and <see cref="CompleteIdentityVerificationAsync"/>, for such a user.
+/// SR-10. <see cref="SucceedAsync"/> records every session it issues in <see cref="SessionRegistry"/>; a refresh or step-up
+/// continues only the session's current refresh token, and replaces it.
 /// </summary>
 internal sealed partial class AuthenticationService(
     IDirectoryService directory,
@@ -37,6 +39,7 @@ internal sealed partial class AuthenticationService(
     IPasskeyRelyingParty passkeyRelyingParty,
     IPasskeyRepository passkeys,
     SmsOneTimeCodes smsCodes,
+    SessionRegistry sessions,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<AuthenticationService> logger) : IAuthenticationService
@@ -214,6 +217,11 @@ internal sealed partial class AuthenticationService(
         // Re-read on every refresh: a disabled account or a suspended entity ends the session here, and an ended
         // assignment's role is not in the next token pair.
         Attempt attempt = Attempt.Refresh(continuation.Authentication.Method);
+        if (await sessions.CheckAsync(continuation, cancellationToken).ConfigureAwait(false) is { } ended)
+        {
+            return await FailAsync(attempt, ended, continuation.UserId).ConfigureAwait(false);
+        }
+
         UserAccess? access = await users.FindByIdAsync(continuation.UserId, cancellationToken).ConfigureAwait(false);
         if (access is null || !access.MaySignIn)
         {
@@ -241,6 +249,16 @@ internal sealed partial class AuthenticationService(
         }
 
         return await SucceedAsync(attempt, access, continuation.Authentication, continuation).ConfigureAwait(false);
+    }
+
+    public async Task SignOutAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken)
+    {
+        await sessions.SignOutAsync(userId, sessionId, cancellationToken).ConfigureAwait(false);
+        await audit.RecordAsync(new AuditEntry(AuditEventClass.Authentication, IdentityAccessAuditEvents.SignedOut, AuditOutcome.Success)
+        {
+            ActorUserId = userId,
+            Subject = UserSubject(userId),
+        }).ConfigureAwait(false);
     }
 
     public async Task<MultiFactorChallengeResult> BeginMultiFactorSignInAsync(string mfaToken, CancellationToken cancellationToken)
@@ -272,9 +290,15 @@ internal sealed partial class AuthenticationService(
     public async Task<MultiFactorChallengeResult> BeginStepUpAsync(string refreshToken, CancellationToken cancellationToken)
     {
         SessionContinuation? continuation = await tokens.ReadRefreshTokenAsync(refreshToken).ConfigureAwait(false);
-        return continuation is null
-            ? await FailChallengeAsync(Attempt.StepUp(method: null), AuthenticationFailureReason.TokenInvalid, userId: null).ConfigureAwait(false)
-            : await BeginChallengeAsync(Attempt.StepUp(continuation.Authentication.Method), continuation.UserId, cancellationToken).ConfigureAwait(false);
+        if (continuation is null)
+        {
+            return await FailChallengeAsync(Attempt.StepUp(method: null), AuthenticationFailureReason.TokenInvalid, userId: null).ConfigureAwait(false);
+        }
+
+        Attempt attempt = Attempt.StepUp(continuation.Authentication.Method);
+        return await sessions.CheckAsync(continuation, cancellationToken).ConfigureAwait(false) is { } ended
+            ? await FailChallengeAsync(attempt, ended, continuation.UserId).ConfigureAwait(false)
+            : await BeginChallengeAsync(attempt, continuation.UserId, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<AuthenticationResult> CompleteStepUpAsync(string refreshToken, string challengeId, string code, CancellationToken cancellationToken) =>
@@ -289,8 +313,10 @@ internal sealed partial class AuthenticationService(
 
                 Attempt attempt = Attempt.StepUp(continuation.Authentication.Method);
                 UserAccess? access = await users.FindByIdAsync(continuation.UserId, cancellationToken).ConfigureAwait(false);
-                // As the refresh: a session that skipped a verification that now applies is not continued.
-                AuthenticationFailureReason? refusal = access is not null && BeganBeforePasswordChange(access, continuation)
+                // As the refresh: an ended session, or one that skipped a verification that now applies, is not continued.
+                AuthenticationFailureReason? refusal = await sessions.CheckAsync(continuation, cancellationToken).ConfigureAwait(false) is { } ended
+                    ? ended
+                    : access is not null && BeganBeforePasswordChange(access, continuation)
                     ? AuthenticationFailureReason.PasswordChanged
                     : access is not null && RequiresIdentityVerification(access)
                     ? AuthenticationFailureReason.IdentityVerificationMissing
@@ -786,13 +812,24 @@ internal sealed partial class AuthenticationService(
         }
     }
 
-    /// <summary>Audits the attempt's success, then issues the session: a session is never handed out unaudited.</summary>
+    /// <summary>
+    /// Issues the token pair, records it against its session (SR-10), audits the attempt's success, then hands the session out:
+    /// a session is never handed out unrecorded or unaudited. A continuation that lost its session meanwhile (a concurrent use
+    /// of the same refresh token, a sign-out) fails instead.
+    /// </summary>
     private async Task<AuthenticationResult> SucceedAsync(Attempt attempt, UserAccess access, SessionAuthentication authentication, SessionContinuation? continuation)
     {
+        IReadOnlyList<string> roleCodes = [.. access.RoleAssignments.Select(a => a.RoleCode).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        SessionTokens issued = tokens.Issue(new SessionTokenSubject(access.UserId, access.UserType, authentication, roleCodes), continuation);
+        if (await sessions.RecordAsync(access.UserId, issued, continuation, CancellationToken.None).ConfigureAwait(false) is { } refusal)
+        {
+            return await FailAsync(attempt, refusal, access.UserId).ConfigureAwait(false);
+        }
+
         AuditEntry entry = Entry(attempt with { Method = authentication.Method }, attempt.SucceededEvent, AuditOutcome.Success, access.UserId, access.UserId);
         AuditAttribute multiFactor = AuditAttribute.Of(IdentityAccessAuditAttributes.MultiFactor, authentication.MultiFactor);
         await audit.RecordAsync(entry with { Attributes = [.. entry.Attributes, multiFactor] }).ConfigureAwait(false);
-        return Issue(access, authentication, continuation);
+        return Issued(access, authentication, issued);
     }
 
     /// <summary>Audits the failed attempt and answers with the failure the caller may see.</summary>
@@ -854,12 +891,8 @@ internal sealed partial class AuthenticationService(
         : failure == AuthenticationFailure.NotConfigured ? AuthenticationFailureReason.NotConfigured
         : whenRejected;
 
-    private AuthenticationResult Issue(UserAccess access, SessionAuthentication authentication, SessionContinuation? continuation)
-    {
-        IReadOnlyList<string> roleCodes = [.. access.RoleAssignments.Select(a => a.RoleCode).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
-        SessionTokens issued = tokens.Issue(new SessionTokenSubject(access.UserId, access.UserType, authentication, roleCodes), continuation);
-
-        return AuthenticationResult.Succeeded(new PlatformSession(
+    private static AuthenticationResult Issued(UserAccess access, SessionAuthentication authentication, SessionTokens issued) =>
+        AuthenticationResult.Succeeded(new PlatformSession(
             issued.AccessToken,
             issued.AccessTokenExpiresAt,
             issued.RefreshToken,
@@ -875,7 +908,6 @@ internal sealed partial class AuthenticationService(
                 authentication.MultiFactor,
                 authentication.AuthenticatedAt,
                 access.RoleAssignments)));
-    }
 
     /// <summary>Whole seconds, as a token's <c>auth_time</c> carries them, so the time reported with a session is the one in its tokens.</summary>
     private DateTimeOffset Now() => DateTimeOffset.FromUnixTimeSeconds(timeProvider.GetUtcNow().ToUnixTimeSeconds());

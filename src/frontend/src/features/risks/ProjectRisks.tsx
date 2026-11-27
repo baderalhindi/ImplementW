@@ -3,6 +3,7 @@ import { type ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -19,7 +20,7 @@ import { risksApi } from './api/risksApi.ts';
 
 /**
  * SCR-080 Risk Register for one project, inside its workspace: the summary cards, the filters and the project's risks,
- * most severe first; a title opens SCR-082. The project's own Project Manager registers risks (MOD-030) while the
+ * most severe first; a title opens SCR-082. A holder of RISK_MANAGE on the project registers risks (MOD-030) while the
  * project is APPROVED_PLANNED, ACTIVE or SUSPENDED, and lands on the new risk to assess it.
  */
 export function ProjectRisks({
@@ -31,6 +32,7 @@ export function ProjectRisks({
 }): ReactElement {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const risks = useProjectRisks(project.id);
   const rowActions = useRowActions<RiskEntry>({
     permission: 'RISK_MANAGE',
@@ -60,7 +62,7 @@ export function ProjectRisks({
     );
   }
 
-  const registrar = canRegisterRisks(user, project);
+  const registrar = canRegisterRisks(user, permissions, project);
   const entries = risks.data.map((risk) => ({ risk, project }));
 
   return (

@@ -1,9 +1,17 @@
 import { type Page } from '@playwright/test';
 
 import { type PlatformApi } from '../support/api.ts';
-import { expect, expectText, test, unique, utcDate } from '../support/journey.ts';
+import {
+  expect,
+  expectText,
+  openProjectOverview,
+  test,
+  unique,
+  utcDate,
+} from '../support/journey.ts';
 import {
   approveTaskOn,
+  planEveryStage,
   project,
   type ProjectStatus,
   registration,
@@ -39,6 +47,8 @@ test('ADR-013 entity Project Manager journey: the entity drafts and manages its 
     await registration(portfolio.api, { title, participationMode: 'ENTITY_MANAGED' }),
   );
   const projectId = draft.id;
+  // Review round 7: submission needs a complete stage plan, planned here by the entity Project Manager as the draft's writer.
+  await planEveryStage(entityPm.api, projectId);
   const draftVersion = (await entityPm.api.ok('GET', `/projects/${projectId}`)).etag;
   const read = () => project(portfolio.api, projectId);
   const expectStatus = async (status: ProjectStatus) => {
@@ -201,7 +211,7 @@ test('ADR-013 entity Project Manager journey: the entity drafts and manages its 
   });
 
   await test.step('the entity Project Manager sees progress, schedule status and health of their own project', async () => {
-    await page.goto(`/projects/${projectId}`);
+    await openProjectOverview(page, projectId);
     const dashboard = page.getByRole('region', { name: 'Project Dashboard' });
     for (const panel of [
       'Lifecycle state',

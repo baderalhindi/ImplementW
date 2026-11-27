@@ -31,6 +31,13 @@ function openInbox(
   return api;
 }
 
+function present<T>(value: T | undefined): T {
+  if (value === undefined) {
+    throw new Error('The row is not there');
+  }
+  return value;
+}
+
 describe('SCR-100 Approval Inbox', () => {
   test('shows a loading state, then a distinct "no pending approvals" empty state', async () => {
     let answer: (reply: MockReply) => void = () => undefined;
@@ -52,6 +59,36 @@ describe('SCR-100 Approval Inbox', () => {
     expect(screen.queryByText(en('approvals.inbox.loading'))).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
     expect(describeViolations(await accessibilityViolations())).toBe('');
+  });
+
+  test('names the project each row decides, by its Formal Project ID and title (stage QA D1-01)', async () => {
+    openInbox({
+      body: page([
+        inboxItem({
+          instance: {
+            ...inboxItem().instance,
+            routingKey: 'PROJECT_REGISTRATION',
+            subject: { module: 'Project', type: 'Project', id: 'p1', revisionNo: 1 },
+          },
+          project: {
+            id: 'p1',
+            formalProjectId: 'PRJ-000123',
+            title: { text: 'طريق الساحل', language: 'AR' },
+          },
+        }),
+        inboxItem({ taskId: '17171717-0000-4000-8000-000000000b02', project: null }),
+      ]),
+    });
+
+    const table = await screen.findByRole('table', { name: en('approvals.inbox.caption') });
+    const [, named, unnamed] = within(table).getAllByRole('row');
+    expect(within(present(named)).getByText('PRJ-000123')).toBeTruthy();
+    expect(within(present(named)).getByText('طريق الساحل').getAttribute('lang')).toBe('ar');
+    // The row's checkbox names the project as well.
+    expect(
+      within(present(named)).getByRole('checkbox').getAttribute('aria-label')?.replace(/[⁨⁩]/g, ''),
+    ).toContain(`${en('approvals.routing.PROJECT_REGISTRATION')} PRJ-000123 طريق الساحل`);
+    expect(present(unnamed).querySelector('.subject__project')).toBeNull();
   });
 
   test('lists exactly the tasks the API returns for the caller, read from the inbox endpoint only', async () => {

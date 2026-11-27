@@ -2,7 +2,7 @@ import { useRowActions } from '@/features/identity-access/components/RowActions.
 import { type ReactElement, useState } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
-import { useCan } from '@/features/identity-access/permissions/permissions.ts';
+import { useCan, usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { isClosed } from '@/features/projects/access.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
@@ -45,6 +45,7 @@ export function ProjectKpis({
   const kpis = useProjectKpis(project.id);
   const lookups = useKpiLookups();
   const mayAdd = useCan('KPI_MANAGE');
+  const permissions = usePermissions();
   const personName = usePersonNames(
     (kpis.data ?? []).flatMap((entry) => [
       entry.assignment.ownerUserId,
@@ -122,7 +123,7 @@ export function ProjectKpis({
             {t('financialKpi.actions.editValue')}
           </button>
         )}
-        {submitted !== null && canPublishKpi(user, project, submitted) && (
+        {submitted !== null && canPublishKpi(user, permissions, project, submitted) && (
           <button
             type="button"
             className="button button--primary"

@@ -713,6 +713,10 @@ jobs:
       - name: Environment separation (TASK-016)
         run: python3 docs/architecture/environment-separation-check.py
 
+      # QA PHASE-E-01: verify-separation.sh against stand-in gcloud/psql — only a provider refusal passes, and every run ends with its summary.
+      - name: Separation drill reports refusals, not failures (TASK-016, TASK-112)
+        run: sh infra/environments/tests/verify-separation-test.sh
+
       - name: Infrastructure as code (TASK-017)
         run: python3 docs/architecture/terraform-check.py
 

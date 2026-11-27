@@ -2,6 +2,7 @@ import { useRowActions } from '@/features/identity-access/components/RowActions.
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -16,8 +17,8 @@ import { changeRequestsApi } from './api/changeRequestsApi.ts';
 
 /**
  * SCR-105 Change Requests for one project, inside its workspace: the project's requests, most recently changed first,
- * each opening SCR-107. The project's Project Manager raises one (SCR-106) while the project is APPROVED_PLANNED, ACTIVE
- * or SUSPENDED.
+ * each opening SCR-107. A holder of CHANGE_REQUEST_RAISE on the project raises one (SCR-106) while the project is
+ * APPROVED_PLANNED, ACTIVE or SUSPENDED.
  */
 export function ProjectChangeRequests({
   project,
@@ -27,6 +28,7 @@ export function ProjectChangeRequests({
   user: SessionUser;
 }): ReactElement {
   const { t } = useI18n();
+  const permissions = usePermissions();
   const requests = useProjectChangeRequests(project.id);
   const rowActions = useRowActions<ChangeRequestEntry>({
     permission: 'CHANGE_REQUEST_RAISE',
@@ -56,7 +58,7 @@ export function ProjectChangeRequests({
     );
   }
 
-  const raiser = canRaiseChangeRequests(user, project);
+  const raiser = canRaiseChangeRequests(user, permissions, project);
   const entries = requests.data.map((request) => ({ request, project }));
 
   return (

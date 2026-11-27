@@ -40,6 +40,10 @@ public sealed record ConcernDetail(
 
 public sealed record ConcernImpactDetail(Guid ImpactDimensionItemId, short ImpactLevel, NarrativeText? Rationale);
 
+/// <summary>
+/// A concern's escalation. The role it is addressed to is named by its code and name as well as its id, so the people who read it see
+/// whom it waits on without reading the role catalogue, which is the administrators' (ROLE_VIEW; QA C-05, D1-06).
+/// </summary>
 public sealed record ConcernEscalationDetail(
     Guid Id,
     Guid ManagementConcernId,
@@ -47,6 +51,8 @@ public sealed record ConcernEscalationDetail(
     Guid EscalatedByUserId,
     DateTimeOffset EscalatedAt,
     Guid EscalatedToRoleId,
+    string EscalatedToRoleCode,
+    BilingualLabel EscalatedToRoleName,
     NarrativeText Reason,
     ConcernEscalationStatus Status,
     DateTimeOffset? ResolvedAt,

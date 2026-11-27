@@ -271,9 +271,6 @@
     "wasOpenFor": "Was open for {days} day(s)",
     "ended": "Ended {date} by {name}"
   },
-  "escalation": {
-    "unknownRole": "Role {id}"
-  },
   "escalationDetail": {
     "title": "Escalation {number}: {concern}",
     "age": "Age",

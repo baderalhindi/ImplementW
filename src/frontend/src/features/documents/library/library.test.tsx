@@ -113,7 +113,8 @@ describe('SCR-120 Document Library', () => {
 
   test('loading, empty and filtered-empty are distinct states', async () => {
     openList('/documents', []);
-    expect(screen.getByText(en('documents.list.loading'))).toBeTruthy();
+    // The route opens once the session's permissions are read (DOCUMENT_VIEW), then the list loads.
+    expect(await screen.findByText(en('documents.list.loading'))).toBeTruthy();
     expect(await screen.findByText(en('documents.list.empty'))).toBeTruthy();
     expect(screen.queryByText(en('documents.list.loading'))).toBeNull();
   });

@@ -123,7 +123,12 @@ describe('every screen of the real menus is offered, with a code the API keeps',
     authenticatedAt: '2026-11-21T09:00:00Z',
     roleAssignments: [{ roleCode: role } as SessionUser['roleAssignments'][number]],
   });
-  const everything = { loaded: true, can: () => true, showCreateInHeader: true };
+  const everything = {
+    loaded: true,
+    can: () => true,
+    scopesOf: () => [],
+    showCreateInHeader: true,
+  };
   const audit: AuditAccessView = {
     categories: [
       'ADMINISTRATION',

@@ -20,6 +20,9 @@ public static class SessionTokenClaims
 
     public const string Subject = "sub";
     public const string SessionId = "sid";
+
+    /// <summary>RFC 7519 §4.1.7: on a refresh token, its id. The session record names the one id that may continue it (SR-10).</summary>
+    public const string TokenId = "jti";
     public const string UserType = "user_type";
     public const string Role = "role";
 

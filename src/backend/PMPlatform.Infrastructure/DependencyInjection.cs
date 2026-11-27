@@ -124,6 +124,9 @@ public static class DependencyInjection
         services.AddScoped<IBannerRepository, BannerRepository>();
         services.AddScoped<ISmsCodeRepository, SmsCodeRepository>();
 
+        // SR-10: the server-side session record behind refresh-token rotation and sign-out.
+        services.AddScoped<IUserSessionRepository, UserSessionRepository>();
+
         // TASK-030: the grants and classifications the authorization engine evaluates.
         services.AddScoped<IAuthorizationRepository, AuthorizationRepository>();
 
@@ -342,8 +345,8 @@ public static class DependencyInjection
 
         services.AddOptions<DocumentUploadPolicy>()
             .Bind(configuration.GetSection(DocumentUploadPolicy.Section))
-            .Validate(policy => policy.MaxFileSizeBytes > 0 && policy.AllowedContentTypes.Count > 0,
-                $"{DocumentUploadPolicy.Section}: MaxFileSizeBytes must be positive and AllowedContentTypes must name at least one media type.")
+            .Validate(policy => policy.MaxFileSizeBytes > 0 && policy.AllowedContentTypes.Count > 0 && policy.EveryTypeIsVerifiable,
+                $"{DocumentUploadPolicy.Section}: MaxFileSizeBytes must be positive and AllowedContentTypes must name at least one media type, each one the platform verifies by extension and signature.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<DocumentUploadPolicy>>().Value);
 

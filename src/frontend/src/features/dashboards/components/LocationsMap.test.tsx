@@ -187,6 +187,16 @@ describe('LocationsMap', () => {
     );
   });
 
+  test('credits its sources in Arabic on an Arabic page, the names kept as they are', async () => {
+    renderMap({ language: 'ar' });
+    await shownMap();
+
+    const credit = screen.getByRole('link', { name: 'OpenStreetMap' }).closest('p');
+    expect(credit?.textContent).toContain(translate('ar', 'dashboards.locations.dataFrom'));
+    expect(credit?.textContent).not.toContain('Data from');
+    expect(credit?.getAttribute('dir')).toBeNull();
+  });
+
   test('draws a circle for each place, the fuller place larger, with the smaller stacked above', async () => {
     renderMap();
     await shownMap();

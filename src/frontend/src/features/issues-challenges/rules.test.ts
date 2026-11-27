@@ -1,8 +1,12 @@
 import { describe, expect, test } from 'vitest';
 
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
+import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { riskMatrixOf } from '@/features/risks/riskRules.ts';
 import { concern, concernProject, escalation, managerSession } from '@/test/concernFixtures.ts';
-import { entitySession, reviewerSession } from '@/test/projectFixtures.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
+import { shippedPermissions } from '@/test/permissionFixtures.ts';
+import { entitySession, reviewerSession, viewerSession } from '@/test/projectFixtures.ts';
 import { COST_DIMENSION_ID, SCHEDULE_DIMENSION_ID, standardMatrix } from '@/test/riskFixtures.ts';
 
 import {
@@ -205,15 +209,26 @@ describe('the escalation list (acceptance criterion 2)', () => {
 });
 
 describe('what is offered (access.ts)', () => {
+  const held = (user: SessionUser) => permissionsOf(shippedPermissions(user));
   const manager = managerSession().user;
   const entity = entitySession().user;
   const departmentManager = reviewerSession().user;
 
-  test('the Project Manager and the delivering entity raise; the department manager does not', () => {
-    expect(canRaiseConcerns(manager, project)).toBe(true);
-    expect(canRaiseConcerns(entity, project)).toBe(true);
-    expect(canRaiseConcerns(departmentManager, project)).toBe(false);
-    expect(canRaiseConcerns(manager, { ...project, status: 'COMPLETED' })).toBe(false);
+  test('a holder of CONCERN_RAISE on the project raises: PM, delivering entity, R02 and R03', () => {
+    const raise = (user: SessionUser, on = project) => canRaiseConcerns(user, held(user), on);
+    expect(raise(manager)).toBe(true);
+    expect(raise(entity)).toBe(true);
+    expect(raise(departmentManager)).toBe(true);
+    expect(raise(sessionFor(['R02']).user)).toBe(true);
+    expect(raise(manager, { ...project, status: 'COMPLETED' })).toBe(false);
+  });
+
+  test('R05, R06, R07 and an R04 who does not manage the project are offered no raising', () => {
+    const raise = (user: SessionUser) => canRaiseConcerns(user, held(user), project);
+    expect(raise(viewerSession().user)).toBe(false);
+    for (const roleCode of ['R04', 'R05', 'R07']) {
+      expect(raise(sessionFor([roleCode]).user)).toBe(false);
+    }
   });
 
   test('priority (MOD-037) is edited by the internal Project Manager until validation, never by an external one', () => {
@@ -248,15 +263,11 @@ describe('what is offered (access.ts)', () => {
 
   test('the addressed role resolves; its escalator withdraws', () => {
     const open = escalation();
-    expect(canResolveEscalation(departmentManager, open, 'R03')).toBe(true);
-    expect(canResolveEscalation(manager, open, 'R03')).toBe(false);
-    // Roles unreadable: any internal person but the escalator, and the API decides.
-    expect(canResolveEscalation(departmentManager, open, null)).toBe(true);
-    expect(canResolveEscalation(manager, open, null)).toBe(false);
-    expect(canResolveEscalation(entity, open, null)).toBe(false);
-    expect(canResolveEscalation(departmentManager, escalation({ status: 'RESOLVED' }), 'R03')).toBe(
-      false,
-    );
+    expect(open.escalatedToRoleCode).toBe('R03');
+    expect(canResolveEscalation(departmentManager, open)).toBe(true);
+    expect(canResolveEscalation(manager, open)).toBe(false);
+    expect(canResolveEscalation(entity, open)).toBe(false);
+    expect(canResolveEscalation(departmentManager, escalation({ status: 'RESOLVED' }))).toBe(false);
     expect(canWithdrawEscalation(manager, open)).toBe(true);
     expect(canWithdrawEscalation(departmentManager, open)).toBe(false);
   });

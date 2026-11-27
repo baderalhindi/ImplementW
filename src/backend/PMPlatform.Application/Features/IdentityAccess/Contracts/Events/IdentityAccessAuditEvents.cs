@@ -13,6 +13,9 @@ public static class IdentityAccessAuditEvents
     public const string MultiFactorEnrolled = "IdentityAccess.MultiFactorEnrolled";
     public const string SessionRefreshed = "IdentityAccess.SessionRefreshed";
     public const string SessionRefreshFailed = "IdentityAccess.SessionRefreshFailed";
+
+    /// <summary>AUTHENTICATION: a person signed out, ending their session on the server (SR-10).</summary>
+    public const string SignedOut = "IdentityAccess.SignedOut";
     public const string StepUpSucceeded = "IdentityAccess.StepUpSucceeded";
     public const string StepUpFailed = "IdentityAccess.StepUpFailed";
     public const string AccessTokenRejected = "IdentityAccess.AccessTokenRejected";

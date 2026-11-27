@@ -133,11 +133,13 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
 
     const table = page.getByRole('table', { name: 'Project Report' });
     await expect(table.getByRole('row')).toHaveCount(2);
-    const header = (await table.getByRole('columnheader').allTextContents()).map(plain);
+    // The first column is the row selection box every list table has (dcf60598), not a column of the report.
+    await expect(table.getByRole('columnheader').first().getByRole('checkbox')).toBeVisible();
+    const header = (await table.getByRole('columnheader').allTextContents()).map(plain).slice(1);
     expect(header.map((h) => COLUMNS.find((column) => h.startsWith(column)))).toEqual(COLUMNS);
-    const cells = (await table.getByRole('row').nth(1).getByRole('cell').allTextContents()).map(
-      plain,
-    );
+    const cells = (await table.getByRole('row').nth(1).getByRole('cell').allTextContents())
+      .map(plain)
+      .slice(1);
     expect(cells).toEqual([
       formalId,
       title,

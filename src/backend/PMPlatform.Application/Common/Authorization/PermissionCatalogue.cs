@@ -651,7 +651,7 @@ public sealed class PermissionCatalogue
         [
             PortfolioSummaryView, PortfolioStatusView,
             ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView, ConcernView, ChangeRequestView, SuspensionView, CloseoutView,
-            FinancialView, KpiView, DocumentView,
+            FinancialView, KpiView, DocumentView, AuditBusinessView,
         ]),
 
         // R07 Executive: the whole portfolio, read and decide; no operational editing.

@@ -2,6 +2,7 @@ import { type RouteObject } from 'react-router';
 
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 import { RequirePermission } from '@/features/identity-access/session/RequirePermission.tsx';
+import { ResourceScope } from '@/shared/api/ResourceScope.tsx';
 
 import { DashboardsPage } from './DashboardsPage.tsx';
 import { DashboardDesignerPage } from './design/DashboardDesignerPage.tsx';
@@ -13,13 +14,23 @@ import { DASHBOARD_DESIGNER_PATH, DASHBOARDS_PATH } from './paths.ts';
  * every widget's data, is the API's answer.
  */
 export const dashboardRoutes: RouteObject[] = [
-  { index: true, element: <DashboardsPage /> },
+  // Every visual names master data, units and profiles: each is read once per screen, not once per visual (stage QA F-05).
+  {
+    index: true,
+    element: (
+      <ResourceScope>
+        <DashboardsPage />
+      </ResourceScope>
+    ),
+  },
   {
     // The Portfolio dashboard's designer (17 Nov 2026): the Portfolio Manager changes it for everyone.
     path: 'design',
     element: (
       <RequirePermission codes={['DASHBOARD_DESIGN']}>
-        <DashboardDesignerPage />
+        <ResourceScope>
+          <DashboardDesignerPage />
+        </ResourceScope>
       </RequirePermission>
     ),
   },
