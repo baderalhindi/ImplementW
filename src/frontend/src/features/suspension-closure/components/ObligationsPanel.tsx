@@ -1,6 +1,7 @@
 import { type ReactElement, useState } from 'react';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { ConfirmCommandDialog } from '@/features/risks/dialogs/ConfirmCommandDialog.tsx';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -17,7 +18,7 @@ import {
 } from '../api/types.ts';
 import { isSettled, obligationCommands } from '../closeoutRules.ts';
 import { ObligationDialog } from '../dialogs/ObligationDialog.tsx';
-import { managesProject, type ProjectFacts } from '../governedRequest.ts';
+import { raisesCloseout, type ProjectFacts } from '../governedRequest.ts';
 import { obligationTone } from '../presentation.ts';
 import { isStale, suspensionClosureProblemMessage } from '../problems.ts';
 
@@ -58,11 +59,12 @@ export function ObligationsPanel({
   headingLevel?: 2 | 3;
 }): ReactElement {
   const { t } = useI18n();
+  const permissions = usePermissions();
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
   const personName = usePersonNames(obligations.map((obligation) => obligation.ownerUserId));
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
-  const adds = project !== null && target !== null && managesProject(user, project);
+  const adds = project !== null && target !== null && raisesCloseout(user, permissions, project);
   const open = obligations.filter((obligation) => !isSettled(obligation.status)).length;
   const selection = useRowSelection();
   /** The chosen obligations the command applies to. */
@@ -72,7 +74,7 @@ export function ObligationsPanel({
       : obligations.filter(
           (obligation) =>
             selection.selected.has(obligation.id) &&
-            obligationCommands(user, project, obligation).includes(command),
+            obligationCommands(user, permissions, project, obligation).includes(command),
         );
 
   const done = (message: TranslationKey) => {
@@ -151,9 +153,11 @@ export function ObligationsPanel({
           <tbody>
             {obligations.map((obligation) => {
               const commands =
-                project === null ? [] : obligationCommands(user, project, obligation);
+                project === null ? [] : obligationCommands(user, permissions, project, obligation);
               const editable =
-                project !== null && managesProject(user, project) && !isSettled(obligation.status);
+                project !== null &&
+                raisesCloseout(user, permissions, project) &&
+                !isSettled(obligation.status);
               const name = obligation.title.text;
               return (
                 <tr key={obligation.id}>

@@ -2,7 +2,16 @@ import { describe, expect, test } from 'vitest';
 
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectStatus } from '@/features/projects/api/types.ts';
-import { entitySession, projectSummary, reviewerSession } from '@/test/projectFixtures.ts';
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
+import { allPermissions, shippedPermissions } from '@/test/permissionFixtures.ts';
+import {
+  entityManagerSession,
+  OTHER_DEPARTMENT_ID,
+  projectSummary,
+  reviewerSession,
+  viewerSession,
+} from '@/test/projectFixtures.ts';
 import {
   ASPHALT_ID,
   coastalRisks,
@@ -259,42 +268,86 @@ describe('client-side checks mirror the API', () => {
 });
 
 describe('what the screens offer (access.ts: navigation, not protection)', () => {
-  const manager: SessionUser = entitySession().user;
+  const manager: SessionUser = entityManagerSession().user;
   const ahda: SessionUser = reviewerSession().user;
+  const portfolio: SessionUser = sessionFor(['R02']).user;
+  const otherManager: SessionUser = sessionFor(['R04']).user;
+  const assigned: SessionUser = sessionFor(['R05']).user;
+  const viewer: SessionUser = viewerSession().user;
+  const executive: SessionUser = sessionFor(['R07']).user;
+  const held = (user: SessionUser) => permissionsOf(shippedPermissions(user));
   const project = (status: ProjectStatus) =>
     projectSummary({ status, projectManagerUserId: manager.id });
 
-  test("the project's own Project Manager registers and manages risks while the project allows it", () => {
-    expect(canRegisterRisks(manager, project('ACTIVE'))).toBe(true);
-    expect(canRegisterRisks(manager, project('COMPLETED'))).toBe(false);
-    expect(canRegisterRisks(ahda, project('ACTIVE'))).toBe(false);
-    expect(canManageRisk(manager, project('COMPLETED'), risk())).toBe(true);
-    expect(canManageRisk(manager, project('CLOSED'), risk())).toBe(false);
-    expect(canManageRisk(manager, project('ACTIVE'), risk({ status: 'CLOSED' }))).toBe(false);
+  test('a holder of RISK_MANAGE on the project registers and manages risks while the project allows it', () => {
+    const register = (user: SessionUser, status: ProjectStatus = 'ACTIVE') =>
+      canRegisterRisks(user, held(user), project(status));
+    expect(register(manager)).toBe(true);
+    expect(register(manager, 'COMPLETED')).toBe(false);
+    // D1-02: R02 (ALL) and R03 (DEPT) hold RISK_MANAGE, and the API accepts their POST /risks.
+    expect(register(ahda)).toBe(true);
+    expect(register(portfolio)).toBe(true);
+    // R04 at OWN reaches only the project it manages; R05, R06 and R07 do not hold RISK_MANAGE.
+    expect(register(otherManager)).toBe(false);
+    expect(register(assigned)).toBe(false);
+    expect(register(viewer)).toBe(false);
+    expect(register(executive)).toBe(false);
+    // R03's department is not another department's.
+    const elsewhere = reviewerSession(OTHER_DEPARTMENT_ID).user;
+    expect(register(elsewhere)).toBe(false);
+    expect(canManageRisk(manager, held(manager), project('COMPLETED'), risk())).toBe(true);
+    expect(canManageRisk(manager, held(manager), project('CLOSED'), risk())).toBe(false);
+    expect(
+      canManageRisk(manager, held(manager), project('ACTIVE'), risk({ status: 'CLOSED' })),
+    ).toBe(false);
   });
 
-  test('assessing, accepting and reopening are offered to internal people the project reaches, never to an external one', () => {
+  test('assessing, accepting and reopening follow RISK_ASSESS, RISK_ACCEPT and RISK_REOPEN (C-03, D1-03)', () => {
     const active = project('ACTIVE');
-    expect(canAssessRisk(ahda, active, risk())).toBe(true);
-    expect(canAssessRisk(manager, active, risk())).toBe(false);
-    expect(canAcceptRisk(ahda, active, risk())).toBe(true);
-    expect(canAcceptRisk(ahda, active, risk({ status: 'IDENTIFIED' }))).toBe(false);
-    expect(canAcceptRisk(ahda, active, risk({ acceptedUntil: day(5) }))).toBe(false);
-    expect(canRevokeAcceptance(ahda, active, risk({ acceptedUntil: day(5) }))).toBe(true);
-    expect(canReopenRisk(ahda, active, risk({ status: 'CLOSED' }))).toBe(true);
-    expect(canReopenRisk(ahda, active, risk())).toBe(false);
-    expect(canReopenRisk(manager, active, risk({ status: 'CLOSED' }))).toBe(false);
+    for (const user of [ahda, portfolio]) {
+      expect(canAssessRisk(user, held(user), active, risk())).toBe(true);
+      expect(canAcceptRisk(user, held(user), active, risk())).toBe(true);
+      expect(canRevokeAcceptance(user, held(user), active, risk({ acceptedUntil: day(5) }))).toBe(
+        true,
+      );
+      expect(canReopenRisk(user, held(user), active, risk({ status: 'CLOSED' }))).toBe(true);
+    }
+    // R04, R05, R06 and R07 hold none of the three: the API answers them 403.
+    for (const user of [manager, otherManager, assigned, viewer, executive]) {
+      expect(canAssessRisk(user, held(user), active, risk())).toBe(false);
+      expect(canAcceptRisk(user, held(user), active, risk())).toBe(false);
+      expect(canRevokeAcceptance(user, held(user), active, risk({ acceptedUntil: day(5) }))).toBe(
+        false,
+      );
+      expect(canReopenRisk(user, held(user), active, risk({ status: 'CLOSED' }))).toBe(false);
+    }
+    expect(canAcceptRisk(ahda, held(ahda), active, risk({ status: 'IDENTIFIED' }))).toBe(false);
+    expect(canAcceptRisk(ahda, held(ahda), active, risk({ acceptedUntil: day(5) }))).toBe(false);
+    expect(canReopenRisk(ahda, held(ahda), active, risk())).toBe(false);
+  });
+
+  test('an external person is offered no assessment even when a grant says so (ADR-013)', () => {
+    const everything = permissionsOf(allPermissions());
+    expect(canAssessRisk(manager, everything, project('ACTIVE'), risk())).toBe(false);
+    expect(canAcceptRisk(manager, everything, project('ACTIVE'), risk())).toBe(false);
   });
 
   test('treatment needs a live action and no acceptance; monitoring follows assessment or treatment', () => {
     const active = project('ACTIVE');
-    expect(canStartTreatment(manager, active, risk(), true)).toBe(true);
-    expect(canStartTreatment(manager, active, risk(), false)).toBe(false);
-    expect(canStartTreatment(manager, active, risk({ acceptedUntil: day(3) }), true)).toBe(false);
-    expect(canStartTreatment(manager, active, risk({ status: 'TREATMENT' }), true)).toBe(false);
-    expect(canMonitorRisk(manager, active, risk({ id: ASPHALT_ID, status: 'TREATMENT' }))).toBe(
-      true,
+    const permissions = held(manager);
+    expect(canStartTreatment(manager, permissions, active, risk(), true)).toBe(true);
+    expect(canStartTreatment(manager, permissions, active, risk(), false)).toBe(false);
+    expect(
+      canStartTreatment(manager, permissions, active, risk({ acceptedUntil: day(3) }), true),
+    ).toBe(false);
+    expect(
+      canStartTreatment(manager, permissions, active, risk({ status: 'TREATMENT' }), true),
+    ).toBe(false);
+    expect(
+      canMonitorRisk(manager, permissions, active, risk({ id: ASPHALT_ID, status: 'TREATMENT' })),
+    ).toBe(true);
+    expect(canMonitorRisk(manager, permissions, active, risk({ status: 'IDENTIFIED' }))).toBe(
+      false,
     );
-    expect(canMonitorRisk(manager, active, risk({ status: 'IDENTIFIED' }))).toBe(false);
   });
 });

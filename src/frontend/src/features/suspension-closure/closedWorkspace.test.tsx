@@ -162,8 +162,8 @@ const SESSIONS: [string, () => Session, WorkspaceTabKey[]][] = [
   [
     "the project's Project Manager",
     managerSession,
+    // Not progress: its one submitted update waits for review, which needs PROGRESS_REVIEW (R02, R03), not the PM's R04.
     [
-      'progress',
       'schedule',
       'tasks',
       'milestones',

@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -28,6 +29,7 @@ export function ProjectSuspension({
   user: SessionUser;
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
+  const permissions = usePermissions();
   const suspension = useProjectSuspension(project.id);
   const selection = useRowSelection();
 
@@ -48,8 +50,8 @@ export function ProjectSuspension({
 
   const { requests, periods } = suspension.data;
   const open = openPeriodOf(periods);
-  const suspends = canRaiseSuspensionRequest(user, project, requests, 'SUSPEND');
-  const resumes = canRaiseSuspensionRequest(user, project, requests, 'RESUME');
+  const suspends = canRaiseSuspensionRequest(user, permissions, project, requests, 'SUSPEND');
+  const resumes = canRaiseSuspensionRequest(user, permissions, project, requests, 'RESUME');
   const entries = requests.map((request) => ({ request, project }));
 
   return (

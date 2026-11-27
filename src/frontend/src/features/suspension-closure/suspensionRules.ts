@@ -1,4 +1,6 @@
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
+import { holdsOnProject } from '@/features/projects/access.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
@@ -12,7 +14,7 @@ import {
   type SuspensionRequestRequest,
   type SuspensionRequestType,
 } from './api/types.ts';
-import { isOpen, managesProject, type ProjectFacts } from './governedRequest.ts';
+import { isOpen, type ProjectFacts } from './governedRequest.ts';
 
 // WF-09's rules as the screens apply them (TASK-062 suspension.md). The server is the authority: these checks only
 // catch, before a round trip, what it would refuse.
@@ -73,17 +75,19 @@ const RAISABLE_FROM: Record<SuspensionRequestType, string> = {
 };
 
 /**
- * SCR-109 is offered to the project's Project Manager for a suspension of an ACTIVE project and a resumption of a
- * SUSPENDED one, while no request of that type is open (409 SUSPENSION_ALREADY_EXISTS / …_RESUMPTION_… otherwise).
+ * SCR-109 is offered to a holder of SUSPENSION_RAISE on the project (R02 ALL, R03 DEPT, R04 OWN) for a suspension of an
+ * ACTIVE project and a resumption of a SUSPENDED one, while no request of that type is open (409
+ * SUSPENSION_ALREADY_EXISTS / …_RESUMPTION_… otherwise).
  */
 export function canRaiseSuspensionRequest(
   user: SessionUser,
+  permissions: Permissions,
   project: ProjectFacts,
   requests: readonly SuspensionRequestDetail[],
   type: SuspensionRequestType,
 ): boolean {
   return (
-    managesProject(user, project) &&
+    holdsOnProject(permissions, user, project, 'SUSPENSION_RAISE') &&
     project.status === RAISABLE_FROM[type] &&
     openRequestOf(requests, type) === null
   );

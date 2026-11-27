@@ -3,7 +3,9 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { useOptionalProject } from '@/features/change-requests/useChangeRequestData.ts';
 import { useSaveAction } from '@/features/identity-access/forms.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { holdsOnProject } from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
@@ -140,6 +142,7 @@ interface SuspensionFormProps {
 function SuspensionForm({ project, projectId, type, existing }: SuspensionFormProps): ReactElement {
   const { t, language } = useI18n();
   const { session } = useSession();
+  const permissions = usePermissions();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(suspensionClosureProblemMessage);
@@ -245,8 +248,11 @@ function SuspensionForm({ project, projectId, type, existing }: SuspensionFormPr
   };
 
   const editing = existing !== null;
-  // Navigation, not protection: a new request is the project's Project Manager's (SUSPENSION_RAISE at OWN).
-  const raiser = editing || project === null || project.projectManagerUserId === session?.user.id;
+  // Navigation, not protection: a new request is a SUSPENSION_RAISE holder's on the project.
+  const raiser =
+    editing ||
+    project === null ||
+    (session !== null && holdsOnProject(permissions, session.user, project, 'SUSPENSION_RAISE'));
 
   return (
     <>

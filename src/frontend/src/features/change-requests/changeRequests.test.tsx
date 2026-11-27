@@ -24,6 +24,7 @@ import { type MockApi, mockApi, page, problem } from '@/test/mockApi.ts';
 import {
   PROJECT_ID,
   reviewerSession,
+  viewerSession,
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
@@ -33,6 +34,7 @@ import {
   openFilters,
   renderApp,
 } from '@/test/renderApp.tsx';
+import { menuLink } from '@/test/shell.ts';
 
 // SCR-105 Change Requests, SCR-106 Create Change Request and SCR-107 Change Request Detail (TASK-061) against the
 // TASK-060 API, with WF-11's MOD-040–042 and MOD-044 reused. Acceptance criteria: (1) the form surfaces the computed
@@ -540,10 +542,22 @@ describe('SCR-105 Change Requests', () => {
     ).toBeTruthy();
   });
 
-  test('someone who does not manage the project is not offered raising', async () => {
+  test('the department manager, who holds CHANGE_REQUEST_RAISE there, is offered raising (D1-02)', async () => {
     open(`/projects/${PROJECT_ID}/change-requests`, {}, { session: reviewerSession() });
 
+    expect(
+      await screen.findByRole('link', { name: en('changeRequests.actions.raise') }),
+    ).toBeTruthy();
+  });
+
+  test('someone without CHANGE_REQUEST_RAISE (R06) is not offered raising', async () => {
+    open(`/projects/${PROJECT_ID}/change-requests`, {}, { session: viewerSession() });
+
     await screen.findByRole('table', { name: en('changeRequests.list.projectCaption') });
+    // The shell's Projects menu shows R06's permissions are read: the missing link is the decision, not a wait.
+    await waitFor(() => {
+      expect(menuLink('common.menu.projects')).not.toBeNull();
+    });
     expect(screen.queryByRole('link', { name: en('changeRequests.actions.raise') })).toBeNull();
   });
 

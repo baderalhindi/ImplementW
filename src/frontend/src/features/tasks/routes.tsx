@@ -5,8 +5,8 @@ import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 import { TaskListPage } from './TaskListPage.tsx';
 
 /**
- * WF-04's cross-project lists, mounted under /tasks for any signed-in person. No role is checked here: which tasks a
- * person sees is the API's answer (TASK_VIEW; TASK-048 D-11). SCR-047 is the workspace's Tasks tab (projects/routes).
+ * WF-04's cross-project lists, mounted under /tasks for a holder of TASK_VIEW (app/routes.tsx): which tasks a person
+ * sees is the API's answer (TASK-048 D-11). SCR-047 is the workspace's Tasks tab (projects/routes).
  */
 export const taskRoutes: RouteObject[] = [
   { index: true, element: <TaskListPage key="mine" list="mine" /> }, // SCR-063
