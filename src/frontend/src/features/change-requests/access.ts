@@ -17,8 +17,8 @@ import {
 
 // What the WF-08 screens offer a person. This is navigation, not protection: every command is decided again by the API
 // (TASK-060 D-11), and a refusal is shown as it comes. Shipped grants: CHANGE_REQUEST_RAISE's holders raise (R02 ALL, R03
-// DEPT, R04 OWN, internal or entity, ADR-013); the Project Manager, if internal, implements; the department's manager (R03
-// at DEPT) reviews; WF-11 decides.
+// DEPT, R04 OWN, internal or entity, ADR-013); CHANGE_REQUEST_IMPLEMENT's internal holders implement (R04 OWN: the project's
+// Project Manager); the department's manager (R03 at DEPT) reviews; WF-11 decides.
 // The project may be unreadable to a reviewer (no PROJECT_VIEW), so `project` is null when it could not be read.
 
 type ProjectFacts = Pick<
@@ -98,42 +98,49 @@ export function canStartReview(
   );
 }
 
-/** The implementation is AHDA's and coordinated by the project's internal Project Manager (WF-08 §3). */
+/**
+ * The implementation is AHDA's and coordinated by the project's internal Project Manager (WF-08 §3): offered, as the API
+ * decides it, to an internal holder of CHANGE_REQUEST_IMPLEMENT whose scope reaches the project (R04 OWN). Raising the
+ * request is not enough: an R02 raiser holds no CHANGE_REQUEST_IMPLEMENT and is refused 403 (QA DEV-D1-02).
+ */
 function canImplement(
   user: SessionUser,
-  request: ChangeRequestDetail,
+  permissions: Permissions,
   project: ProjectFacts | null,
 ): boolean {
-  return isInternal(user) && isRaiser(user, request, project);
+  return isInternal(user) && holdsOnProject(permissions, user, project, 'CHANGE_REQUEST_IMPLEMENT');
 }
 
 export function canStartImplementation(
   user: SessionUser,
+  permissions: Permissions,
   request: ChangeRequestDetail,
   project: ProjectFacts | null,
 ): boolean {
-  return request.status === 'APPROVED' && canImplement(user, request, project);
+  return request.status === 'APPROVED' && canImplement(user, permissions, project);
 }
 
 /** Offered once every authorisation is applied by its module; before, the screen says what it waits for. */
 export function canMarkImplemented(
   user: SessionUser,
+  permissions: Permissions,
   request: ChangeRequestDetail,
   project: ProjectFacts | null,
 ): boolean {
   return (
     request.status === 'IMPLEMENTATION' &&
     allAuthorizationsApplied(request) &&
-    canImplement(user, request, project)
+    canImplement(user, permissions, project)
   );
 }
 
 export function canCloseChangeRequest(
   user: SessionUser,
+  permissions: Permissions,
   request: ChangeRequestDetail,
   project: ProjectFacts | null,
 ): boolean {
-  return request.status === 'IMPLEMENTED' && canImplement(user, request, project);
+  return request.status === 'IMPLEMENTED' && canImplement(user, permissions, project);
 }
 
 /** The subject TASK-060 starts a request revision's WF-11 run with. */

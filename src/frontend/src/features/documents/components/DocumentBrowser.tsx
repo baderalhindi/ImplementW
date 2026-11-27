@@ -64,7 +64,9 @@ export function DocumentBrowser({
   const rowActions = useRowActions<DocumentSummary>({
     permission: 'DOCUMENT_MANAGE',
     name: (document) => document.title.text,
-    editTo: (document) => `/documents/${document.id}?edit=1`,
+    // An archived document takes no change (409 TERMINAL_STATE), so its row offers no Edit (QA DEV-D2-02).
+    editTo: (document) =>
+      document.status === 'ARCHIVED' ? null : `/documents/${document.id}?edit=1`,
     remove: (document) => documentsApi.remove(document.id),
     onDeleted: documents.reload,
   });

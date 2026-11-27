@@ -12,6 +12,7 @@ namespace PMPlatform.Tests.Integration.Project;
 public sealed class ProjectApprovalInboxTests(ProjectTestHost host)
 {
     private const string ApprovalTasks = "/api/v1/approval-tasks";
+    private const string ApprovalInstances = "/api/v1/approval-instances";
 
     [Fact]
     public async Task AnInboxRowNamesTheProjectUnderReview()
@@ -41,5 +42,34 @@ public sealed class ProjectApprovalInboxTests(ProjectTestHost host)
         Assert.Null(named["formalProjectId"]?.GetValue<string>());
         Assert.Equal(project["title"]!["text"]!.GetValue<string>(), named["title"]!["text"]!.GetValue<string>());
         Assert.Equal(project["title"]!["language"]!.GetValue<string>(), named["title"]!["language"]!.GetValue<string>());
+    }
+
+    /// <summary>Stage QA DEV-D1-03: a requester's My Requests row names the project, as the approver's inbox row does.</summary>
+    [Fact]
+    public async Task AMyRequestsRowNamesTheProjectItWasRequestedFor()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        DocumentedResponses responses = new(await OpenApiDocument.FetchAsync(client));
+        Sessions sessions = await client.SignInAsync();
+        // local.r03 registers and submits, so the run is theirs; local.r02 starts the review.
+        Guid projectId = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Reviewer, host.Registration()));
+        await client.CommandOrFailAsync(sessions.Reviewer, projectId, "submit", new { projectManagerUserId = ProjectDriver.Person(8) });
+        await client.CommandOrFailAsync(sessions.Approver, projectId, "start-review");
+        JsonObject project;
+        using (HttpResponseMessage read = await client.GetAsync($"{ProjectDriver.Projects}/{projectId}", sessions.Reviewer))
+        {
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+            project = await read.ReadObjectAsync();
+        }
+
+        using HttpResponseMessage mine = await client.GetAsync($"{ApprovalInstances}?requestedBy=me&pageSize=200", sessions.Reviewer);
+        Assert.Equal(HttpStatusCode.OK, mine.StatusCode);
+        JsonObject page = (await responses.CheckAsync("GET", ApprovalInstances, mine))!;
+        Assert.Empty(responses.Violations);
+        JsonNode row = Assert.Single(page["items"]!.AsArray(), i => i!["subject"]!["id"]!.GetValue<Guid>() == projectId)!;
+
+        JsonObject named = row["project"]!.AsObject();
+        Assert.Equal(projectId, named["id"]!.GetValue<Guid>());
+        Assert.Equal(project["title"]!["text"]!.GetValue<string>(), named["title"]!["text"]!.GetValue<string>());
     }
 }

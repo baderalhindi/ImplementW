@@ -240,13 +240,13 @@ export function ChangeRequestDetailPage(): ReactElement | null {
       open: { kind: 'withdrawReview' },
     });
   }
-  if (canStartImplementation(user, request, project)) {
+  if (canStartImplementation(user, permissions, request, project)) {
     command('start-implementation', true);
   }
-  if (canMarkImplemented(user, request, project)) {
+  if (canMarkImplemented(user, permissions, request, project)) {
     command('mark-implemented', true);
   }
-  if (canCloseChangeRequest(user, request, project)) {
+  if (canCloseChangeRequest(user, permissions, request, project)) {
     command('close', true);
   }
   const editable = canEditChangeRequest(user, request, project);

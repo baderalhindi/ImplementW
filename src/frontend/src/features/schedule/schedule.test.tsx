@@ -879,14 +879,15 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
       { baselines: [candidate({ status: 'SUBMITTED' }), baseline()], runs: [scheduleRun()] },
       { path: BASELINES_PATH },
     );
-    expect(
-      await screen.findByRole('link', { name: en('schedule.baselines.reviewHistory') }),
-    ).toBeTruthy();
+    await screen.findByRole('region', { name: en('schedule.baselines.caption') });
     expect(
       screen.queryByRole('button', { name: en('schedule.actions.decideBaseline') }),
     ).toBeNull();
-    // R04 decides no approval (APPROVAL_DECIDE), so the inbox, which would refuse it, is not read (QA D1-06).
+    // An entity user holds no approval permission (GrantPolicy), so neither the inbox (QA D1-06) nor the runs (QA INT-04),
+    // which would refuse it 403, are read; the review history link waits for a run it may read.
     expect(api.requestsTo('GET', /^\/approval-tasks$/)).toHaveLength(0);
+    expect(api.requestsTo('GET', /^\/approval-instances$/)).toHaveLength(0);
+    expect(screen.queryByRole('link', { name: en('schedule.baselines.reviewHistory') })).toBeNull();
   });
 
   test('MOD-018 is not offered to a person without approval permissions, and nothing fails', async () => {

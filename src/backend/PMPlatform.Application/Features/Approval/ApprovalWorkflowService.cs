@@ -66,7 +66,19 @@ internal sealed class ApprovalWorkflowService(
         {
             (IReadOnlyList<ApprovalInstance> own, int total) = await repository.ListRequestedByAsync(
                 callerId, query.Statuses, query.Page.Skip, query.Page.PageSize, cancellationToken).ConfigureAwait(false);
-            return new ApprovalInstancePage([.. own.Select(ApprovalMapping.ToSummary)], query.Page.Page, query.Page.PageSize, total);
+
+            // Each row names its run's project, as the inbox does (stage QA DEV-D1-03): the caller requested every run listed here, on a record
+            // they raised for that project; only the page's projects are read.
+            IReadOnlyDictionary<Guid, ApprovalProjectName> names = await projectNames.FindAsync(
+                [.. own.Select(i => i.ScopeProjectId).OfType<Guid>().Distinct()], cancellationToken).ConfigureAwait(false);
+            return new ApprovalInstancePage(
+                [.. own.Select(i => ApprovalMapping.ToSummary(i) with
+                {
+                    Project = i.ScopeProjectId is { } projectId && names.TryGetValue(projectId, out ApprovalProjectName? name) ? name : null,
+                })],
+                query.Page.Page,
+                query.Page.PageSize,
+                total);
         }
 
         if (query is not { SubjectModule: { } module, SubjectType: { } type, SubjectId: { } subjectId })

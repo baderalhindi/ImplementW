@@ -2,7 +2,10 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
-import { type ApprovalInstanceStatus } from '@/features/approvals/api/types.ts';
+import {
+  type ApprovalInstanceStatus,
+  type ApprovalInstanceSummary,
+} from '@/features/approvals/api/types.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import {
   approvalRun,
@@ -33,16 +36,44 @@ function summary(status: ApprovalInstanceStatus, index: number) {
 
 const ALL: ApprovalInstanceStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'RETURNED', 'WITHDRAWN'];
 
-function openRequests(items = ALL.map(summary), path = '/approvals/requests') {
+function openRequests(
+  items: ApprovalInstanceSummary[] = ALL.map(summary),
+  path = '/approvals/requests',
+) {
   const api = withApprovalNames(mockApi()).on('GET', /^\/approval-instances$/, (request) => {
     const status = request.query.get('status');
     return { body: page(items.filter((item) => status === null || item.status === status)) };
   });
-  renderApp({ path, session: sessionAs(REQUESTER_ID, ['R06']) });
+  // A Project Manager (R04) reads its own submissions (APPROVAL_VIEW OWN, shipped matrix D-3).
+  renderApp({ path, session: sessionAs(REQUESTER_ID, ['R04']) });
   return api;
 }
 
 describe('SCR-101 My Requests', () => {
+  test('names the project each request is for, as the inbox does (stage QA DEV-D1-03)', async () => {
+    const named = {
+      ...summary('PENDING', 1),
+      project: {
+        id: 'p1',
+        formalProjectId: 'PRJ-000123',
+        title: { text: 'طريق الساحل', language: 'AR' as const },
+      },
+    };
+    openRequests([named, { ...summary('APPROVED', 2), project: null }]);
+
+    const table = await screen.findByRole('table', { name: en('approvals.requests.caption') });
+    const [, first, second] = within(table).getAllByRole('row');
+    if (first === undefined || second === undefined) {
+      throw new Error('Two rows expected');
+    }
+    expect(within(first).getByText('PRJ-000123')).toBeTruthy();
+    expect(within(first).getByText('طريق الساحل').getAttribute('lang')).toBe('ar');
+    expect(
+      within(first).getByRole('checkbox').getAttribute('aria-label')?.replace(/[⁨⁩]/g, ''),
+    ).toContain('PRJ-000123 طريق الساحل');
+    expect(second.querySelector('.subject__project')).toBeNull();
+  });
+
   test('asks for the caller’s own runs and shows each status with its own indicator', async () => {
     const api = openRequests();
 

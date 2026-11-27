@@ -7,8 +7,8 @@ import { EscalationDetail } from './EscalationDetail.tsx';
 import { EscalationsPage } from './EscalationsPage.tsx';
 
 /**
- * WF-07's registers and escalations across projects, mounted under /issues-challenges for any signed-in person. No
- * role is checked here: what a person sees is the API's answer (CONCERN_VIEW). A project's registers (SCR-083,
+ * WF-07's registers and escalations across projects, mounted under /issues-challenges for a holder of CONCERN_VIEW, which
+ * every read here needs (QA INT-05, app/routes.tsx): what a person sees is the API's answer. A project's registers (SCR-083,
  * SCR-085) and a concern's detail (SCR-084, SCR-086) are in the project workspace, /projects/:projectId/issues-challenges.
  */
 export const issuesChallengesRoutes: RouteObject[] = [

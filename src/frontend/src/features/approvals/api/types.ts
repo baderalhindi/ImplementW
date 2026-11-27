@@ -53,6 +53,8 @@ export interface ApprovalInstanceSummary {
   requestedAt: string;
   status: ApprovalInstanceStatus;
   completedAt: string | null;
+  /** On a My Requests row, the project the run is scoped to (stage QA DEV-D1-03); null or absent elsewhere. */
+  project?: ApprovalProjectName | null;
 }
 
 /** The project a run is scoped to, as the inbox names it (stage QA D1-01): its title as entered, and its Formal Project ID once it has one. */
