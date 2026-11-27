@@ -11869,7 +11869,7 @@
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Active people matching `q`. Filters: `userType`; `externalEntityId`; `projectId`, whose anchors they must hold a role over.\n403 to someone with no write permission.",
+        "summary": "Active people matching `q`. Filters: `userType`; `externalEntityId`; `projectId`, whose anchors they must hold a role over.\n403 to someone with no write permission. A project the caller may not view is answered as one that does not exist: 400 `projectId` Malformed.",
         "operationId": "IdentityAccess_ListPersonLookups",
         "parameters": [
           {
@@ -14928,7 +14928,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "A holder of PROJECT_DELETE deletes a project in any state, keeping its data (client review, item 4). Otherwise HARD_DRAFT: a DRAFT,\nby the person who created it. R-40: a project that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "summary": "A holder of PROJECT_DELETE deletes a project in any state but CLOSED (409 TERMINAL_STATE), keeping its data (client review, item 4).\nOtherwise HARD_DRAFT: a DRAFT, by the person who created it. R-40: a project that is not there — deleted already, or never the caller's\nto see — is 204 as well.",
         "operationId": "Project_DeleteProject",
         "parameters": [
           {
@@ -19681,12 +19681,26 @@
         }
       }
     },
+    "/api/v1/sessions/current/sign-out": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Signs out (SR-10): ends the session the access token belongs to, so its refresh token is refused from now on. The\naccess token itself is not checked against the session and works until it expires, at most 15 minutes. Answers 204\nalso when the session had already ended.",
+        "operationId": "IdentityAccess_SignOut",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/sessions/current/refresh": {
       "post": {
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Exchanges a refresh token for a new token pair. Anonymous because the access token has usually expired by then;\nthe refresh token is the credential. The user's status and assignments are read afresh.",
+        "summary": "Exchanges a refresh token for a new token pair. Anonymous because the access token has usually expired by then;\nthe refresh token is the credential, and it works once: the pair carries its successor, and presenting a replaced\nrefresh token again ends the session (SR-10). The user's status and assignments are read afresh.",
         "operationId": "IdentityAccess_RefreshSession",
         "requestBody": {
           "content": {
@@ -22819,9 +22833,19 @@
           },
           "instance": {
             "$ref": "#/components/schemas/ApprovalInstanceSummary"
+          },
+          "project": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApprovalProjectName"
+              }
+            ]
           }
         },
-        "description": "A task the caller may decide now (SCR-100): PENDING, in its run's current stage, and within the caller's authority\nor a delegator's. Guid? ApprovalInboxItem.OnBehalfOfUserId names the delegator when the authority is delegated."
+        "description": "A task the caller may decide now (SCR-100): PENDING, in its run's current stage, and within the caller's authority\nor a delegator's. Guid? ApprovalInboxItem.OnBehalfOfUserId names the delegator when the authority is delegated. ApprovalProjectName? ApprovalInboxItem.Project names the\nproject the run is scoped to, which that authority covers; null when the run has no project scope (stage QA D1-01)."
       },
       "ApprovalInboxPage": {
         "required": [
@@ -23046,6 +23070,30 @@
           }
         },
         "description": "A row of SCR-101 My Requests, and the run an inbox item belongs to."
+      },
+      "ApprovalProjectName": {
+        "required": [
+          "id",
+          "formalProjectId",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          }
+        },
+        "description": "The project a run is scoped to, named for an approver's inbox row (stage QA D1-01): its title as entered (ADR-012) and its Formal Project\nID once it has one."
       },
       "ApprovalSubject": {
         "required": [
@@ -25670,6 +25718,8 @@
           "escalatedByUserId",
           "escalatedAt",
           "escalatedToRoleId",
+          "escalatedToRoleCode",
+          "escalatedToRoleName",
           "reason",
           "status",
           "resolvedAt",
@@ -25707,6 +25757,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "escalatedToRoleCode": {
+            "type": "string"
+          },
+          "escalatedToRoleName": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
           "reason": {
             "$ref": "#/components/schemas/NarrativeText"
           },
@@ -25741,7 +25797,8 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "description": "A concern's escalation. The role it is addressed to is named by its code and name as well as its id, so the people who read it see\nwhom it waits on without reading the role catalogue, which is the administrators' (ROLE_VIEW; QA C-05, D1-06)."
       },
       "ConcernEscalationPage": {
         "required": [
@@ -41442,6 +41499,13 @@
             ],
             "description": "The Project Manager the registration form names (review round 7, item 2); the submission proposes them.",
             "format": "uuid"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The fields withheld from the caller (ADR-010, R-20): null here, omitted by the API. The registration budget is a SAR amount, so a caller\nwithout FINANCIAL_VIEW_SENSITIVE on the project gets it withheld, as the financial screens and dashboards withhold theirs (D-4)."
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."

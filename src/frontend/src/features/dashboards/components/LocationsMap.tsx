@@ -286,7 +286,8 @@ export function LocationsMap({
           {t('dashboards.locations.mapUnavailable')}
         </p>
       ) : (
-        <p className="locations-map__credit" dir="ltr">
+        // The credit reads in the page's language and direction; only the sources' names stay as they are (stage QA F-03).
+        <p className="locations-map__credit">
           <a href="https://openfreemap.org" target="_blank" rel="noreferrer">
             OpenFreeMap
           </a>{' '}
@@ -294,7 +295,7 @@ export function LocationsMap({
           <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">
             OpenMapTiles
           </a>{' '}
-          Data from{' '}
+          {t('dashboards.locations.dataFrom')}{' '}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
             OpenStreetMap
           </a>

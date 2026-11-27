@@ -42,6 +42,8 @@ function openCreate(session: Session = reviewerSession(), lookups = {}): MockApi
 const createButton = () => screen.getByRole('button', { name: en('projects.create.submit') });
 
 async function fillRequired(user: UserEvent) {
+  // The form opens once the session's permissions are read (PROJECT_REGISTER).
+  await screen.findByLabelText(/Project title/);
   await user.type(screen.getByLabelText(/Project title/), 'Coastal road upgrade');
   await user.selectOptions(await screen.findByLabelText(/Sector/), CLASSIFICATION_ID);
   await user.selectOptions(screen.getByLabelText(/Governance profile/), LIGHT_PROFILE_ID);
@@ -191,7 +193,7 @@ describe('SCR-033 Create Project', () => {
   test('an external entity user registers for their own entity (ADR-013 as amended)', async () => {
     const user = userEvent.setup();
     const api = openCreate(entitySession());
-    await user.type(screen.getByLabelText(/Project title/), 'Entity depot');
+    await user.type(await screen.findByLabelText(/Project title/), 'Entity depot');
     await user.selectOptions(await screen.findByLabelText(/Sector/), CLASSIFICATION_ID);
     await user.selectOptions(screen.getByLabelText(/Governance profile/), LIGHT_PROFILE_ID);
     await user.selectOptions(screen.getByLabelText(/Owning department/), DEPARTMENT_ID);

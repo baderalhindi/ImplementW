@@ -7,6 +7,7 @@ import { WithdrawDialog } from '@/features/approvals/dialogs/WithdrawDialog.tsx'
 import { useOptionalProject } from '@/features/change-requests/useChangeRequestData.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useSaveAction } from '@/features/identity-access/forms.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { ProjectStatusBadge } from '@/features/projects/components/ProjectStatusBadge.tsx';
@@ -48,8 +49,7 @@ import {
   canStartReview,
   canWithdrawRecord,
   canWithdrawReview,
-  isAhdaGatekeeper,
-  isEditable,
+  canWaiveChecks,
 } from './governedRequest.ts';
 import { editCloseoutCasePath, projectCloseoutPath } from './paths.ts';
 import { isForbidden, isStale, suspensionClosureProblemMessage } from './problems.ts';
@@ -125,6 +125,7 @@ function CloseoutDetail({
 }): ReactElement | null {
   const { t, formatDateTime } = useI18n();
   const { session } = useSession();
+  const permissions = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
   const record = useCloseoutRecord(stage, caseId);
@@ -216,7 +217,7 @@ function CloseoutDetail({
       danger: true,
     });
   }
-  if (canStartReview(user, closeoutCase, project)) {
+  if (canStartReview(user, permissions, closeoutCase, project, 'CLOSEOUT_REVIEW')) {
     command('start-review', true);
   }
   if (canDecide(user, closeoutCase, task)) {
@@ -255,7 +256,7 @@ function CloseoutDetail({
       stale();
     }
   };
-  const waives = isEditable(closeoutCase.status) && isAhdaGatekeeper(user, closeoutCase, project);
+  const waives = canWaiveChecks(user, permissions, closeoutCase, project);
 
   return (
     <div className="progress governed-detail">

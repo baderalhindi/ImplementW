@@ -25,6 +25,7 @@ import {
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { APP_STYLES as styles } from '@/test/stylesheet.ts';
 import { offeredTabs } from '@/test/workspaceTabs.ts';
 
 // SCR-040 Project Workspace with its tabs (SCR-041, SCR-042, SCR-043, SCR-035) and MOD-001 to MOD-003. Acceptance
@@ -77,6 +78,12 @@ const TAB = {
 };
 
 const button = (key: string) => screen.queryByRole('button', { name: en(key) });
+
+/** The project as the API sends it to a caller without FINANCIAL_VIEW_SENSITIVE: the budget omitted and named in maskedFields. */
+function withheldBudget(project: ProjectDetail): ProjectDetail {
+  const { registrationBudgetSar: _omitted, ...rest } = project;
+  return { ...rest, maskedFields: ['registrationBudgetSar'] };
+}
 
 /** The page's "More" actions (review round 8, point 06: edit and delete are there, delete last), by name; none when there is no "More". */
 async function moreActions(user: ReturnType<typeof userEvent.setup>): Promise<string[]> {
@@ -251,6 +258,16 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
     );
   });
 
+  test('keeps the manager action apart from the name with a logical margin, so it does not run into it in Arabic', async () => {
+    openWorkspace(projectDetail(), reviewerSession());
+
+    const action = await screen.findByRole('button', {
+      name: (name) => name.startsWith(en('projects.changeManager.action')),
+    });
+    expect(action.classList.contains('details__action')).toBe(true);
+    expect(styles).toMatch(/\n\.details__action \{\s*margin-inline-start: var\(--space-2\);\s*\}/);
+  });
+
   test('has no axe violation', async () => {
     openWorkspace(projectDetail(), reviewerSession());
     await screen.findByRole('heading', { level: 1 });
@@ -328,6 +345,29 @@ describe('SCR-040 actions follow the state and the person', () => {
   });
 });
 
+describe('SCR-040 the registration budget follows FINANCIAL_VIEW_SENSITIVE (D-4)', () => {
+  test('a withheld budget reads Restricted on the overview and the registration, never as none', async () => {
+    openWorkspace(withheldBudget(projectDetail()), entitySession());
+    const term = await screen.findByText(en('projects.fields.registrationBudget'));
+    expect(term.parentElement?.querySelector('[data-value-state="RESTRICTED"]')).toBeTruthy();
+  });
+
+  test('the registration tab says Restricted too', async () => {
+    const project = withheldBudget(projectDetail());
+    openWorkspace(project, entitySession(), `/projects/${project.id}/registration`);
+    const term = await screen.findByText(en('projects.fields.registrationBudget'));
+    expect(term.parentElement?.textContent).toContain(en('financialKpi.value.restricted'));
+  });
+
+  test('a budget the caller holds is shown as the amount', async () => {
+    openWorkspace(projectDetail(), entitySession());
+
+    const term = await screen.findByText(en('projects.fields.registrationBudget'));
+    expect(term.parentElement?.querySelector('[data-value-state="RESTRICTED"]')).toBeNull();
+    expect(term.parentElement?.querySelector('dd span[title]')).toBeTruthy();
+  });
+});
+
 describe('MOD-001 Delete Draft', () => {
   test('is confirmed, sends the ETag, and returns to the register', async () => {
     const user = userEvent.setup();
@@ -390,6 +430,20 @@ describe('MOD-002 Assign Project Manager (submit for review)', () => {
       }),
     ).toHaveProperty('disabled', true);
     expect(api.requestsTo('POST', /\/submit$/)).toHaveLength(0);
+  });
+
+  test('a budget withheld from the caller is not taken as missing (D-4)', async () => {
+    const user = userEvent.setup();
+    openWorkspace(withheldBudget(projectDetail()), entitySession());
+
+    await user.click(await screen.findByRole('button', { name: en('projects.actions.submit') }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByText(en('projects.fields.registrationBudget'))).toBeNull();
+    expect(
+      within(dialog).getByRole('button', {
+        name: en('projects.submit.confirm'),
+      }),
+    ).toHaveProperty('disabled', false);
   });
 
   test('the governance profile’s mandatory fields are needed too (ADR-015)', async () => {

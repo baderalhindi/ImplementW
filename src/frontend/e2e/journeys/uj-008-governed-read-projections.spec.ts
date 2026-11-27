@@ -32,7 +32,7 @@ import { DATA_SET, departmentId, itemId } from '../support/reference.ts';
 //
 // Gap G-2 (test-strategy.md §7): "reporting does not become a source write path" was held only by the architecture tests. Here
 // it is held by behaviour: the consumer (the department manager, E2E-R03) uses every control the dashboard and report screens
-// give them — the department filter, refresh, the dashboard switch, layout personalisation, a report's parameters, columns and
+// give them — the department filter, refresh, the dashboard switch, a report's parameters, columns and
 // sort, a run, an export and its download, a saved view, the controlled explorer, the export history — while the journey
 // records every request the page sends; then the source records are read again. Every write must be one of FG-01's or FG-02's
 // own (PROJECTION_WRITES) and every source record must be byte-for-byte the version it was.
@@ -150,7 +150,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
   });
 
-  await test.step("the dashboards: the department filter offers only the consumer's scope; refresh, switch and layout change nothing at source", async () => {
+  await test.step("the dashboards: the department filter offers only the consumer's scope; refresh and switch change nothing at source", async () => {
     // The dashboards are at /dashboards; the Home is the person's own work (home-and-portfolio.md D-1, D-2).
     await page.goto('/dashboards');
     // The one filter bar (the 2 Nov 2026 review): the label sits inside each option, with the count of projects in scope.
@@ -165,16 +165,9 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     await page.getByRole('button', { name: 'Refresh' }).click();
     await expect(page.getByRole('region', { name: 'Projects by lifecycle state' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Customize layout' }).click();
-    const layout = page.getByRole('dialog', { name: 'Customize your dashboard' });
-    await layout.getByRole('button', { name: 'Save layout' }).click();
-    await expectText(page.getByRole('main'), 'Your layout was saved.');
-    await page.getByRole('button', { name: 'Customize layout' }).click();
-    await page
-      .getByRole('dialog', { name: 'Customize your dashboard' })
-      .getByRole('button', { name: 'Restore the standard layout' })
-      .click();
-    await expectText(page.getByRole('main'), 'The standard layout was restored.');
+    // No personal layout any more: "Customize layout" was dropped at the user's request (62098958, dashboard-designer.md) and
+    // the Portfolio dashboard is the Portfolio Manager's design for everyone, so there is no layout control to exercise here.
+    await expect(page.getByRole('button', { name: 'Customize layout' })).toHaveCount(0);
 
     // The Governance Dashboard repeats the Portfolio Dashboard's widgets, so it is not offered beside it (the 27 Oct 2026 review).
     await expect(page.getByRole('link', { name: 'Governance Dashboard' })).toHaveCount(0);
@@ -258,8 +251,12 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     await compose.getByRole('button', { name: 'Apply' }).click();
     const table = page.getByRole('table');
     await expect(table.getByRole('row')).toHaveCount(2);
+    // The first cell is the row selection box every list table has (dcf60598), not a column the explorer composed.
+    await expect(
+      table.getByRole('row').nth(1).getByRole('cell').first().getByRole('checkbox'),
+    ).toBeVisible();
     expect(
-      (await table.getByRole('row').nth(1).getByRole('cell').allTextContents()).map(plain),
+      (await table.getByRole('row').nth(1).getByRole('cell').allTextContents()).map(plain).slice(1),
     ).toEqual([formalId, title, owningDepartment, '1']);
 
     await page.goto('/reports/exports');
@@ -273,7 +270,6 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
       'POST /reports/PROJECT_REPORT/run',
       'POST /reports/PROJECT_REPORT/export',
       'POST /report-explorer/run',
-      'POST /dashboards/PORTFOLIO/personalize',
       'POST /saved-views',
     ]) {
       expect(writes).toContain(expected);

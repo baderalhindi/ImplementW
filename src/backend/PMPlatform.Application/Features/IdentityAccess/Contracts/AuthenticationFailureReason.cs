@@ -59,4 +59,10 @@ public enum AuthenticationFailureReason
 
     /// <summary>Nafath verified someone, but not the National ID or Iqama number recorded for the user, or none is recorded (SR-53).</summary>
     IdentityMismatch = 17,
+
+    /// <summary>The refresh token's session has ended: signed out, revoked, or not recorded (a token issued before SR-10).</summary>
+    SessionEnded = 18,
+
+    /// <summary>A refresh token its session had already replaced was presented again; the session is revoked (SR-10).</summary>
+    RefreshTokenReused = 19,
 }

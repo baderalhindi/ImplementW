@@ -175,6 +175,24 @@ export function hasErrors(codes: Partial<Record<RegistrationField, string | null
   return Object.values(codes).some((code) => typeof code === 'string');
 }
 
+/** Whether the API withholds the project's registration budget from the caller: no FINANCIAL_VIEW_SENSITIVE on it (D-4). */
+export function budgetWithheld(project: Pick<ProjectDetail, 'maskedFields'>): boolean {
+  return project.maskedFields.includes('registrationBudgetSar');
+}
+
+/**
+ * The fields among `required` a saved project still lacks. A field withheld from the caller is not known to be empty, so it is left to the
+ * API, which checks it on submission.
+ */
+export function missingProjectFields(
+  project: ProjectDetail,
+  required: readonly RegistrationField[],
+): RegistrationField[] {
+  return missingFields(valuesOf(project), required).filter(
+    (field) => !project.maskedFields.includes(field),
+  );
+}
+
 /** The fields among `required` that are still empty, in form order. */
 export function missingFields(
   values: RegistrationValues,

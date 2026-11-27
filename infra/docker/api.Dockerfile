@@ -19,11 +19,12 @@ COPY src/backend/ src/backend/
 COPY db/seed/ db/seed/
 RUN dotnet publish src/backend/PMPlatform.Api/PMPlatform.Api.csproj --configuration Release --no-restore --output /app
 
-# Stage 2: runtime only. curl is installed for the compose health check; the image otherwise ships nothing but the
-# published output. Runs as the image's non-root `app` user on port 8080 (ASPNETCORE_HTTP_PORTS default).
+# Stage 2: runtime only. curl is installed for the compose health check, tini as the init (below); the image otherwise
+# ships nothing but the published output. Runs as the image's non-root `app` user on port 8080 (ASPNETCORE_HTTP_PORTS
+# default).
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl tini \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
@@ -32,4 +33,9 @@ COPY --from=build /app ./
 RUN mkdir -p /var/lib/pmplatform/documents && chown app:app /var/lib/pmplatform/documents
 USER app
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "PMPlatform.Api.dll"]
+# tini is PID 1 and dotnet its child (rollback-validation.md F-4, QA PHASE-E-02). As PID 1, dotnet's abort on an unhandled
+# exception (a start-up OptionsValidationException, say) is a signal the kernel ignores, so the process spun at full CPU
+# and the container never exited. Under tini the abort ends the process: the container exits 134 and the platform sees a
+# failed start. tini forwards SIGTERM/SIGINT to dotnet for a graceful stop and passes the arguments (`migrate`, `seed`, …)
+# through unchanged. infra/docker/startup-failure-test.sh holds it.
+ENTRYPOINT ["/usr/bin/tini", "--", "dotnet", "PMPlatform.Api.dll"]

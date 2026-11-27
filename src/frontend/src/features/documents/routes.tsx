@@ -8,9 +8,9 @@ import { RecentDocumentsPage } from './library/RecentDocumentsPage.tsx';
 import { VersionHistoryPage } from './versions/VersionHistoryPage.tsx';
 
 /**
- * WF-12, mounted under /documents for any signed-in person. No role is checked here: what a person may read, upload
- * or manage is the API's answer on each document (DOCUMENT_VIEW, DOCUMENT_UPLOAD, DOCUMENT_MANAGE; TASK-037 D-6),
- * shown as it comes. MOD-054 Attach has no route: the module that owns the record mounts it (TASK-037 F-8).
+ * WF-12, mounted under /documents for a holder of DOCUMENT_VIEW (app/routes.tsx). What a person may read, upload or
+ * manage on each document is the API's answer (DOCUMENT_VIEW, DOCUMENT_UPLOAD, DOCUMENT_MANAGE; TASK-037 D-6), shown as
+ * it comes; an action is offered only to a holder of its permission. MOD-054 Attach has no route: the module that owns the record mounts it (TASK-037 F-8).
  */
 export const documentRoutes: RouteObject[] = [
   { index: true, element: <DocumentLibraryPage /> }, // SCR-120, MOD-050

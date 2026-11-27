@@ -5,7 +5,8 @@ import {
   type ApprovalInstanceSummary,
   type ApprovalSubject,
 } from '@/features/approvals/api/types.ts';
-import { findInboxTask, unlessForbidden } from '@/features/approvals/sourceReview.ts';
+import { inboxTaskFor, unlessForbidden } from '@/features/approvals/sourceReview.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { projectsApi } from '@/features/projects/api/projectsApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
@@ -203,6 +204,7 @@ export function useReview(
   const id = record?.id ?? null;
   const status = record?.status ?? 'DRAFT';
   const revisionNo = record?.revisionNo ?? 1;
+  const canDecide = useCan('APPROVAL_DECIDE');
   const load = useCallback(
     async (signal: AbortSignal): Promise<Review> => {
       if (id === null || !hasReviewRuns({ status, revisionNo })) {
@@ -210,7 +212,7 @@ export function useReview(
       }
       const [task, runs] = await Promise.all([
         status === 'UNDER_REVIEW'
-          ? unlessForbidden(findInboxTask({ module, type, id, revisionNo }, signal))
+          ? inboxTaskFor(canDecide, { module, type, id, revisionNo }, signal)
           : Promise.resolve(null),
         unlessForbidden(
           readAllPages<ApprovalInstanceSummary>(
@@ -222,7 +224,7 @@ export function useReview(
       ]);
       return { task, runs };
     },
-    [module, type, id, status, revisionNo],
+    [module, type, id, status, revisionNo, canDecide],
   );
   return useApiResource(load);
 }

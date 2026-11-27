@@ -1,12 +1,16 @@
 import { describe, expect, test } from 'vitest';
 
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
+import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
+import { shippedPermissions } from '@/test/permissionFixtures.ts';
 import { submission, submitted } from '@/test/progressFixtures.ts';
 import {
   ENTITY_USER_ID,
   entitySession,
   projectDetail,
   REVIEWER_ID,
+  OTHER_DEPARTMENT_ID,
   reviewerSession,
 } from '@/test/projectFixtures.ts';
 
@@ -125,6 +129,7 @@ describe('figures', () => {
 });
 
 describe('who is offered what (navigation only; the API decides)', () => {
+  const held = (user: SessionUser) => permissionsOf(shippedPermissions(user));
   const manager = entitySession().user;
   const active = projectDetail({ status: 'ACTIVE', projectManagerUserId: ENTITY_USER_ID });
 
@@ -136,12 +141,25 @@ describe('who is offered what (navigation only; the API decides)', () => {
 
   test('review is AHDA’s and never the submitter’s (ADR-013, TASK-044 D-9)', () => {
     const reviewer = reviewerSession().user;
-    expect(canReview(reviewer, active, submitted())).toBe(true);
-    expect(canReview(reviewer, active, submitted({ status: 'UNDER_REVIEW' }))).toBe(true);
-    expect(canReview(reviewer, active, submission())).toBe(false);
-    expect(canReview(reviewer, active, submitted({ submittedByUserId: REVIEWER_ID }))).toBe(false);
-    expect(canReview(manager, active, submitted({ submittedByUserId: REVIEWER_ID }))).toBe(false);
-    // An internal user whose assignments do not reach the project.
-    expect(canReview(sessionFor([]).user, active, submitted())).toBe(false);
+    const review = (user: SessionUser, ...args: Parameters<typeof submitted>) =>
+      canReview(user, held(user), active, submitted(...args));
+    expect(review(reviewer)).toBe(true);
+    expect(review(reviewer, { status: 'UNDER_REVIEW' })).toBe(true);
+    expect(canReview(reviewer, held(reviewer), active, submission())).toBe(false);
+    expect(review(reviewer, { submittedByUserId: REVIEWER_ID })).toBe(false);
+    expect(review(manager, { submittedByUserId: REVIEWER_ID })).toBe(false);
+    // An internal user holding nothing.
+    expect(review(sessionFor([]).user)).toBe(false);
+  });
+
+  test('review is offered to a holder of PROGRESS_REVIEW on the project, not to R04, R05, R06 or R07', () => {
+    const portfolio = sessionFor(['R02']).user;
+    expect(canReview(portfolio, held(portfolio), active, submitted())).toBe(true);
+    for (const roleCode of ['R04', 'R05', 'R06', 'R07']) {
+      const user = sessionFor([roleCode]).user;
+      expect(canReview(user, held(user), active, submitted())).toBe(false);
+    }
+    const elsewhere = reviewerSession(OTHER_DEPARTMENT_ID).user;
+    expect(canReview(elsewhere, held(elsewhere), active, submitted())).toBe(false);
   });
 });

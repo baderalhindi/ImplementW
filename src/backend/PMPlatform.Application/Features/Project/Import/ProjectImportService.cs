@@ -109,7 +109,7 @@ internal sealed class ProjectImportService(
                 : AdministrationError.PreconditionFailed;
         }
 
-        AdministrationResult<ProjectImportEvaluation> evaluation = await EvaluateAsync(upload.Content, plan, scope, cancellationToken).ConfigureAwait(false);
+        AdministrationResult<ProjectImportEvaluation> evaluation = await EvaluateAsync(callerId, upload.Content, plan, scope, cancellationToken).ConfigureAwait(false);
         return evaluation.Succeeded ? new ProjectImportValidationOutcome(evaluation.Value.Preview, null) : evaluation.Error;
     }
 
@@ -143,7 +143,7 @@ internal sealed class ProjectImportService(
             RecordScope scope = await engine.GetRecordScopeAsync(validation.CreatedBy, PermissionCatalogue.ProjectImport, cancellationToken).ConfigureAwait(false);
             AdministrationResult<ProjectImportEvaluation> evaluated = scope.IsEmpty
                 ? AdministrationError.Forbidden
-                : await EvaluateAsync(validation.FileContent, PlanOf(validation.Plan), scope, cancellationToken).ConfigureAwait(false);
+                : await EvaluateAsync(validation.CreatedBy, validation.FileContent, PlanOf(validation.Plan), scope, cancellationToken).ConfigureAwait(false);
             DateTimeOffset now = timeProvider.GetUtcNow();
             validation.Status = evaluated.Succeeded ? ProjectImportValidationStatus.Completed : ProjectImportValidationStatus.Failed;
             validation.Result = evaluated.Succeeded ? JsonSerializer.Serialize(evaluated.Value.Preview, PlanJson) : null;
@@ -198,7 +198,7 @@ internal sealed class ProjectImportService(
             return AdministrationError.Forbidden;
         }
 
-        AdministrationResult<ProjectImportEvaluation> evaluated = await EvaluateAsync(upload.Content, plan, scope, cancellationToken).ConfigureAwait(false);
+        AdministrationResult<ProjectImportEvaluation> evaluated = await EvaluateAsync(callerId, upload.Content, plan, scope, cancellationToken).ConfigureAwait(false);
         if (!evaluated.Succeeded)
         {
             return evaluated.Error;
@@ -281,7 +281,7 @@ internal sealed class ProjectImportService(
         }
 
         AdministrationResult<ProjectImportEvaluation> evaluated = await EvaluateAsync(
-            batch.FileContent, PlanOf(batch), await ImporterScopeAsync(batch, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+            callerId, batch.FileContent, PlanOf(batch), await ImporterScopeAsync(batch, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
         return evaluated.Succeeded ? evaluated.Value.Preview : evaluated.Error;
     }
 
@@ -305,7 +305,7 @@ internal sealed class ProjectImportService(
         // Validated again as the importer's: the approval applies what the importer could import, now.
         RecordScope importerScope = await ImporterScopeAsync(batch!, cancellationToken).ConfigureAwait(false);
         RecordScope approverScope = await engine.GetRecordScopeAsync(callerId, PermissionCatalogue.ProjectImportApprove, cancellationToken).ConfigureAwait(false);
-        AdministrationResult<ProjectImportEvaluation> evaluated = await EvaluateAsync(batch!.FileContent, PlanOf(batch), importerScope, cancellationToken).ConfigureAwait(false);
+        AdministrationResult<ProjectImportEvaluation> evaluated = await EvaluateAsync(callerId, batch!.FileContent, PlanOf(batch), importerScope, cancellationToken).ConfigureAwait(false);
         if (!evaluated.Succeeded)
         {
             return evaluated.Error;
@@ -571,8 +571,9 @@ internal sealed class ProjectImportService(
         audit.Stage(ProjectAudit.UpdatedByImport(approverId, before, followUpBefore, project, batch.Id));
     }
 
+    /// <summary>The workbook validated within the importer's <paramref name="scope"/>, as <paramref name="readerId"/> may read the result (D-4 amounts).</summary>
     private async Task<AdministrationResult<ProjectImportEvaluation>> EvaluateAsync(
-        byte[] content, ProjectImportPlan plan, RecordScope scope, CancellationToken cancellationToken)
+        Guid readerId, byte[] content, ProjectImportPlan plan, RecordScope scope, CancellationToken cancellationToken)
     {
         if (content.LongLength > ProjectImportLayout.MaxBytes)
         {
@@ -612,6 +613,7 @@ internal sealed class ProjectImportService(
         }
 
         IReadOnlyList<ProjectEntity> reachable = await projects.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false);
+        RecordScope amounts = await engine.GetRecordScopeAsync(readerId, PermissionCatalogue.FinancialViewSensitive, cancellationToken).ConfigureAwait(false);
         HashSet<Guid> reached = [.. reachable.Select(p => p.Id)];
         ProjectImportEvaluator.Context context = new(
             references,
@@ -626,6 +628,7 @@ internal sealed class ProjectImportService(
             DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime))
         {
             Stages = (await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false))?.Stages ?? [],
+            RevealsAmounts = p => amounts.Matches(ProjectAccess.SubjectOf(p)),
         };
         string sha256 = Convert.ToHexStringLower(SHA256.HashData(content));
         return ProjectImportEvaluator.Evaluate(sheet, sha256, context);

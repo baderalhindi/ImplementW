@@ -107,6 +107,8 @@ export function escalation(
     escalatedByUserId: OTHER_PERSON_ID,
     escalatedAt: at(-3),
     escalatedToRoleId: DM_ROLE_ID,
+    escalatedToRoleCode: 'R03',
+    escalatedToRoleName: { en: 'Sector Manager', ar: 'مدير القطاع' },
     reason: {
       text: 'The culvert blocks the haul road; we need a budget decision.',
       language: 'EN',
@@ -318,8 +320,6 @@ export interface ConcernState {
   matrix?: RiskMatrixResolution | 'forbidden' | 'missing';
   /** MASTER_DATA_VIEW; false is 403. */
   catalogues?: boolean;
-  /** ROLE_VIEW; false is 403, as for everyone but R01. */
-  roles?: boolean;
   /** PROJECT_VIEW on a single project read outside the workspace (SCR-088); false is 403. */
   projectReadable?: boolean;
 }
@@ -336,7 +336,6 @@ export function withConcerns(
     escalations = concernEscalations(),
     matrix = standardMatrix(),
     catalogues = true,
-    roles = true,
     projectReadable = true,
   }: ConcernState = {},
 ): MockApi {
@@ -392,23 +391,8 @@ export function withConcerns(
       const id = request.query.get('catalogueId') ?? '';
       return { body: page(CONCERN_ITEMS[id] ?? ITEMS[id] ?? [], 200) };
     })
-    .on(
-      'GET',
-      /^\/roles$/,
-      roles
-        ? {
-            body: [
-              {
-                id: DM_ROLE_ID,
-                code: 'R03',
-                name: { en: 'Sector Manager', ar: 'مدير القطاع' },
-                isSystem: true,
-                isExternalEligible: false,
-              },
-            ],
-          }
-        : forbidden,
-    )
+    // ROLE_VIEW is R01's: the screens name an escalation's role from the escalation itself (QA C-05), never from here.
+    .on('GET', /^\/roles$/, forbidden)
     .on('GET', /^\/users$/, forbidden);
   if (!projectReadable) {
     api.on('GET', /^\/projects\/[^/]+$/, forbidden);

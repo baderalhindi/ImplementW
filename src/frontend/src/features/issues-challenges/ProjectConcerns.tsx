@@ -3,6 +3,7 @@ import { type ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { isForbidden } from '@/features/risks/problems.ts';
@@ -56,6 +57,7 @@ export function ProjectConcerns({
   concernType: ConcernType;
 }): ReactElement {
   const { t } = useI18n();
+  const permissions = usePermissions();
   const navigate = useNavigate();
   const concerns = useProjectConcerns(project.id, concernType);
   const rowActions = useRowActions<ConcernEntry>({
@@ -86,7 +88,7 @@ export function ProjectConcerns({
     );
   }
 
-  const raiser = canRaiseConcerns(user, project);
+  const raiser = canRaiseConcerns(user, permissions, project);
   const entries = concerns.data.map((concern) => ({ concern, project }));
   const headingId = `project-${concernType.toLowerCase()}s`;
 

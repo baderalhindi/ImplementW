@@ -4,7 +4,8 @@ import {
   type ApprovalInboxItem,
   type ApprovalInstanceSummary,
 } from '@/features/approvals/api/types.ts';
-import { findInboxTask, unlessForbidden } from '@/features/approvals/sourceReview.ts';
+import { inboxTaskFor, unlessForbidden } from '@/features/approvals/sourceReview.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type ApiResource, useApiResource } from '@/shared/api/useApiResource.ts';
 
 import { baselineSubject } from './access.ts';
@@ -30,13 +31,14 @@ export function useBaselineReview(
 ): ApiResource<BaselineReview> {
   const id = candidate?.status === 'SUBMITTED' ? candidate.id : null;
   const revisionNo = candidate?.revisionNo ?? 0;
+  const canDecide = useCan('APPROVAL_DECIDE');
   const load = useCallback(
     async (signal: AbortSignal): Promise<BaselineReview> => {
       if (id === null) {
         return NONE;
       }
       const [task, runs] = await Promise.all([
-        unlessForbidden(findInboxTask(baselineSubject({ id, revisionNo }), signal)),
+        inboxTaskFor(canDecide, baselineSubject({ id, revisionNo }), signal),
         unlessForbidden(scheduleApi.approvalRuns(id, signal)),
       ]);
       return {
@@ -44,7 +46,7 @@ export function useBaselineReview(
         run: runs?.items.find((run) => run.status === 'PENDING') ?? null,
       };
     },
-    [id, revisionNo],
+    [id, revisionNo, canDecide],
   );
   return useApiResource(load);
 }

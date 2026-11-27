@@ -27,8 +27,9 @@ import {
 import { SourceApplicationMonitorPage } from './SourceApplicationMonitorPage.tsx';
 
 /**
- * WF-13, mounted under /external-requests for any signed-in person. What a person sees and may do is the API's answer
- * (EXTERNAL_REQUEST_VIEW, _MANAGE; EXTERNAL_CONTRIBUTION_RESPOND, _REVIEW, _APPLY). AHDA's screens are wrapped in
+ * WF-13, mounted under /external-requests for any signed-in person. An entity user reaching AHDA's screens is pointed to
+ * their own list (InternalOnly); the register and the monitors open for an internal holder of EXTERNAL_REQUEST_VIEW, which their reads need, and the create form for EXTERNAL_REQUEST_MANAGE (QA D2-03). What a person
+ * sees and may do is the API's answer (EXTERNAL_REQUEST_VIEW, _MANAGE; EXTERNAL_CONTRIBUTION_RESPOND, _REVIEW, _APPLY). AHDA's screens are wrapped in
  * InternalOnly; SCR-162 is both audiences', laid out by the record's projection. A project's requests are also its
  * workspace tab, /projects/:projectId/external-requests.
  */
@@ -37,7 +38,9 @@ export const externalRequestRoutes: RouteObject[] = [
     index: true, // SCR-160
     element: (
       <InternalOnly>
-        <ExternalRequestRegisterPage />
+        <RequirePermission codes={['EXTERNAL_REQUEST_VIEW']}>
+          <ExternalRequestRegisterPage />
+        </RequirePermission>
       </InternalOnly>
     ),
   },
@@ -45,7 +48,9 @@ export const externalRequestRoutes: RouteObject[] = [
     path: 'new', // SCR-161, ?projectId=
     element: (
       <InternalOnly>
-        <CreateExternalRequestPage />
+        <RequirePermission codes={['EXTERNAL_REQUEST_MANAGE']}>
+          <CreateExternalRequestPage />
+        </RequirePermission>
       </InternalOnly>
     ),
   },
@@ -53,7 +58,9 @@ export const externalRequestRoutes: RouteObject[] = [
     path: 'applications', // SCR-166
     element: (
       <InternalOnly>
-        <SourceApplicationMonitorPage />
+        <RequirePermission codes={['EXTERNAL_REQUEST_VIEW']}>
+          <SourceApplicationMonitorPage />
+        </RequirePermission>
       </InternalOnly>
     ),
   },
@@ -61,7 +68,9 @@ export const externalRequestRoutes: RouteObject[] = [
     path: 'monitor', // SCR-167
     element: (
       <InternalOnly>
-        <ParticipationMonitorPage />
+        <RequirePermission codes={['EXTERNAL_REQUEST_VIEW']}>
+          <ParticipationMonitorPage />
+        </RequirePermission>
       </InternalOnly>
     ),
   },

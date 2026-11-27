@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Models.IdentityAccess;
+using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Domain.IdentityAccess;
@@ -10,11 +11,11 @@ namespace PMPlatform.Api.Controllers;
 
 /// <summary>Finds the people a field may name (review round 5, item 5). See <see cref="IPersonLookupService"/>.</summary>
 [Tags("IdentityAccess")]
-public sealed class PersonLookupsController(IPersonLookupService people, IProjectFactsReader projects) : AdministrationControllerBase
+public sealed class PersonLookupsController(IPersonLookupService people, IProjectFactsReader projects, IAuthorizationEngine engine) : AdministrationControllerBase
 {
     /// <summary>
     /// Active people matching <c>q</c>. Filters: <c>userType</c>; <c>externalEntityId</c>; <c>projectId</c>, whose anchors they must hold a role over.
-    /// 403 to someone with no write permission.
+    /// 403 to someone with no write permission. A project the caller may not view is answered as one that does not exist: 400 <c>projectId</c> Malformed.
     /// </summary>
     [HttpGet("api/v1/person-lookups")]
     [AllowAnyAuthenticatedUser]
@@ -39,7 +40,9 @@ public sealed class PersonLookupsController(IPersonLookupService people, IProjec
         RoleHolderScope? scope = null;
         if (projectId is { } id)
         {
-            if (await projects.FindAsync(id, cancellationToken) is not { } project)
+            // R-47: a project the caller may not view is not told apart from one that does not exist. A question, not a refusal: nothing is audited.
+            if (await projects.FindAsync(id, cancellationToken) is not { } project
+                || !(await engine.EvaluateAsync(CallerId, new AuthorizationRequest(PermissionCatalogue.ProjectView, ViewSubjectOf(project)), cancellationToken)).IsAllowed)
             {
                 return ValidationFailed([new FieldError("projectId", FieldError.Malformed)]);
             }
@@ -51,4 +54,12 @@ public sealed class PersonLookupsController(IPersonLookupService people, IProjec
             ? Ok(found)
             : Failure(AdministrationError.Forbidden);
     }
+
+    private static AuthorizationSubject ViewSubjectOf(ProjectFacts project) => new()
+    {
+        ProjectId = project.Id,
+        DepartmentId = project.DepartmentId,
+        ExternalEntityId = project.ExternalEntityId,
+        OwnerUserId = project.ProjectManagerUserId,
+    };
 }

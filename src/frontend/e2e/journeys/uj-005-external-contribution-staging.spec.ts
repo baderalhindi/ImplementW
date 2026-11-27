@@ -1,7 +1,7 @@
 import { type Locator, type Page } from '@playwright/test';
 
 import { credentialOf } from '../support/environment.ts';
-import { expect, expectText, test, unique, utcDate } from '../support/journey.ts';
+import { cellUnder, expect, expectText, test, unique, utcDate } from '../support/journey.ts';
 import { type ProjectTask, startedTask } from '../support/participation.ts';
 import { activeProject } from '../support/projects.ts';
 
@@ -256,5 +256,6 @@ test('UJ-005 an accepted external contribution is staged, and only an explicit a
 /** The Progress cell of a task's row on the project's Tasks tab (SCR-047), as the Project Manager sees it. */
 async function taskProgressCell(page: Page, projectId: string, title: string): Promise<Locator> {
   await page.goto(`/projects/${projectId}/tasks`);
-  return page.getByRole('row').filter({ hasText: title }).getByRole('cell').last();
+  const row = page.getByRole('row').filter({ hasText: title });
+  return cellUnder(page.getByRole('table').filter({ has: row }), row, 'Progress');
 }

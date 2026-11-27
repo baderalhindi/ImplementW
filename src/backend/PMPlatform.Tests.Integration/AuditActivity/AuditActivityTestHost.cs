@@ -18,7 +18,7 @@ namespace PMPlatform.Tests.Integration.AuditActivity;
 /// department 2, managed by local.r02. People: local.r01 (R01) holds only the shipped grants: administration audit and operations.
 /// local.r02 (R02) reviews security, business and request context at ALL, business with a LOW clearance, and reads Activity at ALL.
 /// local.r03 (R03, DEPT on department 1) reviews business audit and reads Activity at DEPT, and security audit at ALL without request
-/// context. local.r06 (R06) holds nothing. local.r08
+/// context. local.r06 (R06) holds the shipped Viewer grants, anchored on department 1 (D-6). local.r08
 /// is ADR-013's entity Project Manager: external, R08 on entity 1 and R04 on project A, with the shipped Activity grants.
 /// </remarks>
 public sealed class AuditActivityTestHost : IAsyncLifetime
@@ -58,6 +58,8 @@ public sealed class AuditActivityTestHost : IAsyncLifetime
              AS g (version_id, code, scope)
         JOIN identity_access.permission p ON p.code = g.code
         ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
+
+        UPDATE identity_access.access_relationship SET department_id = '{IdentityDatabase.DepartmentId}' WHERE id = '00000000-0111-4000-8000-000000000006';
         """;
 
     public IdentityTestHost Identity { get; } = new();

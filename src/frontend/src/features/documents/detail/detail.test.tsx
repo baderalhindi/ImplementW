@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -17,6 +17,7 @@ import {
 } from '@/test/documentFixtures.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { menuLink } from '@/test/shell.ts';
 
 // SCR-123 Document Detail with MOD-051 Edit Metadata, MOD-052 Replace Version and MOD-053 Archive.
 
@@ -24,12 +25,21 @@ const en = (key: string, params?: Record<string, string | number>) => translate(
 
 const CONTENT = /^\/documents\/[^/]+\/versions\/[^/]+\/content$/;
 
-function openDetail(document: DocumentDetail = documentDetail(), links = [link()]): MockApi {
+/** Opened by a department manager (R03), who holds DOCUMENT_VIEW, DOCUMENT_UPLOAD and DOCUMENT_MANAGE, unless `roles` says. */
+function openDetail(
+  document: DocumentDetail = documentDetail(),
+  links = [link()],
+  roles: string[] = ['R03'],
+): MockApi {
   const api = withDocumentLookups(mockApi())
     .on('GET', /^\/documents\/[^/]+$/, { body: document, headers: { ETag: '"7"' } })
     .on('GET', /^\/documents\/[^/]+\/links$/, { body: links });
-  renderApp({ path: `/documents/${DOCUMENT_ID}`, session: documentSession() });
+  renderApp({ path: `/documents/${DOCUMENT_ID}`, session: documentSession(undefined, roles) });
   return api;
+}
+
+function actionButton(key: string) {
+  return screen.queryByRole('button', { name: en(key) });
 }
 
 const quarantined = () =>
@@ -154,6 +164,45 @@ describe('SCR-123 Document Detail', () => {
     await vi.waitFor(() => {
       expect(api.requestsTo('GET', /^\/evidence-references\/[^/]+\/content$/)).toHaveLength(1);
     });
+  });
+
+  test('a reader without DOCUMENT_UPLOAD or DOCUMENT_MANAGE is offered no change (R06)', async () => {
+    openDetail(documentDetail(), [link()], ['R06']);
+
+    await screen.findByText('design-review.pdf');
+    // The shell offers R06 its Documents menu once its permissions are read, so their absence below is the decision.
+    await waitFor(() => {
+      expect(menuLink('common.menu.documents')).not.toBeNull();
+    });
+    expect(screen.getByRole('link', { name: en('documents.versions.action') })).toBeTruthy();
+    for (const key of [
+      'documents.replace.action',
+      'documents.edit.action',
+      'documents.archive.action',
+    ]) {
+      expect(actionButton(key)).toBeNull();
+    }
+  });
+
+  test('an uploader without DOCUMENT_MANAGE adds a version but neither edits nor archives (R04)', async () => {
+    openDetail(documentDetail(), [link()], ['R04']);
+
+    await screen.findByText('design-review.pdf');
+    expect(actionButton('documents.replace.action')).not.toBeNull();
+    expect(actionButton('documents.edit.action')).toBeNull();
+    expect(actionButton('documents.archive.action')).toBeNull();
+  });
+
+  test('the library’s Edit link opens no form for a reader without DOCUMENT_MANAGE', async () => {
+    withDocumentLookups(mockApi())
+      .on('GET', /^\/documents\/[^/]+$/, { body: documentDetail(), headers: { ETag: '"7"' } })
+      .on('GET', /^\/documents\/[^/]+\/links$/, { body: [link()] });
+    renderApp({ path: `/documents/${DOCUMENT_ID}?edit=1`, session: documentSession() });
+
+    expect(
+      await screen.findByRole('button', { name: en('documents.replace.action') }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: en('documents.edit.title') })).toBeNull();
   });
 
   test('an unknown or unreadable document is an error, not an empty page', async () => {

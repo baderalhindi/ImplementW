@@ -10,9 +10,9 @@ using PMPlatform.Application.Features.IdentityAccess.Contracts;
 namespace PMPlatform.Infrastructure.Identity;
 
 /// <summary>
-/// Signs the platform's access and refresh tokens with <c>JWT_SIGNING_KEY</c> (HS256). Both are stateless: the ERD holds
-/// no session table ("session state is held by the identity provider", erd.md), so a refresh re-reads the user and
-/// their assignments instead, and a refresh never outlives the session's absolute expiry. The MFA token (TASK-029) is a
+/// Signs the platform's access and refresh tokens with <c>JWT_SIGNING_KEY</c> (HS256). A refresh re-reads the user and
+/// their assignments, and never outlives the session's absolute expiry. Every refresh token has its own <c>jti</c>, which
+/// the session record (<c>identity_access.user_session</c>, SR-10) must name for the token to continue the session. The MFA token (TASK-029) is a
 /// third audience: it admits its holder to the second factor and is refused everywhere else. The identity verification
 /// token (TASK-068) is a fourth: it admits its holder to Nafath's verification only.
 /// </summary>
@@ -29,6 +29,7 @@ internal sealed class JwtSessionTokenService(IConfiguration configuration, IOpti
         // ones in its tokens, and a refresh reports the same session expiry as the sign-in did.
         DateTimeOffset now = DateTimeOffset.FromUnixTimeSeconds(timeProvider.GetUtcNow().ToUnixTimeSeconds());
         Guid sessionId = continuation?.SessionId ?? Guid.NewGuid();
+        Guid refreshTokenId = Guid.NewGuid();
         DateTimeOffset sessionExpiresAt = continuation?.SessionExpiresAt ?? (now + lifetimes.SessionLifetime);
         DateTimeOffset accessExpiresAt = Earliest(now + lifetimes.AccessTokenLifetime, sessionExpiresAt);
         DateTimeOffset refreshExpiresAt = Earliest(now + lifetimes.RefreshTokenLifetime, sessionExpiresAt);
@@ -52,6 +53,7 @@ internal sealed class JwtSessionTokenService(IConfiguration configuration, IOpti
         {
             [SessionTokenClaims.Subject] = subject.UserId.ToString(),
             [SessionTokenClaims.SessionId] = sessionId.ToString(),
+            [SessionTokenClaims.TokenId] = refreshTokenId.ToString(),
             [SessionTokenClaims.AuthenticationMethod] = methods,
             [SessionTokenClaims.AuthenticatedAt] = authenticatedAt,
             [SessionTokenClaims.SessionExpiresAt] = sessionExpiresAt.ToUnixTimeSeconds(),
@@ -62,7 +64,9 @@ internal sealed class JwtSessionTokenService(IConfiguration configuration, IOpti
             accessExpiresAt,
             Create(SessionTokenClaims.RefreshAudience, refreshClaims, now, refreshExpiresAt, credentials),
             refreshExpiresAt,
-            sessionExpiresAt);
+            sessionExpiresAt,
+            sessionId,
+            refreshTokenId);
     }
 
     public async Task<SessionContinuation?> ReadRefreshTokenAsync(string refreshToken)
@@ -75,7 +79,8 @@ internal sealed class JwtSessionTokenService(IConfiguration configuration, IOpti
                    identity.FindAll(SessionTokenClaims.AuthenticationMethod).Select(c => c.Value),
                    identity.FindFirst(SessionTokenClaims.AuthenticatedAt)?.Value) is { } authentication
                && long.TryParse(identity.FindFirst(SessionTokenClaims.SessionExpiresAt)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out long sessionExpires)
-            ? new SessionContinuation(userId, sessionId, authentication, DateTimeOffset.FromUnixTimeSeconds(sessionExpires))
+               && Guid.TryParse(identity.FindFirst(SessionTokenClaims.TokenId)?.Value, out Guid refreshTokenId)
+            ? new SessionContinuation(userId, sessionId, authentication, DateTimeOffset.FromUnixTimeSeconds(sessionExpires), refreshTokenId)
             : null;
     }
 

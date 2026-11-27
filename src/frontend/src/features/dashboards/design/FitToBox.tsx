@@ -1,7 +1,9 @@
 import {
   type CSSProperties,
+  type HTMLAttributes,
   type ReactElement,
   type ReactNode,
+  type RefObject,
   useLayoutEffect,
   useRef,
   useState,
@@ -16,9 +18,11 @@ import { fitScale, fitsToBox, largestFit, MIN_FIT_SCALE } from './fitToBox.ts';
  */
 export function FitToBox({
   className,
+  label,
   children,
 }: {
   className: string;
+  label: string;
   children: ReactNode;
 }): ReactElement {
   const box = useRef<HTMLDivElement>(null);
@@ -80,8 +84,13 @@ export function FitToBox({
   }, []);
   // Too large to fit at a readable size: drawn at the least readable scale (zoom, which scales the layout too) and scrolled in its visual.
   const scrolls = scale < MIN_FIT_SCALE;
+  const boxScrolls = useScrolls(box);
   return (
-    <div ref={box} className={scrolls ? 'visual__fit is-scrolling' : 'visual__fit'}>
+    <div
+      ref={box}
+      className={scrolls ? 'visual__fit is-scrolling' : 'visual__fit'}
+      {...scrollRegion(boxScrolls, label)}
+    >
       <div
         ref={content}
         className={
@@ -113,15 +122,89 @@ export function FitToBox({
 export function VisualBodyBox({
   visual,
   className,
+  label,
   children,
 }: {
   visual: { visualType: string; section?: string | null | undefined };
   className: string;
+  /** The visual's title: the name of its body when the body scrolls and so takes keyboard focus. */
+  label: string;
   children: ReactNode;
 }): ReactElement {
   return fitsToBox(visual) ? (
-    <FitToBox className={className}>{children}</FitToBox>
+    <FitToBox className={className} label={label}>
+      {children}
+    </FitToBox>
   ) : (
-    <div className={className}>{children}</div>
+    <ScrolledBody className={className} label={label}>
+      {children}
+    </ScrolledBody>
   );
+}
+
+/** A body drawn at its room's size, which scrolls when what it holds is larger. */
+function ScrolledBody({
+  className,
+  label,
+  children,
+}: {
+  className: string;
+  label: string;
+  children: ReactNode;
+}): ReactElement {
+  const body = useRef<HTMLDivElement>(null);
+  const scrolls = useScrolls(body);
+  return (
+    <div ref={body} className={className} {...scrollRegion(scrolls, label)}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A body that scrolls is a named region in the tab order, so a keyboard can scroll it (WCAG 2.1.1; stage QA F-01: the designer's smaller
+ * rooms made a table visual scroll with nothing in it to focus). One that does not scroll stays out of the tab order.
+ */
+function scrollRegion(scrolls: boolean, label: string): HTMLAttributes<HTMLDivElement> {
+  return scrolls ? { role: 'region', 'aria-label': label, tabIndex: 0 } : {};
+}
+
+/** Whether the element's content is larger than its box (it scrolls), measured again as either changes size. */
+function useScrolls(element: RefObject<HTMLElement | null>): boolean {
+  const [scrolls, setScrolls] = useState(false);
+  useLayoutEffect(() => {
+    const target = element.current;
+    if (target === null) {
+      return undefined;
+    }
+    const measure = () => {
+      setScrolls(
+        target.scrollHeight > target.clientHeight + 1 ||
+          target.scrollWidth > target.clientWidth + 1,
+      );
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+    const sizes = new ResizeObserver(measure);
+    const observeAll = () => {
+      sizes.disconnect();
+      sizes.observe(target);
+      for (const child of target.children) {
+        sizes.observe(child);
+      }
+    };
+    const parts = new MutationObserver(() => {
+      observeAll();
+      measure();
+    });
+    observeAll();
+    parts.observe(target, { childList: true });
+    return () => {
+      sizes.disconnect();
+      parts.disconnect();
+    };
+  }, [element]);
+  return scrolls;
 }

@@ -146,6 +146,27 @@ describe('installErrorReporting', () => {
       }),
     ]);
   });
+
+  test("the browser's ResizeObserver loop notice is not reported; a real error with the same text is", async () => {
+    const api = reportsApi();
+    const target = new EventTarget() as Window;
+    const remove = installErrorReporting(target);
+    const notice = 'ResizeObserver loop completed with undelivered notifications.';
+
+    target.dispatchEvent(new ErrorEvent('error', { message: notice }));
+    target.dispatchEvent(
+      new ErrorEvent('error', { message: 'ResizeObserver loop limit exceeded' }),
+    );
+    target.dispatchEvent(new ErrorEvent('error', { message: notice, error: new Error(notice) }));
+    remove();
+
+    await vi.waitFor(() => {
+      expect(api.requests).toHaveLength(1);
+    });
+    expect(api.requests[0]?.body).toEqual(
+      expect.objectContaining({ source: 'WINDOW_ERROR', errorType: 'Error', message: notice }),
+    );
+  });
 });
 
 describe('RouteErrorPage', () => {

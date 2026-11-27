@@ -73,6 +73,7 @@ function ApprovalsWaiting(): ReactElement {
               <SubjectSummary
                 subject={item.instance.subject}
                 routingKey={item.instance.routingKey}
+                project={item.project}
               />
               {item.dueAt !== null && (
                 <span className="home__aside">

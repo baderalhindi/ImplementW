@@ -100,8 +100,12 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
   const issued = (await changeRequest(approver.api, requestId)).authorizations;
   expect(
     issued.map((a) => [a.authorizationScope, a.targetId, a.targetRevisionNo, a.status]),
-  ).toEqual([['REBASELINE', firstBaseline.id, 1, 'ISSUED']]);
-  const authorizationId = issued[0]?.id ?? '';
+  ).toEqual([
+    ['REBASELINE', firstBaseline.id, 1, 'ISSUED'],
+    // Review round 7: a schedule change on a project with a stage plan also authorises one change of that plan.
+    ['STAGE_PLAN_CHANGE', project.id, 1, 'ISSUED'],
+  ]);
+  const authorizationId = issued.find((a) => a.authorizationScope === 'REBASELINE')?.id ?? '';
 
   await test.step('approval is not implementation: the request reads Approved, Not started, and the schedule is unchanged', async () => {
     const page = requester.page;
@@ -109,7 +113,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     const state = page.getByRole('region', { name: 'Approval and implementation' });
     await expectText(definition(state, 'Approval'), 'Approved');
     await expectText(definition(state, 'Implementation'), 'Not started');
-    await expectText(state, '0 of 1 authorizations applied');
+    await expectText(state, '0 of 2 authorizations applied');
     await expectText(authorizationRow(page), 'Issued, not applied');
     // WF-03 holds the baseline it had: approval changed nothing in the source.
     expect(await baselineStates(approver.api, project.id)).toEqual(['1 ACTIVE']);
@@ -239,7 +243,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
       const state = page.getByRole('region', { name: 'Approval and implementation' });
       await expectText(definition(state, 'Approval'), 'Approved');
       await expectText(definition(state, 'Implementation'), 'In progress');
-      await expectText(state, '0 of 1 authorizations applied');
+      await expectText(state, '0 of 2 authorizations applied');
       await expectText(authorizationRow(page), 'Issued, not applied');
       await expect(authorizationRow(page)).not.toContainText('Applied');
       await expect(page.getByRole('button', { name: 'Mark implemented' })).toHaveCount(0);
@@ -276,7 +280,9 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
       // Delivered on a later attempt than the one that failed, with nothing left of the failure.
       expect([Number(delivered[0]) >= 2, delivered[1]]).toEqual([true, '-']);
       expect(await baselineStates(approver.api, project.id)).toEqual(['1 SUPERSEDED', '2 ACTIVE']);
-      const applied = (await changeRequest(approver.api, requestId)).authorizations;
+      const applied = (await changeRequest(approver.api, requestId)).authorizations.filter(
+        (a) => a.authorizationScope === 'REBASELINE',
+      );
       expect(applied.map((a) => [a.status, a.appliedByUserId, a.appliedReference])).toEqual([
         ['APPLIED', approver.api.userId, `Schedule.ProjectBaseline:${candidateId}`],
       ]);
@@ -294,6 +300,40 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     });
   }
 
+  await test.step('the stage plan takes the approved schedule change through its own authorisation (review round 7)', async () => {
+    const stagePlan = (await changeRequest(approver.api, requestId)).authorizations.find(
+      (a) => a.authorizationScope === 'STAGE_PLAN_CHANGE',
+    );
+    const plan = await requester.api.ok<{
+      stages: {
+        stageCode: string;
+        applies: boolean;
+        plannedStartDate: string | null;
+        plannedEndDate: string | null;
+      }[];
+    }>('GET', `/project-stage-plans/${project.id}`);
+    // The first stage ends a day earlier: a change of the plan, inside the project's dates.
+    const stages = plan.body.stages.map((stage, index) => ({
+      stageCode: stage.stageCode,
+      applies: stage.applies,
+      plannedStartDate: stage.plannedStartDate,
+      plannedEndDate:
+        index === 0 && stage.plannedEndDate !== null
+          ? new Date(Date.parse(stage.plannedEndDate) - 86_400_000).toISOString().slice(0, 10)
+          : stage.plannedEndDate,
+    }));
+    await requester.api.ok(
+      'PUT',
+      `/project-stage-plans/${project.id}`,
+      {
+        stages,
+        changeAuthorizationId: stagePlan?.id ?? null,
+        reason: { text: 'The earthworks extension moves the stage plan.', language: 'en' },
+      },
+      { ifMatch: plan.etag },
+    );
+  });
+
   await test.step('the screens now show the application, and only now', async () => {
     await approver.page.goto(`/approvals/instances/${runId}`);
     await expect(definition(approver.page, 'Outcome sent to the source record')).not.toHaveText(
@@ -302,8 +342,9 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     const page = requester.page;
     await page.goto(requestPath);
     const state = page.getByRole('region', { name: 'Approval and implementation' });
-    await expectText(state, '1 of 1 authorizations applied');
-    await expect(authorizationRow(page).getByRole('cell').nth(2)).toHaveText('Applied');
+    await expectText(state, '2 of 2 authorizations applied');
+    // The table's first cell is the row's selection box (the registers' export selection).
+    await expect(authorizationRow(page).getByRole('cell').nth(3)).toHaveText('Applied');
     await page.goto(baselinesPath);
     await expect(baselineRow(page, 2)).toContainText('Active');
     await expect(baselineRow(page, 1)).toContainText('Superseded');

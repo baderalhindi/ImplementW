@@ -22,8 +22,9 @@ import {
   WithdrawEscalationDialog,
 } from './dialogs/EscalationCommandDialogs.tsx';
 import { concernPath } from './paths.ts';
+import { escalatedToRole } from './presentation.ts';
 import { concernProblemMessage } from './problems.ts';
-import { useConcernLookups, useEscalationRecord, useRoleNames } from './useConcernData.ts';
+import { useConcernLookups, useEscalationRecord } from './useConcernData.ts';
 
 /**
  * SCR-088 Escalation Detail: the escalation (number, status, addressee, reason, who raised it and when, how it ended
@@ -32,12 +33,11 @@ import { useConcernLookups, useEscalationRecord, useRoleNames } from './useConce
  * without reading the project. The addressee resolves it; its escalator withdraws it.
  */
 export function EscalationDetail(): ReactElement | null {
-  const { t, formatDateTime } = useI18n();
+  const { t, language, formatDateTime } = useI18n();
   const { session } = useSession();
   const { escalationId = '' } = useParams();
   const record = useEscalationRecord(escalationId);
   const lookups = useConcernLookups();
-  const roles = useRoleNames();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [dialog, setDialog] = useState<'resolve' | 'withdraw' | null>(null);
   const data = record.data;
@@ -79,7 +79,7 @@ export function EscalationDetail(): ReactElement | null {
   const { escalation, concern, project } = data;
   const user = session.user;
   const open = escalation.status === 'OPEN';
-  const resolver = canResolveEscalation(user, escalation, roles.code(escalation.escalatedToRoleId));
+  const resolver = canResolveEscalation(user, escalation);
   const withdrawer = canWithdrawEscalation(user, escalation);
   const changed = (message: TranslationKey, tone: Notice['tone'] = 'success') => {
     setDialog(null);
@@ -129,7 +129,7 @@ export function EscalationDetail(): ReactElement | null {
             <EscalationStatusBadge status={escalation.status} />
           </Detail>
           <Detail term={t('issuesChallenges.escalations.table.addressedTo')}>
-            {roles.name(escalation.escalatedToRoleId)}
+            {escalatedToRole(escalation, language)}
           </Detail>
           <Detail term={t('issuesChallenges.escalations.table.raised')}>
             {formatDateTime(escalation.escalatedAt)}

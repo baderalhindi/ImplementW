@@ -133,6 +133,7 @@
     "departmentHint": "The AHDA department that owns the project. It sets who follows the project up.",
     "ownEntity": "Your entity",
     "budgetHint": "An amount such as 1,500,000 or 1,500,000.50.",
+    "budgetWithheldHint": "The budget is restricted to you. Leave this empty to keep the budget already registered, or enter a new one.",
     "latitudeHint": "Decimal degrees, from -90 to 90.",
     "longitudeHint": "Decimal degrees, from -180 to 180.",
     "unreadable": {

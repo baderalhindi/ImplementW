@@ -120,6 +120,31 @@ export async function expectText(locator: Locator, text: string): Promise<void> 
     .toContain(text);
 }
 
+/**
+ * The cell of `row` under the column header named `header` in `table`, found by the header's position: a journey names the
+ * column it reads, so a column added beside it (a selection box, an actions column) does not move what it reads.
+ */
+export async function cellUnder(table: Locator, row: Locator, header: string): Promise<Locator> {
+  await expect(row).toBeVisible();
+  const headers = (await table.getByRole('columnheader').allTextContents()).map(plain);
+  const index = headers.indexOf(header);
+  if (index < 0) throw new Error(`No column "${header}" among ${JSON.stringify(headers)}.`);
+  return row.locator(':scope > td, :scope > th').nth(index);
+}
+
+/**
+ * The project's Overview. Opened at its address, the project page returns to the tab this person last used on it (review
+ * round 8, point 04, 400e7950); the Overview link is the person choosing the overview, which the page keeps.
+ */
+export async function openProjectOverview(page: Page, projectId: string): Promise<void> {
+  await page.goto(`/projects/${projectId}`);
+  await page
+    .getByRole('navigation', { name: 'Project section groups' })
+    .getByRole('link', { name: 'Overview', exact: true })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+}
+
 /** A label unique to this run, so journeys never meet each other's records on a shared environment. */
 export function unique(label: string): string {
   return `${label} ${new Date().toISOString().slice(0, 19).replace('T', ' ')} ${Math.random().toString(36).slice(2, 6)}`;

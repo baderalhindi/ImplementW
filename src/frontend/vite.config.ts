@@ -48,6 +48,10 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    // A font is never inlined as a data: URI, which the CSP's font-src 'self' refuses (stage QA D-001: the small Cyrillic subset of IBM
+    // Plex Sans Arabic was inlined). Other assets keep Vite's default limit.
+    assetsInlineLimit: (filePath) =>
+      /\.(woff2?|ttf|otf|eot)$/i.test(filePath) ? false : undefined,
   },
   // Unit tests only (TASK-015). e2e/ is Playwright's and is never collected here.
   test: {

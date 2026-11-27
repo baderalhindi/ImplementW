@@ -131,11 +131,11 @@ export const appRoutes: RouteObject[] = [
         children: projectRoutes,
       },
       {
-        path: 'tasks',
+        path: 'tasks', // every list reads under TASK_VIEW (QA D1-04)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['TASK_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: taskRoutes,
       },
@@ -158,11 +158,11 @@ export const appRoutes: RouteObject[] = [
         children: kpiRoutes,
       },
       {
-        path: 'risks',
+        path: 'risks', // both registers read under RISK_VIEW (QA D1-04)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['RISK_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: riskRoutes,
       },
@@ -238,11 +238,11 @@ export const appRoutes: RouteObject[] = [
         children: approvalRoutes,
       },
       {
-        path: 'documents',
+        path: 'documents', // every WF-12 screen reads under DOCUMENT_VIEW (QA D2-03)
         element: (
-          <RequireSession>
+          <RequirePermission codes={['DOCUMENT_VIEW']}>
             <Outlet />
-          </RequireSession>
+          </RequirePermission>
         ),
         children: documentRoutes,
       },

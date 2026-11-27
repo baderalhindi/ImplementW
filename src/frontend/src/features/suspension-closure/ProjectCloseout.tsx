@@ -1,6 +1,7 @@
 import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -27,6 +28,7 @@ export function ProjectCloseout({
   user: SessionUser;
 }): ReactElement {
   const { t } = useI18n();
+  const permissions = usePermissions();
   const closeout = useProjectCloseout(project.id);
   const [notice, setNotice] = useState<Notice | null>(null);
 
@@ -68,7 +70,7 @@ export function ProjectCloseout({
       <CloseoutStages
         stages={stages}
         actions={{
-          completion: canRaiseCase(user, project, stages, 'completion') && (
+          completion: canRaiseCase(user, permissions, project, stages, 'completion') && (
             <Link
               className="button button--primary"
               to={newCloseoutCasePath(project.id, 'completion')}
@@ -76,7 +78,7 @@ export function ProjectCloseout({
               {t('suspensionClosure.actions.raise.completion')}
             </Link>
           ),
-          closure: canRaiseCase(user, project, stages, 'closure') && (
+          closure: canRaiseCase(user, permissions, project, stages, 'closure') && (
             <Link
               className="button button--primary"
               to={newCloseoutCasePath(project.id, 'closure')}

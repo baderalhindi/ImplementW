@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useState } from 'react';
 
 import { namesApi } from '@/features/identity-access/names/namesApi.ts';
 import { apiRequest } from '@/shared/api/httpClient.ts';
+import { useScopedResource } from '@/shared/api/resourceScope.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type Language, useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -97,20 +98,22 @@ export function useEntityCompletionBands(): {
   const { language } = useI18n();
   const { period } = useCompletionPeriod();
   const load = useCallback(
-    async (signal: AbortSignal) => {
-      const [rates, units] = await Promise.all([
-        apiRequest<EntityCompletionPage>('/entity-completion-rates', {
+    async (signal: AbortSignal) =>
+      (
+        await apiRequest<EntityCompletionPage>('/entity-completion-rates', {
           query: { period, pageSize: 100 },
           signal,
-        }),
-        namesApi.units(signal),
-      ]);
-      return { page: rates.data, entities: units.externalEntities };
-    },
+        })
+      ).data,
     [period],
   );
   const resource = useApiResource(load);
-  const raw = resource.data;
+  // The entities' names are the screen's shared read (stage QA F-05), not one of this panel's own.
+  const units = useScopedResource(namesApi.units);
+  const raw =
+    resource.data === undefined || units.data === undefined
+      ? undefined
+      : { page: resource.data, entities: units.data.externalEntities };
   const data =
     raw === undefined
       ? undefined
@@ -138,7 +141,12 @@ export function useEntityCompletionBands(): {
             ).length,
           };
         })();
-  return { data, loading: resource.loading, error: resource.error, reload: resource.reload };
+  return {
+    data,
+    loading: resource.loading || units.loading,
+    error: resource.error ?? units.error,
+    reload: resource.reload,
+  };
 }
 
 /** The months a period covers, in words: "November 2026", "September – November 2026", "2026" (review round 8, point 03). */

@@ -48,7 +48,7 @@
 | DSH-001, DSH-004, DSH-005 (Governance Dashboard renderings) | `/` as the landing of R01, R04, R05; `/?dashboard=GOVERNANCE` for R02, R03, R07 | `HomeDashboardPage`, `HostedDashboard` |
 | DSH-002, DSH-003, DSH-006, DSH-007 and the summary widgets of DSH-010–012 (Portfolio Dashboard renderings) | `/` as the landing of R02, R03, R06, R07 | `HomeDashboardPage`, `HostedDashboard` |
 | DSH-008 External Contributor Dashboard | `/` for R08 (its projects), then SCR-040 | `ProjectLanding`, `ProjectDashboard` |
-| DSH-009 Project Dashboard | A section of SCR-040 Project Overview (`/projects/:id`, Overview tab); no route | `ProjectDashboard` |
+| DSH-009 Project Dashboard | A section of SCR-040 Project Overview (`/projects/:id`, Overview tab) once the registration is approved — not for DRAFT, SUBMITTED, UNDER_REVIEW or RETURNED, whose registrant no widget reaches (404, R-47; QA D1-05); no route | `ProjectDashboard` |
 | ADR-019 Customise layout | The Portfolio Dashboard's *Customise layout* | `PersonalizeDialog` |
 
 | State | When | What is shown |

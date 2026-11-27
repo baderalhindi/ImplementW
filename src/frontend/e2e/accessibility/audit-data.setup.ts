@@ -6,7 +6,7 @@ import { test } from '@playwright/test';
 import { uploadDocument, untilScanned } from '../support/access-audit.ts';
 import { PlatformApi } from '../support/api.ts';
 import { unique, utcDate } from '../support/journey.ts';
-import { activeProject, registration } from '../support/projects.ts';
+import { activeProject, registration, submitRegistration } from '../support/projects.ts';
 import { itemId } from '../support/reference.ts';
 import { AUDIT_DATA_FILE, type AuditData } from './screens.ts';
 
@@ -67,9 +67,7 @@ test('audit data', async () => {
       '/projects',
       await registration(portfolio, { title: unique('A11Y Jeddah corniche') }),
     );
-    await department.post(`/projects/${waiting.id}/submit`, {
-      projectManagerUserId: manager.userId,
-    });
+    await submitRegistration(department, waiting.id, manager.userId);
     await department.post(`/projects/${waiting.id}/start-review`);
     const roles = await administrator.get<{ id: string }[]>('/roles'); // a bare array, the catalogue of roles
     const data: AuditData = {

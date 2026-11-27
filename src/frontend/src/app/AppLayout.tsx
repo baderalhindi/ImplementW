@@ -278,7 +278,7 @@ function AccountMenu({ user }: { user: SessionUser }): ReactElement {
           type="button"
           className="popover__option"
           onClick={() => {
-            sessionStore.signOut();
+            void sessionStore.endSession();
           }}
         >
           {t('common.signOut')}

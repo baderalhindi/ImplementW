@@ -7,6 +7,7 @@ import { WithdrawDialog } from '@/features/approvals/dialogs/WithdrawDialog.tsx'
 import { instanceTone } from '@/features/approvals/presentation.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useSaveAction } from '@/features/identity-access/forms.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
@@ -124,6 +125,7 @@ const TARGET_SCREENS: Partial<Record<ChangeAuthorizationDetail['authorizationSco
 export function ChangeRequestDetailPage(): ReactElement | null {
   const { t, formatDateTime } = useI18n();
   const { session } = useSession();
+  const permissions = usePermissions();
   const { changeRequestId = '' } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -211,7 +213,7 @@ export function ChangeRequestDetailPage(): ReactElement | null {
       danger: true,
     });
   }
-  if (canStartReview(user, request, project)) {
+  if (canStartReview(user, permissions, request, project)) {
     command('start-review', true);
   }
   if (canDecideChangeRequest(user, request, task)) {

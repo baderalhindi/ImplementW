@@ -1,7 +1,14 @@
 import { describe, expect, test } from 'vitest';
 
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
+import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { changeRequest, pavingAt } from '@/test/changeRequestFixtures.ts';
+import { concernProject, managerSession } from '@/test/concernFixtures.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
+import { shippedPermissions } from '@/test/permissionFixtures.ts';
+import { OTHER_DEPARTMENT_ID, reviewerSession, viewerSession } from '@/test/projectFixtures.ts';
 
+import { canRaiseChangeRequests, canStartReview } from './access.ts';
 import { type ChangeRequestStatus } from './api/types.ts';
 import {
   approvalStateOf,
@@ -149,5 +156,34 @@ describe('the request body', () => {
     const before = pavingAt('RETURNED');
     const body = toChangeRequestRequest(changeRequestFormValuesOf(before), 'en', before);
     expect(JSON.stringify(body)).not.toContain(String(before.materiality?.evaluationId));
+  });
+});
+
+describe('who is offered what (access.ts: navigation, not protection)', () => {
+  const held = (user: SessionUser) => permissionsOf(shippedPermissions(user));
+  const project = concernProject();
+  const submitted = changeRequest({ status: 'SUBMITTED' });
+
+  test('CHANGE_REQUEST_RAISE on the project raises: the PM, R02 and R03, not R05, R06 or R07', () => {
+    for (const user of [managerSession().user, reviewerSession().user, sessionFor(['R02']).user]) {
+      expect(canRaiseChangeRequests(user, held(user), project)).toBe(true);
+    }
+    for (const user of [viewerSession().user, sessionFor(['R05']).user, sessionFor(['R07']).user]) {
+      expect(canRaiseChangeRequests(user, held(user), project)).toBe(false);
+    }
+  });
+
+  test('starting the review needs CHANGE_REQUEST_REVIEW on the project (R02, R03), not R04–R07', () => {
+    for (const user of [reviewerSession().user, sessionFor(['R02']).user]) {
+      expect(canStartReview(user, held(user), submitted, project)).toBe(true);
+    }
+    for (const user of [
+      viewerSession().user,
+      ...['R04', 'R05', 'R07'].map((code) => sessionFor([code]).user),
+    ]) {
+      expect(canStartReview(user, held(user), submitted, project)).toBe(false);
+    }
+    const elsewhere = reviewerSession(OTHER_DEPARTMENT_ID).user;
+    expect(canStartReview(elsewhere, held(elsewhere), submitted, project)).toBe(false);
   });
 });

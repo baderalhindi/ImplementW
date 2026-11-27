@@ -220,6 +220,13 @@ What is **owed**, and cannot be run until the environments exist:
 
 `verify-separation.sh` implements all four and **exits non-zero on a SKIP**: an unexecuted drill is
 not a passed drill, and the acceptance criterion is not met by a script that would have proved it.
+Only the provider's own refusal is a PASS: Secret Manager's `PERMISSION_DENIED` on
+`secretmanager.versions.access` for D-2 (after the impersonation of the principal is proved with
+`gcloud auth print-access-token`), the SIT server rejecting the login for D-1. Any other failed call
+(no credentials, a failed impersonation, no network, an API not enabled, an unreadable policy) is
+**ERROR** with the provider's message and counts as not passed, and the run prints its summary even
+when it stops early. `infra/environments/tests/verify-separation-test.sh` holds those cases against
+stand-in `gcloud`/`psql` and runs in `repo-checks`.
 
 ### 5.1 Mutation test
 
@@ -277,5 +284,6 @@ repository-wide scan reports the same five pre-existing false positives TASK-013
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-11-27 | QA PHASE-E-01: `verify-separation.sh` counted any failed `gcloud`/`psql` call as the refusal it tests for, so with no credentials it printed PASS for every D-2 and D-3 check, then stopped at D-3b under `set -e` with no summary. It now passes only on the provider's refusal, reports every other failure as ERROR, proves each impersonation before the D-2 reads, and always ends with its summary (§5). New test `infra/environments/tests/verify-separation-test.sh` in `repo-checks`. | Infrastructure (TASK-112) |
 | 2026-09-23 | `platform.artifact_registry.project_id` resolved to `ahda-pmplatform-artifacts` (cicd-pipeline.md F-1, the delivery team's own decision) and dropped from `platform.unresolved`. §3.4 rule 3 no longer claims that no cross-project IAM binding exists: the eight deploy and runtime accounts must read one registry, so the claim is narrowed to that binding and D-3c is added to `verify-separation.sh` to hold the narrowed line. `platform.region` set provisionally to `me-central2`; its `unresolved` entry stays, because the value is owed in writing by AHDA IT (Q2) and only the placeholder has gone. | Infrastructure (TASK-018 F-1) |
 | 2026-09-22 | Initial record. Four environments declared as one GCP project each in two folders; provisioning, locality and verification scripted; promotion path fixed with four gates and named approvers; static invariants wired into the `repo-checks` CI job. Decision D-1 (one origin per environment) closes TASK-013 F-2 and dissolves F-5. Nine findings raised, one of them a proposed new gated value (F-1). | Infrastructure (TASK-016) |

@@ -6,6 +6,7 @@ import { DecisionDialog } from '@/features/approvals/dialogs/DecisionDialog.tsx'
 import { WithdrawDialog } from '@/features/approvals/dialogs/WithdrawDialog.tsx';
 import { useOptionalProject } from '@/features/change-requests/useChangeRequestData.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { ProjectStatusBadge } from '@/features/projects/components/ProjectStatusBadge.tsx';
@@ -95,6 +96,7 @@ type OpenDialog =
 export function SuspensionDetailPage(): ReactElement | null {
   const { t, formatDateTime } = useI18n();
   const { session } = useSession();
+  const permissions = usePermissions();
   const { suspensionRequestId = '' } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -144,7 +146,7 @@ export function SuspensionDetailPage(): ReactElement | null {
   const resumes =
     inEffect &&
     project !== null &&
-    canRaiseSuspensionRequest(user, project, siblings.data ?? [], 'RESUME');
+    canRaiseSuspensionRequest(user, permissions, project, siblings.data ?? [], 'RESUME');
 
   const reload = () => {
     record.reload();
@@ -184,7 +186,7 @@ export function SuspensionDetailPage(): ReactElement | null {
       danger: true,
     });
   }
-  if (canStartReview(user, request, project)) {
+  if (canStartReview(user, permissions, request, project, 'SUSPENSION_REVIEW')) {
     command('start-review', true);
   }
   if (canDecide(user, request, task)) {

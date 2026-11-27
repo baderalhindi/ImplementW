@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { type ReactElement, useState } from 'react';
 
 import { ProjectDashboard } from '@/features/dashboards/ProjectDashboard.tsx';
+import { RestrictedFlag } from '@/features/financial-kpi/components/Figures.tsx';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -11,10 +12,10 @@ import { Detail } from '../components/Detail.tsx';
 import { ChangeManagerDialog } from '../dialogs/ChangeManagerDialog.tsx';
 import { profileMandatoryFields } from '../governance.ts';
 import {
+  budgetWithheld,
   FIELD_LABELS,
-  missingFields,
+  missingProjectFields,
   SUBMISSION_REQUIRED_FIELDS,
-  valuesOf,
 } from '../registration.ts';
 
 import { OverallProgressPanel } from '../stagePlan/OverallProgressPanel.tsx';
@@ -40,9 +41,21 @@ const NEXT_STEPS: Partial<Record<ProjectStatus, TranslationKey>> = {
 };
 
 /**
+ * A registration not yet approved has no delivery to show: every Project Dashboard widget but the lifecycle state (the badge above) reads a
+ * schedule, a period, a risk or a figure the project only has once approved, and for its registrant no widget reaches it, so the API answers
+ * 404 (`dashboards.md` §5, R-47). The dashboard is not asked for until then (QA D1-05).
+ */
+const REGISTRATION_STATES: ReadonlySet<ProjectStatus> = new Set([
+  'DRAFT',
+  'SUBMITTED',
+  'UNDER_REVIEW',
+  'RETURNED',
+]);
+
+/**
  * SCR-040 Overview: where the project stands, what comes next, and — while the registrant holds it — what is still
- * missing before it can be submitted. Below them, the Project Dashboard (DSH-009; DSH-008 for an entity's person) is
- * composed into this tab, its only place (TASK-070).
+ * missing before it can be submitted. Below them, once the registration is approved, the Project Dashboard (DSH-009; DSH-008 for an
+ * entity's person) is composed into this tab, its only place (TASK-070).
  */
 export function OverviewTab(): ReactElement {
   const { t, formatDateTime } = useI18n();
@@ -53,7 +66,7 @@ export function OverviewTab(): ReactElement {
   const managerName = usePersonNames([project.projectManagerUserId]);
   const missing =
     access.reached && (project.status === 'DRAFT' || project.status === 'RETURNED')
-      ? missingFields(valuesOf(project), [
+      ? missingProjectFields(project, [
           ...SUBMISSION_REQUIRED_FIELDS,
           ...profileMandatoryFields(lookups.profiles, project.governanceProfileItemId),
         ])
@@ -123,7 +136,7 @@ export function OverviewTab(): ReactElement {
               {canChangeManager && (
                 <button
                   type="button"
-                  className="button button--quiet value--nowrap"
+                  className="button button--quiet value--nowrap details__action"
                   onClick={() => {
                     setChangingManager(true);
                   }}
@@ -137,7 +150,9 @@ export function OverviewTab(): ReactElement {
               {lookups.itemLabel(project.governanceProfileItemId)}
             </Detail>
             <Detail term={t('projects.fields.registrationBudget')}>
-              {project.registrationBudgetSar === null ? (
+              {budgetWithheld(project) ? (
+                <RestrictedFlag />
+              ) : project.registrationBudgetSar == null ? (
                 none
               ) : (
                 <SarAmount amount={project.registrationBudgetSar} />
@@ -168,7 +183,9 @@ export function OverviewTab(): ReactElement {
         </section>
       </div>
       <FollowUpPanel />
-      <ProjectDashboard key={project.id} projectId={project.id} user={user} />
+      {!REGISTRATION_STATES.has(project.status) && (
+        <ProjectDashboard key={project.id} projectId={project.id} user={user} />
+      )}
       <ChangeManagerDialog
         open={changingManager}
         project={project}

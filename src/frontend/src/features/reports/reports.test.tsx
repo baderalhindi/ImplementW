@@ -196,8 +196,15 @@ describe('acceptance criterion 1: the builder offers the allowlist and nothing e
     ).toBeNull();
   });
 
-  test('a role without REPORT_COMPOSE is told the builder is not for it', async () => {
+  test('a role without REPORT_COMPOSE is denied the builder (QA D2-03)', async () => {
     at('/reports/explorer', sessionFor(['R06']), { allowlist: problem(403, 'PERMISSION_DENIED') });
+    expect(
+      await screen.findByRole('heading', { level: 1, name: en('common.forbidden.title') }),
+    ).toBeTruthy();
+  });
+
+  test('a refusal of the allowlist itself still says the builder is not for the person', async () => {
+    at('/reports/explorer', composerSession(), { allowlist: problem(403, 'PERMISSION_DENIED') });
     expect(await screen.findByText(en('reports.explorer.notForRole'))).toBeTruthy();
   });
 });

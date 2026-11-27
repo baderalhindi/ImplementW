@@ -35,7 +35,8 @@ public sealed class CredentialLoggingTests(IdentityTestHost host)
         Session steppedUp = await client.StepUpOrFailAsync(session.RefreshToken);
         credentials.Add(steppedUp.AccessToken);
         credentials.Add(steppedUp.RefreshToken);
-        using (HttpResponseMessage refreshed = await client.RefreshAsync(session.RefreshToken))
+        // The step-up replaced the sign-in's refresh token (SR-10): the session continues with the stepped-up one.
+        using (HttpResponseMessage refreshed = await client.RefreshAsync(steppedUp.RefreshToken))
         {
             Session next = await refreshed.ReadAsync<Session>();
             credentials.Add(next.AccessToken);

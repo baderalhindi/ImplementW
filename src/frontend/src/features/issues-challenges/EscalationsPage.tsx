@@ -19,7 +19,7 @@ import {
   needsHistory,
 } from './concernRules.ts';
 import { concernProblemMessage } from './problems.ts';
-import { useConcernLookups, useEscalationQueue, useRoleNames } from './useConcernData.ts';
+import { useConcernLookups, useEscalationQueue } from './useConcernData.ts';
 
 const TYPES: readonly ConcernType[] = ['ISSUE', 'CHALLENGE'];
 
@@ -36,7 +36,6 @@ export function EscalationsPage(): ReactElement {
   const [type, setType] = useState(ANY);
   const queue = useEscalationQueue(needsHistory(view));
   const lookups = useConcernLookups();
-  const roles = useRoleNames();
   const entries = queue.data ?? [];
   const personName = usePersonNames(
     entries.flatMap(({ escalation }) => [
@@ -143,7 +142,6 @@ export function EscalationsPage(): ReactElement {
         <EscalationTable
           caption={t('issuesChallenges.escalations.caption')}
           entries={shown}
-          roles={roles}
           itemLabel={lookups.itemLabel}
           personName={personName}
         />

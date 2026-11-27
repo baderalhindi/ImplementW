@@ -1237,6 +1237,11 @@ h3 {
   color: var(--color-text-muted);
 }
 
+/* An action after a value (Assign / change after the manager's name): kept apart from it on the same line, in either direction (stage QA F-04). */
+.details__action {
+  margin-inline-start: var(--space-2);
+}
+
 @media (min-width: 40rem) {
   .details__row {
     grid-template-columns: 14rem 1fr;
@@ -1847,6 +1852,18 @@ select.field__input {
   display: block;
   font-weight: 600;
   unicode-bidi: isolate;
+}
+
+/* The project an inbox row decides (stage QA D1-01): its Formal Project ID, then its title. */
+.subject__project {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.subject__formal-id {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .subject__meta {
@@ -6204,16 +6221,19 @@ path.trend__line--ACTUAL_PERCENT {
   padding: 0;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: rgba(15, 118, 110, 0.82);
+  /* Opaque theme tokens, so the count keeps AA contrast over any tile (stage QA F-02: white on translucent teal was 3.94:1). */
+  background: var(--color-primary);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
 .map-bubble--selected {
-  background: rgba(194, 65, 12, 0.92);
+  /* White on #c2410c is 5.18:1; opaque for the same reason. */
+  background: #c2410c;
+  color: #fff;
   outline: 3px solid rgba(194, 65, 12, 0.35);
 }
 

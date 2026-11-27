@@ -189,6 +189,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # rollback-validation.md F-4 (QA PHASE-E-02): a service that fails at start-up must end its container with a
+      # non-zero exit, with no `--init` from the platform, or a broken release spins instead of failing its start.
+      - name: Start-up failure exits
+        run: infra/docker/startup-failure-test.sh "pmplatform-api:${{ needs.release-metadata.outputs.image_tag }}"
+
       - uses: aquasecurity/setup-trivy@v0.3.1
         with:
           version: v0.74.0

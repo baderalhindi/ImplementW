@@ -114,6 +114,7 @@ public static class DependencyInjection
         // 13 Nov 2026 review: SMS codes (sign-in and ADR-004 verification) and passkeys. Their stores, the SMS gateway and the
         // WebAuthn relying party are Infrastructure's.
         services.AddScoped<SmsOneTimeCodes>();
+        services.AddScoped<SessionRegistry>();
         services.AddScoped<IMobileNumberVerifier, SmsCodeMobileNumberVerifier>();
         services.AddScoped<IPasskeyService, PasskeyService>();
         services.AddScoped<IBannerService, BannerService>();
@@ -191,6 +192,7 @@ public static class DependencyInjection
         services.AddScoped<ProjectManagerEligibility>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IApprovalOutcomeHandler, ProjectApprovalOutcomeHandler>();
+        services.AddScoped<IApprovalProjectNames, ProjectApprovalNames>();
 
         // The 2 Nov 2026 review: RPMO's follow-up of registered projects and its Follow-up list (R3-3, R3-5), and project import batches
         // from RPMO's workbook, approved by a second person (R3-4).

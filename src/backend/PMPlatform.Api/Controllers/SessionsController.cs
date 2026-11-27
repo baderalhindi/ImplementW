@@ -433,8 +433,25 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     }
 
     /// <summary>
+    /// Signs out (SR-10): ends the session the access token belongs to, so its refresh token is refused from now on. The
+    /// access token itself is not checked against the session and works until it expires, at most 15 minutes. Answers 204
+    /// also when the session had already ended.
+    /// </summary>
+    [HttpPost("current/sign-out")]
+    [AllowAnyAuthenticatedUser]
+    [EndpointName("IdentityAccess_SignOut")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> SignOut(CancellationToken cancellationToken)
+    {
+        await authentication.SignOutAsync(
+            Guid.Parse(User.FindFirstValue(SessionTokenClaims.Subject)!), Guid.Parse(User.FindFirstValue(SessionTokenClaims.SessionId)!), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Exchanges a refresh token for a new token pair. Anonymous because the access token has usually expired by then;
-    /// the refresh token is the credential. The user's status and assignments are read afresh.
+    /// the refresh token is the credential, and it works once: the pair carries its successor, and presenting a replaced
+    /// refresh token again ends the session (SR-10). The user's status and assignments are read afresh.
     /// </summary>
     [HttpPost("current/refresh")]
     [AllowAnonymous]

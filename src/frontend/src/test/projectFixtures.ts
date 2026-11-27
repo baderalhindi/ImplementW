@@ -118,6 +118,7 @@ export function projectDetail(overrides: Partial<ProjectDetail> = {}): ProjectDe
     revisionNo: 1,
     governanceProfileItemId: LIGHT_PROFILE_ID,
     registrationBudgetSar: '1500000.00',
+    maskedFields: [],
     plannedStartDate: '2026-11-01',
     plannedEndDate: '2027-10-31',
     regionItemId: null,
