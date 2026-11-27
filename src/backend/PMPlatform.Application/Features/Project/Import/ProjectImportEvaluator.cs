@@ -78,6 +78,12 @@ internal static class ProjectImportEvaluator
     {
         /// <summary>The project stages in force (review round 7, item 1), which the current stage column names, by code or by either name.</summary>
         public IReadOnlyList<ProjectStageEntry> Stages { get; init; } = [];
+
+        /// <summary>
+        /// Whether the importer sees a project's registration budget (FINANCIAL_VIEW_SENSITIVE on it, D-4). For one who does not, the preview does
+        /// not compare the row's budget with the held one, so it cannot be used to guess it.
+        /// </summary>
+        public Func<ProjectEntity, bool> RevealsAmounts { get; init; } = _ => true;
     }
 
     /// <summary>The key row: the first row holding <see cref="LegacyRef"/>, whose cells name each column.</summary>
@@ -365,7 +371,8 @@ internal static class ProjectImportEvaluator
             Governed(Department, p.DepartmentId != row.DepartmentId);
             Governed(Entity, p.ExternalEntityId != row.ExternalEntityId);
             Governed(Sector, p.ClassificationItemId != row.ClassificationItemId);
-            Governed(Budget, p.RegistrationBudgetSar != row.Budget);
+            // A budget withheld from the importer is never compared (the warning would tell whether a guess matched it): it is always "not updated".
+            Governed(Budget, !context.RevealsAmounts(p) || p.RegistrationBudgetSar != row.Budget);
             Governed(Start, p.PlannedStartDate != row.Start);
             Governed(End, p.PlannedEndDate != row.End);
             Governed(Region, p.RegionItemId != row.RegionItemId);

@@ -89,7 +89,11 @@ internal sealed class ProjectFollowUpService(
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) != ProjectSaveOutcome.Saved
             ? AdministrationError.PreconditionFailed
             : new Versioned<ProjectDetail>(
-                ProjectMapping.ToDetail(project, await indicators.OfAsync(project, cancellationToken).ConfigureAwait(false)), repository.RowVersionOf(project));
+                ProjectMapping.ToDetail(
+                    project,
+                    await indicators.OfAsync(project, cancellationToken).ConfigureAwait(false),
+                    await access.RevealsAmountsAsync(callerId, project, cancellationToken).ConfigureAwait(false)),
+                repository.RowVersionOf(project));
     }
 
     public async Task<AdministrationResult<ProjectFollowUpNotePage>> ListNotesAsync(

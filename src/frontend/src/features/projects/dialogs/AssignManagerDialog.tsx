@@ -13,12 +13,7 @@ import { projectsApi } from '../api/projectsApi.ts';
 import { type ProjectDetail } from '../api/types.ts';
 import { profileMandatoryFields } from '../governance.ts';
 import { projectProblemMessage } from '../problems.ts';
-import {
-  FIELD_LABELS,
-  missingFields,
-  SUBMISSION_REQUIRED_FIELDS,
-  valuesOf,
-} from '../registration.ts';
+import { FIELD_LABELS, missingProjectFields, SUBMISSION_REQUIRED_FIELDS } from '../registration.ts';
 import { type ProjectLookups } from '../useProjectLookups.ts';
 
 /** The Project Manager a submission names: the person submitting, the one named before, or someone found. */
@@ -66,7 +61,7 @@ function AssignManagerBody({
   );
   const [other, setOther] = useState<PickedUser | null>(null);
 
-  const missing = missingFields(valuesOf(project), [
+  const missing = missingProjectFields(project, [
     ...SUBMISSION_REQUIRED_FIELDS,
     ...profileMandatoryFields(lookups.profiles, project.governanceProfileItemId),
   ]);

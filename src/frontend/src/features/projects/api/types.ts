@@ -216,7 +216,10 @@ export interface ProjectDetail extends ProjectSummary {
   isStrategic?: boolean | null;
   revisionNo: number;
   governanceProfileItemId: string;
-  registrationBudgetSar: string | null;
+  /** Omitted, and named in `maskedFields`, for a caller without FINANCIAL_VIEW_SENSITIVE on the project (D-4); null when none is stated. */
+  registrationBudgetSar?: string | null;
+  /** The fields withheld from the caller (ADR-010, R-20): omitted from the JSON, shown as restricted. */
+  maskedFields: string[];
   plannedStartDate: string | null;
   plannedEndDate: string | null;
   regionItemId: string | null;

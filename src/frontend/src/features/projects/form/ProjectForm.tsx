@@ -40,6 +40,7 @@ import { LocationFields } from '../components/LocationFields.tsx';
 import { profileMandatoryFields } from '../governance.ts';
 import { projectProblemMessage } from '../problems.ts';
 import {
+  budgetWithheld,
   checkRegistration,
   draftRequiredFields,
   EMPTY_REGISTRATION,
@@ -498,7 +499,9 @@ export function ProjectForm({
           value={values.registrationBudgetSar}
           hint={
             viaChangeRequest ??
-            `${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`
+            (existing !== undefined && budgetWithheld(existing.project)
+              ? t('projects.form.budgetWithheldHint')
+              : `${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`)
           }
           onChange={setter('registrationBudgetSar')}
           error={errorOf('registrationBudgetSar')}
