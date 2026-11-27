@@ -55,7 +55,17 @@ export interface ApprovalInstanceSummary {
   completedAt: string | null;
 }
 
-/** SCR-100: a task the caller may decide now. `onBehalfOfUserId` names the delegator when the authority is delegated. */
+/** The project a run is scoped to, as the inbox names it (stage QA D1-01): its title as entered, and its Formal Project ID once it has one. */
+export interface ApprovalProjectName {
+  id: string;
+  formalProjectId: string | null;
+  title: NarrativeText;
+}
+
+/**
+ * SCR-100: a task the caller may decide now. `onBehalfOfUserId` names the delegator when the authority is delegated; `project` names the
+ * project the run is scoped to, null when it has none.
+ */
 export interface ApprovalInboxItem {
   taskId: string;
   sequenceNo: number;
@@ -63,6 +73,7 @@ export interface ApprovalInboxItem {
   dueAt: string | null;
   onBehalfOfUserId: string | null;
   instance: ApprovalInstanceSummary;
+  project?: ApprovalProjectName | null;
 }
 
 /**

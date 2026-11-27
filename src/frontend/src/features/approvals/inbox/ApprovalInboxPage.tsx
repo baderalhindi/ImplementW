@@ -101,17 +101,26 @@ export function ApprovalInboxPage(): ReactElement {
                   const subjectId = `subject-${item.taskId}`;
                   const kindKey = `approvals.routing.${item.instance.routingKey}`;
                   const kind = isTranslationKey(kindKey) ? t(kindKey) : item.instance.routingKey;
+                  const revision = t('approvals.subject.revision', {
+                    revision: item.instance.subject.revisionNo,
+                  });
+                  // The row's checkbox names the project too, so a selection says which projects it holds (stage QA D1-01).
+                  const project =
+                    item.project == null
+                      ? ''
+                      : ` ${[item.project.formalProjectId, item.project.title.text].filter((part) => part !== null).join(' ')}`;
                   return (
                     <tr key={item.taskId}>
                       <SelectRowCell
                         id={item.taskId}
-                        name={`${kind} (${t('approvals.subject.revision', { revision: item.instance.subject.revisionNo })})`}
+                        name={`${kind}${project} (${revision})`}
                         selection={selection}
                       />
                       <td id={subjectId}>
                         <SubjectSummary
                           subject={item.instance.subject}
                           routingKey={item.instance.routingKey}
+                          project={item.project}
                         />
                         <Link
                           className="cell__link"

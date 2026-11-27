@@ -25,6 +25,7 @@ import {
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { APP_STYLES as styles } from '@/test/stylesheet.ts';
 import { offeredTabs } from '@/test/workspaceTabs.ts';
 
 // SCR-040 Project Workspace with its tabs (SCR-041, SCR-042, SCR-043, SCR-035) and MOD-001 to MOD-003. Acceptance
@@ -255,6 +256,16 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
     expect(flag.closest('.details__row')?.textContent).toContain(
       en('projects.followUp.notAvailable'),
     );
+  });
+
+  test('keeps the manager action apart from the name with a logical margin, so it does not run into it in Arabic', async () => {
+    openWorkspace(projectDetail(), reviewerSession());
+
+    const action = await screen.findByRole('button', {
+      name: (name) => name.startsWith(en('projects.changeManager.action')),
+    });
+    expect(action.classList.contains('details__action')).toBe(true);
+    expect(styles).toMatch(/\n\.details__action \{\s*margin-inline-start: var\(--space-2\);\s*\}/);
   });
 
   test('has no axe violation', async () => {

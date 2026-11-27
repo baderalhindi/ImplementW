@@ -1,11 +1,12 @@
 import { useCallback } from 'react';
 
-import { namesApi } from '@/features/identity-access/names/namesApi.ts';
+import { namesApi, type OrganizationUnits } from '@/features/identity-access/names/namesApi.ts';
 import { shortId } from '@/features/projects/presentation.ts';
 import { tasksApi } from '@/features/tasks/api/tasksApi.ts';
 import { type ProjectTaskDetail } from '@/features/tasks/api/types.ts';
 import { ApiError, type ApiResponse } from '@/shared/api/httpClient.ts';
 import { readInBatches } from '@/shared/api/paging.ts';
+import { useScopedResource } from '@/shared/api/resourceScope.ts';
 import { type ApiResource, useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -207,15 +208,8 @@ export function useMyContributions(userId: string): ApiResource<MyContributions>
   return useApiResource(load, { keepWhileReloading: true });
 }
 
-async function readEntityNames(
-  signal: AbortSignal,
-): Promise<Map<string, { ar: string; en: string }>> {
-  const units = await namesApi.units(signal);
-  return new Map(units.externalEntities.map((entity) => [entity.id, entity.name]));
-}
-
-async function readNoEntityNames(): Promise<Map<string, { ar: string; en: string }>> {
-  return Promise.resolve(new Map<string, { ar: string; en: string }>());
+async function readNoUnits(): Promise<OrganizationUnits> {
+  return Promise.resolve({ departments: [], externalEntities: [] });
 }
 
 /**
@@ -225,7 +219,9 @@ async function readNoEntityNames(): Promise<Map<string, { ar: string; en: string
  */
 export function useEntityNames(enabled = true): (id: string) => string {
   const { t, language } = useI18n();
-  const names = useApiResource(enabled ? readEntityNames : readNoEntityNames).data;
+  // Shared with the screen's other readers of the units (stage QA F-05).
+  const units = useScopedResource(enabled ? namesApi.units : readNoUnits).data;
   return (id) =>
-    names?.get(id)?.[language] ?? t('externalParticipation.entity.unknown', { id: shortId(id) });
+    units?.externalEntities.find((entity) => entity.id === id)?.name[language] ??
+    t('externalParticipation.entity.unknown', { id: shortId(id) });
 }

@@ -19,13 +19,14 @@ internal sealed class ApprovalWorkflowService(
     ApprovalOutcomes outcomes,
     ApprovalPolicy policy,
     IAuditTrail audit,
+    IApprovalProjectNames projectNames,
     TimeProvider timeProvider) : IApprovalWorkflowService
 {
     public async Task<ApprovalInboxPage> ListInboxAsync(Guid callerId, PageRequest page, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        List<ApprovalInboxItem> items = [];
+        List<(ApprovalInboxItem Item, Guid? ScopeProjectId)> items = [];
         if (await authority.IsActiveInternalAsync(callerId, cancellationToken).ConfigureAwait(false))
         {
             IReadOnlyCollection<Guid> roleIds = await authority.CandidateRoleIdsAsync(callerId, cancellationToken).ConfigureAwait(false);
@@ -33,14 +34,28 @@ internal sealed class ApprovalWorkflowService(
             {
                 if ((await authority.ResolveAsync(callerId, instance, task, cancellationToken).ConfigureAwait(false)).Authority is { } acting)
                 {
-                    items.Add(new ApprovalInboxItem(
-                        task.Id, task.SequenceNo, task.AssignedRoleId, task.DueAt, acting.DelegationId is null ? null : acting.HolderUserId, ApprovalMapping.ToSummary(instance)));
+                    items.Add((new ApprovalInboxItem(
+                        task.Id, task.SequenceNo, task.AssignedRoleId, task.DueAt, acting.DelegationId is null ? null : acting.HolderUserId, ApprovalMapping.ToSummary(instance)),
+                        instance.ScopeProjectId));
                 }
             }
         }
 
-        List<ApprovalInboxItem> ordered = [.. items.OrderBy(i => i.DueAt ?? DateTimeOffset.MaxValue).ThenBy(i => i.TaskId)];
-        return new ApprovalInboxPage([.. ordered.Skip(page.Skip).Take(page.PageSize)], page.Page, page.PageSize, ordered.Count);
+        List<(ApprovalInboxItem Item, Guid? ScopeProjectId)> shown = [.. items
+            .OrderBy(i => i.Item.DueAt ?? DateTimeOffset.MaxValue)
+            .ThenBy(i => i.Item.TaskId)
+            .Skip(page.Skip)
+            .Take(page.PageSize)];
+
+        // Each row names its run's project (stage QA D1-01). Only runs whose anchors the caller's authority was just proved over are here,
+        // so the name reaches no one outside that project's scope; only the shown page's projects are read.
+        IReadOnlyDictionary<Guid, ApprovalProjectName> names = await projectNames.FindAsync(
+            [.. shown.Select(i => i.ScopeProjectId).OfType<Guid>().Distinct()], cancellationToken).ConfigureAwait(false);
+        return new ApprovalInboxPage(
+            [.. shown.Select(i => i.ScopeProjectId is { } projectId && names.TryGetValue(projectId, out ApprovalProjectName? name) ? i.Item with { Project = name } : i.Item)],
+            page.Page,
+            page.PageSize,
+            items.Count);
     }
 
     public async Task<AdministrationResult<ApprovalInstancePage>> ListInstancesAsync(Guid callerId, ApprovalInstanceQuery query, CancellationToken cancellationToken)

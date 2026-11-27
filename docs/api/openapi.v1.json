@@ -22833,9 +22833,19 @@
           },
           "instance": {
             "$ref": "#/components/schemas/ApprovalInstanceSummary"
+          },
+          "project": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ApprovalProjectName"
+              }
+            ]
           }
         },
-        "description": "A task the caller may decide now (SCR-100): PENDING, in its run's current stage, and within the caller's authority\nor a delegator's. Guid? ApprovalInboxItem.OnBehalfOfUserId names the delegator when the authority is delegated."
+        "description": "A task the caller may decide now (SCR-100): PENDING, in its run's current stage, and within the caller's authority\nor a delegator's. Guid? ApprovalInboxItem.OnBehalfOfUserId names the delegator when the authority is delegated. ApprovalProjectName? ApprovalInboxItem.Project names the\nproject the run is scoped to, which that authority covers; null when the run has no project scope (stage QA D1-01)."
       },
       "ApprovalInboxPage": {
         "required": [
@@ -23060,6 +23070,30 @@
           }
         },
         "description": "A row of SCR-101 My Requests, and the run an inbox item belongs to."
+      },
+      "ApprovalProjectName": {
+        "required": [
+          "id",
+          "formalProjectId",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          }
+        },
+        "description": "The project a run is scoped to, named for an approver's inbox row (stage QA D1-01): its title as entered (ADR-012) and its Formal Project\nID once it has one."
       },
       "ApprovalSubject": {
         "required": [

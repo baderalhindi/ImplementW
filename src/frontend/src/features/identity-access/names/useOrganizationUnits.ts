@@ -1,4 +1,4 @@
-import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { useScopedResource } from '@/shared/api/resourceScope.ts';
 
 import { namesApi, type OrganizationUnits } from './namesApi.ts';
 
@@ -9,5 +9,5 @@ const NONE: OrganizationUnits = { departments: [], externalEntities: [] };
  * or if it fails, there are none: a screen shows the id's short form rather than a name it does not have.
  */
 export function useOrganizationUnits(): OrganizationUnits {
-  return useApiResource(namesApi.units).data ?? NONE;
+  return useScopedResource(namesApi.units).data ?? NONE;
 }

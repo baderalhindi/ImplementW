@@ -136,7 +136,7 @@ export function OverviewTab(): ReactElement {
               {canChangeManager && (
                 <button
                   type="button"
-                  className="button button--quiet value--nowrap"
+                  className="button button--quiet value--nowrap details__action"
                   onClick={() => {
                     setChangingManager(true);
                   }}

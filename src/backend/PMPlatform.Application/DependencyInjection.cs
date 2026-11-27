@@ -192,6 +192,7 @@ public static class DependencyInjection
         services.AddScoped<ProjectManagerEligibility>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IApprovalOutcomeHandler, ProjectApprovalOutcomeHandler>();
+        services.AddScoped<IApprovalProjectNames, ProjectApprovalNames>();
 
         // The 2 Nov 2026 review: RPMO's follow-up of registered projects and its Follow-up list (R3-3, R3-5), and project import batches
         // from RPMO's workbook, approved by a second person (R3-4).

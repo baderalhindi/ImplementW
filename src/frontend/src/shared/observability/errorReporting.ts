@@ -58,9 +58,23 @@ export function reportError(error: unknown, source: ClientErrorSource): void {
   });
 }
 
+/**
+ * The browser's notice that a ResizeObserver callback changed layout and the rest of the sizes go to the next frame. It carries no
+ * error object and nothing failed, so it is not reported (stage QA INT-03: a screen whose shared reads land together raised it).
+ */
+function isResizeObserverLoopNotice(event: ErrorEvent): boolean {
+  return (
+    (event.error === null || event.error === undefined) &&
+    event.message.startsWith('ResizeObserver loop')
+  );
+}
+
 /** Reports what no code caught: script errors and rejected promises. Returns the function that removes the listeners. */
 export function installErrorReporting(target: Window = window): () => void {
   const onError = (event: ErrorEvent) => {
+    if (isResizeObserverLoopNotice(event)) {
+      return;
+    }
     reportError(event.error ?? new Error(event.message), 'WINDOW_ERROR');
   };
   const onRejection = (event: PromiseRejectionEvent) => {

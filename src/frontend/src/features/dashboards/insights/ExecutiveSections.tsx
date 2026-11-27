@@ -243,6 +243,7 @@ function ExecutiveAttention({ data }: { data: ExecutiveData }): ReactElement {
                   <SubjectSummary
                     subject={item.instance.subject}
                     routingKey={item.instance.routingKey}
+                    project={item.project}
                   />
                   {item.dueAt !== null &&
                     (isOverdue(item.dueAt) ? (
