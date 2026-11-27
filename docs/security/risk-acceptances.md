@@ -7,13 +7,14 @@
 | Who signs | AHDA Cybersecurity, as risk owner (CS-003: "risk register with likelihood/impact, treatment, owner and acceptance"). The delivery team prepares a request; it cannot accept a risk on AHDA's behalf |
 | How a record becomes Signed | The signer's name, role, date and a reference to the signed copy (e-mail, memo or ticket) are entered here, in a PR the Security Lead reviews, and `Status` is set to `Signed`. `findings-log-check.py` refuses a `Signed` record with any of the three missing |
 
-An acceptance covers the finding as written on the date in "Prepared". If the finding changes (its threats, ratings or compensating controls), the acceptance lapses and is requested again. AHDA may decline a request, in which case the finding stays Open until fixed.
+An acceptance covers the finding as written on the date in "Prepared". If the finding changes (its threats, ratings or compensating controls), the acceptance lapses and is requested again. AHDA may decline a request, in which case the finding stays Open until fixed. A request whose finding is mitigated by a merged PR before AHDA signs it is `Withdrawn`: the record stays, with a `Withdrawn` row giving the date and the PR, and AHDA is no longer asked to sign it.
 
 ### RA-01
 
 | Field | Value |
 | --- | --- |
-| Status | Pending AHDA signature |
+| Status | Withdrawn |
+| Withdrawn | 2026-11-27: SR-10 is Mitigated by PR #146 (refresh-token rotation with reuse detection, server-side sign-out, sessions ended on disable), re-tested PASS on `dev` by the dev QA walk (`artifacts/qa-stage/results/dev-phase-c.md`, SR-10 / D-004). AHDA is no longer asked to accept it |
 | Findings | SR-10 |
 | Prepared | 2026-10-16, TASK-081 |
 | Risk | A stolen refresh token keeps a user's session alive until its 8-hour absolute limit. Refresh tokens are not rotated, reuse is not detected, and sign-out clears only the browser tab (AUTH-T13). Inherent High, residual Medium |

@@ -16,8 +16,8 @@ public interface IUserSessionRepository
     /// <summary>Replaces the session's refresh token if it is still active and <paramref name="presentedTokenId"/> is its current one; false otherwise.</summary>
     public Task<bool> RotateAsync(Guid sessionId, Guid presentedTokenId, Guid nextTokenId, CancellationToken cancellationToken);
 
-    /// <summary>Ends the session if it is active; an ended one keeps how it ended.</summary>
-    public Task EndAsync(Guid sessionId, UserSessionStatus status, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken);
+    /// <summary>Ends the session if it is active; an ended one keeps how it ended. True only if this call ended it.</summary>
+    public Task<bool> EndAsync(Guid sessionId, UserSessionStatus status, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken);
 
     /// <summary>Ends every active session of the user.</summary>
     public Task EndAllOfUserAsync(Guid userId, UserSessionEndReason reason, Guid actorId, CancellationToken cancellationToken);
