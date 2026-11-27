@@ -142,7 +142,7 @@ maintenance, patching and health checks. These records hold them.
 | H-60 | [`cybersecurity-control-matrix.md`](../architecture/cybersecurity-control-matrix.md) | TASK-010 | Every control CTL-01 to CTL-55, who implements it, and the gaps G-1 to G-7 | **NOT RATIFIED — PROVISIONAL.** |
 | H-61 | [`docs/security/README.md`](../security/README.md) | TASK-081 | The threat models and how a finding is rated and closed | **REVIEW COMPLETE; GATE NOT GREEN.** |
 | H-62 | [`findings-log.md`](../security/findings-log.md) | TASK-081 | Every security finding and its state | — `findings-log-check.py --gate`, 2026-10-24: 10 High/Critical without a merged mitigation or a signed acceptance (O-14) |
-| H-63 | [`risk-acceptances.md`](../security/risk-acceptances.md) | TASK-081, TASK-082 | The risks AHDA is asked to accept in writing | **Pending AHDA signature** |
+| H-63 | [`risk-acceptances.md`](../security/risk-acceptances.md) | TASK-081, TASK-082 | The risks AHDA is asked to accept in writing | **Withdrawn** (RA-01: SR-10 fixed, PR #146); RA-02 and RA-03 pending AHDA signature |
 | H-64 | [`penetration-test.md`](../security/penetration-test.md) | TASK-082 | The pre-launch penetration test and when the next is due (PRE-6, §6 C-5) | **NOT COMMISSIONED.** (O-14) |
 | H-65 | [`secret-and-dependency-scanning.md`](../architecture/secret-and-dependency-scanning.md) | TASK-080 | The weekly secret and dependency scans during operations (CTL-55) | **BUILT AND VERIFIED** |
 | H-66 | [`scan-owner.yaml`](../../.github/security/scan-owner.yaml) | TASK-080 | Who the weekly scans report to: the Security Lead's account, held by the repository owner until AHDA names one | — |
