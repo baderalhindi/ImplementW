@@ -145,29 +145,48 @@ export function UserPicker({
               </p>
             ) : (
               <ul className="picker__results" aria-label={t('identityAccess.userPicker.results')}>
-                {results.map((user) => (
-                  <li key={user.id}>
-                    <button
-                      type="button"
-                      className="button button--link"
-                      onClick={() => {
-                        onChange(user);
-                      }}
-                    >
-                      {user.displayName} <span dir="ltr">({user.username})</span>
-                    </button>
-                    {describe(user, language) !== '' && (
-                      <span className="picker__detail">{describe(user, language)}</span>
-                    )}
-                  </li>
-                ))}
+                {results.map((user) => {
+                  const detail = describe(user, language);
+                  return (
+                    <li key={user.id}>
+                      <button
+                        type="button"
+                        className="picker__option"
+                        onClick={() => {
+                          onChange(user);
+                        }}
+                      >
+                        <span className="picker__avatar" aria-hidden="true">
+                          {initials(user.displayName)}
+                        </span>
+                        <span className="picker__text">
+                          <span className="picker__name">
+                            {user.displayName}{' '}
+                            <span className="picker__username" dir="ltr">
+                              ({user.username})
+                            </span>
+                          </span>
+                          {detail !== '' && <span className="picker__detail">{detail}</span>}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ))}
         </>
       ) : (
         <div className="picker__selected">
-          <span>
-            {value.displayName} <span dir="ltr">({value.username})</span>
+          <span className="picker__chosen">
+            <span className="picker__avatar" aria-hidden="true">
+              {initials(value.displayName)}
+            </span>
+            <span className="picker__name">
+              {value.displayName}{' '}
+              <span className="picker__username" dir="ltr">
+                ({value.username})
+              </span>
+            </span>
           </span>
           <button
             type="button"
@@ -201,4 +220,14 @@ function describe(person: PersonMatch, language: 'ar' | 'en'): string {
   const name = (label: { ar: string; en: string }) => (language === 'ar' ? label.ar : label.en);
   const parts = [...(person.roles ?? []).map(name), ...(person.unit ? [name(person.unit)] : [])];
   return parts.join(' · ');
+}
+
+/** Up to two initials of a display name, for the result's badge. */
+function initials(displayName: string): string {
+  const words = displayName.split(/[\s.—-]+/u).filter((word) => /\p{L}/u.test(word));
+  return words
+    .slice(0, 2)
+    .map((word) => word.charAt(0))
+    .join('')
+    .toUpperCase();
 }
