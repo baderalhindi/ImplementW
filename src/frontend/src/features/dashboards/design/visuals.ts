@@ -882,6 +882,52 @@ export function inReadingOrder<T extends Box>(visuals: T[]): T[] {
 }
 
 /**
+ * The room a visual the caller may not see leaves in its row, given to the visuals left in that row (the user, 28 Nov 2026: the Viewer's
+ * dashboard should not leave white space where a card it may not see was). A row is the visuals that share a top and a height, with no other
+ * visual crossing those rows; the ones left share the row's span, in their order, each widened in proportion to its width. A row with nothing
+ * left out, or one a taller visual crosses, stays as the designer placed it, and so does room the designer left empty beside the row.
+ */
+export function widenedIntoHidden<T extends Box>(visible: T[], hidden: Box[]): T[] {
+  const rowKey = (box: Box) =>
+    `${String(tenths(box.layoutRow))}:${String(tenths(box.layoutHeight))}`;
+  const crosses = (a: Box, b: Box) =>
+    tenths(a.layoutRow) < tenths(b.layoutRow) + tenths(b.layoutHeight) &&
+    tenths(b.layoutRow) < tenths(a.layoutRow) + tenths(a.layoutHeight);
+  const everything: Box[] = [...visible, ...hidden];
+  const widened = new Map<T, Box>();
+  for (const left of hidden) {
+    const key = rowKey(left);
+    const row = everything.filter((box) => rowKey(box) === key);
+    const shown = visible
+      .filter((box) => rowKey(box) === key)
+      .sort((a, b) => a.layoutColumn - b.layoutColumn);
+    if (shown.length === 0 || shown.some((box) => widened.has(box))) {
+      continue;
+    }
+    if (everything.some((box) => rowKey(box) !== key && crosses(box, left))) {
+      continue;
+    }
+    // The span, in tenths of a column, from the row's first column to its last visual's end.
+    const start = Math.min(...row.map((box) => tenths(box.layoutColumn)));
+    const end = Math.max(...row.map((box) => tenths(box.layoutColumn) + tenths(box.layoutWidth)));
+    const total = shown.reduce((sum, box) => sum + tenths(box.layoutWidth), 0);
+    let column = start;
+    shown.forEach((box, at) => {
+      const width =
+        at === shown.length - 1
+          ? end - column
+          : Math.round((tenths(box.layoutWidth) * (end - start)) / total);
+      widened.set(box, { ...box, layoutColumn: column / 10, layoutWidth: width / 10 });
+      column += width;
+    });
+  }
+  return visible.map((box) => {
+    const place = widened.get(box);
+    return place === undefined ? box : { ...box, ...place };
+  });
+}
+
+/**
  * The visuals where they were placed, with the bands no visual covers taken out (of any height: places are decimals), so a visual the caller
  * may not see (left out by the dashboard) leaves no empty band; room beside a visual stays as the designer left it.
  */

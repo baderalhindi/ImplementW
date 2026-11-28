@@ -29,6 +29,7 @@ import {
   packed,
   placeKey,
   rowsOf,
+  widenedIntoHidden,
   withoutEmptyRows,
 } from './visuals.ts';
 import { hasColumns } from './tableColumns.ts';
@@ -357,21 +358,26 @@ export function DesignedVisuals({
         (!hasColumns(visual) || (visual.table !== null && visual.table !== undefined))
       : sectionShown(visual, sources));
   // A container keeps the visuals the caller may see, with the inner rows they leave empty taken out; one with none left is left out.
-  const visible = splitWidgets(
+  const laidOut = splitWidgets(
     design.data.visuals,
     view.widgets,
     ({ children: _children, ...visual }) => ({
       ...visual,
       groups: [],
     }),
-  ).flatMap((visual) => {
+  );
+  const visible = laidOut.flatMap((visual) => {
     if (!isContainer(visual)) {
       return isShown(visual) ? [visual] : [];
     }
     const children = childrenOf(visual).filter(isShown);
     return children.length === 0 ? [] : [withoutEmptyInnerRows(visual, children)];
   });
-  const shown = split ? packed(visible) : withoutEmptyRows(visible);
+  // The room a left-out visual had goes to the visuals left in its row, then the rows left empty are taken out.
+  const hidden = laidOut.filter(
+    (visual) => !visible.some((kept) => placeKey(kept) === placeKey(visual)),
+  );
+  const shown = split ? packed(visible) : withoutEmptyRows(widenedIntoHidden(visible, hidden));
   return shown.length === 0 ? null : (
     <RiskMatrixContext value={riskMatrix}>
       <section className="insights" aria-labelledby="designed-visuals">
