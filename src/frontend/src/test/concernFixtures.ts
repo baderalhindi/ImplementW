@@ -108,7 +108,7 @@ export function escalation(
     escalatedAt: at(-3),
     escalatedToRoleId: DM_ROLE_ID,
     escalatedToRoleCode: 'R03',
-    escalatedToRoleName: { en: 'Sector Manager', ar: 'مدير القطاع' },
+    escalatedToRoleName: { en: 'Sector Manager', ar: 'مدير الإدارة' },
     reason: {
       text: 'The culvert blocks the haul road; we need a budget decision.',
       language: 'EN',

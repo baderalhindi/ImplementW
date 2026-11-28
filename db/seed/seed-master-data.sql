@@ -102,10 +102,10 @@ SELECT v.id::uuid, v.code, v.name_ar, v.name_en, true, v.is_external_eligible, v
 FROM (VALUES
     ('00000000-0000-4000-8000-000000000001', 'R01', 'مدير النظام',      'System Administrator', false, '{ALL,DEPARTMENT,PROJECT}', 'GOVERNANCE'),
     ('00000000-0000-4000-8000-000000000002', 'R02', 'مدير المحفظة',     'Portfolio Manager',    false, '{ALL,DEPARTMENT,PROJECT}', 'PORTFOLIO'),
-    ('00000000-0000-4000-8000-000000000003', 'R03', 'مدير القطاع',      'Sector Manager',       false, '{DEPARTMENT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000003', 'R03', 'مدير الإدارة',     'Sector Manager',       false, '{DEPARTMENT}', 'PORTFOLIO'),
     ('00000000-0000-4000-8000-000000000004', 'R04', 'مدير المشروع',     'Project Manager',      true, '{ALL,DEPARTMENT,PROJECT,ENTITY}', 'GOVERNANCE'),
     ('00000000-0000-4000-8000-000000000005', 'R05', 'ضابط الاتصال',     'Liaison',              false, '{PROJECT}', 'GOVERNANCE'),
-    ('00000000-0000-4000-8000-000000000006', 'R06', 'مستعرض',           'Viewer',               false, '{DEPARTMENT,PROJECT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000006', 'R06', 'مستخدم اطلاع',      'Viewer',               false, '{DEPARTMENT,PROJECT}', 'PORTFOLIO'),
     ('00000000-0000-4000-8000-000000000007', 'R07', 'تنفيذي',           'Executive',            false, '{ALL,DEPARTMENT,PROJECT}', 'PORTFOLIO'),
     ('00000000-0000-4000-8000-000000000008', 'R08', 'مستخدم جهة خارجية', 'External Entity User', true, '{ALL,ENTITY,PROJECT}', 'PROJECT')
 ) AS v (id, code, name_ar, name_en, is_external_eligible, allowed_scopes, landing)
@@ -115,6 +115,18 @@ ON CONFLICT (code) DO UPDATE SET
     updated_at = EXCLUDED.updated_at,
     updated_by = EXCLUDED.updated_by
 WHERE (r.is_system, r.is_external_eligible) IS DISTINCT FROM (EXCLUDED.is_system, EXCLUDED.is_external_eligible);
+
+-- The permission matrix review (Nov 2026) names R03 مدير الإدارة and R06 مستخدم اطلاع. An existing environment still holding the
+-- previous shipped name takes the new one, with its shipped-default profile; a name an administrator changed stands.
+UPDATE identity_access.role r
+SET name_ar = v.new_name, updated_at = now(), updated_by = '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES ('R03', 'مدير القطاع', 'مدير الإدارة'), ('R06', 'مستعرض', 'مستخدم اطلاع')) AS v (code, old_name, new_name)
+WHERE r.code = v.code AND r.name_ar = v.old_name;
+
+UPDATE identity_access.permission_profile p
+SET name_ar = v.new_name || ' — الملف الافتراضي', updated_at = now(), updated_by = '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES ('R03', 'مدير القطاع', 'مدير الإدارة'), ('R06', 'مستعرض', 'مستخدم اطلاع')) AS v (code, old_name, new_name)
+WHERE p.code = v.code || '-DEFAULT' AND p.name_ar = v.old_name || ' — الملف الافتراضي';
 
 -- The shipped-default profile of each role: code <role>-DEFAULT, id = the role's id with the second group 0001.
 INSERT INTO identity_access.permission_profile AS p (id, code, name_ar, name_en, base_role_id, is_shipped_default, created_at, created_by, updated_at, updated_by)
