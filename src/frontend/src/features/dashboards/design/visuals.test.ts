@@ -19,6 +19,7 @@ import {
   settled,
   shiftedTogether,
   tenth,
+  widenedIntoHidden,
   withoutEmptyRows,
   withType,
 } from './visuals.ts';
@@ -376,6 +377,59 @@ describe('decimal places and sizes (20 Nov 2026, decimal layout contract)', () =
       [4.5, 0.5, 4, 1.5],
       [0, 2.5, 6, 2],
       [0, 4.5, 4, 1],
+    ]);
+  });
+});
+
+describe('a visual the caller may not see leaves no room in its row (28 Nov 2026)', () => {
+  const at = (column: number, row: number, width = 4, height = 2) => ({
+    ...card,
+    layoutColumn: column,
+    layoutRow: row,
+    layoutWidth: width,
+    layoutHeight: height,
+  });
+  const places = (visuals: Visual[]) =>
+    visuals.map((v) => [v.layoutColumn, v.layoutRow, v.layoutWidth, v.layoutHeight]);
+
+  test('the two cards left of three share the row', () => {
+    // The Viewer may not see the Total value card between Registered projects and Average planned.
+    expect(places(widenedIntoHidden([at(0, 0), at(8, 0)], [at(4, 0)]))).toEqual([
+      [0, 0, 6, 2],
+      [6, 0, 6, 2],
+    ]);
+  });
+
+  test('a chart left alone takes the whole row, and the next row keeps its place', () => {
+    expect(
+      places(
+        widenedIntoHidden([at(0, 9, 6, 5), at(0, 14, 6, 5), at(6, 14, 6, 5)], [at(6, 9, 6, 5)]),
+      ),
+    ).toEqual([
+      [0, 9, 12, 5],
+      [0, 14, 6, 5],
+      [6, 14, 6, 5],
+    ]);
+  });
+
+  test('the visuals left keep their proportions, to a tenth, across the span the row had', () => {
+    expect(places(widenedIntoHidden([at(0, 0, 2), at(5, 0, 4)], [at(2, 0, 3)]))).toEqual([
+      [0, 0, 3, 2],
+      [3, 0, 6, 2],
+    ]);
+  });
+
+  test('a row with nothing left out keeps the room the designer left', () => {
+    expect(places(widenedIntoHidden([at(0, 0), at(8, 0)], [at(0, 4)]))).toEqual([
+      [0, 0, 4, 2],
+      [8, 0, 4, 2],
+    ]);
+  });
+
+  test('a row a taller visual crosses stays as placed', () => {
+    expect(places(widenedIntoHidden([at(0, 0), at(8, 0, 4, 4)], [at(4, 0)]))).toEqual([
+      [0, 0, 4, 2],
+      [8, 0, 4, 4],
     ]);
   });
 });
