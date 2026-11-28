@@ -22,6 +22,7 @@ import {
 } from '../forms.ts';
 import { labelOf, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
+import { sessionStore } from '../session/sessionStore.ts';
 import { TemporaryPasswordNotice } from './TemporaryPasswordNotice.tsx';
 import { type PasswordMode, PasswordModeField } from './UserAccountDialogs.tsx';
 
@@ -177,6 +178,10 @@ function UserForm({ existing }: UserFormProps): ReactElement {
       // Never through the router's state, which the browser keeps in its session history.
       setCreated(result.value.data);
     } else if (result.ok) {
+      // The session holds the name and language it signed in with; a new token pair carries the saved ones.
+      if (!creating && result.value.data.id === sessionStore.getSnapshot().session?.user.id) {
+        await sessionStore.refresh();
+      }
       void navigate(`/admin/users/${result.value.data.id}`, {
         state: { notice: creating ? 'created' : 'updated' },
       });
